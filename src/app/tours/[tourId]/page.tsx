@@ -1,0 +1,184 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { prisma } from "@/lib/prisma";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
+  WOMEN_ONLY: "Women Only",
+  CORPORATE: "Corporate",
+  LUXURY: "Luxury",
+};
+
+const ACTIVITY_TYPE_LABELS: Record<string, string> = {
+  SKI: "Ski",
+  SNOWBOARD: "Snowboard",
+  BIKE: "Bike",
+  TREK: "Trek",
+};
+
+function formatRupees(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export default async function TourDetailPage({
+  params,
+}: {
+  params: Promise<{ tourId: string }>;
+}) {
+  const { tourId } = await params;
+
+  const activity = await prisma.activity.findUnique({
+    where: { slug: tourId },
+    include: {
+      guide: {
+        include: {
+          certifications: true,
+        },
+      },
+    },
+  });
+
+  if (!activity) {
+    notFound();
+  }
+
+  return (
+    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
+        <div className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {activity.categories.map((category) => (
+                  <span key={category} className="rounded-full border border-border/80 bg-muted px-3 py-1 text-sm text-muted-foreground">
+                    {CATEGORY_LABELS[category] ?? category}
+                  </span>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  {ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type}
+                </p>
+                <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
+                  {activity.title}
+                </h1>
+                <p className="text-base leading-8 text-muted-foreground">
+                  {activity.description}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#1d4ed8] to-[#0f172a] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.55)] sm:min-w-[280px]">
+              <p className="text-sm uppercase tracking-[0.3em] text-white/70">Starting from</p>
+              <p className="mt-3 font-heading text-3xl font-semibold">{formatRupees(activity.priceInRupees)}</p>
+              <p className="mt-2 text-sm text-white/80">
+                {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"} • {activity.maxGroupSize} guests max
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  size="sm"
+                  className="rounded-full"
+                  nativeButton={false}
+                  render={<Link href={`/booking/${activity.id}/checkout`} />}
+                >
+                  Book now
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
+                  nativeButton={false}
+                  render={<Link href="/tours" />}
+                >
+                  Back to tours
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <CardHeader>
+              <CardTitle className="text-2xl">Tour details</CardTitle>
+              <CardDescription>Everything you need to know before you go.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5 text-sm leading-7 text-muted-foreground">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Location</p>
+                  <p className="mt-2 font-medium text-foreground">{activity.location}</p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Difficulty</p>
+                  <p className="mt-2 font-medium capitalize text-foreground">{activity.difficulty.toLowerCase()}</p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Group size</p>
+                  <p className="mt-2 font-medium text-foreground">Up to {activity.maxGroupSize} travellers</p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Custom</p>
+                  <p className="mt-2 font-medium text-foreground">{activity.isCustom ? "Yes, tailored for your group" : "Standard departure"}</p>
+                </div>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Why travellers love this tour</h2>
+                <p className="mt-2">{activity.description}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <CardHeader>
+              <CardTitle className="text-2xl">Your guide</CardTitle>
+              <CardDescription>Certified local experts with deep Himalayan knowledge.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5 text-sm leading-7 text-muted-foreground">
+              {activity.guide ? (
+                <>
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">{activity.guide.name}</p>
+                    <p className="mt-1">{activity.guide.bio}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Base</p>
+                    <p className="mt-2 font-medium text-foreground">{activity.guide.location}</p>
+                    <p className="mt-1">{activity.guide.experienceYears} years of guiding experience</p>
+                  </div>
+                  {activity.guide.certifications.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Certifications</p>
+                      <ul className="mt-2 space-y-2">
+                        {activity.guide.certifications.map((certification) => (
+                          <li key={certification.id} className="rounded-xl border border-border/70 bg-background/70 px-3 py-2">
+                            <p className="font-medium text-foreground">{certification.title}</p>
+                            <p className="text-xs text-muted-foreground">{certification.issuingBody}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <p>No guide details are available for this tour yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </div>
+  );
+}
