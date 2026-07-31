@@ -43,7 +43,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
     const searchTerm = query.trim().toLowerCase();
 
     if (!searchTerm) {
-      return activities;
+      return activities.slice(0, 3);
     }
 
     return activities.filter((activity) => {
@@ -53,6 +53,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
         activity.location,
         activity.guide?.name,
         ...activity.categories,
+        activity.categories.map((category) => CATEGORY_LABELS[category] ?? category).join(" "),
       ]
         .filter(Boolean)
         .join(" ")
@@ -62,7 +63,8 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
     });
   }, [activities, query]);
 
-  const visibleActivities = filteredActivities.slice(0, 3);
+  const hasSearchQuery = query.trim().length > 0;
+  const visibleActivities = filteredActivities;
   const guideProfiles = [
     {
       name: "Tashi Norbu",
@@ -129,12 +131,23 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
         <p className="text-lg text-muted-foreground">
           Small groups with certified local guides
         </p>
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by destination, activity or guide"
-          className="h-12 w-full rounded-full border-border/80 bg-background px-4 text-base shadow-sm"
-        />
+        <div className="relative w-full">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by destination, activity or guide"
+            className="h-12 w-full rounded-full border-border/80 bg-background px-4 text-base shadow-sm"
+          />
+          {hasSearchQuery ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute inset-y-0 right-3 flex items-center text-sm font-medium text-[#1d4ed8] transition hover:text-[#1e40af]"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-4 sm:grid-cols-3">
           {[
@@ -249,7 +262,13 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
             "linear-gradient(135deg, rgba(15,23,42,0.78) 0%, rgba(29,78,216,0.54) 45%, rgba(14,165,233,0.3) 100%), url('https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=80')",
         }}
       >
-        <div className="flex flex-wrap gap-4">
+        {hasSearchQuery && visibleActivities.length === 0 ? (
+          <div className="rounded-[1.25rem] border border-white/20 bg-white/10 p-6 text-center text-white/90 backdrop-blur-sm">
+            <p className="text-lg font-semibold">No adventures match your search yet.</p>
+            <p className="mt-2 text-sm text-white/70">Try searching for a region, activity, or guide name.</p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-4">
             {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
@@ -307,7 +326,8 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
               </Card>
             ))}
           </div>
-          <div className="mt-6 flex justify-center">
+         )}
+         <div className="mt-6 flex justify-center">
             <Button
               variant="outline"
               size="sm"

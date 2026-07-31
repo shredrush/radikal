@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Radikal
 
-## Getting Started
+Radikal is a Next.js MVP for an adventure sports booking platform focused on small-group experiences in the Indian Himalayas. The experience currently covers guided tours in Manali, Ladakh, Kashmir, and Lahaul-Spiti with activities such as snowboard, ski, bike, and trek.
 
-First, run the development server:
+## What’s included
+
+- Modern landing experience for tours, travel styles, guides, and testimonials
+- Auth flow with email/password login and signup using Auth.js v5
+- Booking flow with a pending booking creation action and a dummy payment confirmation action
+- Seeded local data for tours, guides, slots, and a demo user
+- Prisma + PostgreSQL data layer for activities, bookings, guides, and reviews
+
+## Tech stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Prisma ORM
+- Auth.js v5
+- PostgreSQL
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+- A local PostgreSQL instance or a reachable database URL
+
+## Environment setup
+
+Create a local environment file named `.env` in the project root if it does not already exist.
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/radikal"
+NEXTAUTH_SECRET="replace-with-a-long-random-string"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+## Local development
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Push the Prisma schema to your local database:
+
+```bash
+npx prisma db push
+```
+
+3. Seed the database with sample tours, guides, slots, and a demo user:
+
+```bash
+npx prisma db seed
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo credentials
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Email: `demo@radikal.travel`
+- Password: `password123`
 
-## Learn More
+## Project structure highlights
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/` — app routes, auth pages, booking checkout, and homepage
+- `src/components/` — reusable UI components and homepage sections
+- `src/lib/` — auth helpers, Prisma client, and server actions
+- `prisma/schema.prisma` — Prisma schema and enums
+- `prisma/seed.ts` — local seed data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The booking flow is intentionally MVP-focused. Payments are simulated via a dummy action that marks a booking as confirmed directly after a short delay.
