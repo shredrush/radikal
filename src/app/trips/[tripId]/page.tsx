@@ -33,15 +33,15 @@ function formatRupees(amount: number) {
   }).format(amount);
 }
 
-export default async function TourDetailPage({
+export default async function TripDetailPage({
   params,
 }: {
-  params: Promise<{ tourId: string }>;
+  params: Promise<{ tripId: string }>;
 }) {
-  const { tourId } = await params;
+  const { tripId } = await params;
 
   const activity = await prisma.activity.findUnique({
-    where: { slug: tourId },
+    where: { slug: tripId },
     include: {
       guide: {
         include: {
@@ -100,9 +100,9 @@ export default async function TourDetailPage({
                   size="sm"
                   className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
                   nativeButton={false}
-                  render={<Link href="/tours" />}
+                  render={<Link href="/trips" />}
                 >
-                  Back to tours
+                  Back to trips
                 </Button>
               </div>
             </div>
@@ -112,7 +112,7 @@ export default async function TourDetailPage({
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <CardHeader>
-              <CardTitle className="text-2xl">Tour details</CardTitle>
+              <CardTitle className="text-2xl">Trip details</CardTitle>
               <CardDescription>Everything you need to know before you go.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5 text-sm leading-7 text-muted-foreground">
@@ -135,7 +135,7 @@ export default async function TourDetailPage({
                 </div>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Why travellers love this tour</h2>
+                <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>
                 <p className="mt-2">{activity.description}</p>
               </div>
             </CardContent>
@@ -173,7 +173,7 @@ export default async function TourDetailPage({
                   ) : null}
                 </>
               ) : (
-                <p>No guide details are available for this tour yet.</p>
+                <p>No guide details are available for this trip yet.</p>
               )}
             </CardContent>
           </Card>

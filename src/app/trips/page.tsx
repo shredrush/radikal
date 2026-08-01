@@ -27,7 +27,7 @@ function formatRupees(amount: number) {
   }).format(amount);
 }
 
-export default async function ToursPage() {
+export default async function TripsPage() {
   const activities = await prisma.activity.findMany({
     include: { guide: true },
     orderBy: { createdAt: "asc" },
@@ -38,10 +38,10 @@ export default async function ToursPage() {
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
         <div className="space-y-3 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-            All tours
+            All trips
           </p>
           <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
-            Explore every Himalayan tour
+            Explore every Himalayan trip
           </h1>
           <p className="mx-auto max-w-2xl text-sm leading-7 text-muted-foreground">
             Browse all current adventures across ski, snowboard, bike and trek experiences.
@@ -93,7 +93,7 @@ export default async function ToursPage() {
                     variant="outline"
                     size="sm"
                     nativeButton={false}
-                    render={<Link href={`/tours/${activity.slug}`} />}
+                    render={<Link href={`/trips/${activity.slug}`} />}
                   >
                     View details
                   </Button>

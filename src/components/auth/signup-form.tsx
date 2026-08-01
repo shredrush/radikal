@@ -29,7 +29,7 @@ export function SignupForm() {
       <CardHeader>
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
-          Join Radikal to book small-group tours with certified local guides.
+          Join Radikal to book small-group trips with certified local guides.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>

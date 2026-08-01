@@ -36,8 +36,8 @@ enum Difficulty {
   EXTREME
 }
 
-// Traveller-facing categories used to tag/filter tours.
-enum TourCategory {
+// Traveller-facing categories used to tag/filter trips.
+enum TripCategory {
   ADVENTURE_ENTHUSIAST
   WOMEN_ONLY
   CORPORATE
@@ -119,7 +119,7 @@ model Activity {
   slug          String         @unique
   title         String
   type          ActivityType
-  categories    TourCategory[]
+  categories    TripCategory[]
   location      String
   description   String
   priceInRupees Int

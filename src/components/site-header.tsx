@@ -9,7 +9,7 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-border/80 bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
           <img
             src="/radikal-logo.svg"
@@ -20,17 +20,36 @@ export async function SiteHeader() {
             Radikal
           </p>
         </Link>
-        <div className="hidden flex-1 items-center justify-center md:flex" />
-        <nav className="flex items-center gap-2">
+        <nav className="order-3 flex w-full flex-wrap items-center justify-center gap-2 md:order-none md:mx-auto md:w-auto">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="rounded-full border-[#1d4ed8]/30 bg-white/80 text-[#1d4ed8] hover:bg-[#1d4ed8]/5"
+            className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
             nativeButton={false}
-            render={<Link href="/tours" />}
+            render={<Link href="/trips" />}
           >
-            Custom Tours
+            Experiences
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+            nativeButton={false}
+            render={<Link href="/trips" />}
+          >
+            Private Trips
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+            nativeButton={false}
+            render={<Link href="/trips" />}
+          >
+            Community
+          </Button>
+        </nav>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {session?.user ? (
             <>
               <Button
@@ -58,7 +77,7 @@ export async function SiteHeader() {
               Login
             </Button>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { SearchableTours } from "@/components/home/searchable-tours";
+import { SearchableTrips } from "@/components/home/searchable-trips";
 
 export default async function Home() {
   const activities = await prisma.activity.findMany({
@@ -9,7 +9,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
-      <SearchableTours
+      <SearchableTrips
         activities={activities.map((activity) => ({
           id: activity.id,
           slug: activity.slug,

@@ -40,7 +40,7 @@ npm install
 npx prisma db push
 ```
 
-3. Seed the database with sample tours, guides, slots, and a demo user:
+3. Seed the database with sample trips, guides, slots, and a demo user:
 
 ```bash
 npx prisma db seed

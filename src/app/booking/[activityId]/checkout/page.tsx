@@ -66,7 +66,7 @@ export default async function CheckoutPage({
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              There are no available slots for this tour right now. Check back
+              There are no available slots for this trip right now. Check back
               soon or get in touch for a custom date.
             </p>
           </CardContent>

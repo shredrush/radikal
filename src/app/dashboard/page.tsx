@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>No bookings yet</CardTitle>
             <CardDescription>
-              Once you book a tour, it will show up here with its status.
+              Once you book a trip, it will show up here with its status.
             </CardDescription>
           </CardHeader>
         </Card>

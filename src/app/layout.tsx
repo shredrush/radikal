@@ -12,7 +12,12 @@ const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" 
 export const metadata: Metadata = {
   title: "Radikal — Adventure sports in the Indian Himalayas",
   description:
-    "Small-group ski, snowboard, bike and trek tours across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
+    "Small-group ski, snowboard, bike and trek trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
+  icons: {
+    icon: "/radikal-logo.svg",
+    shortcut: "/radikal-logo.svg",
+    apple: "/radikal-logo.svg",
+  },
 };
 
 export default function RootLayout({

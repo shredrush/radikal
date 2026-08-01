@@ -36,7 +36,7 @@ type ActivityCardItem = {
   guide: { name: string } | null;
 };
 
-export function SearchableTours({ activities }: { activities: ActivityCardItem[] }) {
+export function SearchableTrips({ activities }: { activities: ActivityCardItem[] }) {
   const [query, setQuery] = useState("");
 
   const filteredActivities = useMemo(() => {
@@ -121,7 +121,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
 
   return (
     <section
-      id="upcoming-tours"
+      id="upcoming-trips"
       className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16"
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-2">
@@ -184,7 +184,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
           ].map((item) => (
             <Link
               key={item.title}
-              href="/tours"
+              href="/trips"
               className="relative flex h-[234px] w-full items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:h-[195px]"
               style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
             >
@@ -242,7 +242,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
           ].map((item) => (
             <Link
               key={item.title}
-              href="/tours"
+              href="/trips"
               className="relative flex min-h-[160px] flex-1 basis-[calc(20%-0.75rem)] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
               style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
             >
@@ -310,7 +310,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
                     size="sm"
                     className="rounded-full border-[#1d4ed8]/30 bg-white/80 text-[#1d4ed8] hover:bg-[#1d4ed8]/5"
                     nativeButton={false}
-                    render={<Link href={`/tours/${activity.slug}`} />}
+                    render={<Link href={`/trips/${activity.slug}`} />}
                   >
                     View details
                   </Button>
@@ -333,7 +333,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
               size="sm"
               className="rounded-full border-[#1d4ed8]/30 bg-white/80 text-[#1d4ed8] hover:bg-[#1d4ed8]/5"
               nativeButton={false}
-              render={<Link href="/tours" />}
+              render={<Link href="/trips" />}
             >
               <span className="flex items-center gap-2">
                 <span>Explore More Adventures</span>
@@ -428,7 +428,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
 
       {filteredActivities.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No tours match your search yet. Try a broader destination or activity name.
+          No trips match your search yet. Try a broader destination or activity name.
         </p>
       ) : null}
 
@@ -453,10 +453,10 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
                 <Link href="/" className="transition hover:text-white">
                   Home
                 </Link>
-                <Link href="/tours" className="transition hover:text-white">
-                  Tours
+                <Link href="/trips" className="transition hover:text-white">
+                  Trips
                 </Link>
-                <Link href="#upcoming-tours" className="transition hover:text-white">
+                <Link href="#upcoming-trips" className="transition hover:text-white">
                   Featured journeys
                 </Link>
                 <Link href="/login" className="transition hover:text-white">
@@ -473,7 +473,7 @@ export function SearchableTours({ activities }: { activities: ActivityCardItem[]
         <div className="mt-10 flex flex-col gap-4 border-t border-white/15 pt-6 text-sm text-white/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Radikal. Crafted for unforgettable Himalayan journeys.</p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/tours" className="transition hover:text-white">
+            <Link href="/trips" className="transition hover:text-white">
               Adventures
             </Link>
             <Link href="/login" className="transition hover:text-white">
