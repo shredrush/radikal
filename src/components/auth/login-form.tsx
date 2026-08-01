@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { loginAction, type LoginActionState } from "@/lib/actions/auth";
@@ -23,6 +23,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
     loginAction,
     initialState
   );
+  const [email, setEmail] = useState(state.email ?? "");
+
+  useEffect(() => {
+    if (state.email) {
+      setEmail(state.email);
+    }
+  }, [state.email]);
 
   return (
     <Card>
@@ -51,6 +58,8 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>

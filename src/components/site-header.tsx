@@ -50,6 +50,15 @@ export async function SiteHeader() {
           </Button>
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+            nativeButton={false}
+            render={<Link href="/login" />}
+          >
+            Become a Guide
+          </Button>
           {session?.user ? (
             <>
               <Button

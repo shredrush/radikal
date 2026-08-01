@@ -13,6 +13,7 @@ export async function logoutAction() {
 
 export type LoginActionState = {
   error?: string;
+  email?: string;
 };
 
 export async function loginAction(
@@ -25,7 +26,8 @@ export async function loginAction(
   });
 
   if (!parsed.success) {
-    return { error: "Enter a valid email and password." };
+    const email = formData.get("email")?.toString().trim() ?? "";
+    return { error: "Enter a valid email and password.", email };
   }
 
   const rawCallbackUrl = formData.get("callbackUrl");
@@ -36,20 +38,27 @@ export async function loginAction(
       ? rawCallbackUrl
       : "/dashboard";
 
+  const { email, password } = parsed.data;
+
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (!existingUser) {
+    return { error: "Invalid email. Create an account", email };
+  }
+
   try {
     await signIn("credentials", {
-      email: parsed.data.email,
-      password: parsed.data.password,
+      email,
+      password,
       redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password." };
+      return { error: "Invalid password", email };
     }
     throw error;
   }
 
-  return {};
+  return { email };
 }
 
 export type SignupActionState = {

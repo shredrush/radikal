@@ -15,16 +15,36 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  // --- Demo traveller account (email: demo@radikal.travel / password: password123)
-  const demoPasswordHash = await bcrypt.hash("password123", 10);
+  // --- Demo traveller account (email: demo@radikal.in / password: r11235)
+  const demoPasswordHash = await bcrypt.hash("r11235", 10);
   await prisma.user.upsert({
-    where: { email: "demo@radikal.travel" },
-    update: {},
-    create: {
+    where: { email: "demo@radikal.in" },
+    update: {
       name: "Demo Traveller",
-      email: "demo@radikal.travel",
       passwordHash: demoPasswordHash,
       role: "USER",
+    },
+    create: {
+      name: "Demo Traveller",
+      email: "demo@radikal.in",
+      passwordHash: demoPasswordHash,
+      role: "USER",
+    },
+  });
+
+  const adminPasswordHash = await bcrypt.hash("r112358", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@radikal.in" },
+    update: {
+      name: "Admin Radikal",
+      passwordHash: adminPasswordHash,
+      role: "ADMIN",
+    },
+    create: {
+      name: "Admin Radikal",
+      email: "admin@radikal.in",
+      passwordHash: adminPasswordHash,
+      role: "ADMIN",
     },
   });
 

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -63,6 +64,20 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-sm text-muted-foreground">Your bookings with Radikal.</p>
       </div>
+
+      {session.user.role === "ADMIN" ? (
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            nativeButton={false}
+            render={<Link href="/admin/trips" />}
+          >
+            Manage trips
+          </Button>
+        </div>
+      ) : null}
 
       {bookings.length === 0 ? (
         <Card>
