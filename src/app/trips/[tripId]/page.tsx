@@ -10,20 +10,41 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { getDifficultyLabel } from "@/lib/difficulty";
+import { formatTripDateRange } from "@/lib/trip-dates";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
   WOMEN_ONLY: "Women Only",
   CORPORATE: "Corporate",
   LUXURY: "Luxury",
+  FOR_FAMILY: "For Family",
+  COURSES: "Courses",
+  SELF_GUIDED: "Self Guided",
+  BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   SKI: "Ski",
   SNOWBOARD: "Snowboard",
   BIKE: "Bike",
-  TREK: "Trek",
+  TREK: "Hiking and Trekking",
 };
+
+function getActivityTypeLabel(activity: { type: string; title: string; description: string; slug: string }) {
+  if (activity.type === "TREK") {
+    const haystack = [activity.title, activity.description, activity.slug]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    if (haystack.includes("climb") || haystack.includes("summit")) {
+      return "Expedition";
+    }
+  }
+
+  return ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type;
+}
 
 function formatRupees(amount: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -48,6 +69,16 @@ export default async function TripDetailPage({
           certifications: true,
         },
       },
+      slots: {
+        where: {
+          date: {
+            gte: new Date(),
+          },
+        },
+        orderBy: {
+          date: "asc",
+        },
+      },
     },
   });
 
@@ -70,7 +101,7 @@ export default async function TripDetailPage({
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                  {ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type}
+                  {getActivityTypeLabel(activity)}
                 </p>
                 <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
                   {activity.title}
@@ -123,7 +154,7 @@ export default async function TripDetailPage({
                 </div>
                 <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Difficulty</p>
-                  <p className="mt-2 font-medium capitalize text-foreground">{activity.difficulty.toLowerCase()}</p>
+                  <p className="mt-2 font-medium text-foreground">{getDifficultyLabel(activity.difficulty)}</p>
                 </div>
                 <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Group size</p>
@@ -133,6 +164,25 @@ export default async function TripDetailPage({
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Custom</p>
                   <p className="mt-2 font-medium text-foreground">{activity.isCustom ? "Yes, tailored for your group" : "Standard departure"}</p>
                 </div>
+              </div>
+              <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Available dates</p>
+                {activity.slots.length > 0 ? (
+                  <ul className="mt-3 space-y-2">
+                    {activity.slots.map((slot) => (
+                      <li key={slot.id} className="flex items-center justify-between rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm">
+                        <span className="font-medium text-foreground">
+                          {formatTripDateRange(slot.date, activity.durationDays)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {Math.max(slot.capacity - slot.booked, 0)} spots left
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 font-medium text-foreground">No upcoming dates are available yet.</p>
+                )}
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CheckoutFlow } from "@/components/booking/checkout-flow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatTripDateRange } from "@/lib/trip-dates";
 
 export const metadata: Metadata = {
   title: "Checkout — Radikal",
@@ -84,6 +85,7 @@ export default async function CheckoutPage({
           availableSlots={activity.slots.map((slot) => ({
             id: slot.id,
             date: slot.date.toISOString(),
+            dateRange: formatTripDateRange(slot.date, activity.durationDays),
             spotsLeft: slot.capacity - slot.booked,
           }))}
           initialSlotId={selectedSlot.id}

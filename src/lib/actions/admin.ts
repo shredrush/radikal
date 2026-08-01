@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidDifficulty, type ActivityDifficulty } from "@/lib/difficulty";
 
 const validTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
-const validDifficulties = ["EASY", "MODERATE", "CHALLENGING", "EXTREME"] as const;
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -38,7 +38,7 @@ export async function updateActivityAction(formData: FormData) {
     throw new Error("Invalid activity type.");
   }
 
-  if (!validDifficulties.includes(difficulty as (typeof validDifficulties)[number])) {
+  if (!isValidDifficulty(difficulty)) {
     throw new Error("Invalid difficulty.");
   }
 
@@ -53,7 +53,7 @@ export async function updateActivityAction(formData: FormData) {
       location,
       description,
       type: type as (typeof validTypes)[number],
-      difficulty: difficulty as (typeof validDifficulties)[number],
+      difficulty: difficulty.toUpperCase() as ActivityDifficulty,
       priceInRupees,
       durationDays,
       maxGroupSize,

@@ -29,6 +29,7 @@ type Activity = {
 type SlotOption = {
   id: string;
   date: string;
+  dateRange: string;
   spotsLeft: number;
 };
 
@@ -38,15 +39,6 @@ function formatRupees(amount: number) {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 type Step = "select" | "review" | "paying" | "confirmed";
@@ -144,7 +136,7 @@ export function CheckoutFlow({
           >
             {availableSlots.map((slot) => (
               <option key={slot.id} value={slot.id} disabled={slot.spotsLeft <= 0}>
-                {formatDate(slot.date)} — {slot.spotsLeft > 0 ? `${slot.spotsLeft} spots left` : "Full"}
+                {slot.dateRange} — {slot.spotsLeft > 0 ? `${slot.spotsLeft} spots left` : "Full"}
               </option>
             ))}
           </select>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { updateActivityAction } from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
+import { getDifficultyLabel, DIFFICULTY_VALUES } from "@/lib/difficulty";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const activityTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
-const difficulties = ["EASY", "MODERATE", "CHALLENGING", "EXTREME"] as const;
+const difficulties = DIFFICULTY_VALUES;
 
 export default async function AdminTripsPage() {
   const session = await auth();
@@ -118,7 +119,7 @@ export default async function AdminTripsPage() {
                   >
                     {difficulties.map((difficulty) => (
                       <option key={difficulty} value={difficulty}>
-                        {difficulty}
+                        {getDifficultyLabel(difficulty)}
                       </option>
                     ))}
                   </select>

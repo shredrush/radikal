@@ -8,7 +8,7 @@ export async function SiteHeader() {
   const session = await auth();
 
   return (
-    <header className="border-b border-border/80 bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
           <img

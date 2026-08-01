@@ -30,9 +30,8 @@ enum ActivityType {
 }
 
 enum Difficulty {
-  EASY
+  BEGINNER
   MODERATE
-  CHALLENGING
   EXTREME
 }
 
@@ -42,6 +41,10 @@ enum TripCategory {
   WOMEN_ONLY
   CORPORATE
   LUXURY
+  FOR_FAMILY
+  COURSES
+  SELF_GUIDED
+  BEGINNER_FRIENDLY
 }
 
 // Booking status flow is strictly PENDING -> CONFIRMED -> CANCELLED.
