@@ -8,9 +8,32 @@ import { prisma } from "@/lib/prisma";
 import { isValidDifficulty, type ActivityDifficulty } from "@/lib/difficulty";
 
 const validTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
+const validCategories = [
+  "ADVENTURE_ENTHUSIAST",
+  "WOMEN_ONLY",
+  "CORPORATE",
+  "LUXURY",
+  "FOR_FAMILY",
+  "COURSES",
+  "SELF_GUIDED",
+  "BEGINNER_FRIENDLY",
+] as const;
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
+}
+
+function parseImages(value: string) {
+  return value
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseCategories(values: FormDataEntryValue[]) {
+  return values
+    .map((value) => value.toString())
+    .filter((value): value is (typeof validCategories)[number] => validCategories.includes(value as (typeof validCategories)[number]));
 }
 
 export async function updateActivityAction(formData: FormData) {
@@ -21,6 +44,7 @@ export async function updateActivityAction(formData: FormData) {
 
   const activityId = asString(formData.get("activityId"));
   const title = asString(formData.get("title"));
+  const slug = asString(formData.get("slug"));
   const location = asString(formData.get("location"));
   const description = asString(formData.get("description"));
   const type = asString(formData.get("type"));
@@ -28,10 +52,17 @@ export async function updateActivityAction(formData: FormData) {
   const priceInRupees = Number.parseInt(asString(formData.get("priceInRupees")), 10);
   const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
   const maxGroupSize = Number.parseInt(asString(formData.get("maxGroupSize")), 10);
+  const guideId = asString(formData.get("guideId"));
+  const images = parseImages(asString(formData.get("images")));
+  const categories = parseCategories(formData.getAll("categories"));
   const isCustom = formData.get("isCustom") === "on";
 
   if (!activityId) {
     throw new Error("Missing activity id.");
+  }
+
+  if (!title || !slug || !location || !description) {
+    throw new Error("Title, slug, location, and description are required.");
   }
 
   if (!validTypes.includes(type as (typeof validTypes)[number])) {
@@ -46,10 +77,20 @@ export async function updateActivityAction(formData: FormData) {
     throw new Error("One or more numeric fields are invalid.");
   }
 
+  const currentActivity = await prisma.activity.findUnique({
+    where: { id: activityId },
+    select: { slug: true },
+  });
+
+  if (!currentActivity) {
+    throw new Error("Activity not found.");
+  }
+
   await prisma.activity.update({
     where: { id: activityId },
     data: {
       title,
+      slug,
       location,
       description,
       type: type as (typeof validTypes)[number],
@@ -57,6 +98,9 @@ export async function updateActivityAction(formData: FormData) {
       priceInRupees,
       durationDays,
       maxGroupSize,
+      categories,
+      images,
+      guideId: guideId || null,
       isCustom,
     },
   });
@@ -64,6 +108,11 @@ export async function updateActivityAction(formData: FormData) {
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
+  revalidatePath(`/trips/${currentActivity.slug}`);
+
+  if (slug !== currentActivity.slug) {
+    revalidatePath(`/trips/${slug}`);
+  }
 
   redirect("/admin/trips");
 }

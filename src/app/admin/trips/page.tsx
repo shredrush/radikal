@@ -18,6 +18,16 @@ import { Label } from "@/components/ui/label";
 
 const activityTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
 const difficulties = DIFFICULTY_VALUES;
+const tripCategories = [
+  "ADVENTURE_ENTHUSIAST",
+  "WOMEN_ONLY",
+  "CORPORATE",
+  "LUXURY",
+  "FOR_FAMILY",
+  "COURSES",
+  "SELF_GUIDED",
+  "BEGINNER_FRIENDLY",
+] as const;
 
 export default async function AdminTripsPage() {
   const session = await auth();
@@ -26,9 +36,15 @@ export default async function AdminTripsPage() {
     redirect("/login?callbackUrl=/admin/trips");
   }
 
-  const activities = await prisma.activity.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const [activities, guides] = await Promise.all([
+    prisma.activity.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.guide.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-16">
@@ -150,6 +166,28 @@ export default async function AdminTripsPage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor={`slug-${activity.id}`}>Slug</Label>
+                  <Input id={`slug-${activity.id}`} name="slug" defaultValue={activity.slug} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor={`guide-${activity.id}`}>Guide</Label>
+                  <select
+                    id={`guide-${activity.id}`}
+                    name="guideId"
+                    defaultValue={activity.guideId ?? ""}
+                    className="flex h-10 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                  >
+                    <option value="">No guide</option>
+                    {guides.map((guide) => (
+                      <option key={guide.id} value={guide.id}>
+                        {guide.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor={`description-${activity.id}`}>Description</Label>
                   <textarea
                     id={`description-${activity.id}`}
@@ -158,6 +196,39 @@ export default async function AdminTripsPage() {
                     rows={4}
                     className="flex min-h-24 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                     required
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Trip categories</Label>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {tripCategories.map((category) => {
+                      const isChecked = activity.categories.includes(category);
+
+                      return (
+                        <label key={category} className="flex items-center gap-2 rounded-none border border-input bg-background px-3 py-2 text-sm text-foreground">
+                          <input
+                            type="checkbox"
+                            name="categories"
+                            value={category}
+                            defaultChecked={isChecked}
+                            className="h-4 w-4 rounded border border-border bg-background"
+                          />
+                          {category.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor={`images-${activity.id}`}>Images (one per line or comma)</Label>
+                  <textarea
+                    id={`images-${activity.id}`}
+                    name="images"
+                    defaultValue={activity.images.join("\n")}
+                    rows={3}
+                    className="flex min-h-24 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                   />
                 </div>
 

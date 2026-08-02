@@ -7,15 +7,7 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { getDifficultyLabel } from "@/lib/difficulty";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -81,6 +73,44 @@ function formatDateForDisplay(value: string) {
     month: "short",
     year: "numeric",
   }).format(parsed);
+}
+
+function getTripCardImage(activity: ActivityCardItem) {
+  const source = `${activity.title} ${activity.description}`.toLowerCase();
+
+  if (source.includes("ski") || source.includes("snow")) {
+    return "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("bike") || source.includes("cycling")) {
+    return "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("trek") || source.includes("hike") || source.includes("trail")) {
+    return "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("climb") || source.includes("summit") || source.includes("expedition")) {
+    return "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("rock") || source.includes("ice")) {
+    return "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("yoga")) {
+    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (source.includes("meditation")) {
+    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
+  }
+
+  if (activity.categories.includes("WOMEN_ONLY")) {
+    return "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=900&q=80";
+  }
+
+  return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80";
 }
 
 function getCalendarDays(viewDate: Date) {
@@ -739,57 +769,42 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
-                className="flex h-full min-w-0 flex-col overflow-hidden rounded-[1.1rem] border border-border/70 bg-card/95 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.32)]"
+                className="flex h-[680px] min-w-0 cursor-pointer flex-col overflow-hidden rounded-[1.15rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)]"
+                onClick={() => window.location.href = `/trips/${activity.slug}`}
               >
-                <div className="h-1 bg-[#1d4ed8]" />
-                <CardHeader className="gap-2 p-2.5 sm:p-3 lg:p-3.5">
-                  <div className="flex flex-wrap gap-1.5">
-                    {activity.categories.map((category) => (
-                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[clamp(0.6rem,0.75vw,0.7rem)] font-medium text-foreground/80">
-                        {CATEGORY_LABELS[category] ?? category}
-                      </Badge>
-                    ))}
-                  </div>
+                <div
+                  className="relative -m-[1px] flex-[0_0_60%] min-h-[400px] bg-muted/60"
+                  style={{
+                    backgroundImage: `url(${getTripCardImage(activity)})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                </div>
+                <div className="flex flex-1 flex-col justify-between gap-1 p-3 sm:p-3.5">
                   <div className="space-y-1.5">
-                    <CardTitle className="text-[clamp(0.8rem,1.05vw,1rem)] leading-5 text-foreground">{activity.title}</CardTitle>
-                    <CardDescription className="text-[clamp(0.68rem,0.8vw,0.8rem)] leading-5 text-muted-foreground">
-                      {activity.location}
-                      {activity.guide ? ` · Guided by ${activity.guide.name}` : null}
-                    </CardDescription>
+                    <div className="space-y-1">
+                      <h2 className="text-[clamp(0.95rem,1.2vw,1.15rem)] font-semibold leading-6 text-foreground">{activity.title}</h2>
+                      <p>{activity.location}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[clamp(0.7rem,0.85vw,0.8rem)] font-medium text-foreground/80">
+                        {activity.location}
+                      </span> */}
+                      {activity.categories.map((category) => (
+                        <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[clamp(0.7rem,0.85vw,0.8rem)] font-medium text-foreground/80">
+                          {CATEGORY_LABELS[category] ?? category}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="flex flex-1 flex-col gap-2 p-2.5 sm:p-3 lg:p-3.5">
-                  <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] leading-5 text-muted-foreground">
-                    {activity.description}
-                  </p>
-                  <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
-                    <span className="rounded-full border border-border bg-background/80 px-2 py-1">
+                  <div className="mt-auto flex justify-end">
+                    <span className="rounded-full border border-border/70 bg-transparent px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-foreground/90">
                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                     </span>
-                    <span className="rounded-full border border-border bg-background/80 px-2 py-1 capitalize">
-                      {getDifficultyLabel(activity.difficulty)}
-                    </span>
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-wrap items-center justify-end gap-1.5 border-t border-border/70 p-2.5 sm:p-3 lg:p-3.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full border-[#1d4ed8]/30 bg-white/80 px-2 py-1 text-[clamp(0.65rem,0.8vw,0.75rem)] text-[#1d4ed8] hover:bg-[#1d4ed8]/5"
-                    nativeButton={false}
-                    render={<Link href={`/trips/${activity.slug}`} />}
-                  >
-                    View details
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="rounded-full px-2 py-1 text-[clamp(0.65rem,0.8vw,0.75rem)]"
-                    nativeButton={false}
-                    render={<Link href={`/booking/${activity.id}/checkout`} />}
-                  >
-                    Book now
-                  </Button>
-                </CardFooter>
+                </div>
               </Card>
             ))}
             </div>
@@ -797,9 +812,8 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
          
          <div className="mt-6 flex justify-center">
             <Button
-              variant="outline"
               size="sm"
-              className="rounded-full border-[#1d4ed8]/30 bg-white/80 text-[#1d4ed8] hover:bg-[#1d4ed8]/5"
+              className="rounded-full bg-[#1d4ed8] px-4 text-white hover:bg-[#1e40af]"
               nativeButton={false}
               render={<Link href="/trips" />}
             >
