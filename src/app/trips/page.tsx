@@ -41,27 +41,72 @@ function formatRupees(amount: number) {
   }).format(amount);
 }
 
+function normalizeLocationFilter(value: string | string[] | null | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return values.filter((item): item is string => Boolean(item));
+}
+
+function isDateWithinRange(slotDate: Date, startDate: string | null, endDate: string | null) {
+  const normalizedSlotDate = new Date(slotDate);
+  normalizedSlotDate.setHours(0, 0, 0, 0);
+
+  if (startDate) {
+    const normalizedStartDate = new Date(`${startDate}T00:00:00`);
+    if (normalizedSlotDate < normalizedStartDate) {
+      return false;
+    }
+  }
+
+  if (endDate) {
+    const normalizedEndDate = new Date(`${endDate}T00:00:00`);
+    if (normalizedSlotDate > normalizedEndDate) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export default async function TripsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sport?: string | string[] | undefined; difficulty?: string | string[] | undefined; travelStyle?: string | string[] | undefined }>;
+  searchParams: Promise<{
+    sport?: string | string[] | undefined;
+    difficulty?: string | string[] | undefined;
+    travelStyle?: string | string[] | undefined;
+    location?: string | string[] | undefined;
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+  }>;
 }) {
-  const { sport, difficulty, travelStyle } = await searchParams;
+  const { sport, difficulty, travelStyle, location, startDate, endDate } = await searchParams;
   const selectedSport = normalizeSportFilter(sport);
   const selectedDifficulty = normalizeDifficultyFilter(difficulty);
   const selectedTravelStyle = normalizeTravelStyleFilter(travelStyle);
+  const selectedLocation = normalizeLocationFilter(location);
 
   const activities = await prisma.activity.findMany({
-    include: { guide: true },
+    include: { guide: true, slots: true },
     orderBy: { createdAt: "asc" },
   });
 
-  const filteredActivities = activities.filter(
-    (activity) =>
+  const filteredActivities = activities.filter((activity) => {
+    const locationMatch =
+      selectedLocation.length === 0 || selectedLocation.some((locationValue) => activity.location.toLowerCase().includes(locationValue.toLowerCase()));
+
+    const dateMatch =
+      !startDate && !endDate
+        ? true
+        : activity.slots.some((slot) => isDateWithinRange(slot.date, startDate ?? null, endDate ?? null));
+
+    return (
+      locationMatch &&
+      dateMatch &&
       matchesSportFilter(activity, selectedSport) &&
       matchesDifficultyFilter(activity, selectedDifficulty) &&
-      matchesTravelStyleFilter(activity, selectedTravelStyle),
-  );
+      matchesTravelStyleFilter(activity, selectedTravelStyle)
+    );
+  });
 
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
