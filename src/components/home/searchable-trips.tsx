@@ -38,15 +38,13 @@ type ActivityCardItem = {
 type FilterPanel = "what" | "when" | "where" | "who" | null;
 
 const SPORT_OPTIONS = [
-  { id: "ski", label: "Ski" },
-  { id: "snowboard", label: "Snowboard" },
-  { id: "bike", label: "Bike" },
+  { id: "ski", label: "Skiing" },
+  { id: "snowboard", label: "Snowboarding" },
+  { id: "bike", label: "Cycling" },
   { id: "trek", label: "Hiking and Trekking" },
-  { id: "climb", label: "Expedition" },
+  { id: "expedition", label: "Expedition" },
   { id: "rock-climbing", label: "Rock Climbing" },
-  { id: "ice-climbing", label: "Ice Climbing" },
-  { id: "yoga", label: "Yoga" },
-  { id: "meditation", label: "Meditation" },
+  { id: "yoga", label: "Yoga and Meditation" },
 ] as const;
 
 const TRAVEL_STYLE_OPTIONS = [
@@ -126,16 +124,13 @@ function matchesSportSelection(activity: ActivityCardItem, sportId: string) {
       return activity.title.toLowerCase().includes("bike") || activity.description.toLowerCase().includes("bike") || activity.type === "BIKE";
     case "trek":
       return activity.title.toLowerCase().includes("trek") || activity.description.toLowerCase().includes("trek") || activity.type === "TREK";
+    case "expedition":
     case "climb":
       return activity.title.toLowerCase().includes("climb") || activity.description.toLowerCase().includes("climb") || activity.title.toLowerCase().includes("summit");
     case "rock-climbing":
       return activity.title.toLowerCase().includes("rock") && activity.title.toLowerCase().includes("climb");
-    case "ice-climbing":
-      return activity.title.toLowerCase().includes("ice") && activity.title.toLowerCase().includes("climb");
     case "yoga":
       return activity.title.toLowerCase().includes("yoga") || activity.description.toLowerCase().includes("yoga");
-    case "meditation":
-      return activity.title.toLowerCase().includes("meditation") || activity.description.toLowerCase().includes("meditation");
     default:
       return true;
   }
@@ -301,7 +296,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
   const testimonials = [
     {
       name: "Riya S.",
-      trip: "Snowboard Escape in Gulmarg",
+      trip: "Snowboarding Escape in Gulmarg",
       quote:
         "Every detail felt effortless. The guide was calm, knowledgeable, and made our first snowboarding experience unforgettable.",
       image:
@@ -309,7 +304,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
     },
     {
       name: "Arjun M.",
-      trip: "Ladakh Bike Adventure",
+      trip: "Ladakh Cycling Adventure",
       quote:
         "The route, pacing, and support were incredible. It felt adventurous without losing comfort or safety.",
       image:
@@ -580,7 +575,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
           ) : null}
         </div>
 
-        <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5">
+        <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             {
               title: "Hiking and Trekking",
@@ -590,21 +585,21 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               position: "center bottom",
             },
             {
-              title: "Bike",
+              title: "Cycling",
               filter: "bike",
               image:
                 "https://images.unsplash.com/photo-1604748954134-457791b2ce9b?auto=format&fit=crop&w=900&q=80",
               position: "center 95%",
             },
             {
-              title: "Snowboard",
+              title: "Snowboarding",
               filter: "snowboard",
               image:
                 "https://plus.unsplash.com/premium_photo-1708612612949-b2eaa75af46d?auto=format&fit=crop&w=900&q=80",
               position: "center 80%",
             },
             {
-              title: "Yoga",
+              title: "Yoga and Meditation",
               filter: "yoga",
               image:
                 "https://images.unsplash.com/photo-1667586733525-0eea514bfb49?auto=format&fit=crop&w=900&q=80",
@@ -612,7 +607,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
             },
             {
               title: "Expedition",
-              filter: "climb",
+              filter: "expedition",
               image:
                 "https://images.unsplash.com/photo-1643903096045-07741be1f245?auto=format&fit=crop&w=900&q=80",
               position: "center bottom",
@@ -624,25 +619,11 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                 "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80",
             },
             {
-              title: "Ice Climbing",
-              filter: "ice-climbing",
-              image:
-                "https://images.unsplash.com/photo-1709517659991-58d946519556?auto=format&fit=crop&w=900&q=80",
-              position: "center bottom",
-            },
-            {
-              title: "Ski",
+              title: "Skiing",
               filter: "ski",
               image:
                 "https://images.unsplash.com/photo-1586356415056-bd7a5c2bbef7?auto=format&fit=crop&w=900&q=80",
               position: "center bottom",
-            },
-            {
-              title: "Meditation",
-              filter: "meditation",
-              image:
-                "https://plus.unsplash.com/premium_photo-1664303226820-7fad27492115?auto=format&fit=crop&w=900&q=80",
-              position: "center 20%",
             },
             {
               title: "Mix it up!",
@@ -667,14 +648,15 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
         </div>
       </div>
 
-      <div className="flex flex-col gap-8 border-b border-border/60 bg-background/95 p-6 sm:p-8">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
-            Travel styles
-          </p>
-        </div>
-        <div className="flex w-full flex-wrap items-stretch gap-3">
-          {[
+      <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
+              Travel styles
+            </p>
+          </div>
+          <div className="flex w-full flex-wrap items-stretch gap-3">
+            {[
             {
               title: "Beginner Friendly",
               image:
@@ -705,19 +687,20 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               image:
                 "https://plus.unsplash.com/premium_photo-1709311446331-fbc1800fd833?auto=format&fit=crop&w=900&q=80",
             },
-          ].map((item) => (
-            <Link
-              key={item.title}
-              href="/trips"
-              className="relative flex min-h-[160px] flex-1 basis-[calc(16.666%-0.75rem)] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
-              style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
-            >
-              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-              <div className="relative z-10 flex w-full items-end p-3">
-                <p className="text-lg font-semibold text-white">{item.title}</p>
-              </div>
-            </Link>
-          ))}
+            ].map((item) => (
+              <Link
+                key={item.title}
+                href="/trips"
+                className="relative flex min-h-[160px] flex-1 basis-[calc(16.666%-0.75rem)] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
+                style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
+              >
+                <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
+                <div className="relative z-10 flex w-full items-end p-3">
+                  <p className="text-lg font-semibold text-white">{item.title}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -788,85 +771,89 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
           </div>
         </div>
  
-        <div className="border-b border-border/60 bg-background/95 p-6 sm:p-8">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-              Certified local guides
-            </p>
-            <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-              Trusted guides for every ridge and valley
-            </h4>
-            <p className="mt-3 text-base text-muted-foreground">
-              We partner with trusted local guides who are well versed with terrain.
-            </p>
-          </div>
+        <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Certified local guides
+              </p>
+              <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
+                Trusted guides for every ridge and valley
+              </h4>
+              <p className="mt-3 text-base text-muted-foreground">
+                We partner with trusted local guides who are well versed with terrain.
+              </p>
+            </div>
 
-          <div className="mt-8 grid grid-cols-4 gap-2">
-            {guideProfiles.map((guide) => (
-              <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] border border-border/70 bg-card/95 shadow-[0_12px_32px_-22px_rgba(0,0,0,0.18)]">
-                <CardHeader className="gap-1.5 p-2">
-                  <div className="flex flex-col items-center gap-1.5 text-center">
-                    <img
-                      src={guide.image}
-                      alt={guide.name}
-                      className="h-24 w-full rounded-[0.75rem] object-cover shadow-sm sm:h-28 lg:h-30"
-                    />
-                    <div className="w-full">
-                      <div className="flex items-center justify-center gap-1">
-                        <CardTitle className="text-[clamp(0.72rem,0.8vw,0.82rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1d4ed8] text-[8px] font-bold text-white" aria-label="Verified guide">
-                          ✓
-                        </span>
+            <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] gap-2">
+              {guideProfiles.map((guide) => (
+                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] border border-border/70 bg-card/95 shadow-[0_12px_32px_-22px_rgba(0,0,0,0.18)]">
+                  <CardHeader className="gap-1.5 p-2">
+                    <div className="flex flex-col items-center gap-1.5 text-center">
+                      <img
+                        src={guide.image}
+                        alt={guide.name}
+                        className="h-24 w-full rounded-[0.75rem] object-cover shadow-sm sm:h-28 lg:h-30"
+                      />
+                      <div className="w-full">
+                        <div className="flex items-center justify-center gap-1">
+                          <CardTitle className="text-[clamp(0.72rem,0.8vw,0.82rem)] leading-4 text-foreground">{guide.name}</CardTitle>
+                          <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white" aria-label="Verified guide">
+                            ✓
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[clamp(0.62rem,0.7vw,0.7rem)] text-muted-foreground">{guide.region}</p>
                       </div>
-                      <p className="mt-0.5 text-[clamp(0.62rem,0.7vw,0.7rem)] text-muted-foreground">{guide.region}</p>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex flex-1 flex-col gap-1.5 p-2 pt-0">
-                  <div className="flex flex-wrap justify-center gap-1">
-                    {guide.certifications.map((certification) => (
-                      <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.5 text-[clamp(0.55rem,0.62vw,0.62rem)] font-medium text-foreground/90">
-                        {certification}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-auto rounded-full border border-border px-1.5 py-0.75 text-center text-[clamp(0.6rem,0.64vw,0.64rem)] text-muted-foreground">
-                    {guide.adventuresLed} adventures led
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent className="flex flex-1 flex-col gap-1.5 p-2 pt-0">
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {guide.certifications.map((certification) => (
+                        <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.5 text-[clamp(0.55rem,0.62vw,0.62rem)] font-medium text-foreground/90">
+                          {certification}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="mt-auto rounded-full border border-border px-1.5 py-0.75 text-center text-[clamp(0.6rem,0.64vw,0.64rem)] text-muted-foreground">
+                      {guide.adventuresLed} adventures led
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="border-b border-border/60 bg-[#f3f8ff] p-6 sm:p-8">
-          <div className="max-w-3xl">
-            <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-              Travelers ❤️ the Radikal experience
-            </h4>
-            <p className="mt-3 text-base text-muted-foreground">
-              Real stories from people who chose small-group adventures in the Himalayas.
-            </p>
-          </div>
+        <div className="border-b border-border/60 bg-[#f3f8ff] px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="max-w-3xl">
+              <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
+                Travellers ❤️ Radikal Experiences
+              </h4>
+              <p className="mt-3 text-base text-muted-foreground">
+                Real stories from people who chose small-group adventures in the Himalayas.
+              </p>
+            </div>
 
-          <div className="mt-8 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {testimonials.map((testimonial) => (
-              <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-border/70 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.18)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
-                <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
-                  <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
-                    “{testimonial.quote}”
-                  </p>
-                  <div className="ml-auto mt-2 flex flex-col items-end text-right">
-                    <p className="text-[clamp(0.78rem,0.9vw,0.95rem)] font-semibold text-foreground">
-                      {testimonial.name}
+            <div className="mt-8 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {testimonials.map((testimonial) => (
+                <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-border/70 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.18)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
+                  <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
+                    <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
+                      “{testimonial.quote}”
                     </p>
-                    <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
-                      {testimonial.trip}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="ml-auto mt-2 flex flex-col items-end text-right">
+                      <p className="text-[clamp(0.78rem,0.9vw,0.95rem)] font-semibold text-foreground">
+                        {testimonial.name}
+                      </p>
+                      <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
+                        {testimonial.trip}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -876,59 +863,6 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
         </p>
       ) : null}
 
-      <footer className="rounded-[1.5rem] border border-border/60 bg-background/95 p-4 text-foreground sm:p-6 lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl flex-1">
-            <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-              Radikal
-            </p>
-            <h4 className="mt-2 font-heading text-[clamp(1.2rem,2vw,2.1rem)] font-semibold tracking-wide text-foreground">
-              Crafted for unforgettable Himalayan journeys
-            </h4>
-            <p className="mt-2 text-[clamp(0.8rem,1vw,1rem)] leading-6 text-muted-foreground">
-              Discover curated, small-group adventures with certified local guides, flexible custom itineraries, and meaningful sustainable travel designed around the Indian Himalayas.
-            </p>
-          </div>
-
-          <div className="flex w-full max-w-[320px] flex-shrink-0 justify-start lg:ml-6">
-            <div className="space-y-2">
-              <p className="text-[clamp(0.7rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Explore</p>
-              <div className="flex flex-col gap-1.5 text-[clamp(0.8rem,0.95vw,0.95rem)] text-muted-foreground">
-                <Link href="/" className="transition hover:text-foreground">
-                  Home
-                </Link>
-                <Link href="/trips" className="transition hover:text-foreground">
-                  Trips
-                </Link>
-                <Link href="#upcoming-trips" className="transition hover:text-foreground">
-                  Featured journeys
-                </Link>
-                <Link href="/login" className="transition hover:text-foreground">
-                  Login
-                </Link>
-                <Link href="/signup" className="transition hover:text-foreground">
-                  Create account
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3 border-t border-border/60 pt-4 text-[clamp(0.7rem,0.85vw,0.85rem)] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Radikal</p>
-          <div className="flex flex-wrap gap-3 sm:gap-4">
-            <Link href="/trips" className="transition hover:text-foreground">
-              Adventures
-            </Link>
-            <Link href="/login" className="transition hover:text-foreground">
-              Support
-            </Link>
-            <Link href="/signup" className="transition hover:text-foreground">
-              Join the community
-            </Link>
-          </div>
-        </div>
-      </footer>
     </section>
   );
 }

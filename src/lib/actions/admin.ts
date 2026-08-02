@@ -36,6 +36,23 @@ function parseCategories(values: FormDataEntryValue[]) {
     .filter((value): value is (typeof validCategories)[number] => validCategories.includes(value as (typeof validCategories)[number]));
 }
 
+function resolveActivityType(sport: string, fallbackType: string) {
+  switch (sport) {
+    case "skiing":
+      return "SKI";
+    case "snowboarding":
+      return "SNOWBOARD";
+    case "cycling":
+      return "BIKE";
+    case "expedition":
+    case "rock-climbing":
+    case "yoga-meditation":
+    case "hiking-trekking":
+    default:
+      return fallbackType || "TREK";
+  }
+}
+
 export async function updateActivityAction(formData: FormData) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
@@ -47,15 +64,15 @@ export async function updateActivityAction(formData: FormData) {
   const slug = asString(formData.get("slug"));
   const location = asString(formData.get("location"));
   const description = asString(formData.get("description"));
-  const type = asString(formData.get("type"));
-  const difficulty = asString(formData.get("difficulty"));
+  const sport = asString(formData.get("sport"));
+  const type = resolveActivityType(sport, asString(formData.get("type")));
+  const difficulty = asString(formData.get("difficulty")) || "MODERATE";
   const priceInRupees = Number.parseInt(asString(formData.get("priceInRupees")), 10);
   const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
   const maxGroupSize = Number.parseInt(asString(formData.get("maxGroupSize")), 10);
   const guideId = asString(formData.get("guideId"));
   const images = parseImages(asString(formData.get("images")));
   const categories = parseCategories(formData.getAll("categories"));
-  const isCustom = formData.get("isCustom") === "on";
 
   if (!activityId) {
     throw new Error("Missing activity id.");
@@ -101,7 +118,6 @@ export async function updateActivityAction(formData: FormData) {
       categories,
       images,
       guideId: guideId || null,
-      isCustom,
     },
   });
 

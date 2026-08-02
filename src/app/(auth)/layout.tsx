@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             Small groups. Offbeat trails. Certified local guides.
           </p>
           <p className="max-w-md text-sm leading-relaxed text-primary-foreground/70">
-            Ski, snowboard, bike and trek across Manali, Ladakh, Kashmir and
+            Skiing, snowboarding, cycling and trekking across Manali, Ladakh, Kashmir and
             Lahaul-Spiti — booked responsibly, guided sustainably.
           </p>
         </div>

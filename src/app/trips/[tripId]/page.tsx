@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
-import { getDifficultyLabel } from "@/lib/difficulty";
 import { formatTripDateRange } from "@/lib/trip-dates";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -25,9 +24,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
-  SKI: "Ski",
-  SNOWBOARD: "Snowboard",
-  BIKE: "Bike",
+  SKI: "Skiing",
+  SNOWBOARD: "Snowboarding",
+  BIKE: "Cycling",
   TREK: "Hiking and Trekking",
 };
 
@@ -153,16 +152,8 @@ export default async function TripDetailPage({
                   <p className="mt-2 font-medium text-foreground">{activity.location}</p>
                 </div>
                 <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Difficulty</p>
-                  <p className="mt-2 font-medium text-foreground">{getDifficultyLabel(activity.difficulty)}</p>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Group size</p>
                   <p className="mt-2 font-medium text-foreground">Up to {activity.maxGroupSize} travellers</p>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Custom</p>
-                  <p className="mt-2 font-medium text-foreground">{activity.isCustom ? "Yes, tailored for your group" : "Standard departure"}</p>
                 </div>
               </div>
               <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">

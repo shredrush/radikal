@@ -5,10 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TripsFilterBar } from "@/components/trips/trips-filter-bar";
 import {
-  matchesDifficultyFilter,
   matchesSportFilter,
   matchesTravelStyleFilter,
-  normalizeDifficultyFilter,
   normalizeSportFilter,
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
@@ -63,16 +61,14 @@ export default async function TripsPage({
 }: {
   searchParams: Promise<{
     sport?: string | string[] | undefined;
-    difficulty?: string | string[] | undefined;
     travelStyle?: string | string[] | undefined;
     location?: string | string[] | undefined;
     startDate?: string | undefined;
     endDate?: string | undefined;
   }>;
 }) {
-  const { sport, difficulty, travelStyle, location, startDate, endDate } = await searchParams;
+  const { sport, travelStyle, location, startDate, endDate } = await searchParams;
   const selectedSport = normalizeSportFilter(sport);
-  const selectedDifficulty = normalizeDifficultyFilter(difficulty);
   const selectedTravelStyle = normalizeTravelStyleFilter(travelStyle);
   const selectedLocation = normalizeLocationFilter(location);
 
@@ -90,13 +86,7 @@ export default async function TripsPage({
         ? true
         : activity.slots.some((slot) => isDateWithinRange(slot.date, startDate ?? null, endDate ?? null));
 
-    return (
-      locationMatch &&
-      dateMatch &&
-      matchesSportFilter(activity, selectedSport) &&
-      matchesDifficultyFilter(activity, selectedDifficulty) &&
-      matchesTravelStyleFilter(activity, selectedTravelStyle)
-    );
+    return locationMatch && dateMatch && matchesSportFilter(activity, selectedSport) && matchesTravelStyleFilter(activity, selectedTravelStyle);
   });
 
   return (
@@ -104,7 +94,6 @@ export default async function TripsPage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
         <TripsFilterBar
           selectedSport={selectedSport}
-          selectedDifficulty={selectedDifficulty}
           selectedTravelStyle={selectedTravelStyle}
           filteredCount={filteredActivities.length}
           totalCount={activities.length}

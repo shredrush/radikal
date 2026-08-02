@@ -16,15 +16,13 @@ export type ActivityCardItem = {
 
 export const SPORT_FILTERS = [
   { id: "all", label: "All" },
-  { id: "ski", label: "Ski" },
-  { id: "snowboard", label: "Snowboard" },
-  { id: "bike", label: "Bike" },
+  { id: "ski", label: "Skiing" },
+  { id: "snowboard", label: "Snowboarding" },
+  { id: "bike", label: "Cycling" },
   { id: "trek", label: "Hiking and Trekking" },
-  { id: "climb", label: "Expedition" },
+  { id: "expedition", label: "Expedition" },
   { id: "rock-climbing", label: "Rock Climbing" },
-  { id: "ice-climbing", label: "Ice Climbing" },
-  { id: "yoga", label: "Yoga" },
-  { id: "meditation", label: "Meditation" },
+  { id: "yoga", label: "Yoga and Meditation" },
 ] as const;
 
 export const DIFFICULTY_FILTERS = [
@@ -53,11 +51,10 @@ export function normalizeSportFilter(value: string | string[] | null | undefined
       item === "snowboard" ||
       item === "bike" ||
       item === "trek" ||
+      item === "expedition" ||
       item === "climb" ||
       item === "rock-climbing" ||
-      item === "ice-climbing" ||
-      item === "yoga" ||
-      item === "meditation",
+      item === "yoga",
   );
 
   return normalizedValues;
@@ -146,20 +143,15 @@ export function matchesSportFilter(activity: ActivityCardItem, sports: string[])
           activity.type === "TREK" &&
           !isClimbActivity(activity) &&
           !isRockClimbingActivity(activity) &&
-          !isIceClimbingActivity(activity) &&
-          !isYogaActivity(activity) &&
-          !isMeditationActivity(activity)
+          !isYogaActivity(activity)
         );
+      case "expedition":
       case "climb":
         return isClimbActivity(activity);
       case "rock-climbing":
         return isRockClimbingActivity(activity);
-      case "ice-climbing":
-        return isIceClimbingActivity(activity);
       case "yoga":
         return isYogaActivity(activity);
-      case "meditation":
-        return isMeditationActivity(activity);
       default:
         return false;
     }

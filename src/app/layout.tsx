@@ -3,6 +3,7 @@ import { Inter, Manrope, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { Toaster } from "@/components/ui/sonner";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
@@ -12,7 +13,7 @@ const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" 
 export const metadata: Metadata = {
   title: "Radikal — Adventure sports in the Indian Himalayas",
   description:
-    "Small-group ski, snowboard, bike and trek trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
+    "Small-group skiing, snowboarding, cycling and trekking trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
   icons: {
     icon: "/radikal-logo.svg",
     shortcut: "/radikal-logo.svg",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SiteHeader />
         <main className="flex flex-1 flex-col">{children}</main>
+        <SiteFooterWrapper />
         <Toaster />
       </body>
     </html>

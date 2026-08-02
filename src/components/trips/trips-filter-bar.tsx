@@ -3,11 +3,10 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { DIFFICULTY_FILTERS, SPORT_FILTERS, TRAVEL_STYLE_FILTERS } from "@/components/trips/sport-filters";
+import { SPORT_FILTERS, TRAVEL_STYLE_FILTERS } from "@/components/trips/sport-filters";
 
 type TripsFilterBarProps = {
   selectedSport: string[];
-  selectedDifficulty: string[];
   selectedTravelStyle: string[];
   filteredCount: number;
   totalCount: number;
@@ -15,8 +14,6 @@ type TripsFilterBarProps = {
 
 export function TripsFilterBar({
   selectedSport,
-  selectedDifficulty,
-  selectedTravelStyle,
   filteredCount,
   totalCount,
 }: TripsFilterBarProps) {
@@ -24,7 +21,7 @@ export function TripsFilterBar({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleSelectFilter = (key: "sport" | "difficulty" | "travelStyle", value: string) => {
+  const handleSelectFilter = (key: "sport" | "travelStyle", value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     const currentValues = params.getAll(key);
 
@@ -44,9 +41,8 @@ export function TripsFilterBar({
     router.push(nextHref, { scroll: false });
   };
 
-  const selectedSports = searchParams.getAll("sport");
-  const selectedDifficulties = searchParams.getAll("difficulty");
   const selectedTravelStyles = searchParams.getAll("travelStyle");
+  const normalizedSelectedSports = selectedSport.map((sport) => (sport === "climb" ? "expedition" : sport));
 
   return (
     <div className="flex flex-col gap-3 rounded-[1.25rem] border border-border/60 bg-background/70 p-3 sm:p-4">
@@ -55,7 +51,7 @@ export function TripsFilterBar({
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Sport</p>
           <div className="flex flex-wrap items-center gap-1.5">
             {SPORT_FILTERS.map((filter) => {
-              const isActive = selectedSports.includes(filter.id) || (filter.id === "all" && selectedSports.length === 0);
+             const isActive = normalizedSelectedSports.includes(filter.id) || (filter.id === "all" && normalizedSelectedSports.length === 0);
 
               return (
                 <Button
@@ -103,27 +99,6 @@ export function TripsFilterBar({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Difficulty</p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {DIFFICULTY_FILTERS.map((filter) => {
-              const isActive = selectedDifficulties.includes(filter.id) || (filter.id === "all" && selectedDifficulties.length === 0);
-
-              return (
-                <Button
-                  key={filter.id}
-                  type="button"
-                  variant={isActive ? "default" : "outline"}
-                  size="xs"
-                  onClick={() => handleSelectFilter("difficulty", filter.id)}
-                  className={isActive ? "bg-[#1d4ed8] text-white hover:bg-[#1e40af]" : "text-[10px]"}
-                >
-                  {filter.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       <p className="text-xs text-muted-foreground">
