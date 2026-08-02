@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { updateActivityAction } from "@/lib/actions/admin";
 import { prisma } from "@/lib/prisma";
 import { getDifficultyLabel, DIFFICULTY_VALUES } from "@/lib/difficulty";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdminTripForm } from "@/components/admin/admin-trip-form";
+import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 
 const activityTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
 const difficulties = DIFFICULTY_VALUES;
@@ -28,6 +28,9 @@ const tripCategories = [
   "SELF_GUIDED",
   "BEGINNER_FRIENDLY",
 ] as const;
+
+const inputClassName =
+  "flex h-10 w-full min-w-0 rounded-none border border-transparent border-b-input bg-transparent px-0 py-1 text-base outline-none transition-[color,border-color] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-b-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-b-destructive md:text-sm dark:aria-invalid:border-b-destructive/50";
 
 export default async function AdminTripsPage() {
   const session = await auth();
@@ -81,31 +84,31 @@ export default async function AdminTripsPage() {
                 <span className="rounded-full border border-border/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                   {activity.isCustom ? "Custom trip" : "Regular trip"}
                 </span>
+                <DeleteTripButton activityId={activity.id} activityTitle={activity.title} />
               </div>
             </CardHeader>
             <CardContent>
-              <form action={updateActivityAction} className="grid gap-4 md:grid-cols-2">
-                <input type="hidden" name="activityId" value={activity.id} />
-
+              <AdminTripForm activityId={activity.id}>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor={`title-${activity.id}`}>Trip title</Label>
-                  <Input id={`title-${activity.id}`} name="title" defaultValue={activity.title} required />
+                  <input id={`title-${activity.id}`} name="title" defaultValue={activity.title} required className={inputClassName} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor={`location-${activity.id}`}>Location</Label>
-                  <Input id={`location-${activity.id}`} name="location" defaultValue={activity.location} required />
+                  <input id={`location-${activity.id}`} name="location" defaultValue={activity.location} required className={inputClassName} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor={`price-${activity.id}`}>Price (₹)</Label>
-                  <Input
+                  <input
                     id={`price-${activity.id}`}
                     name="priceInRupees"
                     type="number"
                     min="0"
                     defaultValue={activity.priceInRupees}
                     required
+                    className={inputClassName}
                   />
                 </div>
 
@@ -143,31 +146,33 @@ export default async function AdminTripsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor={`duration-${activity.id}`}>Duration (days)</Label>
-                  <Input
+                  <input
                     id={`duration-${activity.id}`}
                     name="durationDays"
                     type="number"
                     min="1"
                     defaultValue={activity.durationDays}
                     required
+                    className={inputClassName}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor={`group-size-${activity.id}`}>Max group size</Label>
-                  <Input
+                  <input
                     id={`group-size-${activity.id}`}
                     name="maxGroupSize"
                     type="number"
                     min="1"
                     defaultValue={activity.maxGroupSize}
                     required
+                    className={inputClassName}
                   />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor={`slug-${activity.id}`}>Slug</Label>
-                  <Input id={`slug-${activity.id}`} name="slug" defaultValue={activity.slug} required />
+                  <input id={`slug-${activity.id}`} name="slug" defaultValue={activity.slug} required className={inputClassName} />
                 </div>
 
                 <div className="space-y-2">
@@ -243,12 +248,7 @@ export default async function AdminTripsPage() {
                   <Label htmlFor={`custom-${activity.id}`}>Custom trip</Label>
                 </div>
 
-                <div className="md:col-span-2">
-                  <Button type="submit" className="rounded-full">
-                    Save changes
-                  </Button>
-                </div>
-              </form>
+              </AdminTripForm>
             </CardContent>
           </Card>
         ))}

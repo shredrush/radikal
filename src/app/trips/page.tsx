@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -10,6 +12,7 @@ import {
   normalizeSportFilter,
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
+import { getTripCardImage } from "@/lib/trip-card-image";
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
   WOMEN_ONLY: "Women Only",
@@ -27,44 +30,6 @@ function formatRupees(amount: number) {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function getTripCardImage(activity: { title: string; description: string; categories: string[] }) {
-  const source = `${activity.title} ${activity.description}`.toLowerCase();
-
-  if (source.includes("ski") || source.includes("snow")) {
-    return "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("bike") || source.includes("cycling")) {
-    return "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("trek") || source.includes("hike") || source.includes("trail")) {
-    return "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("climb") || source.includes("summit") || source.includes("expedition")) {
-    return "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("rock") || source.includes("ice")) {
-    return "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("yoga")) {
-    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("meditation")) {
-    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (activity.categories.includes("WOMEN_ONLY")) {
-    return "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=900&q=80";
-  }
-
-  return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80";
 }
 
 function normalizeLocationFilter(value: string | string[] | null | undefined) {
@@ -150,53 +115,52 @@ export default async function TripsPage({
             No trips match this sport yet. Try another filter.
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
             {filteredActivities.map((activity) => (
-              <Card
-                key={activity.id}
-               className="flex h-[720px] flex-col overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)]"
-              >
-               <div
-                 className="relative -m-[1px] flex-[0_0_60%] min-h-[440px] bg-muted/60"
-                 style={{
-                   backgroundImage: `url(${getTripCardImage(activity)})`,
-                   backgroundSize: "cover",
-                   backgroundPosition: "center",
-                 }}
-               >
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-               </div>
-               <div className="flex flex-1 flex-col justify-between gap-1 p-5">
-                 <div className="space-y-2">
-                   <div className="space-y-1.5">
-                     <h3 className="text-lg font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                     <p className="text-sm leading-6 text-muted-foreground">
-                       {activity.location}
-                       {activity.guide ? ` · Guided by ${activity.guide.name}` : null}
-                     </p>
+             <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
+               <Card className="flex h-full min-h-[720px] flex-col overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1">
+                 <div
+                   className="relative -m-[1px] flex-[0_0_60%] min-h-[440px] bg-muted/60"
+                   style={{
+                     backgroundImage: `url(${getTripCardImage(activity)})`,
+                     backgroundSize: "cover",
+                     backgroundPosition: "center",
+                   }}
+                 >
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                 </div>
+                 <div className="flex flex-1 flex-col justify-between gap-1 p-5">
+                   <div className="space-y-2">
+                     <div className="space-y-1.5">
+                       <h3 className="text-lg font-semibold tracking-tight text-foreground">{activity.title}</h3>
+                       <p className="text-sm leading-6 text-muted-foreground">
+                         {activity.location}
+                         {activity.guide ? ` · Guided by ${activity.guide.name}` : null}
+                       </p>
+                     </div>
+                     <div className="flex flex-wrap gap-1.5">
+                       <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
+                         {activity.location}
+                       </span>
+                       <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
+                         {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+                       </span>
+                       {activity.categories.map((category) => (
+                         <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
+                           {CATEGORY_LABELS[category] ?? category}
+                         </Badge>
+                       ))}
+                     </div>
                    </div>
-                   <div className="flex flex-wrap gap-1.5">
-                     <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
-                       {activity.location}
+                   <div className="flex items-center justify-between border-t border-border/70 pt-2">
+                     <span className="text-sm font-medium text-muted-foreground">From</span>
+                     <span className="font-heading text-lg font-semibold text-foreground">
+                       {formatRupees(activity.priceInRupees)}
                      </span>
-                     <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
-                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
-                     </span>
-                     {activity.categories.map((category) => (
-                       <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
-                         {CATEGORY_LABELS[category] ?? category}
-                       </Badge>
-                     ))}
                    </div>
                  </div>
-                 <div className="flex items-center justify-between border-t border-border/70 pt-2">
-                   <span className="text-sm font-medium text-muted-foreground">From</span>
-                   <span className="font-heading text-lg font-semibold text-foreground">
-                     {formatRupees(activity.priceInRupees)}
-                   </span>
-                 </div>
-               </div>
-             </Card>
+               </Card>
+             </Link>
             ))}
           </div>
         )}

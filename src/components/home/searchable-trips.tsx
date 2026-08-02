@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTripCardImage } from "@/lib/trip-card-image";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -73,44 +74,6 @@ function formatDateForDisplay(value: string) {
     month: "short",
     year: "numeric",
   }).format(parsed);
-}
-
-function getTripCardImage(activity: ActivityCardItem) {
-  const source = `${activity.title} ${activity.description}`.toLowerCase();
-
-  if (source.includes("ski") || source.includes("snow")) {
-    return "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("bike") || source.includes("cycling")) {
-    return "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("trek") || source.includes("hike") || source.includes("trail")) {
-    return "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("climb") || source.includes("summit") || source.includes("expedition")) {
-    return "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("rock") || source.includes("ice")) {
-    return "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("yoga")) {
-    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (source.includes("meditation")) {
-    return "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80";
-  }
-
-  if (activity.categories.includes("WOMEN_ONLY")) {
-    return "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=900&q=80";
-  }
-
-  return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80";
 }
 
 function getCalendarDays(viewDate: Date) {
@@ -920,10 +883,10 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               Radikal
             </p>
             <h4 className="mt-2 font-heading text-[clamp(1.2rem,2vw,2.1rem)] font-semibold tracking-wide text-foreground">
-              Plan your next Himalayan escape with confidence
+              Crafted for unforgettable Himalayan journeys
             </h4>
             <p className="mt-2 text-[clamp(0.8rem,1vw,1rem)] leading-6 text-muted-foreground">
-              Discover curated, small-group adventures with certified local guides, flexible custom itineraries, and meaningful travel designed around the Indian Himalayas.
+              Discover curated, small-group adventures with certified local guides, flexible custom itineraries, and meaningful sustainable travel designed around the Indian Himalayas.
             </p>
           </div>
 
@@ -952,7 +915,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border/60 pt-4 text-[clamp(0.7rem,0.85vw,0.85rem)] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Radikal. Crafted for unforgettable Himalayan journeys.</p>
+          <p>© 2026 Radikal</p>
           <div className="flex flex-wrap gap-3 sm:gap-4">
             <Link href="/trips" className="transition hover:text-foreground">
               Adventures

@@ -113,6 +113,31 @@ export async function updateActivityAction(formData: FormData) {
   if (slug !== currentActivity.slug) {
     revalidatePath(`/trips/${slug}`);
   }
+}
 
-  redirect("/admin/trips");
+export async function deleteActivityAction(activityId: string) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    redirect("/login?callbackUrl=/admin/trips");
+  }
+
+  if (!activityId) {
+    throw new Error("Missing activity id.");
+  }
+
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
+    select: { slug: true },
+  });
+
+  if (!activity) {
+    throw new Error("Activity not found.");
+  }
+
+  await prisma.activity.delete({ where: { id: activityId } });
+
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  revalidatePath(`/trips/${activity.slug}`);
 }
