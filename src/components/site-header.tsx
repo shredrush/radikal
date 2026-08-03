@@ -49,7 +49,7 @@ export async function SiteHeader() {
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"
-              className="h-13 w-13 rounded-full object-cover shadow-sm sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]"
+              className="h-13 w-13 rounded-xl object-contain sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]"
             />
             <p className="font-heading text-lg font-semibold uppercase tracking-[0.24em] text-foreground sm:text-xl md:text-2xl md:tracking-[0.3em]">
               Radikal
@@ -157,7 +157,7 @@ export async function SiteHeader() {
               <img
                 src="/radikal-logo.svg"
                 alt="Radikal logo"
-                className="h-14 w-14 rounded-full object-cover shadow-sm lg:h-16 lg:w-16"
+                className="h-14 w-14 rounded-xl object-contain lg:h-16 lg:w-16"
               />
               <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
                 Radikal
@@ -275,7 +275,7 @@ export async function SiteHeader() {
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"
-              className="h-14 w-14 rounded-full object-cover shadow-sm lg:h-16 lg:w-16"
+              className="h-14 w-14 rounded-xl object-contain lg:h-16 lg:w-16"
             />
             <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
               Radikal
