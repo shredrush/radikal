@@ -50,6 +50,26 @@ function createFallbackValue(methodName: string) {
   }
 }
 
+async function runWithRetry<T>(operation: () => Promise<T>, attempts = 2): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+
+      if (!isDatabaseUnavailableError(error) || attempt === attempts) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+
+  throw lastError;
+}
+
 function wrapWithFallback<T extends object>(target: T, fallbackSource: string): T {
   return new Proxy(target, {
     get(targetObject, property, receiver) {
@@ -57,20 +77,23 @@ function wrapWithFallback<T extends object>(target: T, fallbackSource: string): 
 
       if (typeof value === "function") {
         return (...args: unknown[]) => {
-          const result = (value as (...args: unknown[]) => unknown).apply(targetObject, args);
+          const invokeOperation = () => {
+            const result = (value as (...args: unknown[]) => unknown).apply(targetObject, args);
+            return Promise.resolve(result as Promise<unknown>);
+          };
 
-          if (result && typeof result === "object" && "then" in result && typeof (result as Promise<unknown>).then === "function") {
-            return (result as Promise<unknown>).catch((error: unknown) => {
+          return (async () => {
+            try {
+              return await runWithRetry(invokeOperation);
+            } catch (error) {
               if (isDatabaseUnavailableError(error)) {
                 console.warn(`[prisma] database unavailable while calling ${fallbackSource}.${String(property)}, using fallback values`);
                 return createFallbackValue(String(property));
               }
 
               throw error;
-            });
-          }
-
-          return result;
+            }
+          })();
         };
       }
 

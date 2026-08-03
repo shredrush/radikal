@@ -1,8 +1,8 @@
 function getDatabaseUrlCandidates() {
   const candidates = [
+    ["POSTGRES_URL", process.env.POSTGRES_URL],
     ["DIRECT_URL", process.env.DIRECT_URL],
     ["DATABASE_URL", process.env.DATABASE_URL],
-    ["POSTGRES_URL", process.env.POSTGRES_URL],
     ["POSTGRES_URL_NON_POOLING", process.env.POSTGRES_URL_NON_POOLING],
     ["POSTGRES_PRISMA_URL", process.env.POSTGRES_PRISMA_URL],
   ] as Array<[string, string | undefined]>;
@@ -26,12 +26,11 @@ function normalizeDatabaseUrl(rawUrl: string | undefined) {
 function applyDatabaseUrlDefaults(rawUrl: string) {
   try {
     const url = new URL(rawUrl);
+    const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
 
     const currentSslMode = url.searchParams.get("sslmode");
     if (!currentSslMode) {
-      url.searchParams.set("sslmode", "disable");
-    } else if (currentSslMode === "require") {
-      url.searchParams.set("sslmode", "disable");
+      url.searchParams.set("sslmode", isLocalhost ? "disable" : "require");
     }
 
     if (!url.searchParams.has("connect_timeout")) {
