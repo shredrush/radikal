@@ -780,7 +780,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 More than a booking platform — a home for guides
               </p>
-              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl lg:whitespace-nowrap">
+              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
                 Tours crafted by certified local guides, with a commitment to sustainable travel
               </h4>
             </div>
@@ -814,8 +814,10 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                         </Badge>
                       ))}
                     </div>
-                    <div className="mt-auto rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.5 py-0.75 text-center text-[clamp(0.6rem,0.64vw,0.64rem)] text-[#c2410c]">
-                      {guide.adventuresLed} adventures led
+                    <div className="mt-auto flex justify-center">
+                      <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.25 py-0.5 text-[clamp(0.55rem,0.62vw,0.62rem)] font-medium text-[#c2410c]">
+                        {guide.adventuresLed} adventures led
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
