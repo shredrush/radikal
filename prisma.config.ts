@@ -2,7 +2,9 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
-import { getDatabaseUrl } from "./src/lib/database-url";
+import { getDatabaseConnectionLogInfo, getDatabaseUrl } from "./src/lib/database-url";
+
+console.log("[prisma-config] database connection", getDatabaseConnectionLogInfo());
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
