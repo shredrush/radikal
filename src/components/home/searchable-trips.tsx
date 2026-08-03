@@ -335,13 +335,13 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
     >
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-1">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-          Find your adventure
+          Find your Himalayan adventure
         </h3>
         <p className="text-lg text-muted-foreground">
           Small groups with certified local guides
         </p>
         <div className="flex w-full max-w-5xl flex-col gap-2 p-1.5 sm:p-2">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.5fr] gap-2">
             {[
               { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },
               { id: "when", label: "When", icon: CalendarDays, description: getPanelSummary("when") },
@@ -360,14 +360,22 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                     isActive ? "border-[#1d4ed8] bg-[#1d4ed8]/8 shadow-sm" : "border-border/70 bg-background/80 hover:border-[#1d4ed8]/40"
                   }`}
                 >
-                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Icon className="size-3.5 text-[#1d4ed8]" />
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <Icon className="size-3.5 shrink-0 text-[#1d4ed8]" />
                     {item.label}
                   </span>
-                  <span className="text-xs text-muted-foreground">{item.description}</span>
+                  <span className="hidden text-xs text-muted-foreground sm:block">{item.description}</span>
                 </button>
               );
             })}
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="flex flex-col items-center justify-center gap-1 rounded-[0.95rem] border border-[#1d4ed8] bg-background/95 px-2 py-1.5 text-[#1d4ed8] transition hover:bg-background/100"
+            >
+              <Search className="size-4 shrink-0" />
+              <span className="hidden text-xs font-semibold sm:block">Search</span>
+            </button>
           </div>
 
           {activePanel ? (
@@ -561,18 +569,6 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               ) : null}
             </div>
           ) : null}
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full rounded-[0.95rem] border-[#1d4ed8] bg-background/95 px-3 py-1.5 text-[#1d4ed8] hover:bg-background/100 hover:text-[#1e40af] md:ml-auto md:w-auto"
-            onClick={handleSearch}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <Search className="h-3.5 w-3.5" />
-              <span className="text-sm">Search</span>
-            </span>
-          </Button>
         </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
@@ -706,20 +702,23 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
 
       <div className="border-b border-border/60 bg-[#f3f8ff] px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
          <div className="mx-auto max-w-7xl">
-           <div className="mb-3 flex items-center gap-2 px-1 sm:mb-4 sm:px-2">
-             <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
+           <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
+             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                Featured Trips
+             </p>
+             <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
+              Curated, small group, sustainable adventures with certified local guides
              </h4>
            </div>
            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-4">
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
-                className="flex h-[680px] min-w-0 cursor-pointer flex-col overflow-hidden rounded-[1.15rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)]"
+                className="flex h-[560px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1.15rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:h-[680px]"
                 onClick={() => window.location.href = `/trips/${activity.slug}`}
               >
                 <div
-                  className="relative -m-[1px] flex-[0_0_60%] min-h-[400px] bg-muted/60"
+                  className="relative -m-[1px] flex-[0_0_55%] min-h-[300px] bg-muted/60 sm:flex-[0_0_60%] sm:min-h-[400px]"
                   style={{
                     backgroundImage: `url(${getTripCardImage(activity)})`,
                     backgroundSize: "cover",
@@ -777,16 +776,13 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
  
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-7xl">
-            <div className="max-w-3xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Certified local guides
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                More than a booking platform — a home for guides
               </p>
-              <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-                Trusted guides for every ridge and valley
+              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl lg:whitespace-nowrap">
+                Tours crafted by certified local guides, with a commitment to sustainable travel
               </h4>
-              <p className="mt-3 text-base text-muted-foreground">
-                We partner with trusted local guides who are well versed with terrain.
-              </p>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -835,7 +831,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                 Travellers ❤️ Radikal Experiences
               </h4>
               <p className="mt-3 text-base text-muted-foreground">
-                Real stories from people who chose small-group adventures in the Himalayas.
+                Real stories from people who chose small-group sustainable adventures in the Himalayas.
               </p>
             </div>
 

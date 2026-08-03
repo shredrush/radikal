@@ -137,9 +137,9 @@ export default async function TripsPage({
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {filteredActivities.map((activity) => (
              <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-               <Card className="flex h-full min-h-[720px] flex-col overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1">
+               <Card className="flex h-full min-h-[600px] flex-col gap-0 overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[720px]">
                  <div
-                   className="relative -m-[1px] flex-[0_0_60%] min-h-[440px] bg-muted/60"
+                   className="relative -m-[1px] flex-[0_0_55%] min-h-[320px] bg-muted/60 sm:flex-[0_0_60%] sm:min-h-[440px]"
                    style={{
                      backgroundImage: `url(${getTripCardImage(activity)})`,
                      backgroundSize: "cover",
