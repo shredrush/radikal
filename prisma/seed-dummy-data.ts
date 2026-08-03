@@ -1,5 +1,6 @@
   import "dotenv/config";
   import bcrypt from "bcryptjs";
+  import { Pool } from "pg";
   import { PrismaClient } from "../src/generated/prisma/client";
   import { PrismaPg } from "@prisma/adapter-pg";
   import { getDatabaseUrl } from "../src/lib/database-url";
@@ -9,10 +10,13 @@
     databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
   );
 
-  const adapter = new PrismaPg({
-    connectionString: databaseUrl,
-    ...(shouldDisableTlsVerification ? { ssl: { rejectUnauthorized: false } } : {}),
+  const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   });
+  const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });
 
   function daysFromNow(days: number) {

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { Pool } from "pg";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { getDatabaseConnectionLogInfo, getDatabaseUrl } from "@/lib/database-url";
@@ -88,12 +89,14 @@ const shouldDisableTlsVerification = Boolean(
   databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
 );
 
-const adapter = databaseUrl
-  ? new PrismaPg({
-      connectionString: databaseUrl,
-      ...(shouldDisableTlsVerification ? { ssl: { rejectUnauthorized: false } } : {}),
-    })
-  : undefined;
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+const adapter = new PrismaPg(pool);
 const prismaClientOptions = (adapter ? { adapter } : {}) as ConstructorParameters<typeof PrismaClient>[0];
 const basePrisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 
