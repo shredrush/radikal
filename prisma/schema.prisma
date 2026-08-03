@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,9 +7,128 @@ datasource db {
   provider = "postgresql"
 }
 
-// ---------------------------------------------------------------------------
-// Enums
-// ---------------------------------------------------------------------------
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  image        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+  guide        Guide?
+  reviews      Review[]
+
+  @@map("users")
+}
+
+model Guide {
+  id              String          @id @default(cuid())
+  userId          String?         @unique
+  name            String
+  slug            String          @unique
+  bio             String
+  photo           String?
+  location        String
+  experienceYears Int             @default(0)
+  languages       String[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  activities      Activity[]
+  certifications  Certification[]
+  user            User?           @relation(fields: [userId], references: [id])
+  reviews         Review[]
+
+  @@map("guides")
+}
+
+model Certification {
+  id            String   @id @default(cuid())
+  guideId       String
+  issuingBody   String
+  title         String
+  yearIssued    Int?
+  credentialUrl String?
+  createdAt     DateTime @default(now())
+  guide         Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@map("certifications")
+}
+
+model Activity {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  type          ActivityType
+  categories    TripCategory[]
+  location      String
+  description   String
+  priceInRupees Int
+  durationDays  Int            @default(1)
+  difficulty    Difficulty     @default(MODERATE)
+  images        String[]
+  maxGroupSize  Int            @default(8)
+  isCustom      Boolean        @default(false)
+  guideId       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  guide         Guide?         @relation(fields: [guideId], references: [id])
+  bookings      Booking[]
+  reviews       Review[]
+  slots         Slot[]
+
+  @@map("activities")
+}
+
+model Slot {
+  id         String    @id @default(cuid())
+  activityId String
+  date       DateTime
+  capacity   Int
+  booked     Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  bookings   Booking[]
+  activity   Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@map("slots")
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  userId           String
+  activityId       String
+  slotId           String
+  status           BookingStatus @default(PENDING)
+  participantCount Int           @default(1)
+  totalPriceRupees Int
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  activity         Activity      @relation(fields: [activityId], references: [id])
+  slot             Slot          @relation(fields: [slotId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([slotId])
+  @@map("bookings")
+}
+
+model Review {
+  id         String    @id @default(cuid())
+  userId     String
+  activityId String?
+  guideId    String?
+  rating     Int
+  comment    String
+  createdAt  DateTime  @default(now())
+  activity   Activity? @relation(fields: [activityId], references: [id])
+  guide      Guide?    @relation(fields: [guideId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@map("reviews")
+}
 
 enum UserRole {
   USER
@@ -35,7 +149,6 @@ enum Difficulty {
   EXTREME
 }
 
-// Traveller-facing categories used to tag/filter trips.
 enum TripCategory {
   ADVENTURE_ENTHUSIAST
   WOMEN_ONLY
@@ -47,153 +160,8 @@ enum TripCategory {
   BEGINNER_FRIENDLY
 }
 
-// Booking status flow is strictly PENDING -> CONFIRMED -> CANCELLED.
-// A booking becomes CONFIRMED only after payment is confirmed
-// (Razorpay webhook in production; a dummy payment action for this MVP).
 enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
-}
-
-// ---------------------------------------------------------------------------
-// Models
-// ---------------------------------------------------------------------------
-
-model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole  @default(USER)
-  image        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  bookings Booking[]
-  reviews  Review[]
-  guide    Guide?
-
-  @@map("users")
-}
-
-// A certified local guide. Optionally linked to a User account so a guide
-// can log in and manage their own page in the future.
-model Guide {
-  id              String   @id @default(cuid())
-  userId          String?  @unique
-  name            String
-  slug            String   @unique
-  bio             String
-  photo           String?
-  location        String
-  experienceYears Int      @default(0)
-  languages       String[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user           User?           @relation(fields: [userId], references: [id])
-  certifications Certification[]
-  activities     Activity[]
-  reviews        Review[]
-
-  @@map("guides")
-}
-
-// Certifications by IMF (Indian Mountaineering Foundation) and other bodies.
-model Certification {
-  id            String   @id @default(cuid())
-  guideId       String
-  issuingBody   String // e.g. "Indian Mountaineering Foundation (IMF)", "ABVIMAS"
-  title         String
-  yearIssued    Int?
-  credentialUrl String?
-  createdAt     DateTime @default(now())
-
-  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
-
-  @@map("certifications")
-}
-
-// Treks are custom/configurable, not fixed packages — don't assume a trek
-// has a fixed itinerary. Price is stored in rupees (integer, no floats).
-model Activity {
-  id            String         @id @default(cuid())
-  slug          String         @unique
-  title         String
-  type          ActivityType
-  categories    TripCategory[]
-  location      String
-  description   String
-  priceInRupees Int
-  durationDays  Int            @default(1)
-  difficulty    Difficulty     @default(MODERATE)
-  images        String[]
-  maxGroupSize  Int            @default(8)
-  isCustom      Boolean        @default(false)
-  guideId       String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  guide    Guide?    @relation(fields: [guideId], references: [id])
-  slots    Slot[]
-  bookings Booking[]
-  reviews  Review[]
-
-  @@map("activities")
-}
-
-// A bookable date instance of an activity. Never let `booked` exceed
-// `capacity` — always check availability inside a transaction before
-// confirming a booking.
-model Slot {
-  id         String   @id @default(cuid())
-  activityId String
-  date       DateTime
-  capacity   Int
-  booked     Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  activity Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
-  bookings Booking[]
-
-  @@index([activityId])
-  @@map("slots")
-}
-
-model Booking {
-  id               String        @id @default(cuid())
-  userId           String
-  activityId       String
-  slotId           String
-  status           BookingStatus @default(PENDING)
-  participantCount Int           @default(1)
-  totalPriceRupees Int
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  user     User     @relation(fields: [userId], references: [id])
-  activity Activity @relation(fields: [activityId], references: [id])
-  slot     Slot     @relation(fields: [slotId], references: [id])
-
-  @@index([userId])
-  @@index([slotId])
-  @@map("bookings")
-}
-
-model Review {
-  id         String   @id @default(cuid())
-  userId     String
-  activityId String?
-  guideId    String?
-  rating     Int
-  comment    String
-  createdAt  DateTime @default(now())
-
-  user     User      @relation(fields: [userId], references: [id])
-  activity Activity? @relation(fields: [activityId], references: [id])
-  guide    Guide?    @relation(fields: [guideId], references: [id])
-
-  @@map("reviews")
 }

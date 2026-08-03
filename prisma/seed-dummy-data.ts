@@ -16,7 +16,7 @@
   async function main() {
     const demoPasswordHash = await bcrypt.hash("r11235", 10);
     const adminPasswordHash = await bcrypt.hash("r112358", 10);
-
+    console.log("DATABASE_URL:", process.env.DATABASE_URL);
     await prisma.user.upsert({
       where: { email: "demo@radikal.in" },
       update: {
