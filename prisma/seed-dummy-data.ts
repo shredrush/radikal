@@ -4,7 +4,15 @@
   import { PrismaPg } from "@prisma/adapter-pg";
   import { getDatabaseUrl } from "../src/lib/database-url";
 
-  const adapter = new PrismaPg({ connectionString: getDatabaseUrl() });
+  const databaseUrl = getDatabaseUrl();
+  const shouldDisableTlsVerification = Boolean(
+    databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
+  );
+
+  const adapter = new PrismaPg({
+    connectionString: databaseUrl,
+    ...(shouldDisableTlsVerification ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
   const prisma = new PrismaClient({ adapter });
 
   function daysFromNow(days: number) {

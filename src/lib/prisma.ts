@@ -83,7 +83,16 @@ function wrapWithFallback<T extends object>(target: T, fallbackSource: string): 
   }) as T;
 }
 
-const adapter = databaseUrl ? new PrismaPg({ connectionString: databaseUrl }) : undefined;
+const shouldDisableTlsVerification = Boolean(
+  databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
+);
+
+const adapter = databaseUrl
+  ? new PrismaPg({
+      connectionString: databaseUrl,
+      ...(shouldDisableTlsVerification ? { ssl: { rejectUnauthorized: false } } : {}),
+    })
+  : undefined;
 const prismaClientOptions = (adapter ? { adapter } : {}) as ConstructorParameters<typeof PrismaClient>[0];
 const basePrisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 

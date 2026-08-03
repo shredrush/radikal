@@ -27,8 +27,11 @@ function applyDatabaseUrlDefaults(rawUrl: string) {
   try {
     const url = new URL(rawUrl);
 
-    if (!url.searchParams.has("sslmode") && !url.hostname.includes("localhost") && !url.hostname.includes("127.0.0.1")) {
-      url.searchParams.set("sslmode", "require");
+    const currentSslMode = url.searchParams.get("sslmode");
+    if (!currentSslMode) {
+      url.searchParams.set("sslmode", "disable");
+    } else if (currentSslMode === "require") {
+      url.searchParams.set("sslmode", "disable");
     }
 
     if (!url.searchParams.has("connect_timeout")) {
@@ -69,7 +72,8 @@ export function getDatabaseConnectionLogInfo() {
   }
 
   try {
-    const url = new URL(rawUrl);
+    const normalizedUrl = applyDatabaseUrlDefaults(rawUrl);
+    const url = new URL(normalizedUrl);
     return {
       present: true,
       source,
