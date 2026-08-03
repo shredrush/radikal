@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   title: "Dashboard — Radikal",
 };
 
+export const dynamic = "force-dynamic";
+
 function formatRupees(amount: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

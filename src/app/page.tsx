@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const activities = await prisma.activity.findMany({
     include: { guide: true },

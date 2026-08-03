@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 
+export const dynamic = "force-dynamic";
+
 const sportOptions = [
   { value: "skiing", label: "Skiing", type: "SKI" },
   { value: "snowboarding", label: "Snowboarding", type: "SNOWBOARD" },

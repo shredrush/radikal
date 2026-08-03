@@ -12,6 +12,8 @@ import {
 import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
 
+export const dynamic = "force-dynamic";
+
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
   WOMEN_ONLY: "Women Only",

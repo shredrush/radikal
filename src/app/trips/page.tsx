@@ -11,6 +11,9 @@ import {
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
+
+export const dynamic = "force-dynamic";
+
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
   WOMEN_ONLY: "Women Only",
