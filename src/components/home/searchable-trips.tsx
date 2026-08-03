@@ -333,14 +333,14 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
       id="upcoming-trips"
       className="mx-auto flex w-full max-w-none flex-col gap-8 bg-white px-6 py-10 sm:px-8 sm:py-16"
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-1">
+      <div className="-mt-3 mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-1 sm:-mt-4">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
           Find your Himalayan adventure
         </h3>
         <p className="text-lg text-muted-foreground">
           Small groups with certified local guides
         </p>
-        <div className="flex w-full max-w-5xl flex-col gap-2 p-1.5 sm:p-2">
+        <div className="mt-1 flex w-full max-w-5xl flex-col gap-2 p-1.5 sm:mt-2 sm:p-2">
           <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.5fr] gap-2">
             {[
               { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },
