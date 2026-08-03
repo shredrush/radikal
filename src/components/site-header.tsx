@@ -88,7 +88,7 @@ export async function SiteHeader() {
               size="sm"
               className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
               nativeButton={false}
-              render={<Link href="/trips" />}
+              render={<Link href="/trips?sport=yoga" />}
             >
               Wellness Retreats
             </Button>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,36 @@ import {
 } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
 
-export const dynamic = "force-dynamic";
+// The filter UI (sport/travel style/location/date) is applied in memory below,
+// so every filter combination reuses this single cached query instead of
+// hitting Postgres on each click. `select` also trims the payload to only the
+// fields this page actually renders/filters on (the previous `include` pulled
+// every scalar column plus every slot row for every activity).
+const getTripsPageActivities = unstable_cache(
+  async () => {
+    return prisma.activity.findMany({
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        type: true,
+        categories: true,
+        location: true,
+        description: true,
+        priceInRupees: true,
+        durationDays: true,
+        difficulty: true,
+        guide: { select: { name: true } },
+        slots: { select: { date: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  },
+  ["trips-page-activities"],
+  // Admin create/update actions already call revalidatePath("/trips"), which
+  // invalidates this cache on-demand; `revalidate` is just a safety net.
+  { tags: ["trips"], revalidate: 300 },
+);
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -75,10 +105,7 @@ export default async function TripsPage({
   const selectedTravelStyle = normalizeTravelStyleFilter(travelStyle);
   const selectedLocation = normalizeLocationFilter(location);
 
-  const activities = await prisma.activity.findMany({
-    include: { guide: true, slots: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const activities = await getTripsPageActivities();
 
   const filteredActivities = activities.filter((activity) => {
     const locationMatch =
