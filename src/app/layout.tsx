@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
 const interSans = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -43,6 +44,7 @@ export default function RootLayout({
         <main className="flex flex-1 flex-col">{children}</main>
         <SiteFooterWrapper />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
