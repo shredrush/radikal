@@ -62,6 +62,7 @@ function wrapWithFallback<T extends object>(target: T, fallbackSource: string): 
           if (result && typeof result === "object" && "then" in result && typeof (result as Promise<unknown>).then === "function") {
             return (result as Promise<unknown>).catch((error: unknown) => {
               if (isDatabaseUnavailableError(error)) {
+                console.error(error);
                 console.warn(`[prisma] database unavailable while calling ${fallbackSource}.${String(property)}, using fallback values`);
                 return createFallbackValue(String(property));
               }
