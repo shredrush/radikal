@@ -700,7 +700,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
         </div>
       </div>
 
-      <div className="border-b border-border/60 bg-[#f3f8ff] px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
+      <div className="border-b border-border/60 bg-[linear-gradient(135deg,#f3f8ff_0%,#fff7ed_100%)] px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
          <div className="mx-auto max-w-7xl">
            <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
@@ -749,7 +749,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                     </div>
                   </div>
                   <div className="mt-auto flex justify-end">
-                    <span className="rounded-full border border-border/70 bg-transparent px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-foreground/90">
+                    <span className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-[#c2410c]">
                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                     </span>
                   </div>
@@ -814,7 +814,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                         </Badge>
                       ))}
                     </div>
-                    <div className="mt-auto rounded-full border border-border px-1.5 py-0.75 text-center text-[clamp(0.6rem,0.64vw,0.64rem)] text-muted-foreground">
+                    <div className="mt-auto rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.5 py-0.75 text-center text-[clamp(0.6rem,0.64vw,0.64rem)] text-[#c2410c]">
                       {guide.adventuresLed} adventures led
                     </div>
                   </CardContent>

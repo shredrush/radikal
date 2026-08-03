@@ -11,7 +11,7 @@ const interSans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
-  title: "Radikal — Adventure sports in the Indian Himalayas",
+  title: "Radikal",
   description:
     "Small-group skiing, snowboarding, cycling and trekking trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
   icons: {

@@ -120,7 +120,7 @@ export default async function TripsPage({
   });
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
+    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
         <TripsFilterBar
           selectedSport={selectedSport}
@@ -161,7 +161,7 @@ export default async function TripsPage({
                        <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
                          {activity.location}
                        </span>
-                       <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
+                       <span className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-2 py-1 text-[0.65rem] font-medium text-[#c2410c]">
                          {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                        </span>
                        {activity.categories.map((category) => (

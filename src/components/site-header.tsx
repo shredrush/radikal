@@ -49,14 +49,23 @@ export async function SiteHeader() {
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"
-              className="h-8 w-8 rounded-full object-cover shadow-sm sm:h-10 sm:w-10 md:h-12 md:w-12"
+              className="h-13 w-13 rounded-full object-cover shadow-sm sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]"
             />
-            <p className="font-heading text-base font-semibold uppercase tracking-[0.24em] text-foreground sm:text-lg md:text-xl md:tracking-[0.3em]">
+            <p className="font-heading text-lg font-semibold uppercase tracking-[0.24em] text-foreground sm:text-xl md:text-2xl md:tracking-[0.3em]">
               Radikal
             </p>
           </Link>
 
-          <div className="md:hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+            <Button
+              variant="ghost"
+              size="xs"
+              className="h-8 rounded-full px-2 text-[10px] font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+              nativeButton={false}
+              render={<Link href="/login" />}
+            >
+              Become a Guide
+            </Button>
             {session?.user ? (
               <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-[#1d4ed8]">
                 <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
@@ -74,28 +83,62 @@ export async function SiteHeader() {
           </div>
         </div>
 
-        <div className="mt-1.5 flex flex-col gap-1.5 md:hidden">
-          <div className="grid grid-cols-2 gap-1.5">
-            <Button
-              variant="ghost"
-              size="xs"
-              className="h-8 rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
-              nativeButton={false}
-              render={<Link href="/trips" />}
-            >
-              Adventure Sports
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              className="h-8 rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
-              nativeButton={false}
-              render={<Link href="/trips?sport=yoga" />}
-            >
-              Wellness Retreats
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
+        <div className="mt-1.5 md:hidden">
+          <nav className="grid grid-cols-3 gap-1 sm:gap-1.5">
+            <div className="group relative">
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                nativeButton={false}
+                render={<Link href="/trips" />}
+              >
+                Adventure Sports
+              </Button>
+              <div className="invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="grid gap-4">
+                  {sportGroups.map((group) => (
+                    <div key={group.heading} className="space-y-2">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {group.items.map((item) => (
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="group relative">
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                nativeButton={false}
+                render={<Link href="/trips?sport=yoga" />}
+              >
+                Wellness Retreats
+              </Button>
+              <div className="invisible absolute left-1/2 top-full z-50 mt-2 w-[min(92vw,260px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="space-y-2">
+                  {wellnessGroups.map((group) => (
+                    <div key={group.heading} className="space-y-2">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {group.items.map((item) => (
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="xs"
@@ -105,26 +148,136 @@ export async function SiteHeader() {
             >
               Community
             </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              className="h-8 rounded-full px-2 text-[10px] font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
-              nativeButton={false}
-              render={<Link href="/login" />}
-            >
-              Become a Guide
-            </Button>
-          </div>
+          </nav>
         </div>
 
-        <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 md:grid">
+        <div className="hidden md:flex md:flex-col md:gap-2 xl:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
+              <img
+                src="/radikal-logo.svg"
+                alt="Radikal logo"
+                className="h-14 w-14 rounded-full object-cover shadow-sm lg:h-16 lg:w-16"
+              />
+              <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
+                Radikal
+              </p>
+            </Link>
+
+            <div className="flex shrink-0 items-center gap-1.5 lg:gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8] sm:px-5"
+                nativeButton={false}
+                render={<Link href="/login" />}
+              >
+                Become a Guide
+              </Button>
+              {session?.user ? (
+                <div className="group relative">
+                  <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-[#1d4ed8]">
+                    <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                  </Link>
+                  <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                    <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                      Profile
+                    </Link>
+                    <form action={logoutAction}>
+                      <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                        Logout
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  className="min-w-[96px] rounded-full px-4 py-2.5 text-sm font-semibold sm:min-w-[112px]"
+                  nativeButton={false}
+                  render={<Link href="/login" />}
+                >
+                  Login
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <nav className="flex items-center justify-center gap-2 lg:gap-3">
+            <div className="group relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                nativeButton={false}
+                render={<Link href="/trips" />}
+              >
+                Adventure Sports
+              </Button>
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,640px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="grid gap-4 md:grid-cols-3">
+                  {sportGroups.map((group) => (
+                    <div key={group.heading} className="space-y-2">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {group.items.map((item) => (
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="group relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                nativeButton={false}
+                render={<Link href="/trips?sport=yoga" />}
+              >
+                Wellness Retreats
+              </Button>
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,260px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="space-y-2">
+                  {wellnessGroups.map((group) => (
+                    <div key={group.heading} className="space-y-2">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {group.items.map((item) => (
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+              nativeButton={false}
+              render={<Link href="/community" />}
+            >
+              Community
+            </Button>
+          </nav>
+        </div>
+
+        <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
           <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"
-              className="h-9 w-9 rounded-full object-cover shadow-sm lg:h-10 lg:w-10"
+              className="h-14 w-14 rounded-full object-cover shadow-sm lg:h-16 lg:w-16"
             />
-            <p className="font-heading text-lg font-semibold uppercase tracking-[0.24em] text-foreground lg:tracking-[0.3em]">
+            <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
               Radikal
             </p>
           </Link>
