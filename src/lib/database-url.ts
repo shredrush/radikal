@@ -30,7 +30,7 @@ function applyDatabaseUrlDefaults(rawUrl: string) {
     if (!currentSslMode) {
       url.searchParams.set("sslmode", "disable");
     } else if (currentSslMode === "require") {
-      url.searchParams.set("sslmode", "disable");
+      url.searchParams.set("sslmode", "require");
     }
 
     if (!url.searchParams.has("connect_timeout")) {
