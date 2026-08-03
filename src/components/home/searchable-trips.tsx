@@ -655,7 +655,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               Travel styles
             </p>
           </div>
-          <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid w-full grid-cols-3 gap-3 lg:grid-cols-6">
             {[
             {
               title: "Beginner Friendly",
