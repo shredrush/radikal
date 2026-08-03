@@ -7,8 +7,21 @@ function getDatabaseUrlCandidates() {
   ].filter(Boolean) as string[];
 }
 
+function normalizeDatabaseUrl(rawUrl: string | undefined) {
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  const trimmed = rawUrl.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
 export function getDatabaseUrl() {
-  const rawUrl = getDatabaseUrlCandidates()[0];
+  const rawUrl = normalizeDatabaseUrl(getDatabaseUrlCandidates()[0]);
   if (!rawUrl) {
     return undefined;
   }
@@ -28,7 +41,7 @@ export function getDatabaseUrl() {
 
 export function getDatabaseConnectionLogInfo() {
   const candidates = getDatabaseUrlCandidates();
-  const rawUrl = candidates[0];
+  const rawUrl = normalizeDatabaseUrl(candidates[0]);
 
   if (!rawUrl) {
     return {
