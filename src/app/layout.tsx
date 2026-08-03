@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Manrope, Source_Serif_4 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
@@ -43,6 +44,7 @@ export default function RootLayout({
         <main className="flex flex-1 flex-col">{children}</main>
         <SiteFooterWrapper />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
