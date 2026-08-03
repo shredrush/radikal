@@ -117,7 +117,7 @@ export async function SiteHeader() {
           </div>
         </div>
 
-        <div className="hidden items-center justify-between gap-3 md:flex">
+        <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 md:grid">
           <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
             <img
               src="/radikal-logo.svg"
@@ -129,7 +129,7 @@ export async function SiteHeader() {
             </p>
           </Link>
 
-          <nav className="flex flex-nowrap items-center justify-center gap-1.5 lg:gap-2">
+          <nav className="mx-auto flex flex-nowrap items-center justify-center gap-1.5 lg:gap-2">
             <div className="group relative">
               <Button
                 variant="ghost"
@@ -195,7 +195,7 @@ export async function SiteHeader() {
             </Button>
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 lg:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 lg:gap-2">
             <Button
               variant="ghost"
               size="sm"
