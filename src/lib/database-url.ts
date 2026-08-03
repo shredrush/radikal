@@ -1,10 +1,13 @@
 function getDatabaseUrlCandidates() {
-  return [
-    process.env.DATABASE_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.DIRECT_URL,
-  ].filter(Boolean) as string[];
+  const candidates = [
+    ["DIRECT_URL", process.env.DIRECT_URL],
+    ["POSTGRES_URL_NON_POOLING", process.env.POSTGRES_URL_NON_POOLING],
+    ["POSTGRES_URL", process.env.POSTGRES_URL],
+    ["DATABASE_URL", process.env.DATABASE_URL],
+    ["POSTGRES_PRISMA_URL", process.env.POSTGRES_PRISMA_URL],
+  ] as Array<[string, string | undefined]>;
+
+  return candidates.filter(([, value]) => Boolean(value)) as Array<[string, string]>;
 }
 
 function normalizeDatabaseUrl(rawUrl: string | undefined) {
@@ -20,17 +23,16 @@ function normalizeDatabaseUrl(rawUrl: string | undefined) {
   return trimmed;
 }
 
-export function getDatabaseUrl() {
-  const rawUrl = normalizeDatabaseUrl(getDatabaseUrlCandidates()[0]);
-  if (!rawUrl) {
-    return undefined;
-  }
-
+function applyDatabaseUrlDefaults(rawUrl: string) {
   try {
     const url = new URL(rawUrl);
 
     if (!url.searchParams.has("sslmode") && !url.hostname.includes("localhost") && !url.hostname.includes("127.0.0.1")) {
       url.searchParams.set("sslmode", "require");
+    }
+
+    if (!url.searchParams.has("connect_timeout")) {
+      url.searchParams.set("connect_timeout", "10");
     }
 
     return url.toString();
@@ -39,9 +41,21 @@ export function getDatabaseUrl() {
   }
 }
 
+export function getDatabaseUrl() {
+  const candidate = getDatabaseUrlCandidates()[0];
+  const rawUrl = normalizeDatabaseUrl(candidate?.[1]);
+
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  return applyDatabaseUrlDefaults(rawUrl);
+}
+
 export function getDatabaseConnectionLogInfo() {
   const candidates = getDatabaseUrlCandidates();
-  const rawUrl = normalizeDatabaseUrl(candidates[0]);
+  const [source, rawValue] = candidates[0] || [null, undefined];
+  const rawUrl = normalizeDatabaseUrl(rawValue);
 
   if (!rawUrl) {
     return {
@@ -58,7 +72,7 @@ export function getDatabaseConnectionLogInfo() {
     const url = new URL(rawUrl);
     return {
       present: true,
-      source: "DATABASE_URL",
+      source,
       host: url.hostname,
       port: url.port || (url.protocol === "postgres:" ? "5432" : null),
       database: url.pathname.replace(/^\//, "") || null,
@@ -67,7 +81,7 @@ export function getDatabaseConnectionLogInfo() {
   } catch {
     return {
       present: true,
-      source: "DATABASE_URL",
+      source,
       host: rawUrl,
       port: null,
       database: null,
