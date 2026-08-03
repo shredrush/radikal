@@ -8,7 +8,7 @@ export function SiteFooter() {
           <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.3em] text-white/80">
             Radikal
           </p>
-          <h4 className="mt-1 max-w-[560px] whitespace-nowrap font-heading text-[clamp(1rem,1.8vw,2.1rem)] font-semibold tracking-wide text-white">
+          <h4 className="mt-1 max-w-[560px] whitespace-normal font-heading text-[clamp(0.95rem,3.8vw,2.1rem)] font-semibold leading-tight tracking-wide text-white">
             Crafted in the Himalayas for unforgettable experiences
           </h4>
           <p className="mt-2 text-[clamp(0.8rem,1vw,1rem)] leading-6 text-white/80">
@@ -17,7 +17,7 @@ export function SiteFooter() {
         </div>
 
         <div className="flex w-full max-w-[320px] flex-shrink-0 justify-start lg:ml-10 lg:justify-end">
-          <div className="w-full max-w-[180px] space-y-2 text-left lg:text-right">
+          <div className="w-full max-w-full space-y-2 text-left lg:max-w-[180px] lg:text-right">
             <p className="text-[clamp(0.7rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-white/80">Explore</p>
             <div className="flex flex-col gap-1.5 text-[clamp(0.8rem,0.95vw,0.95rem)] text-white/80">
               <Link href="/" className="transition hover:text-white">

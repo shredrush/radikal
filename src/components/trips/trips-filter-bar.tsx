@@ -49,7 +49,7 @@ export function TripsFilterBar({
       <div className="flex flex-col gap-3">
         <div className="flex min-w-0 flex-col gap-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Sport</p>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             {SPORT_FILTERS.map((filter) => {
              const isActive = normalizedSelectedSports.includes(filter.id) || (filter.id === "all" && normalizedSelectedSports.length === 0);
 
@@ -62,11 +62,11 @@ export function TripsFilterBar({
                   onClick={() => handleSelectFilter("sport", filter.id)}
                   className={
                     isActive
-                      ? "h-7 bg-[#1d4ed8] px-2.5 text-[10px] text-white hover:bg-[#1e40af]"
-                      : "h-7 px-2.5 text-[10px]"
+                      ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 bg-[#1d4ed8] text-white hover:bg-[#1e40af]"
+                      : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
                   }
                 >
-                  {filter.label}
+                  <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
                 </Button>
               );
             })}
@@ -75,7 +75,7 @@ export function TripsFilterBar({
 
         <div className="flex min-w-0 flex-col gap-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Travel Style</p>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             {TRAVEL_STYLE_FILTERS.map((filter) => {
               const isActive = selectedTravelStyles.includes(filter.id) || (filter.id === "all" && selectedTravelStyles.length === 0);
 
@@ -88,11 +88,11 @@ export function TripsFilterBar({
                   onClick={() => handleSelectFilter("travelStyle", filter.id)}
                   className={
                     isActive
-                      ? "h-7 bg-[#1d4ed8] px-2.5 text-[10px] text-white hover:bg-[#1e40af]"
-                      : "h-7 px-2.5 text-[10px]"
+                      ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 text-white bg-[#1d4ed8] hover:bg-[#1e40af]"
+                      : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
                   }
                 >
-                  {filter.label}
+                  <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
                 </Button>
               );
             })}

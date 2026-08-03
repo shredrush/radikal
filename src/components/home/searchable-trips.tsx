@@ -341,7 +341,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
           Small groups with certified local guides
         </p>
         <div className="flex w-full max-w-5xl flex-col gap-2 p-1.5 sm:p-2">
-          <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {[
               { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },
               { id: "when", label: "When", icon: CalendarDays, description: getPanelSummary("when") },
@@ -368,18 +368,6 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                 </button>
               );
             })}
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-full rounded-[0.95rem] border-[#1d4ed8] bg-background/95 px-3 py-1.5 text-[#1d4ed8] hover:bg-background/100 hover:text-[#1e40af]"
-              onClick={handleSearch}
-            >
-              <span className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5" />
-                <span className="text-sm">Search</span>
-              </span>
-            </Button>
           </div>
 
           {activePanel ? (
@@ -387,7 +375,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               {activePanel === "what" ? (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-foreground">Choose one or more sports</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {SPORT_OPTIONS.map((sport) => {
                       const isSelected = selectedSports.includes(sport.id);
 
@@ -396,12 +384,12 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                           key={sport.id}
                           type="button"
                           onClick={() => toggleSelection(sport.id, selectedSports, setSelectedSports)}
-                          className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
+                          className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
                             isSelected ? "border-[#1d4ed8] bg-[#1d4ed8] text-white" : "border-border/70 bg-background text-foreground"
                           }`}
                         >
                           {isSelected ? <Check className="size-3.5" /> : null}
-                          {sport.label}
+                          <span className="min-w-0 break-words whitespace-normal leading-5">{sport.label}</span>
                         </button>
                       );
                     })}
@@ -531,7 +519,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               {activePanel === "who" ? (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-foreground">Choose one or more travel styles</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {TRAVEL_STYLE_OPTIONS.map((style) => {
                       const isSelected = selectedTravelStyles.includes(style.id);
 
@@ -540,12 +528,12 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                           key={style.id}
                           type="button"
                           onClick={() => toggleSelection(style.id, selectedTravelStyles, setSelectedTravelStyles)}
-                          className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
+                          className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
                             isSelected ? "border-[#1d4ed8] bg-[#1d4ed8] text-white" : "border-border/70 bg-background text-foreground"
                           }`}
                         >
                           {isSelected ? <Check className="size-3.5" /> : null}
-                          {style.label}
+                          <span className="min-w-0 break-words whitespace-normal leading-5">{style.label}</span>
                         </button>
                       );
                     })}
@@ -573,6 +561,18 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               ) : null}
             </div>
           ) : null}
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full rounded-[0.95rem] border-[#1d4ed8] bg-background/95 px-3 py-1.5 text-[#1d4ed8] hover:bg-background/100 hover:text-[#1e40af] md:ml-auto md:w-auto"
+            onClick={handleSearch}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Search className="h-3.5 w-3.5" />
+              <span className="text-sm">Search</span>
+            </span>
+          </Button>
         </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
@@ -655,7 +655,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               Travel styles
             </p>
           </div>
-          <div className="flex w-full flex-wrap items-stretch gap-3">
+          <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {[
             {
               title: "Beginner Friendly",
@@ -691,7 +691,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               <Link
                 key={item.title}
                 href="/trips"
-                className="relative flex min-h-[160px] flex-1 basis-[calc(16.666%-0.75rem)] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
+                className="relative flex min-h-[160px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
                 style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
               >
                 <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
@@ -711,7 +711,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                Featured Trips
              </h4>
            </div>
-           <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-4">
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
@@ -739,7 +739,11 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                         {activity.location}
                       </span> */}
                       {activity.categories.map((category) => (
-                        <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[clamp(0.7rem,0.85vw,0.8rem)] font-medium text-foreground/80">
+                        <Badge
+                          key={category}
+                          variant="secondary"
+                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-1.5 py-0.75 text-center text-[clamp(0.62rem,0.78vw,0.72rem)] leading-4 font-medium text-foreground/80"
+                        >
                           {CATEGORY_LABELS[category] ?? category}
                         </Badge>
                       ))}
@@ -785,7 +789,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               </p>
             </div>
 
-            <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(0,1fr))] gap-2">
+            <div className="mt-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {guideProfiles.map((guide) => (
                 <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] border border-border/70 bg-card/95 shadow-[0_12px_32px_-22px_rgba(0,0,0,0.18)]">
                   <CardHeader className="gap-1.5 p-2">
@@ -835,7 +839,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               </p>
             </div>
 
-            <div className="mt-8 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-8 !grid !w-full !grid-cols-2 !gap-2 lg:!grid-cols-4">
               {testimonials.map((testimonial) => (
                 <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-border/70 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.18)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
                   <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">

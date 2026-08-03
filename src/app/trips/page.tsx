@@ -134,7 +134,7 @@ export default async function TripsPage({
             No trips match this sport yet. Try another filter.
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {filteredActivities.map((activity) => (
              <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
                <Card className="flex h-full min-h-[720px] flex-col overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 gap-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1">
