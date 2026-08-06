@@ -45,7 +45,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
       <div className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-4 lg:px-8">
         <div className="flex items-center justify-between md:hidden">
-          <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
+          <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"
@@ -153,7 +153,7 @@ export async function SiteHeader() {
 
         <div className="hidden md:flex md:flex-col md:gap-2 xl:hidden">
           <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
+            <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
               <img
                 src="/radikal-logo.svg"
                 alt="Radikal logo"
@@ -271,7 +271,7 @@ export async function SiteHeader() {
         </div>
 
         <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
-          <Link href="/" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
+          <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
             <img
               src="/radikal-logo.svg"
               alt="Radikal logo"

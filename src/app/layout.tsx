@@ -41,7 +41,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SiteHeader />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main id="top" className="flex flex-1 flex-col">
+          {children}
+        </main>
         <SiteFooterWrapper />
         <Toaster />
         <Analytics />
