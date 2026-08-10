@@ -730,12 +730,12 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               <Link
                 key={item.title}
                 href="/trips"
-                className="relative flex min-h-[160px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
+                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
                 style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
               >
                 <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-                <div className="relative z-10 flex w-full items-end p-3">
-                  <p className="text-lg font-semibold text-white">{item.title}</p>
+                <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
+                  <p className="text-[clamp(0.7rem,1.8vw,1rem)] font-semibold leading-4 text-white sm:text-lg">{item.title}</p>
                 </div>
               </Link>
             ))}
@@ -753,37 +753,34 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               Curated, small group, sustainable adventures with certified local guides
              </h4>
            </div>
-           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-4">
+           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-3">
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
-                className="flex h-[560px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1.15rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:h-[680px]"
+                className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border-0 bg-background/95 py-0 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.28)] sm:h-[480px]"
                 onClick={() => window.location.href = `/trips/${activity.slug}`}
               >
                 <div
-                  className="relative -m-[1px] flex-[0_0_55%] min-h-[300px] bg-muted/60 sm:flex-[0_0_60%] sm:min-h-[400px]"
+                  className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]"
                   style={{
-                    backgroundImage: `url(${getTripCardImage(activity)})`,
+                    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.24) 100%), url(${getTripCardImage(activity)})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
                 </div>
-                <div className="flex flex-1 flex-col justify-between gap-1 p-3 sm:p-3.5">
+                <div className="flex flex-1 flex-col justify-between gap-1 p-2.5 sm:p-3">
                   <div className="space-y-1.5">
                     <div className="space-y-1">
-                      <h2 className="text-[clamp(0.95rem,1.2vw,1.15rem)] font-semibold leading-6 text-foreground">{activity.title}</h2>
-                      <p>{activity.location}</p>
+                      <h2 className="text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground">{activity.title}</h2>
+                      <p className="text-sm text-muted-foreground">{activity.location}</p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {/* <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[clamp(0.7rem,0.85vw,0.8rem)] font-medium text-foreground/80">
-                        {activity.location}
-                      </span> */}
+                    <div className="flex min-h-[1.35rem] flex-wrap content-start gap-1">
                       {activity.categories.map((category) => (
                         <Badge
                           key={category}
                           variant="secondary"
-                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-1.5 py-0.75 text-center text-[clamp(0.62rem,0.78vw,0.72rem)] leading-4 font-medium text-foreground/80"
+                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-center text-[0.42rem] leading-3 font-medium text-foreground/80 sm:text-[0.5rem]"
                         >
                           {CATEGORY_LABELS[category] ?? category}
                         </Badge>
@@ -791,7 +788,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                     </div>
                   </div>
                   <div className="mt-auto flex justify-end">
-                    <span className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-foreground/80">
+                    <span className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                     </span>
                   </div>

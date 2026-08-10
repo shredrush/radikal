@@ -191,15 +191,15 @@ export default async function TripsPage({
                                 <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
                                 <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
                               </div>
-                              <div className="mt-1 flex min-h-[1.75rem] flex-wrap content-start gap-1">
+                              <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                 {activity.categories.map((category) => (
-                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                                     {CATEGORY_LABELS[category] ?? category}
                                   </Badge>
                                 ))}
                               </div>
                               <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                                   {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                 </span>
                                 <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
@@ -256,15 +256,15 @@ export default async function TripsPage({
                                     <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
                                     <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
                                   </div>
-                                  <div className="mt-1 flex min-h-[1.75rem] flex-wrap content-start gap-1">
+                                  <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                     {activity.categories.map((category) => (
-                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                                         {CATEGORY_LABELS[category] ?? category}
                                       </Badge>
                                     ))}
                                   </div>
                                   <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                     </span>
                                     <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
