@@ -45,3 +45,4 @@ yarn-error.log*
 copilot-instructions.md
 
 /src/generated/prisma
+/prisma/migrations/

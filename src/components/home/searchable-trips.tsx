@@ -383,8 +383,8 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
         <p className="text-lg text-muted-foreground">
           Small groups with certified local guides
         </p>
-        <div className="mt-1 flex w-full max-w-5xl flex-col gap-2 p-1.5 sm:mt-2 sm:p-2">
-          <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.5fr] gap-2">
+        <div className="mt-1 flex w-full max-w-5xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
+          <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
             {[
               { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },
               { id: "when", label: "When", icon: CalendarDays, description: getPanelSummary("when") },
@@ -399,25 +399,25 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                   key={item.id}
                   type="button"
                   onClick={() => setActivePanel(isActive ? null : (item.id as FilterPanel))}
-                  className={`flex flex-col items-start gap-1 rounded-[0.95rem] border px-2.5 py-1.5 text-left transition ${
+                  className={`flex min-w-[calc(50%-0.375rem)] flex-1 flex-col items-start gap-0.5 rounded-[0.9rem] border px-1.5 py-1.25 text-left transition sm:min-w-0 sm:flex-[1_1_0%] sm:px-2.5 sm:py-1.5 ${
                     isActive ? "border-[#1d4ed8] bg-[#1d4ed8]/8 shadow-sm" : "border-border/70 bg-background/80 hover:border-[#1d4ed8]/40"
                   }`}
                 >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <Icon className="size-3.5 shrink-0 text-[#1d4ed8]" />
+                  <span className="flex items-center gap-1 text-[0.72rem] font-semibold text-foreground sm:text-sm">
+                    <Icon className="size-3 shrink-0 text-[#1d4ed8] sm:size-3.5" />
                     {item.label}
                   </span>
-                  <span className="hidden text-xs text-muted-foreground sm:block">{item.description}</span>
+                  <span className="hidden text-[0.65rem] text-muted-foreground sm:block sm:text-xs">{item.description}</span>
                 </button>
               );
             })}
             <button
               type="button"
               onClick={handleSearch}
-              className="flex flex-col items-center justify-center gap-1 rounded-[0.95rem] border border-[#1d4ed8] bg-background/95 px-2 py-1.5 text-[#1d4ed8] transition hover:bg-background/100"
+              className="flex min-w-[calc(50%-0.375rem)] flex-1 items-center justify-center gap-1 rounded-[0.9rem] border border-[#1d4ed8] bg-background/95 px-1.25 py-1 text-[#1d4ed8] transition hover:bg-background/100 sm:min-w-0 sm:flex-[0_0_auto] sm:px-2 sm:py-1.5"
             >
-              <Search className="size-4 shrink-0" />
-              <span className="hidden text-xs font-semibold sm:block">Search</span>
+              <Search className="size-3.5 shrink-0 sm:size-4" />
+              <span className="text-[0.72rem] font-semibold sm:text-xs">Search</span>
             </button>
           </div>
 
@@ -815,46 +815,46 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
  
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-7xl">
-            <div className="mb-6">
+            <div className="mb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 More than a booking platform — a home for guides
               </p>
-              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
+              <h4 className="mt-1 font-heading text-xl font-semibold tracking-wide text-foreground sm:text-2xl">
                 Tours crafted by certified local guides, with a commitment to sustainable travel
               </h4>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {guideProfiles.map((guide) => (
-                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] border border-border/70 bg-card/95 shadow-[0_12px_32px_-22px_rgba(0,0,0,0.18)]">
-                  <CardHeader className="gap-1.5 p-2">
+                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)]">
+                  <CardHeader className="gap-1 p-1.5">
                     <div className="flex flex-col items-center gap-1.5 text-center">
                       <img
                         src={guide.image}
                         alt={guide.name}
-                        className="h-24 w-full rounded-[0.75rem] object-cover shadow-sm sm:h-28 lg:h-30"
+                        className="h-20 w-full rounded-[0.7rem] object-cover shadow-sm sm:h-24 lg:h-24"
                       />
                       <div className="w-full">
                         <div className="flex items-center justify-center gap-1">
-                          <CardTitle className="text-[clamp(0.72rem,0.8vw,0.82rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                          <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white" aria-label="Verified guide">
+                          <CardTitle className="text-[clamp(0.68rem,0.75vw,0.78rem)] leading-4 text-foreground">{guide.name}</CardTitle>
+                          <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-emerald-600 text-[7px] font-bold text-white" aria-label="Verified guide">
                             ✓
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[clamp(0.62rem,0.7vw,0.7rem)] text-muted-foreground">{guide.region}</p>
+                        <p className="mt-0.5 text-[clamp(0.58rem,0.64vw,0.66rem)] text-muted-foreground">{guide.region}</p>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col gap-1.5 p-2 pt-0">
+                  <CardContent className="flex flex-1 flex-col gap-1 p-1.5 pt-0">
                     <div className="flex flex-wrap justify-center gap-1">
                       {guide.certifications.map((certification) => (
-                        <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.5 text-[clamp(0.55rem,0.62vw,0.62rem)] font-medium text-foreground/90">
+                        <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1 py-0.35 text-[clamp(0.5rem,0.56vw,0.58rem)] font-medium text-foreground/90">
                           {certification}
                         </Badge>
                       ))}
                     </div>
                     <div className="mt-auto flex justify-center">
-                      <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.25 py-0.5 text-[clamp(0.55rem,0.62vw,0.62rem)] font-medium text-[#c2410c]">
+                      <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1 py-0.35 text-[clamp(0.5rem,0.56vw,0.58rem)] font-medium text-[#c2410c]">
                         {guide.adventuresLed} adventures led
                       </div>
                     </div>
