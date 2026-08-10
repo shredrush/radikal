@@ -3,63 +3,49 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
+import { AdminTripForm } from "@/components/admin/admin-trip-form";
 
 export const dynamic = "force-dynamic";
 
-const sportOptions = [
-  { value: "skiing", label: "Skiing", type: "SKI" },
-  { value: "snowboarding", label: "Snowboarding", type: "SNOWBOARD" },
-  { value: "cycling", label: "Cycling", type: "BIKE" },
-  { value: "hiking-trekking", label: "Hiking and Trekking", type: "TREK" },
-  { value: "expedition", label: "Expedition", type: "TREK" },
-  { value: "rock-climbing", label: "Rock Climbing", type: "TREK" },
-  { value: "yoga-meditation", label: "Yoga and Meditation", type: "TREK" },
+const ACTIVITY_TYPE_OPTIONS = [
+  { value: "TREK", label: "Hiking & Trekking" },
+  { value: "BIKE", label: "Cycling" },
+  { value: "SNOWBOARD", label: "Snowboarding" },
+  { value: "SKI", label: "Skiing" },
+  { value: "ROCKCLIMB", label: "Rock Climbing" },
+  { value: "EXPEDITION", label: "Summit Expedition" },
+  { value: "YOGA", label: "Yoga & Meditation" },
 ] as const;
-const tripCategories = [
+
+const TRIP_CATEGORY_OPTIONS = [
   "ADVENTURE_ENTHUSIAST",
   "WOMEN_ONLY",
   "CORPORATE",
   "LUXURY",
-  "FOR_FAMILY",
-  "COURSES",
+  "FAMILY",
+  "COURSE",
   "SELF_GUIDED",
   "BEGINNER_FRIENDLY",
 ] as const;
 
-const inputClassName =
-  "flex h-10 w-full min-w-0 rounded-none border border-transparent border-b-input bg-transparent px-0 py-1 text-base outline-none transition-[color,border-color] file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-b-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-b-destructive md:text-sm dark:aria-invalid:border-b-destructive/50";
+const TRIP_CATEGORY_LABELS: Record<string, string> = {
+  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
+  WOMEN_ONLY: "Women Only",
+  CORPORATE: "Corporate",
+  LUXURY: "Luxury",
+  FAMILY: "For Family",
+  COURSE: "Courses",
+  SELF_GUIDED: "Self Guided",
+  BEGINNER_FRIENDLY: "Beginner Friendly",
+};
 
-function getSportValue(activity: { type: string; title: string; description: string; slug: string }) {
-  const haystack = [activity.title, activity.description, activity.slug]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (activity.type === "SKI") return "skiing";
-  if (activity.type === "SNOWBOARD") return "snowboarding";
-  if (activity.type === "BIKE") return "cycling";
-
-  if (haystack.includes("yoga")) return "yoga-meditation";
-  if (haystack.includes("rock") && haystack.includes("climb")) return "rock-climbing";
-  if (haystack.includes("climb") || haystack.includes("summit")) return "expedition";
-
-  return "hiking-trekking";
-}
-
-function getSportLabel(value: string) {
-  return sportOptions.find((option) => option.value === value)?.label ?? "Custom";
+function getActivityTypeLabel(value: string) {
+  return ACTIVITY_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
 export default async function AdminTripsPage() {
@@ -72,6 +58,7 @@ export default async function AdminTripsPage() {
   const [activities, guides] = await Promise.all([
     prisma.activity.findMany({
       orderBy: { createdAt: "desc" },
+      include: { guide: true, slots: true },
     }),
     prisma.guide.findMany({
       orderBy: { name: "asc" },
@@ -79,191 +66,90 @@ export default async function AdminTripsPage() {
     }),
   ]);
 
-  return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-16">
-      <div className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
-          Admin board
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground">
-              Edit trips
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Update trip details instantly for the Radikal experience. Changes appear on the public pages after refresh.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/dashboard" />}>
-            Back to dashboard
-          </Button>
-        </div>
-      </div>
+  const totalUpcomingSlots = activities.reduce((count, activity) => count + activity.slots.length, 0);
+  const categoriesInUse = new Set(activities.flatMap((activity) => activity.categories)).size;
 
-      <div className="flex flex-col gap-6">
-        {activities.map((activity) => (
-          <Card key={activity.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-            <CardHeader className="border-b border-border/70 bg-muted/30">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="rounded-full border border-[#1d4ed8]/15 bg-[#1d4ed8]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#1d4ed8]">
-                      {getSportLabel(getSportValue(activity))}
-                    </Badge>
-                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                      {activity.location}
-                    </Badge>
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-8">
+        <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">Admin board</p>
+              <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">Trip management</h1>
+              <p className="text-sm leading-7 text-muted-foreground">
+                Update the live trips, guide assignments, categories, pricing, and image lists from one streamlined workspace.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/dashboard" />}>
+                Back to dashboard
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+              <p className="text-sm text-muted-foreground">Trips live</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{activities.length}</p>
+            </div>
+            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+              <p className="text-sm text-muted-foreground">Guides linked</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{guides.length}</p>
+            </div>
+            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+              <p className="text-sm text-muted-foreground">Upcoming slots</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalUpcomingSlots}</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Trips catalog</h2>
+            <p className="text-sm text-muted-foreground">{categoriesInUse} active travel-style categories across the catalog.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {activities.map((activity) => (
+            <Card key={activity.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+              <CardHeader className="border-b border-border/70 bg-muted/20">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="rounded-full border border-[#1d4ed8]/15 bg-[#1d4ed8]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#1d4ed8]">
+                        {getActivityTypeLabel(activity.type)}
+                      </Badge>
+                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        {activity.location}
+                      </Badge>
+                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                        {activity.durationDays} day{activity.durationDays === 1 ? "" : "s"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">{activity.title}</CardTitle>
+                      <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                        {activity.guide ? `Guide: ${activity.guide.name}` : "No guide linked yet"}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-xl">{activity.title}</CardTitle>
-                    <CardDescription className="mt-1 max-w-2xl text-sm leading-6">
-                      Update the trip details below to keep the public listing aligned with the current Radikal experience.
-                    </CardDescription>
-                  </div>
-                </div>
-                <DeleteTripButton activityId={activity.id} activityTitle={activity.title} />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <AdminTripForm activityId={activity.id}>
-                <input type="hidden" name="type" value={activity.type} />
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor={`title-${activity.id}`}>Trip title</Label>
-                  <input id={`title-${activity.id}`} name="title" defaultValue={activity.title} required className={inputClassName} />
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`sport-${activity.id}`}>Sport</Label>
-                  <select
-                    id={`sport-${activity.id}`}
-                    name="sport"
-                    defaultValue={getSportValue(activity)}
-                    className="flex h-10 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                  >
-                    {sportOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                  <div className="flex flex-wrap gap-2">
+                    {activity.categories.slice(0, 3).map((category) => (
+                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
+                        {TRIP_CATEGORY_LABELS[category] ?? category}
+                      </Badge>
                     ))}
-                  </select>
-                  <p className="text-xs text-muted-foreground">Choose one of the seven Radikal sports.</p>
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`location-${activity.id}`}>Location</Label>
-                  <input id={`location-${activity.id}`} name="location" defaultValue={activity.location} required className={inputClassName} />
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`price-${activity.id}`}>Price (₹)</Label>
-                  <input
-                    id={`price-${activity.id}`}
-                    name="priceInRupees"
-                    type="number"
-                    min="0"
-                    defaultValue={activity.priceInRupees}
-                    required
-                    className={inputClassName}
-                  />
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`duration-${activity.id}`}>Duration (days)</Label>
-                  <input
-                    id={`duration-${activity.id}`}
-                    name="durationDays"
-                    type="number"
-                    min="1"
-                    defaultValue={activity.durationDays}
-                    required
-                    className={inputClassName}
-                  />
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`group-size-${activity.id}`}>Max group size</Label>
-                  <input
-                    id={`group-size-${activity.id}`}
-                    name="maxGroupSize"
-                    type="number"
-                    min="1"
-                    defaultValue={activity.maxGroupSize}
-                    required
-                    className={inputClassName}
-                  />
-                </div>
- 
-                <div className="space-y-2">
-                  <Label htmlFor={`guide-${activity.id}`}>Guide</Label>
-                  <select
-                    id={`guide-${activity.id}`}
-                    name="guideId"
-                    defaultValue={activity.guideId ?? ""}
-                    className="flex h-10 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                  >
-                    <option value="">No guide</option>
-                    {guides.map((guide) => (
-                      <option key={guide.id} value={guide.id}>
-                        {guide.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
- 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor={`slug-${activity.id}`}>Slug</Label>
-                  <input id={`slug-${activity.id}`} name="slug" defaultValue={activity.slug} required className={inputClassName} />
-                </div>
- 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor={`description-${activity.id}`}>Description</Label>
-                  <textarea
-                    id={`description-${activity.id}`}
-                    name="description"
-                    defaultValue={activity.description}
-                    rows={4}
-                    className="flex min-h-24 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                    required
-                  />
-                </div>
- 
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Trip categories</Label>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {tripCategories.map((category) => {
-                      const isChecked = activity.categories.includes(category);
- 
-                      return (
-                        <label key={category} className="flex items-center gap-2 rounded-none border border-input bg-background px-3 py-2 text-sm text-foreground">
-                          <input
-                            type="checkbox"
-                            name="categories"
-                            value={category}
-                            defaultChecked={isChecked}
-                            className="h-4 w-4 rounded border border-border bg-background"
-                          />
-                          {category.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase())}
-                        </label>
-                      );
-                    })}
                   </div>
                 </div>
- 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor={`images-${activity.id}`}>Images (one per line or comma)</Label>
-                  <textarea
-                    id={`images-${activity.id}`}
-                    name="images"
-                    defaultValue={activity.images.join("\n")}
-                    rows={3}
-                    className="flex min-h-24 w-full rounded-none border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                  />
-                </div>
- 
-              </AdminTripForm>
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminTripForm activity={activity} guides={guides} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

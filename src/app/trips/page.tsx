@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { TripsFilterBar } from "@/components/trips/trips-filter-bar";
 import {
+  SPORT_FILTERS,
   matchesSportFilter,
   matchesTravelStyleFilter,
   normalizeSportFilter,
@@ -31,7 +32,7 @@ const getTripsPageActivities = unstable_cache(
         description: true,
         priceInRupees: true,
         durationDays: true,
-        difficulty: true,
+        images: true,
         guide: { select: { name: true } },
         slots: { select: { date: true } },
       },
@@ -49,8 +50,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   WOMEN_ONLY: "Women Only",
   CORPORATE: "Corporate",
   LUXURY: "Luxury",
-  FOR_FAMILY: "For Family",
-  COURSES: "Courses",
+  FAMILY: "For Family",
+  COURSE: "Courses",
   SELF_GUIDED: "Self Guided",
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
@@ -119,6 +120,28 @@ export default async function TripsPage({
     return locationMatch && dateMatch && matchesSportFilter(activity, selectedSport) && matchesTravelStyleFilter(activity, selectedTravelStyle);
   });
 
+  const hasActiveFilters = selectedSport.length > 0 || selectedTravelStyle.length > 0 || selectedLocation.length > 0 || Boolean(startDate) || Boolean(endDate);
+
+  const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
+    ...sport,
+    activities: filteredActivities.filter((activity) => {
+      const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
+      return matchesSportFilter(activity, [normalizedSportId]);
+    }),
+  }));
+
+  const otherActivities = hasActiveFilters
+    ? activities.filter((activity) => !filteredActivities.some((item) => item.id === activity.id))
+    : [];
+
+  const groupedOtherActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
+    ...sport,
+    activities: otherActivities.filter((activity) => {
+      const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
+      return matchesSportFilter(activity, [normalizedSportId]);
+    }),
+  }));
+
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
@@ -134,53 +157,133 @@ export default async function TripsPage({
             No trips match this sport yet. Try another filter.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            {filteredActivities.map((activity) => (
-             <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-               <Card className="flex h-full min-h-[600px] flex-col gap-0 overflow-hidden rounded-[1.25rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[720px]">
-                 <div
-                   className="relative -m-[1px] flex-[0_0_55%] min-h-[320px] bg-muted/60 sm:flex-[0_0_60%] sm:min-h-[440px]"
-                   style={{
-                     backgroundImage: `url(${getTripCardImage(activity)})`,
-                     backgroundSize: "cover",
-                     backgroundPosition: "center",
-                   }}
-                 >
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                 </div>
-                 <div className="flex flex-1 flex-col justify-between gap-1 p-5">
-                   <div className="space-y-2">
-                     <div className="space-y-1.5">
-                       <h3 className="text-lg font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                       <p className="text-sm leading-6 text-muted-foreground">
-                         {activity.location}
-                         {activity.guide ? ` · Guided by ${activity.guide.name}` : null}
-                       </p>
-                     </div>
-                     <div className="flex flex-wrap gap-1.5">
-                       <span className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
-                         {activity.location}
-                       </span>
-                       <span className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-2 py-1 text-[0.65rem] font-medium text-[#c2410c]">
-                         {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
-                       </span>
-                       {activity.categories.map((category) => (
-                         <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
-                           {CATEGORY_LABELS[category] ?? category}
-                         </Badge>
-                       ))}
-                     </div>
-                   </div>
-                   <div className="flex items-center justify-between border-t border-border/70 pt-2">
-                     <span className="text-sm font-medium text-muted-foreground">From</span>
-                     <span className="font-heading text-lg font-semibold text-foreground">
-                       {formatRupees(activity.priceInRupees)}
-                     </span>
-                   </div>
-                 </div>
-               </Card>
-             </Link>
-            ))}
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-8">
+              {groupedActivities.map((group) => {
+                if (group.activities.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <section key={group.id} className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">{group.label}</h2>
+                        <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                      {group.activities.map((activity) => (
+                        <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
+                          <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
+                            <div
+                              className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]"
+                              style={{
+                                backgroundImage: `url(${getTripCardImage(activity)})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                            </div>
+                            <div className="flex flex-1 flex-col justify-between gap-2 p-4">
+                              <div className="space-y-1.5">
+                                <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
+                                <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
+                              </div>
+                              <div className="mt-1 flex min-h-[1.75rem] flex-wrap content-start gap-1">
+                                {activity.categories.map((category) => (
+                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                    {CATEGORY_LABELS[category] ?? category}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
+                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                  {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+                                </span>
+                                <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
+                                  <span className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base">
+                                    {formatRupees(activity.priceInRupees)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+
+            {hasActiveFilters && (
+              <div className="flex flex-col gap-6 border-t border-border/70 pt-2">
+                <div className="space-y-1">
+                  <h2 className="text-base font-medium tracking-tight text-muted-foreground/85">explore other adventures ...</h2>
+                </div>
+                <div className="flex flex-col gap-8">
+                  {groupedOtherActivities.map((group) => {
+                    if (group.activities.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <section key={`${group.id}-other`} className="space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-base font-semibold tracking-tight text-foreground">{group.label}</h3>
+                            <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                          {group.activities.map((activity) => (
+                            <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
+                              <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
+                                <div
+                                  className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]"
+                                  style={{
+                                    backgroundImage: `url(${getTripCardImage(activity)})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                  }}
+                                >
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                                </div>
+                                <div className="flex flex-1 flex-col justify-between gap-2 p-4">
+                                  <div className="space-y-1.5">
+                                    <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
+                                    <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
+                                  </div>
+                                  <div className="mt-1 flex min-h-[1.75rem] flex-wrap content-start gap-1">
+                                    {activity.categories.map((category) => (
+                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                        {CATEGORY_LABELS[category] ?? category}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                  <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
+                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.25 py-0.25 text-[0.5rem] font-medium leading-4 text-foreground/80">
+                                      {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+                                    </span>
+                                    <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
+                                      <span className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base">
+                                        {formatRupees(activity.priceInRupees)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </Card>
+                            </Link>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   description:
     "Small-group skiing, snowboarding, cycling and trekking trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
   icons: {
-    icon: "/radikal-logo.svg",
-    shortcut: "/radikal-logo.svg",
-    apple: "/radikal-logo.svg",
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 

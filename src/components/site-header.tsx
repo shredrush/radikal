@@ -14,8 +14,8 @@ export async function SiteHeader() {
       heading: "Climbing",
       items: [
         { label: "Hiking and Trekking", href: "/trips?sport=trek" },
-        { label: "Rock Climbing", href: "/trips?sport=rock-climbing" },
-        { label: "Expedition", href: "/trips?sport=expedition" },
+        { label: "Rock Climbing", href: "/trips?sport=rockclimb" },
+        { label: "Summit Expedition", href: "/trips?sport=expedition" },
       ],
     },
     {
@@ -47,7 +47,7 @@ export async function SiteHeader() {
         <div className="flex items-center justify-between md:hidden">
           <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
             <img
-              src="/radikal-logo.svg"
+              src="/logo.svg"
               alt="Radikal logo"
               className="-my-2.5 h-[4.6rem] w-[4.6rem] flex-none rounded-xl object-contain sm:-my-3.5 sm:h-[5.4rem] sm:w-[5.4rem] md:h-[5.7rem] md:w-[5.7rem]"
             />
@@ -155,7 +155,7 @@ export async function SiteHeader() {
           <div className="flex items-center justify-between gap-3">
             <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
               <img
-                src="/radikal-logo.svg"
+                src="/logo.svg"
                 alt="Radikal logo"
                 className="-my-2.5 h-[5.1rem] w-[5.1rem] flex-none rounded-xl object-contain lg:h-[5.7rem] lg:w-[5.7rem]"
               />
@@ -273,7 +273,7 @@ export async function SiteHeader() {
         <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
           <Link href="/#top" className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
             <img
-              src="/radikal-logo.svg"
+              src="/logo.svg"
               alt="Radikal logo"
               className="-my-2.5 h-[5.1rem] w-[5.1rem] flex-none rounded-xl object-contain lg:h-[5.7rem] lg:w-[5.7rem]"
             />

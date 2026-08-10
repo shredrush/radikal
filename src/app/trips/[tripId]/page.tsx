@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   WOMEN_ONLY: "Women Only",
   CORPORATE: "Corporate",
   LUXURY: "Luxury",
-  FOR_FAMILY: "For Family",
-  COURSES: "Courses",
+  FAMILY: "For Family",
+  COURSE: "Courses",
   SELF_GUIDED: "Self Guided",
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
@@ -40,7 +41,7 @@ function getActivityTypeLabel(activity: { type: string; title: string; descripti
       .toLowerCase();
 
     if (haystack.includes("climb") || haystack.includes("summit")) {
-      return "Expedition";
+      return "Summit Expedition";
     }
   }
 
@@ -91,6 +92,14 @@ export default async function TripDetailPage({
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
         <div className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-10">
+          <div className="mb-8 overflow-hidden rounded-[1.5rem] border border-border/80">
+            <div
+              className="h-64 w-full bg-cover bg-center sm:h-80"
+              style={{
+                backgroundImage: `url(${getTripCardImage(activity)})`,
+              }}
+            />
+          </div>
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl space-y-4">
               <div className="flex flex-wrap gap-2">

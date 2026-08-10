@@ -5,16 +5,16 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isValidDifficulty, type ActivityDifficulty } from "@/lib/difficulty";
+import { normalizeTripImagePath } from "@/lib/trip-card-image";
 
-const validTypes = ["SKI", "SNOWBOARD", "BIKE", "TREK"] as const;
+const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
 const validCategories = [
   "ADVENTURE_ENTHUSIAST",
   "WOMEN_ONLY",
   "CORPORATE",
   "LUXURY",
-  "FOR_FAMILY",
-  "COURSES",
+  "FAMILY",
+  "COURSE",
   "SELF_GUIDED",
   "BEGINNER_FRIENDLY",
 ] as const;
@@ -23,34 +23,18 @@ function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
 }
 
-function parseImages(value: string) {
+function parseImages(value: string, slug: string) {
   return value
     .split(/\r?\n|,/)
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((item) => normalizeTripImagePath(item, slug));
 }
 
 function parseCategories(values: FormDataEntryValue[]) {
   return values
     .map((value) => value.toString())
     .filter((value): value is (typeof validCategories)[number] => validCategories.includes(value as (typeof validCategories)[number]));
-}
-
-function resolveActivityType(sport: string, fallbackType: string) {
-  switch (sport) {
-    case "skiing":
-      return "SKI";
-    case "snowboarding":
-      return "SNOWBOARD";
-    case "cycling":
-      return "BIKE";
-    case "expedition":
-    case "rock-climbing":
-    case "yoga-meditation":
-    case "hiking-trekking":
-    default:
-      return fallbackType || "TREK";
-  }
 }
 
 export async function updateActivityAction(formData: FormData) {
@@ -64,14 +48,12 @@ export async function updateActivityAction(formData: FormData) {
   const slug = asString(formData.get("slug"));
   const location = asString(formData.get("location"));
   const description = asString(formData.get("description"));
-  const sport = asString(formData.get("sport"));
-  const type = resolveActivityType(sport, asString(formData.get("type")));
-  const difficulty = asString(formData.get("difficulty")) || "MODERATE";
+  const type = asString(formData.get("type"));
   const priceInRupees = Number.parseInt(asString(formData.get("priceInRupees")), 10);
   const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
   const maxGroupSize = Number.parseInt(asString(formData.get("maxGroupSize")), 10);
   const guideId = asString(formData.get("guideId"));
-  const images = parseImages(asString(formData.get("images")));
+  const images = parseImages(asString(formData.get("images")), slug);
   const categories = parseCategories(formData.getAll("categories"));
 
   if (!activityId) {
@@ -84,10 +66,6 @@ export async function updateActivityAction(formData: FormData) {
 
   if (!validTypes.includes(type as (typeof validTypes)[number])) {
     throw new Error("Invalid activity type.");
-  }
-
-  if (!isValidDifficulty(difficulty)) {
-    throw new Error("Invalid difficulty.");
   }
 
   if (Number.isNaN(priceInRupees) || Number.isNaN(durationDays) || Number.isNaN(maxGroupSize)) {
@@ -111,7 +89,6 @@ export async function updateActivityAction(formData: FormData) {
       location,
       description,
       type: type as (typeof validTypes)[number],
-      difficulty: difficulty.toUpperCase() as ActivityDifficulty,
       priceInRupees,
       durationDays,
       maxGroupSize,

@@ -15,8 +15,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   WOMEN_ONLY: "Women Only",
   CORPORATE: "Corporate",
   LUXURY: "Luxury",
-  FOR_FAMILY: "For Family",
-  COURSES: "Courses",
+  FAMILY: "For Family",
+  COURSE: "Courses",
   SELF_GUIDED: "Self Guided",
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
@@ -29,8 +29,8 @@ type ActivityCardItem = {
   location: string;
   priceInRupees: number;
   durationDays: number;
-  difficulty: string;
   categories: string[];
+  images?: string[];
   type?: string;
   guide: { name: string } | null;
 };
@@ -38,21 +38,20 @@ type ActivityCardItem = {
 type FilterPanel = "what" | "when" | "where" | "who" | null;
 
 const SPORT_OPTIONS = [
-  { id: "ski", label: "Skiing" },
-  { id: "snowboard", label: "Snowboarding" },
+  { id: "winter", label: "Snowboard and Ski" },
   { id: "bike", label: "Cycling" },
   { id: "trek", label: "Hiking and Trekking" },
-  { id: "expedition", label: "Expedition" },
-  { id: "rock-climbing", label: "Rock Climbing" },
+  { id: "expedition", label: "Summit Expedition" },
+  { id: "rockclimb", label: "Rock Climbing" },
   { id: "yoga", label: "Yoga and Meditation" },
 ] as const;
 
 const TRAVEL_STYLE_OPTIONS = [
   { id: "beginner-friendly", label: "Beginner Friendly" },
   { id: "women-only", label: "Women Only" },
-  { id: "for-family", label: "For Family" },
+  { id: "family", label: "For Family" },
   { id: "adventure-enthusiast", label: "Adventure Enthusiast" },
-  { id: "courses", label: "Courses" },
+  { id: "course", label: "Courses" },
   { id: "self-guided", label: "Self Guided" },
 ] as const;
 
@@ -116,27 +115,69 @@ function isWithinRange(day: Date, startDate: string, endDate: string) {
 
 function matchesSportSelection(activity: ActivityCardItem, sportId: string) {
   switch (sportId) {
-    case "ski":
-      return activity.title.toLowerCase().includes("ski") || activity.description.toLowerCase().includes("ski") || activity.type === "SKI";
-    case "snowboard":
-      return activity.title.toLowerCase().includes("snowboard") || activity.description.toLowerCase().includes("snowboard") || activity.type === "SNOWBOARD";
+    case "winter":
+      return activity.type === "SKI" || activity.type === "SNOWBOARD";
     case "bike":
-      return activity.title.toLowerCase().includes("bike") || activity.description.toLowerCase().includes("bike") || activity.type === "BIKE";
+      return activity.type === "BIKE";
     case "trek":
-      return activity.title.toLowerCase().includes("trek") || activity.description.toLowerCase().includes("trek") || activity.type === "TREK";
+      return activity.type === "TREK";
     case "expedition":
-    case "climb":
-      return activity.title.toLowerCase().includes("climb") || activity.description.toLowerCase().includes("climb") || activity.title.toLowerCase().includes("summit");
-    case "rock-climbing":
-      return activity.title.toLowerCase().includes("rock") && activity.title.toLowerCase().includes("climb");
+      return activity.type === "EXPEDITION";
+    case "rockclimb":
+      return activity.type === "ROCKCLIMB";
     case "yoga":
-      return activity.title.toLowerCase().includes("yoga") || activity.description.toLowerCase().includes("yoga");
+      return activity.type === "YOGA";
     default:
       return true;
   }
 }
 
-export function SearchableTrips({ activities }: { activities: ActivityCardItem[] }) {
+function matchesTravelStyleSelection(activity: ActivityCardItem, styleId: string) {
+  switch (styleId) {
+    case "beginner-friendly":
+      return activity.categories.includes("BEGINNER_FRIENDLY");
+    case "women-only":
+      return activity.categories.includes("WOMEN_ONLY");
+    case "family":
+      return activity.categories.includes("FAMILY");
+    case "adventure-enthusiast":
+      return activity.categories.includes("ADVENTURE_ENTHUSIAST");
+    case "course":
+      return activity.categories.includes("COURSE");
+    case "self-guided":
+      return activity.categories.includes("SELF_GUIDED");
+    default:
+      return false;
+  }
+}
+
+function prioritizeFeaturedActivities(activities: ActivityCardItem[], featuredTripSlugs: readonly string[]) {
+  const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
+
+  return activities
+    .map((activity, index) => ({ activity, index }))
+    .sort((left, right) => {
+      const leftRank = featuredRank.get(left.activity.slug);
+      const rightRank = featuredRank.get(right.activity.slug);
+
+      if (leftRank === undefined && rightRank === undefined) {
+        return left.index - right.index;
+      }
+
+      if (leftRank === undefined) {
+        return 1;
+      }
+
+      if (rightRank === undefined) {
+        return -1;
+      }
+
+      return leftRank - rightRank;
+    })
+    .map(({ activity }) => activity);
+}
+
+export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activities: ActivityCardItem[]; featuredTripSlugs?: readonly string[] }) {
   const router = useRouter();
   const [activePanel, setActivePanel] = useState<FilterPanel>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
@@ -150,24 +191,26 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
     return Array.from(new Set(activities.map((activity) => activity.location).filter(Boolean))).sort();
   }, [activities]);
 
+  const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
+
   const filteredActivities = useMemo(() => {
     const hasActiveFilters = selectedSports.length > 0 || selectedLocations.length > 0 || selectedTravelStyles.length > 0 || startDate || endDate;
 
     if (!hasActiveFilters) {
-      return activities.slice(0, 4);
+      return rankedActivities.slice(0, 4);
     }
 
-    return activities.filter((activity) => {
+    return rankedActivities.filter((activity) => {
       const sportMatch = selectedSports.length === 0 || selectedSports.some((sportId) => matchesSportSelection(activity, sportId));
       const locationMatch =
         selectedLocations.length === 0 || selectedLocations.some((location) => activity.location.toLowerCase().includes(location.toLowerCase()));
       const travelStyleMatch =
-        selectedTravelStyles.length === 0 || selectedTravelStyles.some((style) => activity.categories.includes(style));
+        selectedTravelStyles.length === 0 || selectedTravelStyles.some((style) => matchesTravelStyleSelection(activity, style));
       const dateMatch = true;
 
       return sportMatch && locationMatch && travelStyleMatch && dateMatch;
     }).slice(0, 4);
-  }, [activities, endDate, selectedLocations, selectedSports, selectedTravelStyles, startDate]);
+  }, [endDate, rankedActivities, selectedLocations, selectedSports, selectedTravelStyles, startDate]);
 
   const hasActiveFilters = selectedSports.length > 0 || selectedLocations.length > 0 || selectedTravelStyles.length > 0 || startDate || endDate;
   const visibleActivities = filteredActivities;
@@ -602,7 +645,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
               position: "center 65%",
             },
             {
-              title: "Expedition",
+              title: "Summit Expedition",
               filter: "expedition",
               image:
                 "https://images.unsplash.com/photo-1643903096045-07741be1f245?auto=format&fit=crop&w=900&q=80",
@@ -610,7 +653,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
             },
             {
               title: "Rock Climbing",
-              filter: "rock-climbing",
+              filter: "rockclimb",
               image:
                 "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80",
             },
@@ -725,7 +768,6 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                     backgroundPosition: "center",
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-1 p-3 sm:p-3.5">
                   <div className="space-y-1.5">
@@ -749,7 +791,7 @@ export function SearchableTrips({ activities }: { activities: ActivityCardItem[]
                     </div>
                   </div>
                   <div className="mt-auto flex justify-end">
-                    <span className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-[#c2410c]">
+                    <span className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[clamp(0.8rem,0.95vw,0.95rem)] font-semibold text-foreground/80">
                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                     </span>
                   </div>

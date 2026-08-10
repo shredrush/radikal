@@ -55,10 +55,8 @@ async function main() {
       description: true,
       priceInRupees: true,
       durationDays: true,
-      difficulty: true,
       images: true,
       maxGroupSize: true,
-      isCustom: true,
       guideId: true,
     },
   });
@@ -162,10 +160,8 @@ async function main() {
         description: activity.description,
         priceInRupees: activity.priceInRupees,
         durationDays: activity.durationDays,
-        difficulty: activity.difficulty,
         images: activity.images,
         maxGroupSize: activity.maxGroupSize,
-        isCustom: activity.isCustom,
         guideId,
       },
       create: {
@@ -177,10 +173,8 @@ async function main() {
         description: activity.description,
         priceInRupees: activity.priceInRupees,
         durationDays: activity.durationDays,
-        difficulty: activity.difficulty,
         images: activity.images,
         maxGroupSize: activity.maxGroupSize,
-        isCustom: activity.isCustom,
         guideId,
       },
     });
