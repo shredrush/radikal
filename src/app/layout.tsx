@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope, Source_Serif_4 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
@@ -47,6 +48,7 @@ export default function RootLayout({
         <SiteFooterWrapper />
         <Toaster />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
