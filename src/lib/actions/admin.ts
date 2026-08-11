@@ -26,7 +26,7 @@ function parseImages(value: string) {
   return Array.from(
     new Set(
       value
-        .split(/\r?\n|,/)
+        .split(/\r?\n/)
         .map((item) => item.trim())
         .filter(Boolean),
     ),

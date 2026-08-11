@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
+import { normalizeTripImagePath } from "@/lib/trip-card-image";
 
 export const dynamic = "force-dynamic";
 
@@ -104,7 +105,10 @@ export default async function TripDetailPage({
           <div className="relative mb-8 overflow-hidden rounded-[1.5rem] border border-border/80">
             {/* Fill any missing slots by cycling through available images */}
             {(() => {
-              const imgs = activity.images.length > 0 ? activity.images : [`/activities/${activity.slug}/cover.png`];
+              const normalizedImages = activity.images
+                .map((image) => normalizeTripImagePath(image, activity.slug))
+                .filter(Boolean);
+              const imgs = normalizedImages.length > 0 ? normalizedImages : [`/activities/${activity.slug}/cover.png`];
               const slots = Array.from({ length: 4 }, (_, i) => imgs[i % imgs.length]);
               return (
                 <div className="grid h-[340px] grid-cols-4 grid-rows-2 gap-0.5 sm:h-[420px]">
