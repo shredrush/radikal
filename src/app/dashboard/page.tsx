@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-16">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-16">
       <div>
         <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
           Dashboard

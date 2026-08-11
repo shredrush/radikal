@@ -100,7 +100,7 @@ export default async function TripDetailPage({
 
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10 sm:py-16">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <div className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-10">
           <div className="relative mb-8 overflow-hidden rounded-[1.5rem] border border-border/80">
             {/* Fill any missing slots by cycling through available images */}

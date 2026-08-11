@@ -31,7 +31,7 @@ const pillars = [
 export default function CommunityPage() {
   return (
     <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto flex w-full max-w-8xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
           <div className="grid gap-8 px-6 py-10 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-16">
             <div className="flex flex-col justify-center gap-6">

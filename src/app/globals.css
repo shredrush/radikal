@@ -134,3 +134,37 @@
     @apply bg-black/10 text-foreground;
   }
 }
+
+@layer utilities {
+  .max-w-8xl {
+    max-width: 96rem;
+  }
+
+  .max-w-7xl {
+    max-width: 88rem;
+  }
+
+  .max-w-6xl {
+    max-width: 84rem;
+  }
+
+  .max-w-5xl {
+    max-width: 80rem;
+  }
+
+  .max-w-4xl {
+    max-width: 76rem;
+  }
+
+  .max-w-3xl {
+    max-width: 72rem;
+  }
+
+  .max-w-2xl {
+    max-width: 66rem;
+  }
+
+  .max-w-xl {
+    max-width: 62rem;
+  }
+}
