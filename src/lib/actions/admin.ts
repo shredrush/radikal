@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
@@ -23,16 +23,38 @@ function asString(value: FormDataEntryValue | null) {
 }
 
 function parseImages(value: string) {
-  return value
-    .split(/\r?\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return Array.from(
+    new Set(
+      value
+        .split(/\r?\n|,/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 function parseCategories(values: FormDataEntryValue[]) {
-  return values
-    .map((value) => value.toString())
-    .filter((value): value is (typeof validCategories)[number] => validCategories.includes(value as (typeof validCategories)[number]));
+  return Array.from(
+    new Set(
+      values
+        .map((value) => value.toString())
+        .filter(
+          (value): value is (typeof validCategories)[number] =>
+            validCategories.includes(value as (typeof validCategories)[number]),
+        ),
+    ),
+  );
+}
+
+function parseList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/\r?\n/)
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 export async function updateActivityAction(formData: FormData) {
@@ -55,9 +77,9 @@ export async function updateActivityAction(formData: FormData) {
   const categories = parseCategories(formData.getAll("categories"));
   const pickup = asString(formData.get("pickup"));
   const drop = asString(formData.get("drop"));
-  const inclusions = asString(formData.get("inclusions")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const exclusions = asString(formData.get("exclusions")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const highlights = asString(formData.get("highlights")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const inclusions = parseList(asString(formData.get("inclusions")));
+  const exclusions = parseList(asString(formData.get("exclusions")));
+  const highlights = parseList(asString(formData.get("highlights")));
 
   if (!activityId) {
     throw new Error("Missing activity id.");
@@ -75,66 +97,85 @@ export async function updateActivityAction(formData: FormData) {
     throw new Error("One or more numeric fields are invalid.");
   }
 
-  const currentActivity = await prisma.activity.findUnique({
-    where: { id: activityId },
-    select: { slug: true },
-  });
-
-  if (!currentActivity) {
-    throw new Error("Activity not found.");
+  if (priceInRupees < 0 || durationDays < 1 || maxGroupSize < 1) {
+    throw new Error("Price must be >= 0 and duration/group size must be at least 1.");
   }
 
-  await prisma.activity.update({
-    where: { id: activityId },
-    data: {
-      title,
-      slug,
-      location,
-      description,
-      type: type as (typeof validTypes)[number],
-      priceInRupees,
-      durationDays,
-      maxGroupSize,
-      categories,
-      images,
-      guideId: guideId || null,
-    },
-  });
+  let previousSlug = "";
 
-  // Upsert pickup/drop
-  if (pickup || drop) {
-    await prisma.tripLocation.upsert({
-      where: { activityId },
-      update: { pickup, drop },
-      create: { activityId, pickup, drop },
-    });
-  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      const currentActivity = await tx.activity.findUnique({
+        where: { id: activityId },
+        select: { slug: true },
+      });
 
-  // Replace inclusions and exclusions
-  await prisma.tripInclusion.deleteMany({ where: { activityId } });
-  if (inclusions.length > 0 || exclusions.length > 0) {
-    await prisma.tripInclusion.createMany({
-      data: [
-        ...inclusions.map((item, order) => ({ activityId, item, included: true, order })),
-        ...exclusions.map((item, order) => ({ activityId, item, included: false, order })),
-      ],
-    });
-  }
+      if (!currentActivity) {
+        throw new Error("Activity not found.");
+      }
 
-  // Replace highlights
-  await prisma.tripHighlight.deleteMany({ where: { activityId } });
-  if (highlights.length > 0) {
-    await prisma.tripHighlight.createMany({
-      data: highlights.map((text, order) => ({ activityId, text, order })),
+      previousSlug = currentActivity.slug;
+
+      await tx.activity.update({
+        where: { id: activityId },
+        data: {
+          title,
+          slug,
+          location,
+          description,
+          type: type as (typeof validTypes)[number],
+          priceInRupees,
+          durationDays,
+          maxGroupSize,
+          categories,
+          images,
+          guideId: guideId || null,
+        },
+      });
+
+      // If both are blank, remove any existing location row to avoid stale values.
+      if (pickup || drop) {
+        await tx.tripLocation.upsert({
+          where: { activityId },
+          update: { pickup, drop },
+          create: { activityId, pickup, drop },
+        });
+      } else {
+        await tx.tripLocation.deleteMany({ where: { activityId } });
+      }
+
+      await tx.tripInclusion.deleteMany({ where: { activityId } });
+      if (inclusions.length > 0 || exclusions.length > 0) {
+        await tx.tripInclusion.createMany({
+          data: [
+            ...inclusions.map((item, order) => ({ activityId, item, included: true, order })),
+            ...exclusions.map((item, order) => ({ activityId, item, included: false, order })),
+          ],
+        });
+      }
+
+      await tx.tripHighlight.deleteMany({ where: { activityId } });
+      if (highlights.length > 0) {
+        await tx.tripHighlight.createMany({
+          data: highlights.map((text, order) => ({ activityId, text, order })),
+        });
+      }
     });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      throw new Error("Slug already exists. Please choose a different slug.");
+    }
+
+    throw error;
   }
 
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
-  revalidatePath(`/trips/${currentActivity.slug}`);
+  updateTag("trips");
+  revalidatePath(`/trips/${previousSlug}`);
 
-  if (slug !== currentActivity.slug) {
+  if (slug !== previousSlug) {
     revalidatePath(`/trips/${slug}`);
   }
 }
@@ -163,5 +204,6 @@ export async function deleteActivityAction(activityId: string) {
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
+  updateTag("trips");
   revalidatePath(`/trips/${activity.slug}`);
 }

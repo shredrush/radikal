@@ -85,8 +85,10 @@ export function AdminTripForm({
       try {
         await updateActivityAction(formData);
         toast.success(`${activity.title} updated.`);
-      } catch {
-        toast.error("Could not save trip changes.");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not save trip changes.";
+        toast.error(message);
       }
     });
   }
