@@ -50,6 +50,7 @@ function getActivityTypeLabel(value: string) {
 export function AdminTripForm({
   activity,
   guides,
+  supplemental,
 }: {
   activity: {
     id: string;
@@ -66,6 +67,13 @@ export function AdminTripForm({
     guideId: string | null;
   };
   guides: Array<{ id: string; name: string }>;
+  supplemental: {
+    pickup: string;
+    drop: string;
+    inclusions: string[];
+    exclusions: string[];
+    highlights: string[];
+  };
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -137,6 +145,26 @@ export function AdminTripForm({
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`description-${activity.id}`}>Description</Label>
               <textarea id={`description-${activity.id}`} name="description" defaultValue={activity.description} rows={5} required className="min-h-32 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#1d4ed8]/20" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`pickup-${activity.id}`}>Pickup point</Label>
+              <input id={`pickup-${activity.id}`} name="pickup" defaultValue={supplemental.pickup} className={inputClassName} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`drop-${activity.id}`}>Drop point</Label>
+              <input id={`drop-${activity.id}`} name="drop" defaultValue={supplemental.drop} className={inputClassName} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor={`highlights-${activity.id}`}>Why travellers love this (one per line)</Label>
+              <textarea id={`highlights-${activity.id}`} name="highlights" defaultValue={supplemental.highlights.join("\n")} rows={4} className="min-h-24 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#1d4ed8]/20" />
+            </div>
+            <div className="space-y-2 md:col-span-1">
+              <Label htmlFor={`inclusions-${activity.id}`}>What&apos;s included (one per line)</Label>
+              <textarea id={`inclusions-${activity.id}`} name="inclusions" defaultValue={supplemental.inclusions.join("\n")} rows={5} className="min-h-28 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#1d4ed8]/20" />
+            </div>
+            <div className="space-y-2 md:col-span-1">
+              <Label htmlFor={`exclusions-${activity.id}`}>Not included (one per line)</Label>
+              <textarea id={`exclusions-${activity.id}`} name="exclusions" defaultValue={supplemental.exclusions.join("\n")} rows={5} className="min-h-28 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#1d4ed8]/20" />
             </div>
           </div>
         </div>

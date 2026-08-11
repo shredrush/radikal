@@ -12,7 +12,7 @@ import {
   normalizeSportFilter,
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
-import { getTripCardImage } from "@/lib/trip-card-image";
+import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
 
 // The filter UI (sport/travel style/location/date) is applied in memory below,
 // so every filter combination reuses this single cached query instead of
@@ -181,7 +181,7 @@ export default async function TripsPage({
                               style={{
                                 backgroundImage: `url(${getTripCardImage(activity)})`,
                                 backgroundSize: "cover",
-                                backgroundPosition: "center",
+                                backgroundPosition: getTripCardImagePosition(activity),
                               }}
                             >
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
@@ -189,7 +189,7 @@ export default async function TripsPage({
                             <div className="flex flex-1 flex-col justify-between gap-2 p-4">
                               <div className="space-y-1.5">
                                 <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                                <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
+                                <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
                               </div>
                               <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                 {activity.categories.map((category) => (
@@ -199,7 +199,7 @@ export default async function TripsPage({
                                 ))}
                               </div>
                               <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
                                   {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                 </span>
                                 <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
@@ -221,7 +221,7 @@ export default async function TripsPage({
             {hasActiveFilters && (
               <div className="flex flex-col gap-6 border-t border-border/70 pt-2">
                 <div className="space-y-1">
-                  <h2 className="text-base font-medium tracking-tight text-muted-foreground/85">explore other adventures ...</h2>
+                  <h2 className="text-xl font-semibold tracking-tight text-muted-foreground/85 sm:text-2xl">explore other adventures ...</h2>
                 </div>
                 <div className="flex flex-col gap-8">
                   {groupedOtherActivities.map((group) => {
@@ -246,7 +246,7 @@ export default async function TripsPage({
                                   style={{
                                     backgroundImage: `url(${getTripCardImage(activity)})`,
                                     backgroundSize: "cover",
-                                    backgroundPosition: "center",
+                                    backgroundPosition: getTripCardImagePosition(activity),
                                   }}
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
@@ -254,7 +254,7 @@ export default async function TripsPage({
                                 <div className="flex flex-1 flex-col justify-between gap-2 p-4">
                                   <div className="space-y-1.5">
                                     <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                                    <p className="text-sm leading-5 text-muted-foreground">{activity.location}</p>
+                                    <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
                                   </div>
                                   <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                     {activity.categories.map((category) => (
@@ -264,7 +264,7 @@ export default async function TripsPage({
                                     ))}
                                   </div>
                                   <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
                                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                     </span>
                                     <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">

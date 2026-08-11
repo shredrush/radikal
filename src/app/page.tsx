@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 const FEATURED_TRIP_SLUGS = [
   "miyar-valley-trek",
-  "pangong-bike-expedition",
+  "lahaul-spiti-cycle",
   "sethan-snowboarding-course",
   "spiti-meditation-escape",
 ] as const;

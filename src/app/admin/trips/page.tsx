@@ -58,7 +58,13 @@ export default async function AdminTripsPage() {
   const [activities, guides] = await Promise.all([
     prisma.activity.findMany({
       orderBy: { createdAt: "desc" },
-      include: { guide: true, slots: true },
+      include: {
+        guide: true,
+        slots: true,
+        tripLocation: true,
+        inclusions: { orderBy: { order: "asc" } },
+        highlights: { orderBy: { order: "asc" } },
+      },
     }),
     prisma.guide.findMany({
       orderBy: { name: "asc" },
@@ -145,7 +151,13 @@ export default async function AdminTripsPage() {
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <AdminTripForm activity={activity} guides={guides} />
+                <AdminTripForm activity={activity} guides={guides} supplemental={{
+                    pickup: activity.tripLocation?.pickup ?? "",
+                    drop: activity.tripLocation?.drop ?? "",
+                    inclusions: activity.inclusions.filter(i => i.included).map(i => i.item),
+                    exclusions: activity.inclusions.filter(i => !i.included).map(i => i.item),
+                    highlights: activity.highlights.map(h => h.text),
+                  }} />
               </CardContent>
             </Card>
           ))}

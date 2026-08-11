@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTripCardImage } from "@/lib/trip-card-image";
+import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -765,7 +765,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                   style={{
                     backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.24) 100%), url(${getTripCardImage(activity)})`,
                     backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    backgroundPosition: getTripCardImagePosition(activity),
                   }}
                 >
                 </div>
@@ -780,7 +780,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                         <Badge
                           key={category}
                           variant="secondary"
-                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-center text-[0.42rem] leading-3 font-medium text-foreground/80 sm:text-[0.5rem]"
+                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-center text-[0.65rem] leading-4 font-medium text-foreground/80 sm:text-[0.7rem]"
                         >
                           {CATEGORY_LABELS[category] ?? category}
                         </Badge>
@@ -788,7 +788,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                     </div>
                   </div>
                   <div className="mt-auto flex justify-end">
-                    <span className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                    <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                     </span>
                   </div>

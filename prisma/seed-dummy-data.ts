@@ -474,7 +474,177 @@
       }
     }
 
-    console.log("Seed complete with current trips, guides, and default accounts.");
+    // ── Per-trip supplemental data ──────────────────────────────────────────
+    const supplementalData: Record<string, {
+      pickup: string;
+      drop: string;
+      inclusions: string[];
+      exclusions: string[];
+      highlights: string[];
+    }> = {
+      "spiti-meditation-escape": {
+        pickup: "Kaza, Spiti Valley",
+        drop: "Kaza, Spiti Valley",
+        inclusions: ["Certified meditation & yoga instructor", "Accommodation (monastery guesthouse)", "All vegetarian meals", "Yoga mats, blocks & props", "Guided monastery visits"],
+        exclusions: ["Transport to/from Kaza", "Travel insurance", "Personal clothing & gear", "Non-vegetarian meals", "Tips"],
+        highlights: ["Meditate at 3,800m in one of India's most remote valleys", "Ancient monastery visits and silent sitting sessions", "Star-gazing evenings in pitch-dark Spiti skies", "Completely off-grid — no phone signal, no distractions"],
+      },
+      "ladakh-yoga-course": {
+        pickup: "Leh Airport / Hotel",
+        drop: "Leh Airport / Hotel",
+        inclusions: ["Certified yoga & breathwork instructor", "Accommodation in a Ladakhi homestay", "All vegetarian meals", "Yoga mats & props", "Acclimatisation walks"],
+        exclusions: ["Flights to/from Leh", "Travel insurance", "Personal yoga clothing", "Alcoholic beverages", "Tips"],
+        highlights: ["Yoga and pranayama at high altitude in thin, pure air", "Homestay living with a local Ladakhi family", "Morning sessions with panoramic Himalayan views", "Suitable for complete beginners and seasoned practitioners"],
+      },
+      "sethan-snowboarding-course": {
+        pickup: "Manali Bus Stand / Hotel",
+        drop: "Manali Bus Stand / Hotel",
+        inclusions: ["Certified snowboard instructor", "Snowboard & boot rental", "Helmet & wrist guards", "Daily lift pass", "Safety briefing & avalanche awareness"],
+        exclusions: ["Personal snowboard clothing", "Travel insurance", "Accommodation & meals", "Transport to Sethan from Manali", "Tips"],
+        highlights: ["Learn on gentle, beginner-friendly powder slopes", "Small groups — maximum 4 students per instructor", "Sethan village: a hidden gem above Manali at 2,900m", "Quick progression from first-timers to independent riders"],
+      },
+      "backcountry-snowboarding-expedition": {
+        pickup: "Manali Bus Stand / Hotel",
+        drop: "Manali Bus Stand / Hotel",
+        inclusions: ["Lead guide + assistant guide", "Avalanche safety equipment (beacon, probe, shovel)", "Snowboard & boot rental", "Backcountry permits", "Camping gear & all meals on expedition"],
+        exclusions: ["Personal snowboard/ski clothing", "Travel & evacuation insurance (mandatory)", "Transport to Lahaul base", "Sleeping bag rated below −10°C", "Tips"],
+        highlights: ["Access untouched powder lines closed to regular resort riders", "Glacier descents and couloir runs in Lahaul's Chandra Valley", "Full avalanche safety protocol — guided by IMF-certified experts", "Camp under stars at 4,000m+ between riding days"],
+      },
+      "lahaul-multi-day-hike": {
+        pickup: "Manali Bus Stand / Hotel",
+        drop: "Manali Bus Stand / Hotel",
+        inclusions: ["Certified trek guide", "Camping gear (tents, sleeping bags)", "All meals during trek", "First aid kit", "Porters for shared luggage"],
+        exclusions: ["Personal trekking gear & clothing", "Travel insurance", "Transport to trailhead", "Alcoholic beverages", "Tips"],
+        highlights: ["Rotating trail selection — no two trips are the same", "Camp in meadows surrounded by 5,000m+ peaks", "Spot rare Himalayan wildlife and wildflower carpets", "Suitable for fit beginners — no technical skills required"],
+      },
+      "ghepan-lake-trek": {
+        pickup: "Sissu, Lahaul (Manali–Leh Highway)",
+        drop: "Sissu, Lahaul (Manali–Leh Highway)",
+        inclusions: ["Certified trek guide", "Camping tents & sleeping bags", "All meals (breakfast, lunch, dinner)", "First aid kit", "Porter support"],
+        exclusions: ["Personal trekking gear & clothing", "Travel insurance", "Transport to Sissu", "Alcoholic beverages", "Tips"],
+        highlights: ["Discover Lahaul's best-kept secret: a neon-blue glacial lake at 4,100m", "Walk through dense Himalayan birch and pine forests", "Virtually no crowds — a true off-the-beaten-path experience", "Views of Deo Tibba, Indrasan, and surrounding 6,000m peaks"],
+      },
+      "miyar-valley-trek": {
+        pickup: "Udaipur, Lahaul",
+        drop: "Udaipur, Lahaul",
+        inclusions: ["Lead guide + assistant guide", "Full camping kit (tents, mats, sleeping bags)", "All meals during trek", "First aid & emergency kit", "Pack horse / porter for shared equipment"],
+        exclusions: ["Personal trekking clothing & boots", "Travel insurance", "Transport to Udaipur from Manali/Keylong", "Sleeping bag rated below −10°C", "Tips"],
+        highlights: ["Trek through Himachal's own 'Valley of Flowers' — uncrowded and stunning", "Camp beside the Miyar Glacier and its seven glacial ponds", "Cross high alpine passes with views into Zanskar", "Deep wilderness — no mobile signal, no other tourists"],
+      },
+      "yunam-peak": {
+        pickup: "Darcha, Lahaul",
+        drop: "Darcha, Lahaul",
+        inclusions: ["Lead guide + high-altitude support guide", "All permits (DM + forest)", "Camping equipment for summit camp", "All meals (base camp & high camp)", "Supplemental oxygen (emergency use)", "Group first aid kit"],
+        exclusions: ["Personal mountaineering gear (crampons, ice axe, harness)", "Travel & evacuation insurance (mandatory)", "Transport to Darcha", "Sleeping bag rated below −20°C", "Tips"],
+        highlights: ["Cross the 6,000m threshold on one of India's most accessible summits", "No technical glacier travel or ropes required", "Summit views: Baralacha La, Deepak Tal, and the entire Lahaul plateau", "Ideal first high-altitude peak for fit trekkers ready to step up"],
+      },
+      "kanamo-peak": {
+        pickup: "Kibber, Spiti Valley",
+        drop: "Kibber, Spiti Valley",
+        inclusions: ["Lead guide + assistant guide", "All permits (inner line + peak)", "Full camping kit", "All meals during expedition", "Acclimatisation itinerary built in", "Group medical kit"],
+        exclusions: ["Personal trekking & mountaineering gear", "Travel & evacuation insurance (mandatory)", "Transport to Kibber from Kaza", "High-altitude sleeping bag", "Tips"],
+        highlights: ["Start from one of Earth's highest motorable villages at 4,205m", "Gradual ascent gives excellent acclimatisation across 10 days", "360° views across Spiti, Kinnaur, and the Zanskar Range at summit", "Cold desert terrain unlike any other trek in India"],
+      },
+      "deo-tibba": {
+        pickup: "Jagatsukh, Manali",
+        drop: "Jagatsukh, Manali",
+        inclusions: ["Lead mountaineer + support guide", "All permits (DM + peak fee)", "Full high-altitude camping kit", "All meals from base camp onwards", "Fixed ropes on technical sections", "Group first aid & emergency kit"],
+        exclusions: ["Personal mountaineering equipment (crampons, ice axe, harness, helmet)", "Travel & evacuation insurance (mandatory)", "Transport to Jagatsukh", "Personal sleeping bag (−20°C rated)", "Tips"],
+        highlights: ["Summit the legendary 6,001m — the classic first 6,000er for Indian mountaineers", "Traverse the Malana Glacier to reach a broad, level snow dome summit", "Views of Indrasan, Deo Tibba's twin, and a shimmering mountain lake below", "13-day itinerary built for safe acclimatisation and maximum summit success"],
+      },
+      "gulmarg-snowboard-weekend": {
+        pickup: "Gulmarg Gondola Base / Srinagar Hotel",
+        drop: "Gulmarg Gondola Base / Srinagar Hotel",
+        inclusions: ["Certified snowboard guide", "2-day gondola pass (Phase 1 + Phase 2)", "Snowboard & boot rental", "One mountain dinner at a local dhaba", "Avalanche safety briefing"],
+        exclusions: ["Personal snowboard clothing & layers", "Travel insurance", "Accommodation & main meals", "Srinagar–Gulmarg transport", "Tips"],
+        highlights: ["Ride one of Asia's highest ski resorts at 4,200m", "2km of vertical drop — from alpine treeline to open powder bowls", "Intimate small-group experience with a certified Kashmiri guide", "Après-ski in a Kashmiri wood-panelled guesthouse with kahwa tea"],
+      },
+      "pin-parvati-pass-trek": {
+        pickup: "Kasol / Barshaini, Parvati Valley",
+        drop: "Mudh Village, Pin Valley, Spiti",
+        inclusions: ["Lead guide + assistant guide", "Full camping kit (tents, mats, sleeping bags)", "All meals during trek", "Glacier crossing equipment", "First aid & emergency kit", "Inner line permits"],
+        exclusions: ["Personal trekking gear & clothing", "Travel & evacuation insurance (mandatory)", "Transport (Kasol inbound / Kaza outbound — one-way)", "Sleeping bag rated below −15°C", "Tips"],
+        highlights: ["Walk across two completely different Himalayan worlds in one trek", "Natural hot springs at Kheerganga on day 1", "Cross the 5,319m Pin Parvati Pass on glacier snow", "Arrive in the cold-desert lunar landscape of Pin Valley, Spiti"],
+      },
+      "nun-kun": {
+        pickup: "Kargil / Parkachik Village, Suru Valley",
+        drop: "Kargil / Parkachik Village, Suru Valley",
+        inclusions: ["Lead guide + 2 high-altitude support guides", "All peak & inner line permits", "Full expedition camping kit", "All meals from base camp onward", "Fixed ropes on technical sections", "High Camp oxygen support", "Evacuation plan"],
+        exclusions: ["Personal high-altitude mountaineering gear (rated to −30°C)", "Travel & emergency evacuation insurance (mandatory)", "Flights to Leh + transport to Suru Valley", "Personal medication & supplements", "Tips"],
+        highlights: ["India's most accessible 7,000m summit — the ultimate high-altitude objective", "Twin summits separated by a 4km snow plateau in the heart of Zanskar", "Technical mountaineering: crevassed glaciers, steep ice, knife-edge ridges", "21-day expedition with full base camp setup in remote Suru Valley"],
+      },
+      "pangong-bike-expedition": {
+        pickup: "Leh, Ladakh",
+        drop: "Pangong Tso, Ladakh",
+        inclusions: ["Certified cycle guide", "Quality mountain bike rental", "Support vehicle & mechanic throughout", "Helmet & basic safety gear", "Accommodation & all meals", "Chang La pass permit"],
+        exclusions: ["Personal cycling clothing & shoes", "Travel insurance", "Flights to Leh", "Alcoholic beverages", "Tips"],
+        highlights: ["Pedal over Chang La — one of the world's highest motorable passes at 5,360m", "Camp lakeside at Pangong Tso at 4,350m under a Milky Way sky", "Ride through Durbuk, Tangtse and quiet Changthang plateau villages", "Support vehicle takes luggage — you just ride and enjoy the views"],
+      },
+      "bouldering-introduction-course": {
+        pickup: "Manali Bus Stand / Hotel",
+        drop: "Manali Bus Stand / Hotel",
+        inclusions: ["Certified climbing instructor", "Chalk bag & climbing shoes rental", "Crash pads (group)", "Daily transport to boulder field", "Safety briefing & spotting instruction"],
+        exclusions: ["Personal climbing shoes (rentals available)", "Travel insurance", "Accommodation & meals", "Personal chalk bag", "Tips"],
+        highlights: ["Granite and gneiss boulders at 2,900m in an alpine forest setting", "Small groups — maximum 6 climbers per instructor", "Learn movement, technique, and footwork on real rock from day 1", "Sethan: an emerging world-class bouldering destination"],
+      },
+      "chhatru-bouldering": {
+        pickup: "Manali / Gramphoo, Lahaul",
+        drop: "Manali / Gramphoo, Lahaul",
+        inclusions: ["Certified climbing guide", "Crash pads (group)", "Chalk bag & shoe rental", "Camp accommodation & all meals", "Introduction to new and undocumented boulder problems"],
+        exclusions: ["Personal climbing gear", "Travel insurance", "Transport from Manali to Gramphoo", "Sleeping bag rated below −5°C", "Tips"],
+        highlights: ["Camp riverside on the banks of the Chandra River", "Boulder on barely-documented rock still being first-ascented", "Clear night skies: some of the best stargazing in Himachal", "A genuine wilderness bouldering adventure far from gyms and guidebooks"],
+      },
+      "lahaul-spiti-cycle": {
+        pickup: "Manali, Himachal Pradesh",
+        drop: "Kaza, Spiti Valley",
+        inclusions: ["Certified cycle guide", "Quality mountain bike rental", "Support vehicle & mechanic", "Helmet & safety gear", "Accommodation (homestays & guesthouses)", "All meals during expedition"],
+        exclusions: ["Personal cycling clothing & shoes", "Travel insurance", "Bus/flight home from Kaza", "Alcoholic beverages", "Tips"],
+        highlights: ["12 days through two of India's most dramatic high-altitude valleys", "Cross Rohtang Pass and descend into the cold desert of Spiti", "Stay in remote Lahauli and Spitian homestays — real cultural immersion", "Support vehicle follows you — all you do is ride"],
+      },
+      "mountain-bike-introduction-course": {
+        pickup: "Leh Airport / Hotel, Ladakh",
+        drop: "Leh Airport / Hotel, Ladakh",
+        inclusions: ["Certified MTB instructor", "Bike rental (hardtail MTB)", "Helmet, knee pads & gloves", "Access to Disko Valley Bike Park", "Daily skills coaching sessions"],
+        exclusions: ["Personal cycling clothing", "Travel insurance", "Flights to Leh", "Accommodation & meals", "Tips"],
+        highlights: ["Learn at Disko Valley Bike Park — the only purpose-built MTB park in Ladakh", "Progress from flat corners to drops and berms in 4 days", "Ride with views of Stok Kangri and the Ladakh Range", "Expert coaching by professional mountain bikers"],
+      },
+      "mountain-bike-trails": {
+        pickup: "Manali, Himachal Pradesh",
+        drop: "Manali, Himachal Pradesh",
+        inclusions: ["Certified MTB guide", "Bike rental (full-suspension MTB)", "Helmet & protective gear", "Shuttle to trail heads", "Trail snacks & hydration support"],
+        exclusions: ["Personal cycling clothing & shoes", "Travel insurance", "Accommodation & meals", "Bike servicing beyond normal wear", "Tips"],
+        highlights: ["Access Manali's best singletrack — handpicked by a local guide", "Descend 1,500m of vertical through pine forests to the Beas River", "Mix of cross-country flow trails and technical rocky descents", "Suitable for riders with basic off-road experience looking to push limits"],
+      },
+    };
+
+    for (const [slug, data] of Object.entries(supplementalData)) {
+      const activity = await prisma.activity.findUnique({ where: { slug }, select: { id: true } });
+      if (!activity) continue;
+
+      // Upsert pickup/drop
+      await prisma.tripLocation.upsert({
+        where: { activityId: activity.id },
+        update: { pickup: data.pickup, drop: data.drop },
+        create: { activityId: activity.id, pickup: data.pickup, drop: data.drop },
+      });
+
+      // Replace inclusions/exclusions
+      await prisma.tripInclusion.deleteMany({ where: { activityId: activity.id } });
+      await prisma.tripInclusion.createMany({
+        data: [
+          ...data.inclusions.map((item, order) => ({ activityId: activity.id, item, included: true, order })),
+          ...data.exclusions.map((item, order) => ({ activityId: activity.id, item, included: false, order })),
+        ],
+      });
+
+      // Replace highlights
+      await prisma.tripHighlight.deleteMany({ where: { activityId: activity.id } });
+      await prisma.tripHighlight.createMany({
+        data: data.highlights.map((text, order) => ({ activityId: activity.id, text, order })),
+      });
+    }
+
+    console.log("Seed complete with current trips, guides, supplemental data, and default accounts.");
   }
 
   main()

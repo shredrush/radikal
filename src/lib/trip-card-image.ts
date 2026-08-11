@@ -66,3 +66,11 @@ export function getTripCardImage(activity: TripCardImageActivity) {
 
   return "";
 }
+
+export function getTripCardImagePosition(activity: TripCardImageActivity) {
+  if (activity.slug === "lahaul-spiti-cycle") {
+    return "center 35%";
+  }
+
+  return "center";
+}

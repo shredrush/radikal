@@ -128,12 +128,55 @@ model Activity {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  guide    Guide?    @relation(fields: [guideId], references: [id])
-  slots    Slot[]
-  bookings Booking[]
-  reviews  Review[]
+  guide        Guide?          @relation(fields: [guideId], references: [id])
+  slots        Slot[]
+  bookings     Booking[]
+  reviews      Review[]
+  tripLocation TripLocation?
+  inclusions   TripInclusion[]
+  highlights   TripHighlight[]
 
   @@map("activities")
+}
+
+model TripLocation {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  pickup     String
+  drop       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@map("trip_locations")
+}
+
+model TripInclusion {
+  id         String   @id @default(cuid())
+  activityId String
+  item       String
+  included   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@map("trip_inclusions")
+}
+
+model TripHighlight {
+  id         String   @id @default(cuid())
+  activityId String
+  text       String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@map("trip_highlights")
 }
 
 // A bookable date instance of an activity. Never let `booked` exceed

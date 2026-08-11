@@ -55,6 +55,11 @@ export async function updateActivityAction(formData: FormData) {
   const guideId = asString(formData.get("guideId"));
   const images = parseImages(asString(formData.get("images")), slug);
   const categories = parseCategories(formData.getAll("categories"));
+  const pickup = asString(formData.get("pickup"));
+  const drop = asString(formData.get("drop"));
+  const inclusions = asString(formData.get("inclusions")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const exclusions = asString(formData.get("exclusions")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const highlights = asString(formData.get("highlights")).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 
   if (!activityId) {
     throw new Error("Missing activity id.");
@@ -97,6 +102,34 @@ export async function updateActivityAction(formData: FormData) {
       guideId: guideId || null,
     },
   });
+
+  // Upsert pickup/drop
+  if (pickup || drop) {
+    await prisma.tripLocation.upsert({
+      where: { activityId },
+      update: { pickup, drop },
+      create: { activityId, pickup, drop },
+    });
+  }
+
+  // Replace inclusions and exclusions
+  await prisma.tripInclusion.deleteMany({ where: { activityId } });
+  if (inclusions.length > 0 || exclusions.length > 0) {
+    await prisma.tripInclusion.createMany({
+      data: [
+        ...inclusions.map((item, order) => ({ activityId, item, included: true, order })),
+        ...exclusions.map((item, order) => ({ activityId, item, included: false, order })),
+      ],
+    });
+  }
+
+  // Replace highlights
+  await prisma.tripHighlight.deleteMany({ where: { activityId } });
+  if (highlights.length > 0) {
+    await prisma.tripHighlight.createMany({
+      data: highlights.map((text, order) => ({ activityId, text, order })),
+    });
+  }
 
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
