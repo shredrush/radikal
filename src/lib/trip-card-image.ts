@@ -11,7 +11,7 @@ export function normalizeTripImagePath(image: string, slug?: string) {
   const trimmed = image?.trim();
 
   if (!trimmed) {
-    return slug ? `/activities/${slug}/cover.png` : "";
+    return slug ? `/activities/${slug}/cover.jpg` : "";
   }
 
   if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:")) {
@@ -24,7 +24,7 @@ export function normalizeTripImagePath(image: string, slug?: string) {
     const remainder = withoutLeadingSlash.replace(/^activities\//i, "");
 
     if (!remainder || remainder === ".") {
-      return slug ? `/activities/${slug}/cover.png` : "/activities/cover.png";
+      return slug ? `/activities/${slug}/cover.jpg` : "/activities/cover.jpg";
     }
 
     if (!remainder.includes("/") && !remainder.startsWith(`${slug}/`) && !remainder.startsWith(`${slug}.`)) {
@@ -38,7 +38,7 @@ export function normalizeTripImagePath(image: string, slug?: string) {
     const remainder = withoutLeadingSlash.replace(/^activites\//i, "");
 
     if (!remainder || remainder === ".") {
-      return slug ? `/activities/${slug}/cover.png` : "/activities/cover.png";
+      return slug ? `/activities/${slug}/cover.jpg` : "/activities/cover.jpg";
     }
 
     return slug ? `/activities/${slug}/${remainder}` : `/activities/${remainder}`;
@@ -48,7 +48,7 @@ export function normalizeTripImagePath(image: string, slug?: string) {
     return `/${withoutLeadingSlash}`;
   }
 
-  return `/activities/${slug}/${withoutLeadingSlash || "cover.png"}`;
+  return `/activities/${slug}/${withoutLeadingSlash || "cover.jpg"}`;
 }
 
 export function getTripCardImage(activity: TripCardImageActivity) {
@@ -61,7 +61,7 @@ export function getTripCardImage(activity: TripCardImageActivity) {
   }
 
   if (activity.slug) {
-    return `/activities/${activity.slug}/cover.png`;
+    return `/activities/${activity.slug}/cover.jpg`;
   }
 
   return "";

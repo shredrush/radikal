@@ -179,13 +179,18 @@ export default async function TripDetailPage({
                 {activity.slots.length > 0 ? (
                   <ul className="mt-3 space-y-2">
                     {activity.slots.map((slot) => (
-                      <li key={slot.id} className="flex items-center justify-between rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-sm">
-                        <span className="font-medium text-foreground">
-                          {formatTripDateRange(slot.date, activity.durationDays)}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {Math.max(slot.capacity - slot.booked, 0)} spots left
-                        </span>
+                      <li key={slot.id}>
+                        <Link
+                          href={`/booking/${activity.id}/checkout?slot=${slot.id}`}
+                          className="group flex items-center justify-between rounded-xl border border-orange-700/70 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-orange-700 hover:bg-orange-700/10"
+                        >
+                          <span className="font-medium text-foreground transition-colors group-hover:text-orange-800">
+                            {formatTripDateRange(slot.date, activity.durationDays)}
+                          </span>
+                          <span className="text-muted-foreground transition-colors group-hover:text-orange-900/80">
+                            {Math.max(slot.capacity - slot.booked, 0)} spots left
+                          </span>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -212,7 +217,7 @@ export default async function TripDetailPage({
           </Card>
 
           <div className="flex flex-col gap-6">
-            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#111111] to-[#2b2b2b] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.55)]">
+            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.45)]">
               <p className="text-sm uppercase tracking-[0.3em] text-white/70">Starting from</p>
               <p className="mt-3 font-heading text-3xl font-semibold">{formatRupees(activity.priceInRupees)}</p>
               <p className="mt-2 text-sm text-white/80">
@@ -221,7 +226,7 @@ export default async function TripDetailPage({
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
                   size="sm"
-                  className="rounded-full"
+                  className="rounded-full bg-orange-700 text-white hover:bg-orange-800"
                   nativeButton={false}
                   render={<Link href={`/booking/${activity.id}/checkout`} />}
                 >

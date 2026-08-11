@@ -632,7 +632,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
             },
             {
               title: "Snowboarding",
-              filter: "snowboard",
+              filter: "winter",
               image:
                 "https://plus.unsplash.com/premium_photo-1708612612949-b2eaa75af46d?auto=format&fit=crop&w=900&q=80",
               position: "center 80%",
@@ -659,7 +659,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
             },
             {
               title: "Skiing",
-              filter: "ski",
+              filter: "winter",
               image:
                 "https://images.unsplash.com/photo-1586356415056-bd7a5c2bbef7?auto=format&fit=crop&w=900&q=80",
               position: "center bottom",

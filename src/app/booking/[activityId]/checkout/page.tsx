@@ -25,7 +25,11 @@ export default async function CheckoutPage({
 
   const session = await auth();
   if (!session?.user) {
-    redirect(`/login?callbackUrl=/booking/${activityId}/checkout`);
+    const callbackUrl = slotIdParam
+      ? `/booking/${activityId}/checkout?slot=${slotIdParam}`
+      : `/booking/${activityId}/checkout`;
+
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
   const activity = await prisma.activity.findUnique({

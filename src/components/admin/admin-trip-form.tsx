@@ -188,7 +188,7 @@ export function AdminTripForm({
           <div className="space-y-2">
             <Label htmlFor={`images-${activity.id}`}>Images</Label>
             <textarea id={`images-${activity.id}`} name="images" defaultValue={activity.images.join("\n")} rows={5} className="min-h-32 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
-            <p className="text-xs text-muted-foreground">Use a filename such as cover.png or a public path such as /activities/your-trip-slug/cover.png. We&apos;ll map it to the correct trip folder automatically.</p>
+            <p className="text-xs text-muted-foreground">Enter one image path or URL per line, exactly as it should be stored (for example: /activities/your-trip-slug/cover.jpg).</p>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">

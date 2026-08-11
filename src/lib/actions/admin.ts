@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { normalizeTripImagePath } from "@/lib/trip-card-image";
 
 const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
 const validCategories = [
@@ -23,12 +22,11 @@ function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
 }
 
-function parseImages(value: string, slug: string) {
+function parseImages(value: string) {
   return value
     .split(/\r?\n|,/)
     .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item) => normalizeTripImagePath(item, slug));
+    .filter(Boolean);
 }
 
 function parseCategories(values: FormDataEntryValue[]) {
@@ -53,7 +51,7 @@ export async function updateActivityAction(formData: FormData) {
   const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
   const maxGroupSize = Number.parseInt(asString(formData.get("maxGroupSize")), 10);
   const guideId = asString(formData.get("guideId"));
-  const images = parseImages(asString(formData.get("images")), slug);
+  const images = parseImages(asString(formData.get("images")));
   const categories = parseCategories(formData.getAll("categories"));
   const pickup = asString(formData.get("pickup"));
   const drop = asString(formData.get("drop"));
