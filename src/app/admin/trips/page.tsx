@@ -124,7 +124,7 @@ export default async function AdminTripsPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="rounded-full border border-[#1d4ed8]/15 bg-[#1d4ed8]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#1d4ed8]">
+                      <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
                         {getActivityTypeLabel(activity.type)}
                       </Badge>
                       <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">

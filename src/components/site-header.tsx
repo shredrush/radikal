@@ -8,7 +8,7 @@ import { SiteLogoLink } from "@/components/site-logo-link";
 export async function SiteHeader() {
   const session = await auth();
   const displayName = session?.user?.name ?? session?.user?.email ?? "User";
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=1d4ed8&color=fff&size=128&rounded=true`;
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=111111&color=fff&size=128&rounded=true`;
 
   const sportGroups = [
     {
@@ -59,7 +59,7 @@ export async function SiteHeader() {
 
           <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
             {session?.user ? (
-              <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-[#1d4ed8]">
+              <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                 <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
               </Link>
             ) : (
@@ -82,7 +82,7 @@ export async function SiteHeader() {
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                  className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                   nativeButton={false}
                   render={<Link href="/trips" />}
                 >
@@ -95,7 +95,7 @@ export async function SiteHeader() {
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
-                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                               {item.label}
                             </Link>
                           ))}
@@ -109,7 +109,7 @@ export async function SiteHeader() {
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                  className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                   nativeButton={false}
                   render={<Link href="/trips?sport=yoga" />}
                 >
@@ -122,7 +122,7 @@ export async function SiteHeader() {
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
-                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                               {item.label}
                             </Link>
                           ))}
@@ -137,7 +137,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="xs"
-                className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/community" />}
               >
@@ -146,7 +146,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="xs"
-                className="h-8 w-full rounded-full px-2 text-[10px] font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="h-8 w-full rounded-full px-2 text-[10px] font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/login" />}
               >
@@ -173,7 +173,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8] sm:px-5"
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary sm:px-5"
                 nativeButton={false}
                 render={<Link href="/login" />}
               >
@@ -181,15 +181,15 @@ export async function SiteHeader() {
               </Button>
               {session?.user ? (
                 <div className="group relative">
-                  <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-[#1d4ed8]">
+                  <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                     <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                   </Link>
                   <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                    <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                    <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                       Profile
                     </Link>
                     <form action={logoutAction}>
-                      <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                      <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                         Logout
                       </button>
                     </form>
@@ -213,7 +213,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/trips" />}
               >
@@ -226,7 +226,7 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                             {item.label}
                           </Link>
                         ))}
@@ -240,7 +240,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/trips?sport=yoga" />}
               >
@@ -253,7 +253,7 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                             {item.label}
                           </Link>
                         ))}
@@ -266,7 +266,7 @@ export async function SiteHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+              className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
               render={<Link href="/community" />}
             >
@@ -292,7 +292,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/trips" />}
               >
@@ -305,7 +305,7 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                             {item.label}
                           </Link>
                         ))}
@@ -319,7 +319,7 @@ export async function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+                className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
                 render={<Link href="/trips?sport=yoga" />}
               >
@@ -332,7 +332,7 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
                             {item.label}
                           </Link>
                         ))}
@@ -345,7 +345,7 @@ export async function SiteHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-full text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8]"
+              className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
               render={<Link href="/community" />}
             >
@@ -357,7 +357,7 @@ export async function SiteHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-[#1d4ed8]/5 hover:text-[#1d4ed8] sm:px-5"
+              className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary sm:px-5"
               nativeButton={false}
               render={<Link href="/login" />}
             >
@@ -365,15 +365,15 @@ export async function SiteHeader() {
             </Button>
             {session?.user ? (
               <div className="group relative">
-                <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-[#1d4ed8]">
+                <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                   <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                 </Link>
                 <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                  <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                     Profile
                   </Link>
                   <form action={logoutAction}>
-                    <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-[#1d4ed8]/8 hover:text-[#1d4ed8]">
+                    <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                       Logout
                     </button>
                   </form>

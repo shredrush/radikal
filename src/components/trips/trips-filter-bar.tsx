@@ -75,7 +75,7 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("sport", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 bg-[#1d4ed8] text-white hover:bg-[#1e40af]"
+                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 bg-black text-white hover:bg-neutral-800"
                         : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
                     }
                   >
@@ -101,7 +101,7 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("travelStyle", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 text-white bg-[#1d4ed8] hover:bg-[#1e40af]"
+                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 text-white bg-black hover:bg-neutral-800"
                         : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
                     }
                   >

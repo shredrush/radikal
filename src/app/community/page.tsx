@@ -30,12 +30,12 @@ const pillars = [
 
 export default function CommunityPage() {
   return (
-    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_35%)]">
+    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <section className="overflow-hidden rounded-[2rem] border border-[#1d4ed8]/15 bg-white/80 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
           <div className="grid gap-8 px-6 py-10 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-16">
             <div className="flex flex-col justify-center gap-6">
-              <div className="inline-flex w-fit items-center rounded-full border border-[#1d4ed8]/15 bg-[#1d4ed8]/10 px-3 py-1.5 text-sm font-medium text-[#1d4ed8]">
+              <div className="inline-flex w-fit items-center rounded-full border border-black/10 bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground">
                 The Radikal community
               </div>
               <div className="space-y-4">
@@ -49,14 +49,14 @@ export default function CommunityPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/trips"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#1d4ed8] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1e40af]"
+                  className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
                 >
                   Explore trips
                   <ArrowRight size={16} />
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-foreground transition hover:border-[#1d4ed8]/30 hover:text-[#1d4ed8]"
+                  className="rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-foreground transition hover:border-black/20 hover:text-black"
                 >
                   Join the community
                 </Link>
@@ -64,20 +64,20 @@ export default function CommunityPage() {
             </div>
 
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-md rounded-[1.75rem] border border-[#1d4ed8]/15 bg-gradient-to-br from-[#eef4ff] via-white to-[#dbeafe] p-6 shadow-inner">
+              <div className="w-full max-w-md rounded-[1.75rem] border border-black/10 bg-white p-6 shadow-inner">
                 <div className="rounded-[1.5rem] border border-white/60 bg-white/80 p-6">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#1d4ed8]">What you can expect</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">What you can expect</p>
                   <ul className="mt-5 space-y-3 text-sm leading-7 text-muted-foreground">
                     <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#1d4ed8]" />
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
                       Carefully matched guides who are vetted for safety, experience and local knowledge.
                     </li>
                     <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#1d4ed8]" />
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
                       Small-group travel that feels personal rather than packed.
                     </li>
                     <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#1d4ed8]" />
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
                       Trips shaped around nature, slower pacing and responsible tourism.
                     </li>
                   </ul>
@@ -92,8 +92,8 @@ export default function CommunityPage() {
             const Icon = pillar.icon;
 
             return (
-              <article key={pillar.title} className="rounded-[1.5rem] border border-border/70 bg-background/80 p-6 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)]">
-                <div className="mb-4 inline-flex rounded-full bg-[#1d4ed8]/10 p-3 text-[#1d4ed8]">
+              <article key={pillar.title} className="rounded-[1.5rem] border border-border/70 bg-white p-6 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)]">
+                <div className="mb-4 inline-flex rounded-full bg-black/5 p-3 text-foreground">
                   <Icon size={20} />
                 </div>
                 <h2 className="font-heading text-2xl font-semibold text-foreground">{pillar.title}</h2>

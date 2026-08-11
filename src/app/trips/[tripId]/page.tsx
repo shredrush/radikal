@@ -199,7 +199,7 @@ export default async function TripDetailPage({
                   <ul className="mt-3 space-y-2">
                     {activity.highlights.map((h) => (
                       <li key={h.id} className="flex items-start gap-2">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1d4ed8]" />
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-black" />
                         <span>{h.text}</span>
                       </li>
                     ))}
@@ -212,7 +212,7 @@ export default async function TripDetailPage({
           </Card>
 
           <div className="flex flex-col gap-6">
-            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#1d4ed8] to-[#0f172a] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.55)]">
+            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#111111] to-[#2b2b2b] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.55)]">
               <p className="text-sm uppercase tracking-[0.3em] text-white/70">Starting from</p>
               <p className="mt-3 font-heading text-3xl font-semibold">{formatRupees(activity.priceInRupees)}</p>
               <p className="mt-2 text-sm text-white/80">
@@ -323,9 +323,9 @@ export default async function TripDetailPage({
                         <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-foreground">{review.user.name}</span>
-                            <span className="flex items-center gap-0.5 text-amber-500">
+                            <span className="flex items-center gap-0.5 text-white">
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className={`h-3.5 w-3.5 ${i < review.rating ? "text-amber-500" : "text-muted-foreground/30"}`}>
+                                <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className={`h-3.5 w-3.5 ${i < review.rating ? "text-white" : "text-muted-foreground/30"}`}>
                                   <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
                                 </svg>
                               ))}

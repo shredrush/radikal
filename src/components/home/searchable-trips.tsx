@@ -400,11 +400,11 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                   type="button"
                   onClick={() => setActivePanel(isActive ? null : (item.id as FilterPanel))}
                   className={`flex min-w-[calc(50%-0.375rem)] flex-1 flex-col items-start gap-0.5 rounded-[0.9rem] border px-1.5 py-1.25 text-left transition sm:min-w-0 sm:flex-[1_1_0%] sm:px-2.5 sm:py-1.5 ${
-                    isActive ? "border-[#1d4ed8] bg-[#1d4ed8]/8 shadow-sm" : "border-border/70 bg-background/80 hover:border-[#1d4ed8]/40"
+                    isActive ? "border-black bg-black/10 shadow-sm" : "border-border/70 bg-background/80 hover:border-black/30"
                   }`}
                 >
                   <span className="flex items-center gap-1 text-[0.72rem] font-semibold text-foreground sm:text-sm">
-                    <Icon className="size-3 shrink-0 text-[#1d4ed8] sm:size-3.5" />
+                    <Icon className="size-3 shrink-0 text-foreground sm:size-3.5" />
                     {item.label}
                   </span>
                   <span className="hidden text-[0.65rem] text-muted-foreground sm:block sm:text-xs">{item.description}</span>
@@ -414,7 +414,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
             <button
               type="button"
               onClick={handleSearch}
-              className="flex min-w-[calc(50%-0.375rem)] flex-1 items-center justify-center gap-1 rounded-[0.9rem] border border-[#1d4ed8] bg-background/95 px-1.25 py-1 text-[#1d4ed8] transition hover:bg-background/100 sm:min-w-0 sm:flex-[0_0_auto] sm:px-2 sm:py-1.5"
+              className="flex min-w-[calc(50%-0.375rem)] flex-1 items-center justify-center gap-1 rounded-[0.9rem] border border-black bg-background/95 px-1.25 py-1 text-foreground transition hover:bg-black/5 sm:min-w-0 sm:flex-[0_0_auto] sm:px-2 sm:py-1.5"
             >
               <Search className="size-3.5 shrink-0 sm:size-4" />
               <span className="text-[0.72rem] font-semibold sm:text-xs">Search</span>
@@ -436,7 +436,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                           type="button"
                           onClick={() => toggleSelection(sport.id, selectedSports, setSelectedSports)}
                           className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                            isSelected ? "border-[#1d4ed8] bg-[#1d4ed8] text-white" : "border-border/70 bg-background text-foreground"
+                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
                           }`}
                         >
                           {isSelected ? <Check className="size-3.5" /> : null}
@@ -464,7 +464,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                         setEndDate("");
                         setDisplayMonth(new Date());
                       }}
-                      className="text-sm font-medium text-[#1d4ed8] transition hover:text-[#1e40af]"
+                      className="text-sm font-medium text-foreground transition hover:text-black"
                     >
                       Clear dates
                     </button>
@@ -518,7 +518,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                             onClick={() => handleDateSelection(dateValue)}
                             className={`flex h-8 items-center justify-center rounded-full text-xs transition ${
                               cell.isCurrentMonth ? "text-foreground" : "text-muted-foreground/70"
-                            } ${isSelected ? "bg-[#1d4ed8] text-white" : isInRange ? "bg-[#1d4ed8]/10 text-[#1d4ed8]" : "hover:bg-muted"}`}
+                            } ${isSelected ? "bg-black text-white" : isInRange ? "bg-black/10 text-foreground" : "hover:bg-muted"}`}
                           >
                             {cell.date.getDate()}
                           </button>
@@ -529,12 +529,12 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
 
                   <div className="flex flex-wrap gap-2">
                     {startDate ? (
-                      <span className="rounded-full border border-[#1d4ed8]/20 bg-[#1d4ed8]/10 px-3 py-1 text-sm font-medium text-[#1d4ed8]">
+                      <span className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-sm font-medium text-foreground">
                         From {formatDateForDisplay(startDate)}
                       </span>
                     ) : null}
                     {endDate ? (
-                      <span className="rounded-full border border-[#1d4ed8]/20 bg-[#1d4ed8]/10 px-3 py-1 text-sm font-medium text-[#1d4ed8]">
+                      <span className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-sm font-medium text-foreground">
                         To {formatDateForDisplay(endDate)}
                       </span>
                     ) : null}
@@ -555,7 +555,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                           type="button"
                           onClick={() => toggleSelection(location, selectedLocations, setSelectedLocations)}
                           className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
-                            isSelected ? "border-[#1d4ed8] bg-[#1d4ed8] text-white" : "border-border/70 bg-background text-foreground"
+                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
                           }`}
                         >
                           {isSelected ? <Check className="size-3.5" /> : null}
@@ -580,7 +580,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                           type="button"
                           onClick={() => toggleSelection(style.id, selectedTravelStyles, setSelectedTravelStyles)}
                           className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                            isSelected ? "border-[#1d4ed8] bg-[#1d4ed8] text-white" : "border-border/70 bg-background text-foreground"
+                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
                           }`}
                         >
                           {isSelected ? <Check className="size-3.5" /> : null}
@@ -604,7 +604,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                       setEndDate("");
                       setActivePanel(null);
                     }}
-                    className="text-sm font-medium text-[#1d4ed8] transition hover:text-[#1e40af]"
+                    className="text-sm font-medium text-foreground transition hover:text-black"
                   >
                     Clear filters
                   </button>
@@ -743,7 +743,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
         </div>
       </div>
 
-      <div className="border-b border-border/60 bg-[linear-gradient(135deg,#f3f8ff_0%,#fff7ed_100%)] px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
+      <div className="border-b border-border/60 bg-white px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
          <div className="mx-auto max-w-7xl">
            <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
@@ -801,7 +801,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
          <div className="mt-6 flex justify-center">
             <Button
               size="sm"
-              className="rounded-full bg-[#1d4ed8] px-4 text-white hover:bg-[#1e40af]"
+              className="rounded-full bg-black px-4 text-white hover:bg-neutral-800"
               nativeButton={false}
               render={<Link href="/trips" />}
             >
