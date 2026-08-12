@@ -2,24 +2,24 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="w-full border-t border-border/60 bg-[linear-gradient(135deg,#111111_0%,#1d1d1d_45%,#2f2f2f_100%)] px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-10 lg:py-10">
-      <div className="mx-auto flex max-w-8xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+    <footer className="w-full border-t border-border/60 bg-[linear-gradient(135deg,#111111_0%,#1d1d1d_45%,#2f2f2f_100%)] px-4 py-8 text-white sm:px-6 sm:py-10 lg:px-10 lg:py-14">
+      <div className="mx-auto flex max-w-8xl flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
         <div className="max-w-2xl flex-1">
-          <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.3em] text-white/80">
+          <p className="text-[clamp(0.72rem,0.85vw,0.86rem)] font-semibold uppercase tracking-[0.32em] text-white/80">
             Radikal
           </p>
-          <h4 className="mt-1 max-w-[560px] whitespace-normal font-heading text-[clamp(0.95rem,3.8vw,2.1rem)] font-semibold leading-tight tracking-wide text-white">
+          <h4 className="mt-2 max-w-[560px] whitespace-normal font-heading text-[clamp(1.1rem,4.4vw,2.3rem)] font-semibold leading-[1.1] tracking-wide text-white">
             Crafted in the Himalayas for unforgettable experiences
           </h4>
-          <p className="mt-2 text-[clamp(0.8rem,1vw,1rem)] leading-6 text-white/80">
+          <p className="mt-3 max-w-[640px] text-[clamp(0.9rem,1.08vw,1.08rem)] leading-7 text-white/80">
             Discover curated, small-group adventures with certified local guides, flexible custom itineraries, and meaningful sustainable travel designed around the Indian Himalayas.
           </p>
         </div>
 
-        <div className="flex w-full max-w-[320px] flex-shrink-0 justify-start lg:ml-10 lg:justify-end">
-          <div className="w-full max-w-full space-y-2 text-left lg:max-w-[180px] lg:text-right">
-            <p className="text-[clamp(0.7rem,0.8vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-white/80">Explore</p>
-            <div className="flex flex-col gap-1.5 text-[clamp(0.8rem,0.95vw,0.95rem)] text-white/80">
+        <div className="flex w-full max-w-[360px] flex-shrink-0 justify-start lg:ml-10 lg:justify-end">
+          <div className="w-full max-w-full space-y-3 text-left lg:max-w-[200px] lg:text-right">
+            <p className="text-[clamp(0.75rem,0.85vw,0.88rem)] font-semibold uppercase tracking-[0.25em] text-white/80">Explore</p>
+            <div className="flex flex-col gap-2 text-[clamp(0.9rem,1vw,1.05rem)] text-white/80">
               <Link href="/" className="transition hover:text-white">
                 Home
               </Link>
@@ -40,7 +40,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="mt-6 flex justify-center border-t border-white/20 pt-4 text-[clamp(0.7rem,0.85vw,0.85rem)] text-white/80">
+      <div className="mt-8 flex justify-center border-t border-white/20 pt-5 text-[clamp(0.75rem,0.9vw,0.9rem)] text-white/80">
         <p>© 2026 Radikal</p>
       </div>
     </footer>

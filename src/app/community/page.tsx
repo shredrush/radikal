@@ -34,10 +34,8 @@ const getCommunityGuides = unstable_cache(
 const guideImageMap: Record<string, string> = {
   tenzin: "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=900&q=80",
   tashi: "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=900&q=80",
-  ritu: "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=900&q=80",
   meera: "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=900&q=80",
   nawang: "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=900&q=80",
-  "tenzin-dorjee": "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=900&q=80",
   pema: "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=900&q=80",
 };
 

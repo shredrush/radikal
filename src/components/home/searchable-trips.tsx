@@ -321,7 +321,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
     },
     {
       id: "tenzin",
-      name: "Tenzin Dorjee",
+      name: "Tenzin Namgyal",
       region: "Ladakh",
       certifications: ["IMF Certified", "Mountain Rescue"],
       image:
@@ -650,8 +650,8 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               title: "Yoga and Meditation",
               filter: "yoga",
               image:
-                "https://images.unsplash.com/photo-1667586733525-0eea514bfb49?auto=format&fit=crop&w=900&q=80",
-              position: "center 65%",
+                "https://images.unsplash.com/photo-1554245120-94a6fc6feb96?auto=format&fit=crop&w=900&q=80",
+              position: "center 80%",
             },
             {
               title: "Summit Expedition",
@@ -692,7 +692,9 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                 alt={item.title}
                 fill
                 className="object-cover"
+                style={{ objectPosition: item.position }}
                 sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 50vw, 25vw"
+                loading="eager"
               />
               <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
               <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
@@ -754,6 +756,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 33vw, 16vw"
+                  loading="lazy"
                 />
                 <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
                 <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">

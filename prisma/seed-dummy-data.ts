@@ -81,16 +81,6 @@
         certifications: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Advanced Mountaineering", yearIssued: 2012 }],
       },
       {
-        id: "ritu",
-        slug: "ritu",
-        name: "Ritu Thakur",
-        bio: "One of the few female certified ski instructors in Manali, specializing in small women-only backcountry groups.",
-        location: "Manali, Himachal Pradesh",
-        experienceYears: 8,
-        languages: ["English", "Hindi"],
-        certifications: [{ issuingBody: "Atal Bihari Vajpayee Institute of Mountaineering & Allied Sports (ABVIMAS)", title: "Ski Instructor", yearIssued: 2016 }],
-      },
-      {
         id: "meera",
         slug: "meera",
         name: "Meera Rawat",
@@ -109,16 +99,6 @@
         experienceYears: 9,
         languages: ["English", "Hindi", "Tibetan"],
         certifications: [{ issuingBody: "Yoga Alliance", title: "200h Yoga Teacher Training", yearIssued: 2019 }],
-      },
-      {
-        id: "tenzin-dorjee",
-        slug: "tenzin-dorjee",
-        name: "Tenzin Dorjee",
-        bio: "Ladakh-based cycling and expedition guide with experience across high-altitude roads, passes, and mountain camps.",
-        location: "Leh, Ladakh",
-        experienceYears: 13,
-        languages: ["English", "Hindi", "Ladakhi"],
-        certifications: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Mountain Rescue", yearIssued: 2014 }],
       },
       {
         id: "pema",
@@ -162,7 +142,7 @@
       guides.push(guide);
     }
 
-    const [tenzinNamgyal, tashi, ritu, meera, nawang, tenzinDorjee, pemaChhoden] = guides;
+    const [tenzinNamgyal, tashi, meera, nawang, pemaChhoden] = guides;
 
     const activitiesData = [
       {
@@ -202,7 +182,7 @@
         durationDays: 6,
         images: ["/activities/sethan-snowboarding-course.jpg"],
         maxGroupSize: 4,
-        guideId: ritu.id,
+        guideId: tashi.id,
       },
       {
         slug: "backcountry-snowboarding-expedition",
@@ -215,7 +195,7 @@
         durationDays: 6,
         images: ["/activities/backcountry-snowboarding-expedition.jpg"],
         maxGroupSize: 4,
-        guideId: ritu.id,
+        guideId: tashi.id,
       },
       {
         slug: "lahaul-multi-day-hike",
@@ -345,7 +325,7 @@
         durationDays: 4,
         images: ["/activities/bike-pangong.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinDorjee.id,
+        guideId: tenzinNamgyal.id,
       },
       {
         slug: "bouldering-introduction-course",
@@ -384,7 +364,7 @@
         durationDays: 12,
         images: ["/activities/lahaul-cycle.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinDorjee.id,
+        guideId: tenzinNamgyal.id,
       },
       {
         slug: "mountain-bike-introduction-course",
@@ -397,7 +377,7 @@
         durationDays: 4,
         images: ["/activities/mountain-bike-intro.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinDorjee.id,
+        guideId: tenzinNamgyal.id,
       },
       {
         slug: "mountain-bike-trails",
@@ -410,7 +390,7 @@
         durationDays: 3,
         images: ["/activities/mountain-bike-trails.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinDorjee.id,
+        guideId: tenzinNamgyal.id,
       },
     ];
 
