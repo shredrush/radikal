@@ -686,8 +686,14 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               key={item.title}
               href={item.filter ? `/trips?sport=${item.filter}` : "/trips"}
               className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:h-[130px] lg:h-[140px]"
-              style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: item.position ?? "center" }}
             >
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 50vw, 25vw"
+              />
               <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
               <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
                 <p className="text-[clamp(0.8rem,1vw,1rem)] font-semibold text-white">{item.title}</p>
@@ -741,8 +747,14 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                 key={item.title}
                 href="/trips"
                 className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
-                style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
               >
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 33vw, 16vw"
+                />
                 <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
                 <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
                   <p className="text-[clamp(0.7rem,1.8vw,1rem)] font-semibold leading-4 text-white sm:text-lg">{item.title}</p>
@@ -770,14 +782,15 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                 className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border-0 bg-background/95 py-0 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.28)] sm:h-[480px]"
                 onClick={() => window.location.href = `/trips/${activity.slug}`}
               >
-                <div
-                  className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]"
-                  style={{
-                    backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.24) 100%), url(${getTripCardImage(activity)})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: getTripCardImagePosition(activity),
-                  }}
-                >
+                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]">
+                  <Image
+                    src={getTripCardImage(activity)}
+                    alt={activity.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
                 </div>
                 <div className="flex flex-1 flex-col justify-between gap-1 p-2.5 sm:p-3">
                   <div className="space-y-1.5">

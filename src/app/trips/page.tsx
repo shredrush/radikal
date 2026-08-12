@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 
@@ -176,14 +177,14 @@ export default async function TripsPage({
                       {group.activities.map((activity) => (
                         <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
                           <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
-                            <div
-                              className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]"
-                              style={{
-                                backgroundImage: `url(${getTripCardImage(activity)})`,
-                                backgroundSize: "cover",
-                                backgroundPosition: getTripCardImagePosition(activity),
-                              }}
-                            >
+                            <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
+                              <Image
+                                src={getTripCardImage(activity)}
+                                alt={activity.title}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
+                              />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                             </div>
                             <div className="flex flex-1 flex-col justify-between gap-2 p-4">
@@ -241,14 +242,14 @@ export default async function TripsPage({
                           {group.activities.map((activity) => (
                             <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
                               <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
-                                <div
-                                  className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]"
-                                  style={{
-                                    backgroundImage: `url(${getTripCardImage(activity)})`,
-                                    backgroundSize: "cover",
-                                    backgroundPosition: getTripCardImagePosition(activity),
-                                  }}
-                                >
+                                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
+                                  <Image
+                                    src={getTripCardImage(activity)}
+                                    alt={activity.title}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
+                                  />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
                                 </div>
                                 <div className="flex flex-1 flex-col justify-between gap-2 p-4">

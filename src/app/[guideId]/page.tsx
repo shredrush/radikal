@@ -189,14 +189,16 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               {guide.activities.map((activity) => (
                 <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
                   <Card className="flex h-full min-h-[360px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
-                    <div
-                      className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]"
-                      style={{
-                        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.24) 100%), url(${getTripCardImage(activity)})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: getTripCardImagePosition(activity),
-                      }}
-                    />
+                    <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
+                      <Image
+                        src={getTripCardImage(activity)}
+                        alt={activity.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 33vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
+                    </div>
 
                     <div className="flex flex-1 flex-col justify-between gap-2 p-4">
                       <div className="space-y-1.5">

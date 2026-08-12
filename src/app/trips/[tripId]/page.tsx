@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { unstable_cache } from "next/cache";
 
 import { Button } from "@/components/ui/button";
@@ -123,10 +124,18 @@ export default async function TripDetailPage({
               const slots = Array.from({ length: 4 }, (_, i) => imgs[i % imgs.length]);
               return (
                 <div className="grid h-[340px] grid-cols-4 grid-rows-2 gap-0.5 sm:h-[420px]">
-                  <div className="col-span-2 row-span-2 bg-muted/60 bg-cover bg-center" style={{ backgroundImage: `url(${slots[0]})` }} />
-                  <div className="col-span-1 row-span-1 bg-muted/60 bg-cover bg-center" style={{ backgroundImage: `url(${slots[1]})` }} />
-                  <div className="col-span-1 row-span-2 bg-muted/60 bg-cover bg-center" style={{ backgroundImage: `url(${slots[3]})` }} />
-                  <div className="col-span-1 row-span-1 bg-muted/60 bg-cover bg-center" style={{ backgroundImage: `url(${slots[2]})` }} />
+                  <div className="col-span-2 row-span-2 relative bg-muted/60 overflow-hidden">
+                    <Image src={slots[0]} alt="Trip gallery" fill className="object-cover" sizes="50vw" />
+                  </div>
+                  <div className="col-span-1 row-span-1 relative bg-muted/60 overflow-hidden">
+                    <Image src={slots[1]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
+                  </div>
+                  <div className="col-span-1 row-span-2 relative bg-muted/60 overflow-hidden">
+                    <Image src={slots[3]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
+                  </div>
+                  <div className="col-span-1 row-span-1 relative bg-muted/60 overflow-hidden">
+                    <Image src={slots[2]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
+                  </div>
                 </div>
               );
             })()}

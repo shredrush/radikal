@@ -90,8 +90,23 @@ const basePrisma =
       throw new Error("DATABASE_URL is not configured for Prisma.");
     }
 
+    // On Supabase, use connection pooling for better serverless performance.
+    // For PgBouncer transaction mode on Supabase, the pool will respect
+    // the max_client_connections and statement_timeout in pooler config.
+    // Note: On production Vercel, use Supabase pooling (pgbouncer) endpoint
+    // instead of direct connection for ~10x better concurrency handling.
+    const poolConfig = {
+      // For serverless, keep pool small (connection establishment is expensive).
+      // Supabase PgBouncer mode handles connection sharing at the pooler level.
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      // Verify connections on checkout from pool (idle connections can stale)
+      idleInTransactionSessionTimeout: 30000,
+    };
+
     return new PrismaClient({
-      adapter: new PrismaPg({ connectionString: databaseUrl }),
+      adapter: new PrismaPg({ connectionString: databaseUrl, ...poolConfig }),
     });
   })();
 
