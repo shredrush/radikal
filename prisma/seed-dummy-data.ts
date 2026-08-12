@@ -191,9 +191,30 @@
           },
         },
       }),
+      prisma.guide.upsert({
+        where: { slug: "pema-chhoden" },
+        update: {
+          name: "Pema Chhoden",
+          bio: "Sikkim-based trekking guide with a focus on high-altitude routes, cultural immersion, and safe mountain leadership.",
+          location: "Gangtok, Sikkim",
+          experienceYears: 11,
+          languages: ["English", "Hindi", "Nepali"],
+        },
+        create: {
+          slug: "pema-chhoden",
+          name: "Pema Chhoden",
+          bio: "Sikkim-based trekking guide with a focus on high-altitude routes, cultural immersion, and safe mountain leadership.",
+          location: "Gangtok, Sikkim",
+          experienceYears: 11,
+          languages: ["English", "Hindi", "Nepali"],
+          certifications: {
+            create: [{ issuingBody: "Himalayan Mountaineering Institute", title: "High Altitude Trekking", yearIssued: 2015 }],
+          },
+        },
+      }),
     ]);
 
-    const [tenzinNamgyal, tashi, ritu, meera, nawang, tenzinDorjee] = guides;
+    const [tenzinNamgyal, tashi, ritu, meera, nawang, tenzinDorjee, pemaChhoden] = guides;
 
     const activitiesData = [
       {
@@ -207,7 +228,7 @@
         durationDays: 4,
         images: ["/activities/spiti-meditation-escape.jpg"],
         maxGroupSize: 6,
-        guideId: ritu.id,
+        guideId: nawang.id,
       },
       {
         slug: "ladakh-yoga-course",
@@ -220,7 +241,7 @@
         durationDays: 5,
         images: ["/activities/ladakh-yoga-course.jpg"],
         maxGroupSize: 6,
-        guideId: ritu.id,
+        guideId: nawang.id,
       },
       {
         slug: "sethan-snowboarding-course",
@@ -233,7 +254,7 @@
         durationDays: 6,
         images: ["/activities/sethan-snowboarding-course.jpg"],
         maxGroupSize: 4,
-        guideId: tenzinNamgyal.id,
+        guideId: ritu.id,
       },
       {
         slug: "backcountry-snowboarding-expedition",
@@ -246,7 +267,7 @@
         durationDays: 6,
         images: ["/activities/backcountry-snowboarding-expedition.jpg"],
         maxGroupSize: 4,
-        guideId: tenzinNamgyal.id,
+        guideId: ritu.id,
       },
       {
         slug: "lahaul-multi-day-hike",
@@ -259,7 +280,7 @@
         durationDays: 3,
         images: ["/activities/lahaul-multi-day-hike.jpg"],
         maxGroupSize: 5,
-        guideId: tenzinNamgyal.id,
+        guideId: tashi.id,
       },
       {
         slug: "ghepan-lake-trek",
@@ -272,7 +293,7 @@
         durationDays: 3,
         images: ["/activities/ghepan-lake-lahaul-trek.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: tashi.id,
       },
       {
         slug: "miyar-valley-trek",
@@ -285,7 +306,7 @@
         durationDays: 5,
         images: ["/activities/miyar-valley-lahaul-trek.jpg"],
         maxGroupSize: 4,
-        guideId: tenzinNamgyal.id,
+        guideId: tashi.id,
       },
       {
         slug: "yunam-peak",
@@ -337,7 +358,7 @@
         durationDays: 3,
         images: ["/activities/snowboard-gulmarg.jpg"],
         maxGroupSize: 5,
-        guideId: tenzinNamgyal.id,
+        guideId: meera.id,
       },
       {
         slug: "pin-parvati-pass-trek",
@@ -350,7 +371,7 @@
         durationDays: 8,
         images: ["/activities/trek-pin-parvati.jpg"],
         maxGroupSize: 8,
-        guideId: tenzinNamgyal.id,
+        guideId: pemaChhoden.id,
       },
       {
         slug: "nun-kun",
@@ -376,7 +397,7 @@
         durationDays: 4,
         images: ["/activities/bike-pangong.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: tenzinDorjee.id,
       },
       {
         slug: "bouldering-introduction-course",
@@ -402,7 +423,7 @@
         durationDays: 5,
         images: ["/activities/chhatru-rockclimb.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: pemaChhoden.id,
       },
       {
         slug: "lahaul-spiti-cycle",
@@ -415,7 +436,7 @@
         durationDays: 12,
         images: ["/activities/lahaul-cycle.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: tenzinDorjee.id,
       },
       {
         slug: "mountain-bike-introduction-course",
@@ -428,7 +449,7 @@
         durationDays: 4,
         images: ["/activities/mountain-bike-intro.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: tenzinDorjee.id,
       },
       {
         slug: "mountain-bike-trails",
@@ -441,7 +462,7 @@
         durationDays: 3,
         images: ["/activities/mountain-bike-trails.jpg"],
         maxGroupSize: 6,
-        guideId: tenzinNamgyal.id,
+        guideId: tenzinDorjee.id,
       },
     ];
 

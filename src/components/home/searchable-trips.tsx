@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, MapPin, Search, Sparkles, Users } from "lucide-react";
@@ -329,10 +330,18 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
     {
       name: "Nawang Dolma",
       region: "Arunachal Pradesh",
-      certifications: ["Yoga Instructor", "Ecotourism Guide"],
+      certifications: ["Yoga Instructor"],
       adventuresLed: "28+",
       image:
         "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Pema Chhoden",
+      region: "Sikkim",
+      certifications: ["High Altitude Trekking", "First Aid"],
+      adventuresLed: "18+",
+      image:
+        "https://images.unsplash.com/photo-1548789997-82da68437ad8?w=900?auto=format&fit=crop&w=400&q=80",
     },
   ];
 
@@ -621,21 +630,21 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               filter: "trek",
               image:
                 "https://plus.unsplash.com/premium_photo-1692976236758-817620ab62ba??auto=format&fit=crop&w=900&q=80",
-              position: "center bottom",
+              position: "center 40%",
             },
             {
               title: "Cycling",
               filter: "bike",
               image:
                 "https://images.unsplash.com/photo-1604748954134-457791b2ce9b?auto=format&fit=crop&w=900&q=80",
-              position: "center 95%",
+              position: "center 75%",
             },
             {
               title: "Snowboarding",
               filter: "winter",
               image:
                 "https://plus.unsplash.com/premium_photo-1708612612949-b2eaa75af46d?auto=format&fit=crop&w=900&q=80",
-              position: "center 80%",
+              position: "center 65%",
             },
             {
               title: "Yoga and Meditation",
@@ -649,13 +658,14 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               filter: "expedition",
               image:
                 "https://images.unsplash.com/photo-1643903096045-07741be1f245?auto=format&fit=crop&w=900&q=80",
-              position: "center bottom",
+              position: "center 50%",
             },
             {
               title: "Rock Climbing",
               filter: "rockclimb",
               image:
                 "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80",
+              position: "center 30%",
             },
             {
               title: "Skiing",
@@ -669,7 +679,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               filter: undefined,
               image:
                 "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80",
-              position: "center 80%",
+              position: "center 70%",
             },
           ].map((item) => (
             <Link
@@ -814,7 +824,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
         </div>
  
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="mx-auto w-full max-w-8xl">
             <div className="mb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 More than a booking platform — a home for guides
@@ -824,55 +834,50 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               </h4>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guideProfiles.map((guide) => (
-                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)]">
-                  <CardHeader className="gap-1 p-1.5">
-                    <div className="flex flex-col items-center gap-1.5 text-center">
-                      <img
+                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 py-0 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)]">
+                  <CardHeader className="gap-0 p-0 pb-0 px-0">
+                    <div className="flex flex-col items-center text-center">
+                      <Image
                         src={guide.image}
                         alt={guide.name}
-                        className="h-20 w-full rounded-[0.7rem] object-cover shadow-sm sm:h-24 lg:h-24"
+                        width={400}
+                        height={320}
+                        className="h-32 w-full rounded-b-[0.7rem] rounded-t-[0.85rem] object-cover shadow-sm sm:h-36 lg:h-40"
                       />
-                      <div className="w-full">
-                        <div className="flex items-center justify-center gap-1">
-                          <CardTitle className="text-[clamp(0.68rem,0.75vw,0.78rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                          <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-emerald-600 text-[7px] font-bold text-white" aria-label="Verified guide">
-                            ✓
-                          </span>
+                      <div className="w-full px-2 pb-3 pt-2">
+                        <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
+                        <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.region}</p>
+                        <div className="mt-1.5 flex justify-center">
+                          <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.5 py-0.5 text-[clamp(0.62rem,0.72vw,0.76rem)] font-medium text-[#c2410c]">
+                            {guide.adventuresLed} adventures led
+                          </div>
                         </div>
-                        <p className="mt-0.5 text-[clamp(0.58rem,0.64vw,0.66rem)] text-muted-foreground">{guide.region}</p>
+                        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                          {guide.certifications.map((certification) => (
+                            <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.72vw,0.78rem)] font-medium text-foreground/90">
+                              {certification}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col gap-1 p-1.5 pt-0">
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {guide.certifications.map((certification) => (
-                        <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1 py-0.35 text-[clamp(0.5rem,0.56vw,0.58rem)] font-medium text-foreground/90">
-                          {certification}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="mt-auto flex justify-center">
-                      <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1 py-0.35 text-[clamp(0.5rem,0.56vw,0.58rem)] font-medium text-[#c2410c]">
-                        {guide.adventuresLed} adventures led
-                      </div>
-                    </div>
-                  </CardContent>
                 </Card>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="border-b border-border/60 bg-[#f3f8ff] px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="max-w-4xl">
               <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-                Travellers ❤️ Radikal Experiences
+                Travellers love the Radikal Experiences
               </h4>
               <p className="mt-3 text-base text-muted-foreground">
-                Real stories from people who chose small-group sustainable adventures in the Himalayas.
+                Stories from people who chose small-group sustainable adventures in the Himalayas.
               </p>
             </div>
 
