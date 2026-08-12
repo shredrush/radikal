@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { unstable_cache } from "next/cache";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,44 @@ import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 
-export const dynamic = "force-dynamic";
+// Trip pages were hitting Postgres (with several joined tables) on every
+// request. Admin edits already call updateTag("trips")/revalidatePath for
+// this route, so caching here is safe and removes the DB round-trip from
+// the common case.
+const getTripDetail = unstable_cache(
+  async (slug: string) => {
+    return prisma.activity.findUnique({
+      where: { slug },
+      include: {
+        guide: {
+          include: {
+            certifications: true,
+          },
+        },
+        slots: {
+          where: {
+            date: {
+              gte: new Date(),
+            },
+          },
+          orderBy: {
+            date: "asc",
+          },
+        },
+        reviews: {
+          include: { user: { select: { name: true, image: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+        tripLocation: true,
+        inclusions: { orderBy: { order: "asc" } },
+        highlights: { orderBy: { order: "asc" } },
+      },
+    });
+  },
+  ["trip-detail"],
+  { tags: ["trips"], revalidate: 300 },
+);
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -65,34 +103,7 @@ export default async function TripDetailPage({
 }) {
   const { tripId } = await params;
 
-  const activity = await prisma.activity.findUnique({
-    where: { slug: tripId },
-    include: {
-      guide: {
-        include: {
-          certifications: true,
-        },
-      },
-      slots: {
-        where: {
-          date: {
-            gte: new Date(),
-          },
-        },
-        orderBy: {
-          date: "asc",
-        },
-      },
-      reviews: {
-        include: { user: { select: { name: true, image: true } } },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      },
-      tripLocation: true,
-      inclusions: { orderBy: { order: "asc" } },
-      highlights: { orderBy: { order: "asc" } },
-    },
-  });
+  const activity = await getTripDetail(tripId);
 
   if (!activity) {
     notFound();

@@ -2,12 +2,36 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { ArrowLeft, MapPin, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
+
+// Guide profile + their trips rarely change; skip the DB round-trip on
+// every request (trips are also tagged "trips" so edits still invalidate).
+const getGuideDetail = unstable_cache(
+  async (slug: string) => {
+    return prisma.guide.findFirst({
+      where: { slug },
+      include: {
+        certifications: {
+          orderBy: { yearIssued: "desc" },
+        },
+        activities: {
+          orderBy: { createdAt: "asc" },
+        },
+        _count: {
+          select: { activities: true },
+        },
+      },
+    });
+  },
+  ["guide-detail"],
+  { tags: ["guides", "trips"], revalidate: 3600 },
+);
 
 const guideImageMap: Record<string, string> = {
   tenzin: "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=1200&q=80",
@@ -40,12 +64,7 @@ function formatRupees(amount: number) {
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
   const { guideId } = await params;
-  const guide = await prisma.guide.findUnique({
-    where: { slug: guideId },
-    include: {
-      _count: { select: { activities: true } },
-    },
-  });
+  const guide = await getGuideDetail(guideId);
 
   if (!guide) {
     return {
@@ -62,20 +81,7 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
 export default async function GuideDetailPage({ params }: { params: Promise<{ guideId: string }> }) {
   const { guideId } = await params;
 
-  const guide = await prisma.guide.findFirst({
-    where: { slug: guideId },
-    include: {
-      certifications: {
-        orderBy: { yearIssued: "desc" },
-      },
-      activities: {
-        orderBy: { createdAt: "asc" },
-      },
-      _count: {
-        select: { activities: true },
-      },
-    },
-  });
+  const guide = await getGuideDetail(guideId);
 
   if (!guide) {
     notFound();

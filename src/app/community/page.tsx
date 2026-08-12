@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { ArrowRight, Compass, Leaf, MapPin, ShieldCheck, Users } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,26 @@ export const metadata: Metadata = {
   title: "Community | Radikal",
   description: "Radikal connects vetted local guides with travellers seeking small-group, sustainable adventures in nature.",
 };
+
+// Guide roster changes rarely; avoid a DB round-trip on every request.
+const getCommunityGuides = unstable_cache(
+  async () => {
+    return prisma.guide.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        certifications: {
+          orderBy: { yearIssued: "desc" },
+          take: 3,
+        },
+        _count: {
+          select: { activities: true },
+        },
+      },
+    });
+  },
+  ["community-guides"],
+  { tags: ["guides"], revalidate: 3600 },
+);
 
 const guideImageMap: Record<string, string> = {
   tenzin: "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=900&q=80",
@@ -42,18 +63,7 @@ const pillars = [
 ];
 
 export default async function CommunityPage() {
-  const guides = await prisma.guide.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      certifications: {
-        orderBy: { yearIssued: "desc" },
-        take: 3,
-      },
-      _count: {
-        select: { activities: true },
-      },
-    },
-  });
+  const guides = await getCommunityGuides();
   return (
     <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
