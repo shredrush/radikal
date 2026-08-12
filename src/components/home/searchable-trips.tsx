@@ -304,42 +304,42 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
 
   const guideProfiles = [
     {
+      id: "tashi",
       name: "Tashi Norbu",
       region: "Lahaul & Spiti",
       certifications: ["IMF Certified", "Avalanche Safety"],
-      adventuresLed: "50+",
       image:
         "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=400&q=80",
     },
     {
+      id: "meera",
       name: "Meera Rawat",
       region: "Kashmir",
       certifications: ["Women Leadership", "First Aid"],
-      adventuresLed: "20+",
       image:
         "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=400&q=80",
     },
     {
+      id: "tenzin",
       name: "Tenzin Dorjee",
       region: "Ladakh",
       certifications: ["IMF Certified", "Mountain Rescue"],
-      adventuresLed: "35+",
       image:
         "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=400&q=80",
     },
     {
+      id: "nawang",
       name: "Nawang Dolma",
       region: "Arunachal Pradesh",
       certifications: ["Yoga Instructor"],
-      adventuresLed: "28+",
       image:
         "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=400&q=80",
     },
     {
+      id: "pema",
       name: "Pema Chhoden",
       region: "Sikkim",
       certifications: ["High Altitude Trekking", "First Aid"],
-      adventuresLed: "18+",
       image:
         "https://images.unsplash.com/photo-1548789997-82da68437ad8?w=900?auto=format&fit=crop&w=400&q=80",
     },
@@ -790,7 +790,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                         <Badge
                           key={category}
                           variant="secondary"
-                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-center text-[0.65rem] leading-4 font-medium text-foreground/80 sm:text-[0.7rem]"
+                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-center text-[0.72rem] leading-4 font-medium text-foreground/80 sm:text-[0.8rem]"
                         >
                           {CATEGORY_LABELS[category] ?? category}
                         </Badge>
@@ -836,35 +836,32 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
 
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guideProfiles.map((guide) => (
-                <Card key={guide.name} className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 py-0 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)]">
-                  <CardHeader className="gap-0 p-0 pb-0 px-0">
-                    <div className="flex flex-col items-center text-center">
-                      <Image
-                        src={guide.image}
-                        alt={guide.name}
-                        width={400}
-                        height={320}
-                        className="h-32 w-full rounded-b-[0.7rem] rounded-t-[0.85rem] object-cover shadow-sm sm:h-36 lg:h-40"
-                      />
-                      <div className="w-full px-2 pb-3 pt-2">
-                        <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                        <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.region}</p>
-                        <div className="mt-1.5 flex justify-center">
-                          <div className="rounded-full border border-[#f97316]/25 bg-[#fff7ed] px-1.5 py-0.5 text-[clamp(0.62rem,0.72vw,0.76rem)] font-medium text-[#c2410c]">
-                            {guide.adventuresLed} adventures led
+                <Link key={guide.id} href={`/${guide.id}`} className="block">
+                  <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 py-0 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_50px_-28px_rgba(0,0,0,0.22)]">
+                    <CardHeader className="gap-0 p-0 pb-0 px-0">
+                      <div className="flex flex-col items-center text-center">
+                        <Image
+                          src={guide.image}
+                          alt={guide.name}
+                          width={400}
+                          height={320}
+                          className="h-32 w-full rounded-b-[0.7rem] rounded-t-[0.85rem] object-cover shadow-sm sm:h-36 lg:h-40"
+                        />
+                        <div className="w-full px-2 pb-3 pt-2">
+                          <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
+                          <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.region}</p>
+                          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                            {guide.certifications.map((certification) => (
+                              <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.72vw,0.78rem)] font-medium text-foreground/90">
+                                {certification}
+                              </Badge>
+                            ))}
                           </div>
                         </div>
-                        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                          {guide.certifications.map((certification) => (
-                            <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.72vw,0.78rem)] font-medium text-foreground/90">
-                              {certification}
-                            </Badge>
-                          ))}
-                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                </Card>
+                    </CardHeader>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>

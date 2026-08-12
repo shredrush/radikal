@@ -193,7 +193,7 @@ export default async function TripsPage({
                               </div>
                               <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                 {activity.categories.map((category) => (
-                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
                                     {CATEGORY_LABELS[category] ?? category}
                                   </Badge>
                                 ))}
@@ -258,7 +258,7 @@ export default async function TripsPage({
                                   </div>
                                   <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
                                     {activity.categories.map((category) => (
-                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
                                         {CATEGORY_LABELS[category] ?? category}
                                       </Badge>
                                     ))}

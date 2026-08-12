@@ -1,23 +1,18 @@
   import "dotenv/config";
   import bcrypt from "bcryptjs";
-  import { Pool } from "pg";
-  import { PrismaClient } from "../src/generated/prisma/client";
   import { PrismaPg } from "@prisma/adapter-pg";
+  import { PrismaClient } from "../src/generated/prisma/client";
   import { getDatabaseUrl } from "../src/lib/database-url";
 
   const databaseUrl = getDatabaseUrl();
-  const shouldDisableTlsVerification = Boolean(
-    databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
-  );
 
-  const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not configured for Prisma seed.");
+  }
+
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: databaseUrl }),
   });
-  const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter });
 
   function daysFromNow(days: number) {
     const date = new Date();
@@ -27,7 +22,7 @@
   }
 
   function activityImagePath(slug: string) {
-    return `/activities/${slug}/cover.png`;
+    return `/activities/${slug}/cover.jpg`;
   }
 
   async function main() {
@@ -64,155 +59,108 @@
       },
     });
 
-    const guides = await Promise.all([
-      prisma.guide.upsert({
-        where: { slug: "tenzin-namgyal" },
+    const guideConfigs = [
+      {
+        id: "tenzin",
+        slug: "tenzin",
+        name: "Tenzin Namgyal",
+        bio: "IMF-certified mountaineer from Leh with 12 years guiding offbeat treks and ski descents across Ladakh.",
+        location: "Leh, Ladakh",
+        experienceYears: 12,
+        languages: ["English", "Hindi", "Ladakhi"],
+        certifications: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Advanced Mountaineering", yearIssued: 2012 }],
+      },
+      {
+        id: "tashi",
+        slug: "tashi",
+        name: "Tashi Norbu",
+        bio: "Certified Himalayan guide from Lahaul & Spiti with deep knowledge of high-altitude treks, skiing routes, and remote expedition logistics.",
+        location: "Lahaul & Spiti, Himachal Pradesh",
+        experienceYears: 14,
+        languages: ["English", "Hindi", "Ladakhi"],
+        certifications: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Advanced Mountaineering", yearIssued: 2012 }],
+      },
+      {
+        id: "ritu",
+        slug: "ritu",
+        name: "Ritu Thakur",
+        bio: "One of the few female certified ski instructors in Manali, specializing in small women-only backcountry groups.",
+        location: "Manali, Himachal Pradesh",
+        experienceYears: 8,
+        languages: ["English", "Hindi"],
+        certifications: [{ issuingBody: "Atal Bihari Vajpayee Institute of Mountaineering & Allied Sports (ABVIMAS)", title: "Ski Instructor", yearIssued: 2016 }],
+      },
+      {
+        id: "meera",
+        slug: "meera",
+        name: "Meera Rawat",
+        bio: "Women-led adventure guide in Kashmir with a specialty for snowboard clinics, traverses, and cultural expeditions.",
+        location: "Gulmarg, Kashmir",
+        experienceYears: 10,
+        languages: ["English", "Hindi", "Kashmiri"],
+        certifications: [{ issuingBody: "Atal Bihari Vajpayee Institute of Mountaineering & Allied Sports (ABVIMAS)", title: "Ski Instructor", yearIssued: 2016 }],
+      },
+      {
+        id: "nawang",
+        slug: "nawang",
+        name: "Nawang Dolma",
+        bio: "Yoga and meditation guide from the eastern Himalayas who designs restorative retreats and mindful eco-trips.",
+        location: "Arunachal Pradesh",
+        experienceYears: 9,
+        languages: ["English", "Hindi", "Tibetan"],
+        certifications: [{ issuingBody: "Yoga Alliance", title: "200h Yoga Teacher Training", yearIssued: 2019 }],
+      },
+      {
+        id: "tenzin-dorjee",
+        slug: "tenzin-dorjee",
+        name: "Tenzin Dorjee",
+        bio: "Ladakh-based cycling and expedition guide with experience across high-altitude roads, passes, and mountain camps.",
+        location: "Leh, Ladakh",
+        experienceYears: 13,
+        languages: ["English", "Hindi", "Ladakhi"],
+        certifications: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Mountain Rescue", yearIssued: 2014 }],
+      },
+      {
+        id: "pema",
+        slug: "pema",
+        name: "Pema Chhoden",
+        bio: "Sikkim-based trekking guide with a focus on high-altitude routes, cultural immersion, and safe mountain leadership.",
+        location: "Gangtok, Sikkim",
+        experienceYears: 11,
+        languages: ["English", "Hindi", "Nepali"],
+        certifications: [{ issuingBody: "Himalayan Mountaineering Institute", title: "High Altitude Trekking", yearIssued: 2015 }],
+      },
+    ] as const;
+
+    const guides = [] as Array<Awaited<ReturnType<typeof prisma.guide.upsert>>>;
+
+    for (const guideData of guideConfigs) {
+      const guide = await prisma.guide.upsert({
+        where: { id: guideData.id },
         update: {
-          name: "Tenzin Namgyal",
-          bio: "IMF-certified mountaineer from Leh with 12 years guiding offbeat treks and ski descents across Ladakh.",
-          location: "Leh, Ladakh",
-          experienceYears: 12,
-          languages: ["English", "Hindi", "Ladakhi"],
+          slug: guideData.slug,
+          name: guideData.name,
+          bio: guideData.bio,
+          location: guideData.location,
+          experienceYears: guideData.experienceYears,
+          languages: [...guideData.languages],
         },
         create: {
-          slug: "tenzin-namgyal",
-          name: "Tenzin Namgyal",
-          bio: "IMF-certified mountaineer from Leh with 12 years guiding offbeat treks and ski descents across Ladakh.",
-          location: "Leh, Ladakh",
-          experienceYears: 12,
-          languages: ["English", "Hindi", "Ladakhi"],
+          id: guideData.id,
+          slug: guideData.slug,
+          name: guideData.name,
+          bio: guideData.bio,
+          location: guideData.location,
+          experienceYears: guideData.experienceYears,
+          languages: [...guideData.languages],
           certifications: {
-            create: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Advanced Mountaineering", yearIssued: 2012 }],
+            create: [...guideData.certifications],
           },
         },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "tashi-norbu" },
-        update: {
-          name: "Tashi Norbu",
-          bio: "Certified Himalayan guide from Lahaul & Spiti with deep knowledge of high-altitude treks, skiing routes, and remote expedition logistics.",
-          location: "Lahaul & Spiti, Himachal Pradesh",
-          experienceYears: 14,
-          languages: ["English", "Hindi", "Ladakhi"],
-        },
-        create: {
-          slug: "tashi-norbu",
-          name: "Tashi Norbu",
-          bio: "Certified Himalayan guide from Lahaul & Spiti with deep knowledge of high-altitude treks, skiing routes, and remote expedition logistics.",
-          location: "Lahaul & Spiti, Himachal Pradesh",
-          experienceYears: 14,
-          languages: ["English", "Hindi", "Ladakhi"],
-          certifications: {
-            create: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Advanced Mountaineering", yearIssued: 2012 }],
-          },
-        },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "ritu-thakur" },
-        update: {
-          name: "Ritu Thakur",
-          bio: "One of the few female certified ski instructors in Manali, specializing in small women-only backcountry groups.",
-          location: "Manali, Himachal Pradesh",
-          experienceYears: 8,
-          languages: ["English", "Hindi"],
-        },
-        create: {
-          slug: "ritu-thakur",
-          name: "Ritu Thakur",
-          bio: "One of the few female certified ski instructors in Manali, specializing in small women-only backcountry groups.",
-          location: "Manali, Himachal Pradesh",
-          experienceYears: 8,
-          languages: ["English", "Hindi"],
-          certifications: {
-            create: [{ issuingBody: "Atal Bihari Vajpayee Institute of Mountaineering & Allied Sports (ABVIMAS)", title: "Ski Instructor", yearIssued: 2016 }],
-          },
-        },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "meera-rawat" },
-        update: {
-          name: "Meera Rawat",
-          bio: "Women-led adventure guide in Kashmir with a specialty for snowboard clinics, traverses, and cultural expeditions.",
-          location: "Gulmarg, Kashmir",
-          experienceYears: 10,
-          languages: ["English", "Hindi", "Kashmiri"],
-        },
-        create: {
-          slug: "meera-rawat",
-          name: "Meera Rawat",
-          bio: "Women-led adventure guide in Kashmir with a specialty for snowboard clinics, traverses, and cultural expeditions.",
-          location: "Gulmarg, Kashmir",
-          experienceYears: 10,
-          languages: ["English", "Hindi", "Kashmiri"],
-          certifications: {
-            create: [{ issuingBody: "Atal Bihari Vajpayee Institute of Mountaineering & Allied Sports (ABVIMAS)", title: "Ski Instructor", yearIssued: 2016 }],
-          },
-        },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "nawang-dolma" },
-        update: {
-          name: "Nawang Dolma",
-          bio: "Yoga and meditation guide from the eastern Himalayas who designs restorative retreats and mindful eco-trips.",
-          location: "Arunachal Pradesh",
-          experienceYears: 9,
-          languages: ["English", "Hindi", "Tibetan"],
-        },
-        create: {
-          slug: "nawang-dolma",
-          name: "Nawang Dolma",
-          bio: "Yoga and meditation guide from the eastern Himalayas who designs restorative retreats and mindful eco-trips.",
-          location: "Arunachal Pradesh",
-          experienceYears: 9,
-          languages: ["English", "Hindi", "Tibetan"],
-          certifications: {
-            create: [{ issuingBody: "Yoga Alliance", title: "200h Yoga Teacher Training", yearIssued: 2019 }],
-          },
-        },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "tenzin-dorjee" },
-        update: {
-          name: "Tenzin Dorjee",
-          bio: "Ladakh-based cycling and expedition guide with experience across high-altitude roads, passes, and mountain camps.",
-          location: "Leh, Ladakh",
-          experienceYears: 13,
-          languages: ["English", "Hindi", "Ladakhi"],
-        },
-        create: {
-          slug: "tenzin-dorjee",
-          name: "Tenzin Dorjee",
-          bio: "Ladakh-based cycling and expedition guide with experience across high-altitude roads, passes, and mountain camps.",
-          location: "Leh, Ladakh",
-          experienceYears: 13,
-          languages: ["English", "Hindi", "Ladakhi"],
-          certifications: {
-            create: [{ issuingBody: "Indian Mountaineering Foundation (IMF)", title: "Mountain Rescue", yearIssued: 2014 }],
-          },
-        },
-      }),
-      prisma.guide.upsert({
-        where: { slug: "pema-chhoden" },
-        update: {
-          name: "Pema Chhoden",
-          bio: "Sikkim-based trekking guide with a focus on high-altitude routes, cultural immersion, and safe mountain leadership.",
-          location: "Gangtok, Sikkim",
-          experienceYears: 11,
-          languages: ["English", "Hindi", "Nepali"],
-        },
-        create: {
-          slug: "pema-chhoden",
-          name: "Pema Chhoden",
-          bio: "Sikkim-based trekking guide with a focus on high-altitude routes, cultural immersion, and safe mountain leadership.",
-          location: "Gangtok, Sikkim",
-          experienceYears: 11,
-          languages: ["English", "Hindi", "Nepali"],
-          certifications: {
-            create: [{ issuingBody: "Himalayan Mountaineering Institute", title: "High Altitude Trekking", yearIssued: 2015 }],
-          },
-        },
-      }),
-    ]);
+      });
+
+      guides.push(guide);
+    }
 
     const [tenzinNamgyal, tashi, ritu, meera, nawang, tenzinDorjee, pemaChhoden] = guides;
 

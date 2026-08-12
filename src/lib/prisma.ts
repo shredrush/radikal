@@ -1,7 +1,6 @@
 import "dotenv/config";
-import { Pool } from "pg";
-import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 import { getDatabaseConnectionLogInfo, getDatabaseUrl } from "@/lib/database-url";
 
 // Reuse a single PrismaClient instance per process. Each instance opens its
@@ -13,7 +12,6 @@ const globalForPrisma = globalThis as unknown as {
 
 const databaseUrl = getDatabaseUrl();
 const connectionLogInfo = getDatabaseConnectionLogInfo();
-
 console.log("[prisma] initializing database connection", connectionLogInfo);
 
 function isDatabaseUnavailableError(error: unknown): boolean {
@@ -85,20 +83,17 @@ function wrapWithFallback<T extends object>(target: T, fallbackSource: string): 
   }) as T;
 }
 
-const shouldDisableTlsVerification = Boolean(
-  databaseUrl && !databaseUrl.includes("localhost") && !databaseUrl.includes("127.0.0.1"),
-);
+const basePrisma =
+  globalForPrisma.prisma ??
+  (() => {
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is not configured for Prisma.");
+    }
 
-const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
-
-const adapter = new PrismaPg(pool);
-const prismaClientOptions = (adapter ? { adapter } : {}) as ConstructorParameters<typeof PrismaClient>[0];
-const basePrisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
+    return new PrismaClient({
+      adapter: new PrismaPg({ connectionString: databaseUrl }),
+    });
+  })();
 
 export const prisma = wrapWithFallback(basePrisma, "prisma");
 

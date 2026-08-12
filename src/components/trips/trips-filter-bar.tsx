@@ -75,8 +75,8 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("sport", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 bg-black text-white hover:bg-neutral-800"
-                        : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
+                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 bg-black text-white hover:bg-neutral-800"
+                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4"
                     }
                   >
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
@@ -101,8 +101,8 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("travelStyle", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5 text-white bg-black hover:bg-neutral-800"
-                        : "h-auto min-h-6 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-1.5 py-1 text-left text-[9px] leading-3.5"
+                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 text-white bg-black hover:bg-neutral-800"
+                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4"
                     }
                   >
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
