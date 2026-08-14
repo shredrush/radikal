@@ -868,7 +868,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                           <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.region}</p>
                           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                             {guide.certifications.map((certification) => (
-                              <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.72vw,0.78rem)] font-medium text-foreground/90">
+                              <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.62vw,0.72rem)] font-small text-foreground/90">
                                 {certification}
                               </Badge>
                             ))}
