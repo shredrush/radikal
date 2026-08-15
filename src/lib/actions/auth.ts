@@ -5,6 +5,12 @@ import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
+import {
+  isReservedUsername,
+  isValidUsername,
+  normalizeUsername,
+  sanitizeText,
+} from "@/lib/sanitize";
 import { changePasswordSchema, loginSchema, signupSchema } from "@/lib/validations/auth";
 
 export async function logoutAction() {
@@ -63,7 +69,12 @@ export async function loginAction(
 
 export type SignupActionState = {
   error?: string;
-  fieldErrors?: Partial<Record<"name" | "email" | "password", string>>;
+  fieldErrors?: Partial<Record<"name" | "email" | "username" | "password", string>>;
+  values?: {
+    name?: string;
+    email?: string;
+    username?: string;
+  };
 };
 
 export async function signupAction(
@@ -73,32 +84,55 @@ export async function signupAction(
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
+
+  // Echo back the safe, sanitized form values so the user doesn't have to
+  // re-type everything when one field (e.g. username) fails validation.
+  const values: SignupActionState["values"] = {
+    name: sanitizeText(formData.get("name")?.toString() ?? "", { maxLength: 100 }),
+    email: (formData.get("email")?.toString() ?? "").trim().slice(0, 254),
+    username: normalizeUsername(formData.get("username")?.toString() ?? ""),
+  };
 
   if (!parsed.success) {
     const fieldErrors: SignupActionState["fieldErrors"] = {};
     for (const issue of parsed.error.issues) {
       const field = issue.path[0];
-      if (field === "name" || field === "email" || field === "password") {
+      if (field === "name" || field === "email" || field === "username" || field === "password") {
         fieldErrors[field] = issue.message;
       }
     }
-    return { fieldErrors };
+    return { fieldErrors, values };
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email, username, password } = parsed.data;
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    return { error: "An account with this email already exists." };
+    return { error: "An account with this email already exists.", values };
+  }
+
+  const existingUsername = await prisma.user.findUnique({ where: { username } });
+  if (existingUsername) {
+    return { fieldErrors: { username: "This username is already taken." }, values };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  await prisma.user.create({
-    data: { name, email, passwordHash },
-  });
+  try {
+    await prisma.user.create({
+      data: { name, email, username, passwordHash },
+    });
+  } catch (error) {
+    // Handles a race where the username is taken between the check above and
+    // the insert. The DB unique constraint is the final guard.
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      return { fieldErrors: { username: "This username is already taken." }, values };
+    }
+    throw error;
+  }
 
   try {
     // Log the new user in immediately after signup.
@@ -117,6 +151,45 @@ export async function signupAction(
   }
 
   return {};
+}
+
+export type UsernameAvailabilityState = {
+  status: "available" | "taken" | "invalid" | "reserved" | "empty";
+  message?: string;
+};
+
+/**
+ * Checks whether a username can be registered. Runs the same sanitization and
+ * reserved-name rules as `signupAction`, then checks the DB for an existing
+ * user. Used by the signup form for live (on-blur) feedback.
+ */
+export async function checkUsernameAvailability(
+  username: string
+): Promise<UsernameAvailabilityState> {
+  const normalized = normalizeUsername(username);
+
+  if (!normalized) {
+    return { status: "empty" };
+  }
+
+  if (isReservedUsername(normalized)) {
+    return { status: "reserved", message: "This username is not available." };
+  }
+
+  if (!isValidUsername(normalized)) {
+    return {
+      status: "invalid",
+      message:
+        "Use 3–30 lowercase letters or numbers, with single -, _, or . separators.",
+    };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { username: normalized } });
+  if (existing) {
+    return { status: "taken", message: "This username is already taken." };
+  }
+
+  return { status: "available", message: "This username is available." };
 }
 
 export type ChangePasswordActionState = {

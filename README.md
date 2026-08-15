@@ -60,4 +60,4 @@ npm run dev
 - `src/components/` — reusable UI components and homepage sections
 - `src/lib/` — auth helpers, Prisma client, and server actions
 - `prisma/schema.prisma` — Prisma schema and enums
-- `prisma/seed.ts` — local seed data
+- `prisma/seed-dummy-data.ts` — local seed data

@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
-import { isValidSlug, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
+import { isValidUsername, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -81,8 +81,8 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
     throw new Error("Name, slug, bio, and location are required.");
   }
 
-  if (!isValidSlug(fields.slug)) {
-    throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
+  if (!isValidUsername(fields.slug)) {
+    throw new Error("Slug must be 3–30 lowercase letters or numbers, with single -, _, or . separators.");
   }
 
   if (fields.experienceYears < 0) {

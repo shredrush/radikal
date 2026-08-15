@@ -69,6 +69,10 @@ model User {
   id           String    @id @default(cuid())
   name         String
   email        String    @unique
+  // Public, lowercase-alphanumeric handle used as the user's slug. Uniqueness
+  // is enforced by a DB constraint; the app layer additionally validates the
+  // format, length and reserved-name rules (see lib/sanitize.ts).
+  username     String?   @unique
   passwordHash String
   role         UserRole  @default(USER)
   image        String?

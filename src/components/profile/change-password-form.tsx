@@ -68,7 +68,7 @@ export function ChangePasswordForm() {
           name="newPassword"
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder="At least 6 characters"
           required
         />
         {state.fieldErrors?.newPassword ? (

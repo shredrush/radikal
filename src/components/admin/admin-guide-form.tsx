@@ -89,8 +89,15 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             name="slug"
             defaultValue={guide?.slug}
             required
+            minLength={3}
+            maxLength={30}
+            pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
+            title="3–30 lowercase letters or numbers, with single -, _, or . separators"
             className={inputClassName}
           />
+          <p className="text-xs text-muted-foreground">
+            Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This is the guide&apos;s public URL slug.
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor={isEditing ? `location-${guide?.id}` : "new-guide-location"}>Location</Label>

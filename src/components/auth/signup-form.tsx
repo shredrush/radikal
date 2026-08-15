@@ -1,10 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Loader2 } from "lucide-react";
 
-import { signupAction, type SignupActionState } from "@/lib/actions/auth";
+import {
+  checkUsernameAvailability,
+  signupAction,
+  type SignupActionState,
+} from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,19 +21,35 @@ export function SignupForm() {
     initialState
   );
 
+  const [usernameStatus, setUsernameStatus] = useState<
+    Awaited<ReturnType<typeof checkUsernameAvailability>> | null
+  >(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+
+  async function handleUsernameBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const value = event.target.value.trim();
+    if (!value) {
+      setUsernameStatus(null);
+      return;
+    }
+    setIsCheckingUsername(true);
+    try {
+      setUsernameStatus(await checkUsernameAvailability(value));
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  }
+
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-300">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-neutral-300">
             Join the crew
           </p>
           <h1 className="font-heading text-3xl font-semibold tracking-wide text-white">
             Create your account
           </h1>
-          <p className="max-w-xs text-sm leading-relaxed text-neutral-200">
-            Join Radikal to book small-group trips with certified local guides.
-          </p>
         </div>
       </div>
 
@@ -54,10 +74,57 @@ export function SignupForm() {
             type="text"
             autoComplete="name"
             placeholder="Full Name"
+            defaultValue={state.values?.name}
             required
           />
           {state.fieldErrors?.name ? (
             <p className="text-xs text-destructive">{state.fieldErrors.name}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="username">Username</Label>
+          <div className="relative">
+            <Input
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              placeholder="something_cool"
+              minLength={3}
+              maxLength={30}
+              pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
+              title="3–30 lowercase letters or numbers, with single -, _, or . separators"
+              defaultValue={state.values?.username}
+              className="pr-8"
+              aria-invalid={usernameStatus ? usernameStatus.status !== "available" : undefined}
+              onBlur={handleUsernameBlur}
+              onChange={() => setUsernameStatus(null)}
+              required
+            />
+            {isCheckingUsername ? (
+              <Loader2 className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            ) : usernameStatus?.status === "available" ? (
+              <Check className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
+            ) : usernameStatus ? (
+              <AlertTriangle className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-destructive" />
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            [a-z] [0-9] <code>-</code> <code>_</code> <code>.</code>
+          </p>
+          {usernameStatus?.message ? (
+            <p
+              className={`text-xs ${
+                usernameStatus.status === "available"
+                  ? "text-green-500"
+                  : "text-destructive"
+              }`}
+            >
+              {usernameStatus.message}
+            </p>
+          ) : state.fieldErrors?.username ? (
+            <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
           ) : null}
         </div>
 
@@ -68,6 +135,7 @@ export function SignupForm() {
             name="email"
             type="email"
             autoComplete="email"
+            defaultValue={state.values?.email}
             placeholder="you@example.com"
             required
           />
@@ -83,7 +151,7 @@ export function SignupForm() {
             name="password"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters"
+            placeholder="At least 6 characters"
             required
           />
           {state.fieldErrors?.password ? (
