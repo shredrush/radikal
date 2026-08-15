@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
+import { ConfirmPaymentButton } from "@/components/admin/confirm-payment-button";
+import { CancelBookingButton } from "@/components/admin/cancel-booking-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -167,6 +169,19 @@ export default async function AdminBookingsPage() {
                       {booking.activity.location}
                     </span>
                   </div>
+
+                  {booking.status === "PENDING" ? (
+                    <div className="mt-4 flex flex-col gap-3 border-t border-border/60 pt-4">
+                      <div className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">Transaction ID:</span>{" "}
+                        {booking.paymentTransactionId ?? "Not submitted yet"}
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <CancelBookingButton bookingId={booking.id} />
+                        <ConfirmPaymentButton bookingId={booking.id} />
+                      </div>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             ))}

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, Minus, Plus, ShieldCheck, Users } from "lucide-react";
 
 import { createBooking } from "@/lib/actions/booking";
-import { processDummyPayment } from "@/lib/actions/payment";
+import { submitTransactionId } from "@/lib/actions/payment";
+import { sanitizeText } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,13 @@ function formatRupees(amount: number) {
   }).format(amount);
 }
 
-type Step = "select" | "review" | "paying" | "confirmed";
+const DEMO_PAYMENT_DETAILS = [
+  { label: "Bank", value: "HDFC Bank" },
+  { label: "Account number", value: "5020 0062 8211 76" },
+  { label: "IFSC code", value: "HDFC0005440" },
+];
+
+type Step = "select" | "review" | "submitted";
 
 export function CheckoutFlow({
   activity,
@@ -50,6 +57,7 @@ export function CheckoutFlow({
   const [participantCount, setParticipantCount] = useState(1);
   const [step, setStep] = useState<Step>("select");
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -79,20 +87,34 @@ export function CheckoutFlow({
     });
   }
 
-  function handlePayNow() {
+  function handleSubmitPayment() {
     if (!bookingId) return;
+
+    // Sanitize locally before sending — mirrors the server-side sanitization.
+    const cleanTransactionId = sanitizeText(transactionId, { maxLength: 100 });
+
+    if (!cleanTransactionId) {
+      setError("Please enter the transaction ID from your bank transfer.");
+      return;
+    }
+    if (!/^[A-Za-z0-9-]+$/.test(cleanTransactionId)) {
+      setError("Transaction ID can only contain letters, numbers and hyphens.");
+      return;
+    }
+
     setError(null);
-    setStep("paying");
     startTransition(async () => {
-      const result = await processDummyPayment({ bookingId });
+      const result = await submitTransactionId({
+        bookingId,
+        transactionId: cleanTransactionId,
+      });
 
       if (!result.success) {
         setError(result.error);
-        setStep("review");
         return;
       }
 
-      setStep("confirmed");
+      setStep("submitted");
       router.push("/profile");
     });
   }
@@ -193,10 +215,45 @@ export function CheckoutFlow({
           </span>
         </div>
 
-        {step !== "select" ? (
+        {step === "review" ? (
+          <>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="rounded-full px-3 py-1">
+                Booking reserved · payment pending
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Pay via bank transfer
+              </p>
+              <dl className="grid gap-2 text-sm">
+                {DEMO_PAYMENT_DETAILS.map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="text-right font-medium text-foreground">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="transaction-id" className="text-muted-foreground">
+                  Transaction ID
+                </Label>
+                <input
+                  id="transaction-id"
+                  value={transactionId}
+                  onChange={(event) => setTransactionId(event.target.value)}
+                  placeholder="e.g. UTR / reference number"
+                  className="h-12 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10"
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {step === "submitted" ? (
           <div className="flex items-center gap-2">
-            <Badge variant={step === "confirmed" ? "default" : "secondary"} className="rounded-full px-3 py-1">
-              {step === "confirmed" ? "Confirmed" : "Booking reserved · payment pending"}
+            <Badge className="rounded-full px-3 py-1">
+              Payment submitted · pending confirmation
             </Badge>
           </div>
         ) : null}
@@ -211,22 +268,25 @@ export function CheckoutFlow({
           >
             {isPending ? "Reserving…" : "Reserve your spot"}
           </Button>
+        ) : step === "review" ? (
+          <Button
+            className="h-12 w-full rounded-full text-sm"
+            disabled={isPending || !transactionId.trim()}
+            onClick={handleSubmitPayment}
+          >
+            {isPending ? "Submitting…" : "I have paid"}
+          </Button>
         ) : (
           <Button
             className="h-12 w-full rounded-full text-sm"
-            disabled={isPending || step === "confirmed"}
-            onClick={handlePayNow}
+            disabled
           >
-            {step === "paying" || isPending
-              ? "Processing payment…"
-              : step === "confirmed"
-                ? "Payment successful"
-                : "Pay Now"}
+            Payment pending confirmation
           </Button>
         )}
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-          Free cancellation up to 48 hours before departure
+          Free cancellation up to 1 week before departure
         </p>
       </div>
     </div>

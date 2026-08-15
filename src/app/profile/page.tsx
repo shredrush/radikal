@@ -6,11 +6,9 @@ import {
   CalendarDays,
   Headset,
   LogOut,
-  MapPin,
   MessageSquare,
   Settings2,
   Ticket,
-  Users,
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
@@ -27,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
+import { BookingCard } from "@/components/profile/booking-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { toSupportMessageViews, countUnreadSupportMessages, type SupportMessageView } from "@/lib/support";
@@ -37,26 +36,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-function formatRupees(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-const statusStyles: Record<string, string> = {
-  PENDING: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  CONFIRMED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
-};
-
-function statusLabel(status: string) {
-  if (status === "CONFIRMED") return "Confirmed";
-  if (status === "CANCELLED") return "Cancelled";
-  return "Pending payment";
-}
 
 export default async function ProfilePage({
   searchParams,
@@ -340,64 +319,28 @@ export default async function ProfilePage({
                     </div>
                   ) : (
                     <ul className="flex flex-col gap-3">
-                      {bookings.map((booking) => {
-                        const image = getTripCardImage(booking.activity);
-                        return (
-                          <li key={booking.id}>
-                            <Link
-                              href={`/trips/${booking.activity.slug}`}
-                              className="group flex flex-col gap-3 overflow-hidden rounded-[1rem] border border-border/70 bg-background/60 transition-colors hover:border-border sm:flex-row"
-                            >
-                              <div className="relative h-32 w-full shrink-0 overflow-hidden bg-muted/60 sm:h-auto sm:w-36">
-                                <Image
-                                  src={image}
-                                  alt={booking.activity.title}
-                                  fill
-                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                  sizes="144px"
-                                />
-                              </div>
-                              <div className="flex flex-1 flex-col justify-between gap-2 p-3">
-                                <div>
-                                  <div className="flex items-start justify-between gap-3">
-                                    <h3 className="font-heading text-base font-semibold leading-snug text-foreground">
-                                      {booking.activity.title}
-                                    </h3>
-                                    <span
-                                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest ${statusStyles[booking.status] ?? statusStyles.PENDING}`}
-                                    >
-                                      {statusLabel(booking.status)}
-                                    </span>
-                                  </div>
-                                  <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                    <span className="inline-flex items-center gap-1">
-                                      <MapPin className="h-3.5 w-3.5" />
-                                      {booking.activity.location}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1">
-                                      <CalendarDays className="h-3.5 w-3.5" />
-                                      {formatTripDateRange(booking.slot.date, booking.activity.durationDays)}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1">
-                                      <Users className="h-3.5 w-3.5" />
-                                      {booking.participantCount}{" "}
-                                      {booking.participantCount === 1 ? "participant" : "participants"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between border-t border-border/60 pt-2">
-                                  <span className="text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-                                    Total paid
-                                  </span>
-                                  <span className="font-heading text-base font-semibold text-foreground">
-                                    {formatRupees(booking.totalPriceRupees)}
-                                  </span>
-                                </div>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                      {bookings.map((booking) => (
+                        <li key={booking.id}>
+                          <BookingCard
+                            booking={{
+                              id: booking.id,
+                              tripSlug: booking.activity.slug,
+                              title: booking.activity.title,
+                              location: booking.activity.location,
+                              image: getTripCardImage(booking.activity),
+                              dateRange: formatTripDateRange(
+                                booking.slot.date,
+                                booking.activity.durationDays
+                              ),
+                              participantCount: booking.participantCount,
+                              totalPriceRupees: booking.totalPriceRupees,
+                              status: booking.status,
+                              paymentTransactionId: booking.paymentTransactionId,
+                              bookedAt: booking.createdAt.toISOString(),
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </CardContent>

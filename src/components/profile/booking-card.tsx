@@ -1,0 +1,212 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import {
+  ArrowRight,
+  Banknote,
+  CalendarDays,
+  ChevronDown,
+  Clock,
+  Hash,
+  MapPin,
+  Receipt,
+  Users,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+
+const statusStyles: Record<string, string> = {
+  PENDING: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  CONFIRMED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
+};
+
+function statusLabel(status: string) {
+  if (status === "CONFIRMED") return "Confirmed";
+  if (status === "CANCELLED") return "Cancelled";
+  return "Pending payment";
+}
+
+function formatRupees(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export type BookingCardData = {
+  id: string;
+  tripSlug: string;
+  title: string;
+  location: string;
+  image: string;
+  dateRange: string;
+  participantCount: number;
+  totalPriceRupees: number;
+  status: BookingStatus;
+  paymentTransactionId: string | null;
+  bookedAt: string;
+};
+
+export function BookingCard({ booking }: { booking: BookingCardData }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="overflow-hidden rounded-[1rem] border border-border/70 bg-background/60 transition-colors hover:border-border">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="group flex w-full flex-col gap-3 text-left sm:flex-row"
+      >
+        <div className="relative h-32 w-full shrink-0 overflow-hidden bg-muted/60 sm:h-auto sm:w-36">
+          <Image
+            src={booking.image}
+            alt={booking.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="144px"
+          />
+        </div>
+        <div className="flex flex-1 flex-col justify-between gap-2 p-3">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-heading text-base font-semibold leading-snug text-foreground">
+                {booking.title}
+              </h3>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest",
+                  statusStyles[booking.status] ?? statusStyles.PENDING
+                )}
+              >
+                {statusLabel(booking.status)}
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {booking.location}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {booking.dateRange}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" />
+                {booking.participantCount}{" "}
+                {booking.participantCount === 1 ? "participant" : "participants"}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between border-t border-border/60 pt-2">
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              {formatDateTime(booking.bookedAt)}
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                open && "rotate-180"
+              )}
+            />
+          </div>
+        </div>
+      </button>
+
+      {open ? (
+        <div className="border-t border-dashed border-border/70 bg-muted/10 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary" />
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+              Booking receipt
+            </p>
+          </div>
+
+          <dl className="grid gap-2.5 text-sm">
+            <div className="flex items-start justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Hash className="h-3.5 w-3.5" />
+                Booking reference
+              </dt>
+              <dd className="break-all text-right font-mono text-xs text-foreground">
+                {booking.id}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Banknote className="h-3.5 w-3.5" />
+                Payment method
+              </dt>
+              <dd className="text-right text-foreground">Bank transfer</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Receipt className="h-3.5 w-3.5" />
+                Transaction ID
+              </dt>
+              <dd className="text-right font-mono text-xs text-foreground">
+                {booking.paymentTransactionId ?? "Not submitted yet"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Trip dates
+              </dt>
+              <dd className="text-right text-foreground">{booking.dateRange}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Users className="h-3.5 w-3.5" />
+                Participants
+              </dt>
+              <dd className="text-right text-foreground">{booking.participantCount}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                Booked on
+              </dt>
+              <dd className="text-right text-foreground">{formatDateTime(booking.bookedAt)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-2.5">
+              <dt className="font-medium text-foreground">Total paid</dt>
+              <dd className="font-heading text-lg font-semibold text-foreground">
+                {formatRupees(booking.totalPriceRupees)}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              size="sm"
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link href={`/trips/${booking.tripSlug}`} />}
+            >
+              Go to trip page
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
