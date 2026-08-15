@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   CalendarDays,
+  Headset,
   LogOut,
   MapPin,
+  MessageSquare,
   Settings2,
   Ticket,
   Users,
@@ -23,8 +25,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
+import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
+import { toSupportMessageViews, type SupportMessageView } from "@/lib/support";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -69,7 +73,9 @@ export default async function ProfilePage({
   const initial = (name.trim()[0] ?? "R").toUpperCase();
 
   const { tab } = await searchParams;
-  const activeTab = tab === "settings" ? "settings" : "bookings";
+  const activeTab =
+    tab === "settings" ? "settings" : tab === "support" ? "support" : "bookings";
+  const isSupportAgent = user.role === "SUPPORT";
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
@@ -80,6 +86,17 @@ export default async function ProfilePage({
   const now = new Date();
   const confirmed = bookings.filter((b) => b.status === "CONFIRMED");
   const upcoming = confirmed.filter((b) => new Date(b.slot.date) >= now).length;
+
+  let supportMessages: SupportMessageView[] = [];
+  if (activeTab === "support" && !isSupportAgent) {
+    const supportChat = await prisma.supportChat.findUnique({
+      where: { userId: user.id },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    if (supportChat) {
+      supportMessages = toSupportMessageViews(supportChat.messages, user.id);
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
@@ -135,6 +152,18 @@ export default async function ProfilePage({
                   </Button>
                 </>
               ) : null}
+              {isSupportAgent ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  nativeButton={false}
+                  render={<Link href="/support" />}
+                >
+                  <Headset className="h-3.5 w-3.5" />
+                  Support dashboard
+                </Button>
+              ) : null}
               <form action={logoutAction}>
                 <Button
                   variant="outline"
@@ -180,6 +209,18 @@ export default async function ProfilePage({
                 Bookings
               </Link>
               <Link
+                href="/profile?tab=support"
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                  activeTab === "support"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Support
+              </Link>
+              <Link
                 href="/profile?tab=settings"
                 className={cn(
                   "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
@@ -208,6 +249,46 @@ export default async function ProfilePage({
                   <ChangePasswordForm />
                 </CardContent>
               </Card>
+            ) : activeTab === "support" ? (
+              isSupportAgent ? (
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>Support dashboard</CardTitle>
+                    <CardDescription>
+                      Review and reply to customer conversations from the support desk.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-start gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 p-6">
+                      <Headset className="h-8 w-8 text-muted-foreground/50" />
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        Open the support dashboard to see open chats and reply to customers.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        nativeButton={false}
+                        render={<Link href="/support" />}
+                      >
+                        <Headset className="h-3.5 w-3.5" />
+                        Open support dashboard
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>Contact support</CardTitle>
+                    <CardDescription>
+                      Message our support team and keep the conversation right here.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SupportChatPanel messages={supportMessages} />
+                  </CardContent>
+                </Card>
+              )
             ) : (
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>

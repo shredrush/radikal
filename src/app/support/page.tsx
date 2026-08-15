@@ -1,0 +1,61 @@
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { toSupportChatListItem, toSupportMessageViews } from "@/lib/support";
+import {
+  SupportDashboard,
+  type SupportDashboardSelectedChat,
+} from "@/components/support/support-dashboard";
+
+export const dynamic = "force-dynamic";
+
+export default async function SupportDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ chat?: string }>;
+}) {
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== "SUPPORT") {
+    redirect("/login?callbackUrl=/support");
+  }
+
+  const { chat: chatId } = await searchParams;
+
+  const chats = await prisma.supportChat.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+
+  const selectedChat = chatId
+    ? await prisma.supportChat.findUnique({
+        where: { id: chatId },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          messages: { orderBy: { createdAt: "asc" } },
+        },
+      })
+    : null;
+
+  const selectedChatData: SupportDashboardSelectedChat | null = selectedChat
+    ? {
+        id: selectedChat.id,
+        status: selectedChat.status,
+        customerName: selectedChat.user.name || selectedChat.user.email,
+        customerEmail: selectedChat.user.email,
+        messages: toSupportMessageViews(selectedChat.messages, session.user.id),
+      }
+    : null;
+
+  return (
+    <SupportDashboard
+      initialChats={chats.map(toSupportChatListItem)}
+      chatId={chatId}
+      selectedChat={selectedChatData}
+    />
+  );
+}

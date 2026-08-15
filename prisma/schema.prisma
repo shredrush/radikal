@@ -20,6 +20,7 @@ enum UserRole {
   USER
   GUIDE
   ADMIN
+  SUPPORT
 }
 
 enum ActivityType {
@@ -53,6 +54,13 @@ enum BookingStatus {
   CANCELLED
 }
 
+// A support conversation is either open (visible in the support dashboard)
+// or closed (resolved). A customer's next message reopens it automatically.
+enum SupportChatStatus {
+  OPEN
+  CLOSED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -67,9 +75,11 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  bookings Booking[]
-  reviews  Review[]
-  guide    Guide?
+  bookings         Booking[]
+  reviews          Review[]
+  guide            Guide?
+  supportChat      SupportChat?
+  supportMessages  SupportMessage[]
 
   @@map("users")
 }
@@ -232,4 +242,36 @@ model Review {
   guide    Guide?    @relation(fields: [guideId], references: [id])
 
   @@map("reviews")
+}
+
+// A single support thread per customer. Support agents see every OPEN thread
+// in the dashboard and reply from there. Closing a chat marks it resolved;
+// the next customer message reopens it.
+model SupportChat {
+  id        String            @id @default(cuid())
+  userId    String            @unique
+  status    SupportChatStatus @default(OPEN)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id])
+  messages SupportMessage[]
+
+  @@index([status])
+  @@map("support_chats")
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  senderId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  chat   SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User        @relation(fields: [senderId], references: [id])
+
+  @@index([chatId])
+  @@index([senderId])
+  @@map("support_messages")
 }

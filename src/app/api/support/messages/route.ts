@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { toSupportMessageViews } from "@/lib/support";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const chatId = searchParams.get("chatId");
+
+  try {
+    // Support agents may read any conversation by id; everyone else reads
+    // their own (single) support thread.
+    if (session.user.role === "SUPPORT" && chatId) {
+      const chat = await prisma.supportChat.findUnique({
+        where: { id: chatId },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
+      });
+
+      if (!chat) {
+        return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        status: chat.status,
+        messages: toSupportMessageViews(chat.messages, session.user.id),
+      });
+    }
+
+    const chat = await prisma.supportChat.findUnique({
+      where: { userId: session.user.id },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+
+    return NextResponse.json({
+      status: chat?.status ?? "OPEN",
+      messages: chat ? toSupportMessageViews(chat.messages, session.user.id) : [],
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load messages" },
+      { status: 500 },
+    );
+  }
+}
