@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidSlug, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -16,7 +17,7 @@ function parseLanguages(value: string) {
     new Set(
       value
         .split(/[\r\n,]+/)
-        .map((item) => item.trim())
+        .map((item) => sanitizeText(item, { maxLength: 80 }))
         .filter(Boolean),
     ),
   );
@@ -24,7 +25,8 @@ function parseLanguages(value: string) {
 
 function parseExperienceYears(value: string) {
   const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+  if (Number.isNaN(parsed)) return 0;
+  return Math.min(Math.max(0, parsed), 100);
 }
 
 type CertificationInput = {
@@ -45,11 +47,15 @@ function parseCertifications(value: string): CertificationInput[] {
     .map((line) => {
       const [title, issuingBody, year, url] = line.split("|").map((part) => part.trim());
       const parsedYear = year ? Number.parseInt(year, 10) : null;
+      const credentialUrl = url ? (isSafeHttpUrl(url) ? url : null) : null;
       return {
-        title: title ?? "",
-        issuingBody: issuingBody ?? "",
-        yearIssued: parsedYear !== null && !Number.isNaN(parsedYear) ? parsedYear : null,
-        credentialUrl: url || null,
+        title: title ? sanitizeText(title, { maxLength: 200 }) : "",
+        issuingBody: issuingBody ? sanitizeText(issuingBody, { maxLength: 200 }) : "",
+        yearIssued:
+          parsedYear !== null && !Number.isNaN(parsedYear) && parsedYear >= 1900 && parsedYear <= 2100
+            ? parsedYear
+            : null,
+        credentialUrl,
       };
     })
     .filter((cert) => cert.title && cert.issuingBody);
@@ -63,12 +69,15 @@ async function requireAdmin() {
 }
 
 function readGuideFields(formData: FormData) {
+  const rawPhoto = asString(formData.get("photo"));
+  const photo = rawPhoto && isSafeHttpUrl(rawPhoto) ? rawPhoto : null;
+
   return {
-    name: asString(formData.get("name")),
-    slug: asString(formData.get("slug")),
-    bio: asString(formData.get("bio")),
-    photo: asString(formData.get("photo")) || null,
-    location: asString(formData.get("location")),
+    name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
+    slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
+    bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
+    photo,
+    location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
     languages: parseLanguages(asString(formData.get("languages"))),
     certifications: parseCertifications(asString(formData.get("certifications"))),
@@ -78,6 +87,10 @@ function readGuideFields(formData: FormData) {
 function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
   if (!fields.name || !fields.slug || !fields.bio || !fields.location) {
     throw new Error("Name, slug, bio, and location are required.");
+  }
+
+  if (!isValidSlug(fields.slug)) {
+    throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
   }
 
   if (fields.experienceYears < 0) {

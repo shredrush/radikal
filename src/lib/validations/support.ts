@@ -1,11 +1,12 @@
 import { z } from "zod";
 
+import { sanitizeText } from "@/lib/sanitize";
+
 export const supportMessageSchema = z.object({
   body: z
     .string()
-    .trim()
-    .min(1, "Message cannot be empty")
-    .max(2000, "Message must be 2000 characters or fewer"),
+    .transform((value) => sanitizeText(value, { maxLength: 2000, allowNewlines: true }))
+    .refine((value) => value.length > 0, "Message cannot be empty"),
 });
 
 export type SupportMessageInput = z.infer<typeof supportMessageSchema>;

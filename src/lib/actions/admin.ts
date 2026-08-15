@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 
 const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
 const validCategories = [
@@ -27,8 +28,8 @@ function parseImages(value: string) {
     new Set(
       value
         .split(/\r?\n/)
-        .map((item) => item.trim())
-        .filter(Boolean),
+        .map((item) => sanitizeText(item, { maxLength: 2048 }))
+        .filter((item) => isSafeImageSource(item)),
     ),
   );
 }
@@ -51,7 +52,7 @@ function parseList(value: string) {
     new Set(
       value
         .split(/\r?\n/)
-        .map((entry) => entry.trim())
+        .map((entry) => sanitizeText(entry, { maxLength: 500 }))
         .filter(Boolean),
     ),
   );
@@ -64,10 +65,13 @@ export async function updateActivityAction(formData: FormData) {
   }
 
   const activityId = asString(formData.get("activityId"));
-  const title = asString(formData.get("title"));
-  const slug = asString(formData.get("slug"));
-  const location = asString(formData.get("location"));
-  const description = asString(formData.get("description"));
+  const title = sanitizeText(asString(formData.get("title")), { maxLength: 200 });
+  const slug = sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase();
+  const location = sanitizeText(asString(formData.get("location")), { maxLength: 200 });
+  const description = sanitizeText(asString(formData.get("description")), {
+    maxLength: 5000,
+    allowNewlines: true,
+  });
   const type = asString(formData.get("type"));
   const priceInRupees = Number.parseInt(asString(formData.get("priceInRupees")), 10);
   const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
@@ -75,8 +79,8 @@ export async function updateActivityAction(formData: FormData) {
   const guideId = asString(formData.get("guideId"));
   const images = parseImages(asString(formData.get("images")));
   const categories = parseCategories(formData.getAll("categories"));
-  const pickup = asString(formData.get("pickup"));
-  const drop = asString(formData.get("drop"));
+  const pickup = sanitizeText(asString(formData.get("pickup")), { maxLength: 200 });
+  const drop = sanitizeText(asString(formData.get("drop")), { maxLength: 200 });
   const inclusions = parseList(asString(formData.get("inclusions")));
   const exclusions = parseList(asString(formData.get("exclusions")));
   const highlights = parseList(asString(formData.get("highlights")));
@@ -87,6 +91,10 @@ export async function updateActivityAction(formData: FormData) {
 
   if (!title || !slug || !location || !description) {
     throw new Error("Title, slug, location, and description are required.");
+  }
+
+  if (!isValidSlug(slug)) {
+    throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
   }
 
   if (!validTypes.includes(type as (typeof validTypes)[number])) {
