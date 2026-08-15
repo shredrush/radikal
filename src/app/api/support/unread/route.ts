@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { isSupportAgent } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { countUnreadSupportMessages } from "@/lib/support";
 
@@ -14,7 +15,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
 
-  if (!session?.user || session.user.role === "SUPPORT") {
+  // Support agents and admins don't have their own customer thread, so there
+  // is nothing to surface as "unread" for them.
+  if (!session?.user || isSupportAgent(session.user.role)) {
     return NextResponse.json({ unreadCount: 0, status: "OPEN" });
   }
 

@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 import { isValidSlug, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
@@ -61,13 +60,6 @@ function parseCertifications(value: string): CertificationInput[] {
     .filter((cert) => cert.title && cert.issuingBody);
 }
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    redirect("/login?callbackUrl=/admin/guides");
-  }
-}
-
 function readGuideFields(formData: FormData) {
   const rawPhoto = asString(formData.get("photo"));
   const photo = rawPhoto && isSafeHttpUrl(rawPhoto) ? rawPhoto : null;
@@ -118,7 +110,7 @@ function isUniqueConstraint(error: unknown) {
 }
 
 export async function createGuideAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdmin("/login?callbackUrl=/admin/guides");
 
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
@@ -141,7 +133,7 @@ export async function createGuideAction(formData: FormData) {
 }
 
 export async function updateGuideAction(formData: FormData) {
-  await requireAdmin();
+  await requireAdmin("/login?callbackUrl=/admin/guides");
 
   const guideId = asString(formData.get("guideId"));
   const fields = validateGuideFields(readGuideFields(formData));
@@ -190,7 +182,7 @@ export async function updateGuideAction(formData: FormData) {
 }
 
 export async function deleteGuideAction(guideId: string) {
-  await requireAdmin();
+  await requireAdmin("/login?callbackUrl=/admin/guides");
 
   if (!guideId) {
     throw new Error("Missing guide id.");

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isSupportAgent as isSupportAgentRole } from "@/lib/authz";
 import {
   countUnreadSupportMessages,
   toSupportMessageViews,
@@ -19,7 +20,7 @@ export async function SupportWidget() {
     return <SupportWidgetClient isAuthenticated={false} messages={[]} status="OPEN" unreadCount={0} />;
   }
 
-  const isSupportAgent = session.user.role === "SUPPORT";
+  const isSupportAgent = isSupportAgentRole(session.user.role);
 
   let messages: SupportMessageView[] = [];
   let status: "OPEN" | "CLOSED" = "OPEN";

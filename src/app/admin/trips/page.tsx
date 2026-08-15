@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,11 +48,7 @@ function getActivityTypeLabel(value: string) {
 }
 
 export default async function AdminTripsPage() {
-  const session = await auth();
-
-  if (!session?.user || session.user.role !== "ADMIN") {
-    redirect("/login?callbackUrl=/admin/trips");
-  }
+  await requireAdmin("/login?callbackUrl=/admin/trips");
 
   const [activities, guides] = await Promise.all([
     prisma.activity.findMany({
@@ -88,6 +83,9 @@ export default async function AdminTripsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/bookings" />}>
+                View bookings
+              </Button>
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guides" />}>
                 Manage guides
               </Button>

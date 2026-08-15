@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireSupport } from "@/lib/authz";
 import { toSupportChatListItem, toSupportMessageViews } from "@/lib/support";
 import {
   SupportDashboard,
@@ -15,11 +13,7 @@ export default async function SupportDashboardPage({
 }: {
   searchParams: Promise<{ chat?: string }>;
 }) {
-  const session = await auth();
-
-  if (!session?.user || session.user.role !== "SUPPORT") {
-    redirect("/login?callbackUrl=/support");
-  }
+  const session = await requireSupport("/login?callbackUrl=/support");
 
   const { chat: chatId } = await searchParams;
 

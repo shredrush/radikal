@@ -36,7 +36,7 @@ export async function loginAction(
   const redirectTo =
     typeof rawCallbackUrl === "string" && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
       ? rawCallbackUrl
-      : "/profile";
+      : "/";
 
   const { email, password } = parsed.data;
 
@@ -105,7 +105,7 @@ export async function signupAction(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/profile",
+      redirectTo: "/",
     });
   } catch (error) {
     // next-auth signals a successful redirect by throwing a special error —

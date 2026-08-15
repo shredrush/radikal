@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { isSupportAgent } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { toSupportChatListItem } from "@/lib/support";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== "SUPPORT") {
+  if (!session?.user || !isSupportAgent(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

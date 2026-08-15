@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireSupport } from "@/lib/authz";
 import { supportMessageSchema } from "@/lib/validations/support";
 
 function asString(value: FormDataEntryValue | null) {
@@ -44,10 +45,7 @@ export async function sendSupportMessageAction(formData: FormData) {
 }
 
 export async function replySupportMessageAction(chatId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPPORT") {
-    redirect("/login?callbackUrl=/support");
-  }
+  const session = await requireSupport("/login?callbackUrl=/support");
 
   if (!chatId) {
     throw new Error("Missing conversation.");
@@ -85,10 +83,7 @@ export async function setSupportChatStatusAction(
   chatId: string,
   status: "OPEN" | "CLOSED",
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "SUPPORT") {
-    redirect("/login?callbackUrl=/support");
-  }
+  await requireSupport("/login?callbackUrl=/support");
 
   if (!chatId) {
     throw new Error("Missing conversation.");

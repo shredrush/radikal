@@ -8,7 +8,16 @@ export async function POST(request: Request) {
   try {
     // Consume the body so the request completes cleanly. Parse and forward it
     // to a logging service here when you want to collect reports.
-    await request.text();
+    const body = await request.text();
+
+    // Temporary: surface reports in the server terminal while tuning the CSP.
+    // Remove (or replace with a real logging sink) before enforcing in prod.
+    try {
+      const parsed = JSON.parse(body);
+      console.log("[csp-report]", JSON.stringify(parsed, null, 2));
+    } catch {
+      console.log("[csp-report] (non-JSON body)", body);
+    }
   } catch {
     // Ignore malformed report bodies.
   }

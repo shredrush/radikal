@@ -12,7 +12,7 @@ export function SiteFooter() {
             Crafted in the Himalayas for unforgettable experiences
           </h4>
           <p className="mt-3 max-w-[640px] text-[clamp(0.9rem,1.08vw,1.08rem)] leading-7 text-white/80">
-            Discover curated, small-group adventures with certified local guides, flexible custom itineraries, and meaningful sustainable travel designed around the Indian Himalayas.
+            Discover curated, small-group adventures with certified trsuted guides, flexible custom itineraries, and meaningful sustainable travel design.
           </p>
         </div>
 

@@ -15,6 +15,7 @@ import {
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isSupportAgent as isSupportAgentRole } from "@/lib/authz";
 import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +76,7 @@ export default async function ProfilePage({
   const { tab } = await searchParams;
   const activeTab =
     tab === "settings" ? "settings" : tab === "support" ? "support" : "bookings";
-  const isSupportAgent = user.role === "SUPPORT";
+  const isSupportAgent = isSupportAgentRole(user.role);
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
@@ -138,6 +139,16 @@ export default async function ProfilePage({
             <div className="flex flex-wrap items-center gap-2">
               {user.role === "ADMIN" ? (
                 <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    nativeButton={false}
+                    render={<Link href="/admin/bookings" />}
+                  >
+                    <Ticket className="h-3.5 w-3.5" />
+                    View bookings
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

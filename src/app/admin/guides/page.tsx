@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +10,7 @@ import { AdminGuideForm } from "@/components/admin/admin-guide-form";
 export const dynamic = "force-dynamic";
 
 export default async function AdminGuidesPage() {
-  const session = await auth();
-
-  if (!session?.user || session.user.role !== "ADMIN") {
-    redirect("/login?callbackUrl=/admin/guides");
-  }
+  await requireAdmin("/login?callbackUrl=/admin/guides");
 
   const guides = await prisma.guide.findMany({
     orderBy: { name: "asc" },
@@ -41,6 +36,9 @@ export default async function AdminGuidesPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/bookings" />}>
+                View bookings
+              </Button>
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/trips" />}>
                 Manage trips
               </Button>

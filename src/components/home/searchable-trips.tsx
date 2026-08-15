@@ -387,10 +387,10 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
     >
       <div className="-mt-3 mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-1 sm:-mt-4">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-          Find your Himalayan adventure
+          Adventure, reimagined
         </h3>
         <p className="text-lg text-muted-foreground">
-          Small groups with certified local guides
+          Small groups, led by certified experts
         </p>
         <div className="mt-1 flex w-full max-w-6xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
@@ -845,7 +845,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
                 More than a booking platform — a home for guides
               </p>
-              <h4 className="mt-1 font-heading text-xl font-semibold tracking-wide text-foreground sm:text-2xl">
+              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
                 Tours crafted by certified local guides, with a commitment to sustainable travel
               </h4>
             </div>
@@ -886,7 +886,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="max-w-4xl">
-              <h4 className="mt-2 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
+              <h4 className="mt-2 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
                 Travellers love the Radikal Experiences
               </h4>
               <p className="mt-3 text-base text-muted-foreground">

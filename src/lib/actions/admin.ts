@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/authz";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 
 const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
@@ -59,10 +58,7 @@ function parseList(value: string) {
 }
 
 export async function updateActivityAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    redirect("/login?callbackUrl=/admin/trips");
-  }
+  await requireAdmin("/login?callbackUrl=/admin/trips");
 
   const activityId = asString(formData.get("activityId"));
   const title = sanitizeText(asString(formData.get("title")), { maxLength: 200 });
@@ -189,10 +185,7 @@ export async function updateActivityAction(formData: FormData) {
 }
 
 export async function deleteActivityAction(activityId: string) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") {
-    redirect("/login?callbackUrl=/admin/trips");
-  }
+  await requireAdmin("/login?callbackUrl=/admin/trips");
 
   if (!activityId) {
     throw new Error("Missing activity id.");
