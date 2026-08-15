@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
 import { findUserByIdentifier } from "@/lib/login";
+import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
   isReservedUsername,
   isValidUsername,
@@ -46,6 +47,22 @@ export async function loginAction(
       : "/";
 
   const { identifier, password } = parsed.data;
+
+  // Throttle brute-force attempts both across many accounts (per client IP)
+  // and against a single account (per identifier).
+  const ip = await getClientIp();
+  const ipLimit = rateLimit(`login:ip:${ip}`, 20, 15 * 60_000);
+  if (!ipLimit.success) {
+    return { error: rateLimitError(ipLimit), identifier };
+  }
+  const idLimit = rateLimit(
+    `login:id:${identifier.trim().toLowerCase()}`,
+    10,
+    15 * 60_000,
+  );
+  if (!idLimit.success) {
+    return { error: rateLimitError(idLimit), identifier };
+  }
 
   const existingUser = await findUserByIdentifier(identifier);
   if (!existingUser) {
@@ -110,6 +127,13 @@ export async function signupAction(
 
   const { name, email, username, password } = parsed.data;
 
+  // Limit account creation per client IP to curb scripted signups.
+  const ip = await getClientIp();
+  const ipLimit = rateLimit(`signup:ip:${ip}`, 5, 60 * 60_000);
+  if (!ipLimit.success) {
+    return { error: rateLimitError(ipLimit), values };
+  }
+
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     return { error: "An account with this email already exists.", values };
@@ -167,6 +191,14 @@ export type UsernameAvailabilityState = {
 export async function checkUsernameAvailability(
   username: string
 ): Promise<UsernameAvailabilityState> {
+  // Throttle the live availability check to prevent username enumeration and
+  // abuse of the endpoint.
+  const ip = await getClientIp();
+  const ipLimit = rateLimit(`username-check:ip:${ip}`, 30, 60_000);
+  if (!ipLimit.success) {
+    return { status: "invalid", message: rateLimitError(ipLimit) };
+  }
+
   const normalized = normalizeUsername(username);
 
   if (!normalized) {
@@ -207,6 +239,13 @@ export async function changePasswordAction(
   const userId = session?.user?.id;
   if (!userId) {
     return { error: "You must be logged in to change your password." };
+  }
+
+  // Limit password-change attempts per user to slow brute-forcing of the
+  // current-password field.
+  const pwLimit = rateLimit(`change-password:user:${userId}`, 5, 15 * 60_000);
+  if (!pwLimit.success) {
+    return { error: rateLimitError(pwLimit) };
   }
 
   const parsed = changePasswordSchema.safeParse({

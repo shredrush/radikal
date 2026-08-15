@@ -42,6 +42,9 @@ export default async function AdminGuidesPage() {
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/trips" />}>
                 Manage trips
               </Button>
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guide-registrations" />}>
+                Guide registrations
+              </Button>
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
                 Back to profile
               </Button>
@@ -116,6 +119,7 @@ export default async function AdminGuidesPage() {
                     slug: guide.slug,
                     bio: guide.bio,
                     photo: guide.photo,
+                    photos: guide.photos,
                     location: guide.location,
                     experienceYears: guide.experienceYears,
                     languages: guide.languages,

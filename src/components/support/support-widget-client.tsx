@@ -49,10 +49,11 @@ export function SupportWidgetClient({
 
   useEffect(() => {
     // Only poll when the customer has an existing support thread; there is
-    // nothing to surface as unread otherwise.
+    // nothing to surface as unread otherwise. The server already provides the
+    // initial unread count, so we only need to refresh it periodically (and on
+    // dialog close) — no need for a synchronous fetch on mount.
     if (!isAuthenticated || isSupportAgent || !hasActiveChat) return;
 
-    loadUnread();
     const interval = setInterval(loadUnread, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, isSupportAgent, hasActiveChat, loadUnread]);

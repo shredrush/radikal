@@ -11,7 +11,7 @@ const contentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com;
+  img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://ui-avatars.com;
   font-src 'self' data:;
   connect-src 'self';
   object-src 'none';
@@ -37,8 +37,8 @@ const nextConfig: NextConfig = {
     ],
     // Reduce memory usage and improve cache hit rate with aggressive formats
     formats: ["image/avif", "image/webp"],
-    // Don't resize beyond source dims to avoid degradation
-    dangerouslyAllowSVG: true,
+    // SVG is disabled: the optimizer never serves user-provided SVGs (the
+    // static logo is served directly), avoiding SVG-based XSS via <img>.
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     // 1 hour cache (revalidated by updateTag/revalidatePath on mutations)
     minimumCacheTTL: 3600,
@@ -71,6 +71,24 @@ const nextConfig: NextConfig = {
             value:
               "camera=(), microphone=(), geolocation=(), interest-cohort=()",
           },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
+            key: "Cross-Origin-Resource-Policy",
+            value: "same-origin",
+          },
+          // HSTS is only meaningful over HTTPS; skip in dev so the browser
+          // never pins it for localhost.
+          ...(isDev
+            ? []
+            : [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=63072000; includeSubDomains; preload",
+                },
+              ]),
         ],
       },
     ];

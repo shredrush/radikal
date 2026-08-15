@@ -37,8 +37,26 @@ const getHomeActivities = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
+// Guide cards on the home page are data-driven so every guide gets a public
+// profile link; guides rarely change, so cache like the community roster.
+const getHomeGuides = unstable_cache(
+  async () => {
+    return prisma.guide.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        certifications: {
+          orderBy: { yearIssued: "desc" },
+          take: 3,
+        },
+      },
+    });
+  },
+  ["home-guides"],
+  { tags: ["guides"], revalidate: 3600 },
+);
+
 export default async function Home() {
-  const activities = await getHomeActivities();
+  const [activities, guides] = await Promise.all([getHomeActivities(), getHomeGuides()]);
 
   return (
     <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
@@ -56,6 +74,13 @@ export default async function Home() {
           type: activity.type,
           images: activity.images,
           guide: activity.guide ? { name: activity.guide.name } : null,
+        }))}
+        guides={guides.map((guide) => ({
+          slug: guide.slug,
+          name: guide.name,
+          location: guide.location,
+          photo: guide.photos[0] ?? guide.photo,
+          certifications: guide.certifications.map((certification) => certification.title),
         }))}
       />
     </div>

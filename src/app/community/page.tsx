@@ -41,12 +41,6 @@ const guideImageMap: Record<string, string> = {
 
 const pillars = [
   {
-    title: "Vetted local guides",
-    description:
-      "We connect curious travellers with trusted local guides who know the terrain, the culture and the stories that make each journey unforgettable.",
-    icon: Users,
-  },
-  {
     title: "Small-group travel",
     description:
       "We keep groups intentionally small so you can travel with more freedom, more connection and less crowding.",
@@ -69,7 +63,7 @@ export default async function CommunityPage() {
           <div className="grid gap-8 px-6 py-10 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-16">
             <div className="flex flex-col justify-center gap-6">
               <div className="inline-flex w-fit items-center rounded-full border border-black/10 bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground">
-                The Radikal community
+                The Radikal Community
               </div>
               <div className="space-y-4">
                 <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
@@ -96,26 +90,22 @@ export default async function CommunityPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-center">
-              <div className="w-full max-w-md rounded-[1.75rem] border border-black/10 bg-white p-6 shadow-inner">
-                <div className="rounded-[1.5rem] border border-white/60 bg-white/80 p-6">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">What you can expect</p>
-                  <ul className="mt-5 space-y-3 text-sm leading-7 text-muted-foreground">
-                    <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
-                      Carefully matched guides who are vetted for safety, experience and local knowledge.
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
-                      Small-group travel that feels personal rather than packed.
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-black" />
-                      Trips shaped around nature, slower pacing and responsible tourism.
-                    </li>
-                  </ul>
-                </div>
-              </div>
+            <div className="flex flex-col gap-4">
+              {pillars.map((pillar) => {
+                const Icon = pillar.icon;
+
+                return (
+                  <div key={pillar.title} className="flex items-start gap-4 rounded-[1.5rem] border border-black/10 bg-white p-6">
+                    <div className="rounded-full bg-black/5 p-3 text-foreground">
+                      <Icon size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-xl font-semibold text-foreground">{pillar.title}</h3>
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{pillar.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -125,13 +115,11 @@ export default async function CommunityPage() {
             <div className="inline-flex w-fit items-center rounded-full border border-black/10 bg-black/5 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-foreground">
               Meet the guides
             </div>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  Experienced local leaders behind every journey
-                </h2>
-              </div>
-              <p className="max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
+            <div className="flex flex-col gap-3">
+              <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                Experienced local leaders behind every journey
+              </h2>
+              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
                 Our guides bring deep regional knowledge, safety expertise and a personal connection to the places you travel.
               </p>
             </div>
@@ -202,22 +190,6 @@ export default async function CommunityPage() {
               </Link>
             ))}
           </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-3">
-          {pillars.map((pillar) => {
-            const Icon = pillar.icon;
-
-            return (
-              <article key={pillar.title} className="rounded-[1.5rem] border border-border/70 bg-white p-6 shadow-[0_20px_50px_-35px_rgba(15,23,42,0.35)]">
-                <div className="mb-4 inline-flex rounded-full bg-black/5 p-3 text-foreground">
-                  <Icon size={20} />
-                </div>
-                <h2 className="font-heading text-2xl font-semibold text-foreground">{pillar.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">{pillar.description}</p>
-              </article>
-            );
-          })}
         </section>
       </div>
     </div>

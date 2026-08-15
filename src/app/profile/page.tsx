@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import {
   CalendarDays,
   ClipboardList,
+  ExternalLink,
   Headset,
   LogOut,
   MessageSquare,
@@ -66,6 +67,12 @@ export default async function ProfilePage({
       ? status
       : null;
   const isGuide = user.role === "GUIDE";
+  const guide = isGuide
+    ? await prisma.guide.findUnique({
+        where: { userId: user.id },
+        select: { slug: true },
+      })
+    : null;
   const activeTab =
     tab === "settings"
       ? "settings"
@@ -183,6 +190,16 @@ export default async function ProfilePage({
                   >
                     Manage guides
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    nativeButton={false}
+                    render={<Link href="/admin/guide-registrations" />}
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Guide registrations
+                  </Button>
                 </>
               ) : null}
               {isSupportAgent ? (
@@ -198,15 +215,29 @@ export default async function ProfilePage({
                 </Button>
               ) : null}
               {isGuide ? (
-                <Button
-                  size="sm"
-                  className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
-                  nativeButton={false}
-                  render={<Link href="/profile?tab=booked-trips" />}
-                >
-                  <ClipboardList className="h-3.5 w-3.5" />
-                  Bookings with you
-                </Button>
+                <>
+                  {guide ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      nativeButton={false}
+                      render={<Link href={`/${guide.slug}`} />}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      View public profile
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+                    nativeButton={false}
+                    render={<Link href="/profile?tab=booked-trips" />}
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Bookings with you
+                  </Button>
+                </>
               ) : null}
               <form action={logoutAction}>
                 <Button

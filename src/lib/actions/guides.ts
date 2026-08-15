@@ -61,14 +61,22 @@ function parseCertifications(value: string): CertificationInput[] {
 }
 
 function readGuideFields(formData: FormData) {
-  const rawPhoto = asString(formData.get("photo"));
-  const photo = rawPhoto && isSafeHttpUrl(rawPhoto) ? rawPhoto : null;
+  const photos = ["photo1", "photo2", "photo3"]
+    .map((key) => {
+      const raw = asString(formData.get(key));
+      return raw && isSafeHttpUrl(raw) ? raw : null;
+    })
+    .filter((value): value is string => value !== null);
+  // Keep `photo` as the primary image for backwards-compatible consumers
+  // (e.g. the community roster) while `photos` powers the public profile.
+  const photo = photos[0] ?? null;
 
   return {
     name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
     slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
     bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
     photo,
+    photos,
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
     languages: parseLanguages(asString(formData.get("languages"))),

@@ -52,12 +52,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
+const rupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
 function formatRupees(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return rupeeFormatter.format(amount);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
@@ -85,50 +87,76 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     notFound();
   }
 
+  const fallbackImage =
+    guideImageMap[guide.slug] ??
+    "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80";
+  const guidePhotoSources =
+    (guide.photos ?? []).length > 0
+      ? guide.photos
+      : guide.photo
+        ? [guide.photo]
+        : [fallbackImage];
+  const guideImages = Array.from({ length: 3 }, (_, index) => guidePhotoSources[index % guidePhotoSources.length]);
+
   return (
     <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <Link
-          href="/community"
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/70 bg-white px-3 py-2 text-sm font-medium text-foreground transition hover:border-black/20 hover:bg-background"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to community
-        </Link>
 
         <article className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
-          <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="relative min-h-[320px] lg:min-h-full">
-              <Image
-                src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80"}
-                alt={guide.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 45vw"
-              />
+          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
+              <div className="grid h-full min-h-[320px] grid-cols-2 grid-rows-2 gap-0.5 sm:min-h-[400px] lg:min-h-[420px]">
+                <div className="relative col-span-1 row-span-2 overflow-hidden bg-muted/60">
+                  <Image
+                    src={guideImages[0]}
+                    alt={guide.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 30vw"
+                  />
+                </div>
+                <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
+                  <Image
+                    src={guideImages[1]}
+                    alt={`${guide.name} photo 2`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 30vw"
+                  />
+                </div>
+                <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
+                  <Image
+                    src={guideImages[2]}
+                    alt={`${guide.name} photo 3`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 30vw"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
-              <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+            <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-8">
+              <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Vetted guide
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
-                  <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+                  <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     {guide.name}
                   </h1>
+                  <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
                 </div>
 
-                <p className="text-lg leading-8 text-muted-foreground">
+                <p className="text-base leading-7 text-muted-foreground">
                   {guide.experienceYears}+ years guiding in the Himalayas
                 </p>
-                <p className="text-base leading-8 text-muted-foreground">{guide.bio}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
               </div>
 
-              <div className="mt-8 space-y-6">
+              <div className="mt-6 space-y-5">
                 <div>
                   <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -156,13 +184,6 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     ))}
                   </div>
                 </div>
-
-                <div className="rounded-[1.25rem] border border-border/70 bg-background/80 p-4">
-                  <div className="flex items-center gap-2 text-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm font-medium">Based in {guide.location}</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -170,9 +191,6 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
 
         <section className="mt-10 rounded-[2rem] border border-border/70 bg-white p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
           <div className="mb-6 flex flex-col gap-2">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-              Trips by this guide
-            </p>
             <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Adventures organised by {guide.name}
             </h2>

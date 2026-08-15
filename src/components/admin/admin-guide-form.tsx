@@ -27,6 +27,7 @@ export type GuideFormData = {
   slug: string;
   bio: string;
   photo: string | null;
+  photos: string[];
   location: string;
   experienceYears: number;
   languages: string[];
@@ -121,12 +122,32 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
           />
         </div>
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor={isEditing ? `photo-${guide?.id}` : "new-guide-photo"}>Photo URL</Label>
+          <Label htmlFor={isEditing ? `photo1-${guide?.id}` : "new-guide-photo1"}>Photo 1 URL</Label>
           <input
-            id={isEditing ? `photo-${guide?.id}` : "new-guide-photo"}
-            name="photo"
-            defaultValue={guide?.photo ?? ""}
+            id={isEditing ? `photo1-${guide?.id}` : "new-guide-photo1"}
+            name="photo1"
+            defaultValue={guide?.photos[0] ?? guide?.photo ?? ""}
             placeholder="https://… or /path/to/image.jpg"
+            className={inputClassName}
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor={isEditing ? `photo2-${guide?.id}` : "new-guide-photo2"}>Photo 2 URL</Label>
+          <input
+            id={isEditing ? `photo2-${guide?.id}` : "new-guide-photo2"}
+            name="photo2"
+            defaultValue={guide?.photos[1] ?? ""}
+            placeholder="https://… or /path/to/image.jpg (optional)"
+            className={inputClassName}
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor={isEditing ? `photo3-${guide?.id}` : "new-guide-photo3"}>Photo 3 URL</Label>
+          <input
+            id={isEditing ? `photo3-${guide?.id}` : "new-guide-photo3"}
+            name="photo3"
+            defaultValue={guide?.photos[2] ?? ""}
+            placeholder="https://… or /path/to/image.jpg (optional)"
             className={inputClassName}
           />
         </div>

@@ -47,12 +47,14 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
+const rupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
 function formatRupees(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return rupeeFormatter.format(amount);
 }
 
 type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";

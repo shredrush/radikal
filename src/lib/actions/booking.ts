@@ -31,29 +31,48 @@ export async function createBooking(
 
   const { activityId, slotId, participantCount } = parsed.data;
 
-  const slot = await prisma.slot.findUnique({
-    where: { id: slotId },
-    include: { activity: true },
+  const result = await prisma.$transaction(async (tx) => {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: { activity: true },
+    });
+
+    if (!slot || slot.activityId !== activityId) {
+      return { status: "unavailable" as const };
+    }
+
+    // `slot.booked` only counts CONFIRMED bookings (incremented when payment
+    // is confirmed). Count PENDING bookings too so a burst of concurrent
+    // checkouts cannot oversell a slot before payment is captured.
+    const pendingCount = await tx.booking.count({
+      where: { slotId, status: "PENDING" },
+    });
+
+    if (slot.booked + pendingCount + participantCount > slot.capacity) {
+      return { status: "full" as const };
+    }
+
+    const booking = await tx.booking.create({
+      data: {
+        userId,
+        activityId,
+        slotId,
+        participantCount,
+        totalPriceRupees: slot.activity.priceInRupees * participantCount,
+        status: "PENDING",
+      },
+    });
+
+    return { status: "created" as const, booking };
   });
 
-  if (!slot || slot.activityId !== activityId) {
+  if (result.status === "unavailable") {
     return { success: false, error: "This slot is no longer available." };
   }
 
-  if (slot.booked + participantCount > slot.capacity) {
+  if (result.status === "full") {
     return { success: false, error: "Not enough spots left in this slot." };
   }
 
-  const booking = await prisma.booking.create({
-    data: {
-      userId,
-      activityId,
-      slotId,
-      participantCount,
-      totalPriceRupees: slot.activity.priceInRupees * participantCount,
-      status: "PENDING",
-    },
-  });
-
-  return { success: true, bookingId: booking.id };
+  return { success: true, bookingId: result.booking.id };
 }

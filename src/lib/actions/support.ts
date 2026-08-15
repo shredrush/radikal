@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireSupport } from "@/lib/authz";
+import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { supportMessageSchema } from "@/lib/validations/support";
 
 function asString(value: FormDataEntryValue | null) {
@@ -25,6 +26,12 @@ export async function sendSupportMessageAction(formData: FormData) {
 
   const userId = session.user.id;
   const { body } = parsed.data;
+
+  // Cap message volume per customer to discourage spam flooding.
+  const msgLimit = rateLimit(`support-send:user:${userId}`, 20, 60_000);
+  if (!msgLimit.success) {
+    throw new Error(rateLimitError(msgLimit));
+  }
 
   await prisma.$transaction(async (tx) => {
     // One thread per customer. If it was closed, the customer's message

@@ -36,6 +36,14 @@ type ActivityCardItem = {
   guide: { name: string } | null;
 };
 
+type GuideProfile = {
+  slug: string;
+  name: string;
+  location: string;
+  photo: string | null;
+  certifications: string[];
+};
+
 type FilterPanel = "what" | "when" | "where" | "who" | null;
 
 const SPORT_OPTIONS = [
@@ -56,6 +64,12 @@ const TRAVEL_STYLE_OPTIONS = [
   { id: "self-guided", label: "Self Guided" },
 ] as const;
 
+const dateDisplayFormatter = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 function formatDateForDisplay(value: string) {
   if (!value) {
     return "";
@@ -67,11 +81,7 @@ function formatDateForDisplay(value: string) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(parsed);
+  return dateDisplayFormatter.format(parsed);
 }
 
 function getCalendarDays(viewDate: Date) {
@@ -178,7 +188,15 @@ function prioritizeFeaturedActivities(activities: ActivityCardItem[], featuredTr
     .map(({ activity }) => activity);
 }
 
-export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activities: ActivityCardItem[]; featuredTripSlugs?: readonly string[] }) {
+export function SearchableTrips({
+  activities,
+  featuredTripSlugs = [],
+  guides = [],
+}: {
+  activities: ActivityCardItem[];
+  featuredTripSlugs?: readonly string[];
+  guides?: GuideProfile[];
+}) {
   const router = useRouter();
   const [activePanel, setActivePanel] = useState<FilterPanel>(null);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
@@ -302,48 +320,21 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
     }
   };
 
-  const guideProfiles = [
-    {
-      id: "tashi",
-      name: "Tashi Norbu",
-      region: "Lahaul & Spiti",
-      certifications: ["IMF Certified", "Avalanche Safety"],
-      image:
-        "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      id: "meera",
-      name: "Meera Rawat",
-      region: "Kashmir",
-      certifications: ["Women Leadership", "First Aid"],
-      image:
-        "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      id: "tenzin",
-      name: "Tenzin Namgyal",
-      region: "Ladakh",
-      certifications: ["IMF Certified", "Mountain Rescue"],
-      image:
-        "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      id: "nawang",
-      name: "Nawang Dolma",
-      region: "Arunachal Pradesh",
-      certifications: ["Yoga Instructor"],
-      image:
-        "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      id: "pema",
-      name: "Pema Chhoden",
-      region: "Sikkim",
-      certifications: ["High Altitude Trekking", "First Aid"],
-      image:
-        "https://images.unsplash.com/photo-1548789997-82da68437ad8?w=900?auto=format&fit=crop&w=400&q=80",
-    },
-  ];
+  const guideImageMap: Record<string, string> = {
+    tenzin:
+      "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=400&q=80",
+    tashi:
+      "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=400&q=80",
+    meera:
+      "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=400&q=80",
+    nawang:
+      "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=400&q=80",
+    pema:
+      "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=400&q=80",
+  };
+
+  const guideFallbackImage =
+    "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=400&q=80";
 
   const testimonials = [
     {
@@ -851,13 +842,13 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
-              {guideProfiles.map((guide) => (
-                <Link key={guide.id} href={`/${guide.id}`} className="block">
+              {guides.map((guide) => (
+                <Link key={guide.slug} href={`/${guide.slug}`} className="block">
                   <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 py-0 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_50px_-28px_rgba(0,0,0,0.22)]">
                     <CardHeader className="gap-0 p-0 pb-0 px-0">
                       <div className="flex flex-col items-center text-center">
                         <Image
-                          src={guide.image}
+                          src={guide.photo ?? guideImageMap[guide.slug] ?? guideFallbackImage}
                           alt={guide.name}
                           width={400}
                           height={320}
@@ -865,7 +856,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                         />
                         <div className="w-full px-2 pb-3 pt-2">
                           <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                          <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.region}</p>
+                          <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.location}</p>
                           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                             {guide.certifications.map((certification) => (
                               <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.62vw,0.72rem)] font-small text-foreground/90">
@@ -890,7 +881,7 @@ export function SearchableTrips({ activities, featuredTripSlugs = [] }: { activi
                 Travellers love the Radikal Experiences
               </h4>
               <p className="mt-3 text-base text-muted-foreground">
-                Stories from people who chose small-group sustainable adventures in the Himalayas.
+                Stories from people who chose small-group sustainable adventures
               </p>
             </div>
 

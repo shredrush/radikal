@@ -57,13 +57,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         ) : null}
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="identifier">Email or username</Label>
+          <Label htmlFor="identifier">Username or Email</Label>
           <Input
             id="identifier"
             name="identifier"
             type="text"
             autoComplete="username email"
-            placeholder="you@example.com/username"
+            placeholder="something_cool"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             required

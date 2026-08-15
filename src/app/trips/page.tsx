@@ -57,12 +57,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
+const rupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
 function formatRupees(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return rupeeFormatter.format(amount);
 }
 
 function normalizeLocationFilter(value: string | string[] | null | undefined) {

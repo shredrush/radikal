@@ -19,12 +19,14 @@ import { CalendarDays, MapPin, Ticket, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+const rupeeFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
+
 function formatRupees(amount: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return rupeeFormatter.format(amount);
 }
 
 const statusStyles: Record<string, string> = {
@@ -75,6 +77,9 @@ export default async function AdminBookingsPage() {
               </Button>
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guides" />}>
                 Manage guides
+              </Button>
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guide-registrations" />}>
+                Guide registrations
               </Button>
               <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
                 Back to profile

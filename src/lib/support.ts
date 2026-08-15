@@ -71,14 +71,16 @@ export function toSupportMessageViews(
   }));
 }
 
+const messageTimeFormatter = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
 export function formatSupportMessageTime(iso: string) {
   const date = new Date(iso);
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
+  return messageTimeFormatter.format(date);
 }
 
 export type SupportChatListItem = {
