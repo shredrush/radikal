@@ -88,8 +88,11 @@ export default async function AdminTripsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/dashboard" />}>
-                Back to dashboard
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guides" />}>
+                Manage guides
+              </Button>
+              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
+                Back to profile
               </Button>
             </div>
           </div>

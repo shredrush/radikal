@@ -40,7 +40,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
-        <input type="hidden" name="callbackUrl" value={callbackUrl ?? "/dashboard"} />
+        <input type="hidden" name="callbackUrl" value={callbackUrl ?? "/profile"} />
         <CardContent className="flex flex-col gap-4">
           {state.error ? (
             <p

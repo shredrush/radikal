@@ -59,7 +59,7 @@ export async function SiteHeader() {
 
           <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
             {session?.user ? (
-              <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
+              <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                 <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
               </Link>
             ) : (
@@ -181,11 +181,11 @@ export async function SiteHeader() {
               </Button>
               {session?.user ? (
                 <div className="group relative">
-                  <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
+                  <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                     <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                   </Link>
                   <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                    <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                    <Link href="/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                       Profile
                     </Link>
                     <form action={logoutAction}>
@@ -365,11 +365,11 @@ export async function SiteHeader() {
             </Button>
             {session?.user ? (
               <div className="group relative">
-                <Link href="/dashboard" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
+                <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                   <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                 </Link>
                 <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                  <Link href="/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
                     Profile
                   </Link>
                   <form action={logoutAction}>

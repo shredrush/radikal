@@ -100,7 +100,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
           <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="relative min-h-[320px] lg:min-h-full">
               <Image
-                src={guide.photo ?? guideImageMap[guide.id] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80"}
+                src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80"}
                 alt={guide.name}
                 fill
                 className="object-cover"

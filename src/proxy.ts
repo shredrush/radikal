@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 
-const PROTECTED_PATH_PREFIXES = ["/dashboard", "/booking"];
+const PROTECTED_PATH_PREFIXES = ["/profile", "/booking"];
 
 export default auth((request) => {
   const isLoggedIn = Boolean(request.auth);
@@ -16,5 +16,5 @@ export default auth((request) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/booking/:path*"],
+  matcher: ["/profile/:path*", "/booking/:path*"],
 };

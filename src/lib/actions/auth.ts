@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
-import { signIn, signOut } from "@/lib/auth";
-import { loginSchema, signupSchema } from "@/lib/validations/auth";
+import { auth, signIn, signOut } from "@/lib/auth";
+import { changePasswordSchema, loginSchema, signupSchema } from "@/lib/validations/auth";
 
 export async function logoutAction() {
   await signOut({ redirectTo: "/" });
@@ -36,7 +36,7 @@ export async function loginAction(
   const redirectTo =
     typeof rawCallbackUrl === "string" && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
       ? rawCallbackUrl
-      : "/dashboard";
+      : "/profile";
 
   const { email, password } = parsed.data;
 
@@ -105,7 +105,7 @@ export async function signupAction(
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/dashboard",
+      redirectTo: "/profile",
     });
   } catch (error) {
     // next-auth signals a successful redirect by throwing a special error —
@@ -117,4 +117,58 @@ export async function signupAction(
   }
 
   return {};
+}
+
+export type ChangePasswordActionState = {
+  error?: string;
+  success?: boolean;
+  fieldErrors?: Partial<Record<"currentPassword" | "newPassword" | "confirmPassword", string>>;
+};
+
+export async function changePasswordAction(
+  _prevState: ChangePasswordActionState,
+  formData: FormData
+): Promise<ChangePasswordActionState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { error: "You must be logged in to change your password." };
+  }
+
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    const fieldErrors: ChangePasswordActionState["fieldErrors"] = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0];
+      if (field === "currentPassword" || field === "newPassword" || field === "confirmPassword") {
+        fieldErrors[field] = issue.message;
+      }
+    }
+    return { fieldErrors };
+  }
+
+  const { currentPassword, newPassword } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    return { error: "Account not found." };
+  }
+
+  const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!passwordMatches) {
+    return { fieldErrors: { currentPassword: "Current password is incorrect" } };
+  }
+
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newPasswordHash },
+  });
+
+  return { success: true };
 }

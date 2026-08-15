@@ -139,11 +139,11 @@ export default async function CommunityPage() {
 
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {guides.map((guide) => (
-              <Link key={guide.id} href={`/${guide.id}`} className="group block">
+              <Link key={guide.id} href={`/${guide.slug}`} className="group block">
                 <article className="h-full overflow-hidden rounded-[1.25rem] border border-border/70 bg-card/95 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.2)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(15,23,42,0.25)]">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
                     <Image
-                      src={guide.photo ?? guideImageMap[guide.id] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
+                      src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
                       alt={guide.name}
                       fill
                       className="object-cover transition duration-500 group-hover:scale-[1.03]"

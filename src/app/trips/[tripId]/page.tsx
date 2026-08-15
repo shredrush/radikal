@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import { unstable_cache } from "next/cache";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TripGallery } from "@/components/trips/trip-gallery";
 import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
@@ -115,39 +115,11 @@ export default async function TripDetailPage({
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <div className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-10">
           <div className="relative mb-8 overflow-hidden rounded-[1.5rem] border border-border/80">
-            {/* Fill any missing slots by cycling through available images */}
-            {(() => {
-              const normalizedImages = activity.images
-                .map((image) => normalizeTripImagePath(image, activity.slug))
-                .filter(Boolean);
-              const imgs = normalizedImages.length > 0 ? normalizedImages : [`/activities/${activity.slug}/cover.png`];
-              const slots = Array.from({ length: 4 }, (_, i) => imgs[i % imgs.length]);
-              return (
-                <div className="grid h-[340px] grid-cols-4 grid-rows-2 gap-0.5 sm:h-[420px]">
-                  <div className="col-span-2 row-span-2 relative bg-muted/60 overflow-hidden">
-                    <Image src={slots[0]} alt="Trip gallery" fill className="object-cover" sizes="50vw" />
-                  </div>
-                  <div className="col-span-1 row-span-1 relative bg-muted/60 overflow-hidden">
-                    <Image src={slots[1]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
-                  </div>
-                  <div className="col-span-1 row-span-2 relative bg-muted/60 overflow-hidden">
-                    <Image src={slots[3]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
-                  </div>
-                  <div className="col-span-1 row-span-1 relative bg-muted/60 overflow-hidden">
-                    <Image src={slots[2]} alt="Trip gallery" fill className="object-cover" sizes="25vw" />
-                  </div>
-                </div>
-              );
-            })()}
-            <button
-              type="button"
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-border/80 bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow backdrop-blur-sm transition hover:bg-background"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
-                <path d="M2.5 2A1.5 1.5 0 0 0 1 3.5v2A1.5 1.5 0 0 0 2.5 7h2A1.5 1.5 0 0 0 6 5.5v-2A1.5 1.5 0 0 0 4.5 2h-2ZM2.5 9A1.5 1.5 0 0 0 1 10.5v2A1.5 1.5 0 0 0 2.5 14h2A1.5 1.5 0 0 0 6 12.5v-2A1.5 1.5 0 0 0 4.5 9h-2ZM9 3.5A1.5 1.5 0 0 1 10.5 2h2A1.5 1.5 0 0 1 14 3.5v2A1.5 1.5 0 0 1 12.5 7h-2A1.5 1.5 0 0 1 9 5.5v-2ZM10.5 9A1.5 1.5 0 0 0 9 10.5v2A1.5 1.5 0 0 0 10.5 14h2a1.5 1.5 0 0 0 1.5-1.5v-2A1.5 1.5 0 0 0 12.5 9h-2Z" />
-              </svg>
-              View all photos
-            </button>
+            <TripGallery
+              images={activity.images.map((image) => normalizeTripImagePath(image, activity.slug)).filter(Boolean)}
+              fallbackImage={`/activities/${activity.slug}/cover.png`}
+              alt={activity.title}
+            />
           </div>
           <div className="space-y-5">
             <div className="space-y-3">
