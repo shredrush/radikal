@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
-import { requireAdmin } from "@/lib/authz";
+import { requireAdmin, requireSupport } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText } from "@/lib/sanitize";
 import { processPaymentSchema } from "@/lib/validations/booking";
@@ -132,7 +132,7 @@ export async function confirmBookingPayment(
 export async function cancelBooking(
   bookingId: string
 ): Promise<ProcessPaymentResult> {
-  await requireAdmin("/login?callbackUrl=/admin/bookings");
+  const session = await requireAdmin("/login?callbackUrl=/admin/bookings");
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
@@ -166,7 +166,11 @@ export async function cancelBooking(
 
       await tx.booking.update({
         where: { id: booking.id },
-        data: { status: "CANCELLED" },
+        data: {
+          status: "CANCELLED",
+          cancelledById: session.user.id,
+          cancelledByRole: session.user.role,
+        },
       });
     });
   } catch (error) {
@@ -175,6 +179,198 @@ export async function cancelBooking(
     return { success: false, error: message };
   }
 
+  revalidatePath("/admin/bookings");
+  revalidatePath("/support");
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+/**
+ * Guide-only action that cancels a booking on one of the trips they guide.
+ * If the booking was CONFIRMED, the reserved spots are released back to the
+ * slot so the capacity stays accurate.
+ */
+export async function cancelBookingAsGuide(
+  bookingId: string
+): Promise<ProcessPaymentResult> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId || session.user.role !== "GUIDE") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  if (!bookingId) {
+    return { success: false, error: "Missing booking id." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          slot: true,
+          activity: { include: { guide: true } },
+        },
+      });
+
+      if (!booking || booking.activity.guide?.userId !== userId) {
+        throw new Error("Booking not found.");
+      }
+
+      if (booking.status === "CANCELLED") {
+        // Already cancelled (e.g. duplicate click) — nothing to do.
+        return;
+      }
+
+      // Release the reserved spots if the booking had been confirmed.
+      if (booking.status === "CONFIRMED") {
+        await tx.slot.update({
+          where: { id: booking.slotId },
+          data: {
+            booked: { decrement: Math.min(booking.participantCount, booking.slot.booked) },
+          },
+        });
+      }
+
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: "CANCELLED",
+          cancelledById: userId,
+          cancelledByRole: session.user.role,
+        },
+      });
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to cancel trip.";
+    return { success: false, error: message };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/support");
+  return { success: true };
+}
+
+/**
+ * Traveller action that cancels one of their own bookings. If the booking was
+ * CONFIRMED, the reserved spots are released back to the slot.
+ */
+export async function cancelBookingAsUser(
+  bookingId: string
+): Promise<ProcessPaymentResult> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { success: false, error: "You must be logged in to cancel." };
+  }
+
+  if (!bookingId) {
+    return { success: false, error: "Missing booking id." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        include: { slot: true },
+      });
+
+      if (!booking || booking.userId !== userId) {
+        throw new Error("Booking not found.");
+      }
+
+      if (booking.status === "CANCELLED") {
+        // Already cancelled (e.g. duplicate click) — nothing to do.
+        return;
+      }
+
+      // Release the reserved spots if the booking had been confirmed.
+      if (booking.status === "CONFIRMED") {
+        await tx.slot.update({
+          where: { id: booking.slotId },
+          data: {
+            booked: { decrement: Math.min(booking.participantCount, booking.slot.booked) },
+          },
+        });
+      }
+
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: "CANCELLED",
+          cancelledById: userId,
+          cancelledByRole: session.user.role,
+        },
+      });
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to cancel booking.";
+    return { success: false, error: message };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/support");
+  return { success: true };
+}
+
+/**
+ * Support-desk action that lets a support agent (SUPPORT or ADMIN) cancel any
+ * booking — including already CONFIRMED ones — from the support dashboard.
+ * The reserved spots are released back to the slot when relevant.
+ */
+export async function cancelBookingAsSupport(
+  bookingId: string
+): Promise<ProcessPaymentResult> {
+  const session = await requireSupport("/login?callbackUrl=/support");
+
+  if (!bookingId) {
+    return { success: false, error: "Missing booking id." };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        include: { slot: true },
+      });
+
+      if (!booking) {
+        throw new Error("Booking not found.");
+      }
+
+      if (booking.status === "CANCELLED") {
+        // Already cancelled (e.g. duplicate click) — nothing to do.
+        return;
+      }
+
+      // Release the reserved spots if the booking had been confirmed.
+      if (booking.status === "CONFIRMED") {
+        await tx.slot.update({
+          where: { id: booking.slotId },
+          data: {
+            booked: { decrement: Math.min(booking.participantCount, booking.slot.booked) },
+          },
+        });
+      }
+
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: "CANCELLED",
+          cancelledById: session.user.id,
+          cancelledByRole: session.user.role,
+        },
+      });
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to cancel booking.";
+    return { success: false, error: message };
+  }
+
+  revalidatePath("/support");
   revalidatePath("/admin/bookings");
   revalidatePath("/profile");
   return { success: true };

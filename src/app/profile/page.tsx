@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   CalendarDays,
+  ClipboardList,
   Headset,
   LogOut,
   MessageSquare,
@@ -13,7 +14,7 @@ import {
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isSupportAgent as isSupportAgentRole } from "@/lib/authz";
+import { isSupportAgent as isSupportAgentRole, isAdmin } from "@/lib/authz";
 import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,13 @@ import { formatTripDateRange } from "@/lib/trip-dates";
 import { toSupportMessageViews, countUnreadSupportMessages, type SupportMessageView } from "@/lib/support";
 import { cn } from "@/lib/utils";
 
+const STATUS_FILTERS = [
+  { value: "ALL", label: "All" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "PENDING", label: "Pending" },
+  { value: "CANCELLED", label: "Cancelled" },
+] as const;
+
 export const metadata: Metadata = {
   title: "Profile — Radikal",
 };
@@ -40,7 +48,7 @@ export const dynamic = "force-dynamic";
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; status?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) {
@@ -52,9 +60,20 @@ export default async function ProfilePage({
   const firstName = name.split(" ")[0];
   const initial = (name.trim()[0] ?? "R").toUpperCase();
 
-  const { tab } = await searchParams;
+  const { tab, status } = await searchParams;
+  const statusFilter =
+    status === "PENDING" || status === "CONFIRMED" || status === "CANCELLED"
+      ? status
+      : null;
+  const isGuide = user.role === "GUIDE";
   const activeTab =
-    tab === "settings" ? "settings" : tab === "support" ? "support" : "bookings";
+    tab === "settings"
+      ? "settings"
+      : tab === "support"
+        ? "support"
+        : isGuide && tab === "booked-trips"
+          ? "booked-trips"
+          : "bookings";
   const isSupportAgent = isSupportAgentRole(user.role);
 
   const bookings = await prisma.booking.findMany({
@@ -62,6 +81,22 @@ export default async function ProfilePage({
     include: { activity: true, slot: true },
     orderBy: { createdAt: "desc" },
   });
+
+  const guideBookings = isGuide
+    ? await prisma.booking.findMany({
+        where: { activity: { guide: { userId: user.id } } },
+        include: {
+          activity: true,
+          slot: true,
+          user: { select: { id: true, name: true, username: true, email: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+
+  const visibleGuideBookings = statusFilter
+    ? guideBookings.filter((b) => b.status === statusFilter)
+    : guideBookings;
 
   const now = new Date();
   const confirmed = bookings.filter((b) => b.status === "CONFIRMED");
@@ -118,7 +153,7 @@ export default async function ProfilePage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {user.role === "ADMIN" ? (
+              {isAdmin(user.role) ? (
                 <>
                   <Button
                     variant="outline"
@@ -160,6 +195,17 @@ export default async function ProfilePage({
                 >
                   <Headset className="h-3.5 w-3.5" />
                   Support dashboard
+                </Button>
+              ) : null}
+              {isGuide ? (
+                <Button
+                  size="sm"
+                  className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+                  nativeButton={false}
+                  render={<Link href="/profile?tab=booked-trips" />}
+                >
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  Bookings with you
                 </Button>
               ) : null}
               <form action={logoutAction}>
@@ -206,6 +252,20 @@ export default async function ProfilePage({
                 <Ticket className="h-4 w-4" />
                 Bookings
               </Link>
+              {isGuide ? (
+                <Link
+                  href="/profile?tab=booked-trips"
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                    activeTab === "booked-trips"
+                      ? "border-primary/30 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  Bookings with you
+                </Link>
+              ) : null}
               <Link
                 href="/profile?tab=settings"
                 className={cn(
@@ -292,6 +352,100 @@ export default async function ProfilePage({
                   </CardContent>
                 </Card>
               )
+            ) : activeTab === "booked-trips" ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <CardTitle>Bookings with you</CardTitle>
+                  <CardDescription>
+                    Trips travellers have reserved with you as their guide.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {guideBookings.length === 0 ? (
+                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                      <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
+                      <div>
+                        <p className="font-medium text-foreground">No bookings with you yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          When travellers reserve one of your trips, it will show up here.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-4 flex flex-wrap items-center gap-2">
+                        {STATUS_FILTERS.map(({ value, label }) => {
+                          const active = (statusFilter ?? "ALL") === value;
+                          const count =
+                            value === "ALL"
+                              ? guideBookings.length
+                              : guideBookings.filter((b) => b.status === value).length;
+                          return (
+                            <Button
+                              key={value}
+                              size="sm"
+                              variant={active ? "default" : "outline"}
+                              className="rounded-full"
+                              nativeButton={false}
+                              render={
+                                <Link
+                                  href={
+                                    value === "ALL"
+                                      ? "/profile?tab=booked-trips"
+                                      : `/profile?tab=booked-trips&status=${value}`
+                                  }
+                                />
+                              }
+                            >
+                              {label}
+                              <span className="ml-1 text-[0.65rem] opacity-70">({count})</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      {visibleGuideBookings.length === 0 ? (
+                        <div className="flex flex-col items-center gap-3 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                          <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
+                          <p className="text-sm text-muted-foreground">
+                            No bookings match this filter.
+                          </p>
+                        </div>
+                      ) : (
+                        <ul className="flex flex-col gap-3">
+                          {visibleGuideBookings.map((booking) => (
+                            <li key={booking.id}>
+                              <BookingCard
+                                booking={{
+                                  id: booking.id,
+                                  tripSlug: booking.activity.slug,
+                                  title: booking.activity.title,
+                                  location: booking.activity.location,
+                                  image: getTripCardImage(booking.activity),
+                                  dateRange: formatTripDateRange(
+                                    booking.slot.date,
+                                    booking.activity.durationDays
+                                  ),
+                                  participantCount: booking.participantCount,
+                                  totalPriceRupees: booking.totalPriceRupees,
+                                  status: booking.status,
+                                  paymentTransactionId: booking.paymentTransactionId,
+                                  bookedAt: booking.createdAt.toISOString(),
+                                  customer: {
+                                    name: booking.user.name,
+                                    username: booking.user.username,
+                                    email: booking.user.email,
+                                  },
+                                  showGuideCancel: true,
+                                }}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             ) : (
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>
@@ -339,6 +493,7 @@ export default async function ProfilePage({
                               status: booking.status,
                               paymentTransactionId: booking.paymentTransactionId,
                               bookedAt: booking.createdAt.toISOString(),
+                              showUserCancel: true,
                             }}
                           />
                         </li>

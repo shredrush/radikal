@@ -36,6 +36,7 @@ export const USERNAME_MAX_LENGTH = 30;
 export const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
   "admin",
   "administrator",
+  "admax",
   "root",
   "system",
   "support",

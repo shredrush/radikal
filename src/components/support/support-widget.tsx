@@ -25,6 +25,7 @@ export async function SupportWidget() {
   let messages: SupportMessageView[] = [];
   let status: "OPEN" | "CLOSED" = "OPEN";
   let unreadCount = 0;
+  let hasActiveChat = false;
 
   if (!isSupportAgent) {
     const supportChat = await prisma.supportChat.findUnique({
@@ -33,6 +34,7 @@ export async function SupportWidget() {
     });
 
     if (supportChat) {
+      hasActiveChat = true;
       messages = toSupportMessageViews(supportChat.messages, session.user.id);
       status = supportChat.status;
       unreadCount = countUnreadSupportMessages(supportChat, session.user.id);
@@ -43,6 +45,7 @@ export async function SupportWidget() {
     <SupportWidgetClient
       isAuthenticated
       isSupportAgent={isSupportAgent}
+      hasActiveChat={hasActiveChat}
       messages={messages}
       status={status}
       unreadCount={unreadCount}

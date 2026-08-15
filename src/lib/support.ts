@@ -1,9 +1,58 @@
+import { formatTripDateRange } from "@/lib/trip-dates";
+
 export type SupportMessageView = {
   id: string;
   body: string;
   isMine: boolean;
   createdAt: string;
 };
+
+export type SupportBookingListItem = {
+  id: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  title: string;
+  location: string;
+  travellerName: string;
+  travellerEmail: string;
+  dateRange: string;
+  participantCount: number;
+  totalPriceRupees: number;
+  cancelledByName: string | null;
+  cancelledByRole: string | null;
+  bookedAt: string;
+};
+
+/**
+ * Convert a Prisma booking (with its traveller, trip, slot and canceller) into
+ * a serializable shape for the support dashboard's bookings view.
+ */
+export function toSupportBookingListItem(booking: {
+  id: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  totalPriceRupees: number;
+  participantCount: number;
+  createdAt: Date;
+  cancelledByRole: string | null;
+  activity: { title: string; location: string; durationDays: number };
+  slot: { date: Date };
+  user: { name: string | null; email: string };
+  cancelledBy: { name: string | null } | null;
+}): SupportBookingListItem {
+  return {
+    id: booking.id,
+    status: booking.status,
+    title: booking.activity.title,
+    location: booking.activity.location,
+    travellerName: booking.user.name || booking.user.email,
+    travellerEmail: booking.user.email,
+    dateRange: formatTripDateRange(booking.slot.date, booking.activity.durationDays),
+    participantCount: booking.participantCount,
+    totalPriceRupees: booking.totalPriceRupees,
+    cancelledByName: booking.cancelledBy?.name ?? null,
+    cancelledByRole: booking.cancelledByRole ?? null,
+    bookedAt: booking.createdAt.toISOString(),
+  };
+}
 
 /**
  * Convert Prisma support messages into a serializable shape that can be passed

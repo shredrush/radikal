@@ -47,4 +47,3 @@ copilot-instructions.md
 /src/generated/prisma
 /prisma/migrations/
 /prisma/seed-dummy-data.ts
-/prisma/seed-from-existing-db.ts

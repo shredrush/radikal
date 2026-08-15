@@ -19,12 +19,14 @@ import type { SupportMessageView } from "@/lib/support";
 export function SupportWidgetClient({
   isAuthenticated,
   isSupportAgent = false,
+  hasActiveChat = false,
   messages,
   status,
   unreadCount: initialUnreadCount = 0,
 }: {
   isAuthenticated: boolean;
   isSupportAgent?: boolean;
+  hasActiveChat?: boolean;
   messages: SupportMessageView[];
   status: "OPEN" | "CLOSED";
   unreadCount?: number;
@@ -46,12 +48,14 @@ export function SupportWidgetClient({
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || isSupportAgent) return;
+    // Only poll when the customer has an existing support thread; there is
+    // nothing to surface as unread otherwise.
+    if (!isAuthenticated || isSupportAgent || !hasActiveChat) return;
 
     loadUnread();
-    const interval = setInterval(loadUnread, 8000);
+    const interval = setInterval(loadUnread, 30000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, isSupportAgent, loadUnread]);
+  }, [isAuthenticated, isSupportAgent, hasActiveChat, loadUnread]);
 
   return (
     <Dialog onOpenChange={(open) => {

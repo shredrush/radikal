@@ -2,14 +2,25 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, MessageSquare, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  CalendarDays,
+  MapPin,
+  MessageSquare,
+  Ticket,
+  User,
+  Users,
+} from "lucide-react";
 
 import {
   formatSupportMessageTime,
+  type SupportBookingListItem,
   type SupportChatListItem,
   type SupportMessageView,
 } from "@/lib/support";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
+import { CancelBookingAsSupportButton } from "@/components/support/cancel-booking-as-support-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -36,16 +47,77 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
+function formatRupees(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";
+
+const bookingFilterOptions: { value: BookingStatusFilter; label: string }[] = [
+  { value: "ALL", label: "All" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "PENDING", label: "Pending" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFilter) {
+  if (value === "ALL") return bookings.length;
+  return bookings.filter((booking) => booking.status === value).length;
+}
+
+const bookingStatusStyles: Record<string, string> = {
+  PENDING: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  CONFIRMED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
+};
+
+function bookingStatusLabel(status: string) {
+  if (status === "CONFIRMED") return "Confirmed";
+  if (status === "CANCELLED") return "Cancelled";
+  return "Pending payment";
+}
+
+function roleLabel(role: string | null) {
+  switch (role) {
+    case "GUIDE":
+      return "guide";
+    case "ADMIN":
+    case "ADMAX":
+      return "admin";
+    case "SUPPORT":
+      return "support";
+    case "USER":
+      return "traveller";
+    default:
+      return null;
+  }
+}
+
+function cancelledByText(booking: SupportBookingListItem) {
+  const name = booking.cancelledByName ?? "Unknown";
+  const role = roleLabel(booking.cancelledByRole);
+  return role ? `${name} (${role})` : name;
+}
+
 export function SupportDashboard({
   initialChats,
+  initialBookings,
   chatId,
+  tab,
   selectedChat,
 }: {
   initialChats: SupportChatListItem[];
+  initialBookings: SupportBookingListItem[];
   chatId?: string;
+  tab: "conversations" | "bookings";
   selectedChat: SupportDashboardSelectedChat | null;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
+  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("ALL");
 
   const loadChats = useCallback(async () => {
     try {
@@ -70,6 +142,15 @@ export function SupportDashboard({
   const awaitingReplyCount = openChats.filter(
     (chat) => chat.lastMessageSenderId != null && chat.lastMessageSenderId === chat.userId,
   ).length;
+
+  const pendingCount = initialBookings.filter((b) => b.status === "PENDING").length;
+  const confirmedCount = initialBookings.filter((b) => b.status === "CONFIRMED").length;
+  const cancelledCount = initialBookings.filter((b) => b.status === "CANCELLED").length;
+
+  const filteredBookings =
+    statusFilter === "ALL"
+      ? initialBookings
+      : initialBookings.filter((b) => b.status === statusFilter);
 
   function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
     const awaitingReply =
@@ -112,6 +193,85 @@ export function SupportDashboard({
     );
   }
 
+  function renderBookingItem(booking: SupportBookingListItem) {
+    return (
+      <div
+        key={booking.id}
+        className="flex flex-col gap-4 rounded-[1.25rem] border border-border/70 bg-background/95 p-5 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest ${
+                  bookingStatusStyles[booking.status] ?? bookingStatusStyles.PENDING
+                }`}
+              >
+                {bookingStatusLabel(booking.status)}
+              </span>
+              <Badge
+                variant="outline"
+                className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground"
+              >
+                {booking.location}
+              </Badge>
+            </div>
+            <h3 className="font-heading text-lg font-semibold leading-snug text-foreground">
+              {booking.title}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {booking.travellerName} · {booking.travellerEmail}
+            </p>
+          </div>
+          <div className="sm:text-right">
+            <p className="text-[0.65rem] uppercase tracking-widest text-muted-foreground">
+              Total paid
+            </p>
+            <p className="mt-1 font-heading text-xl font-semibold text-foreground">
+              {formatRupees(booking.totalPriceRupees)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            {booking.dateRange}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-primary" />
+            {booking.participantCount}{" "}
+            {booking.participantCount === 1 ? "participant" : "participants"}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-primary" />
+            {booking.location}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+          {booking.status === "CANCELLED" ? (
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Ban className="h-4 w-4 text-rose-500" />
+              Cancelled by{" "}
+              <strong className="font-medium text-foreground">
+                {cancelledByText(booking)}
+              </strong>
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Booking reference:</span>{" "}
+              <span className="font-mono text-xs">{booking.id}</span>
+            </span>
+          )}
+          {booking.status !== "CANCELLED" ? (
+            <CancelBookingAsSupportButton bookingId={booking.id} />
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
@@ -125,7 +285,7 @@ export function SupportDashboard({
                 Support dashboard
               </h1>
               <p className="text-sm leading-7 text-muted-foreground">
-                Reply to customer conversations and resolve open support requests.
+                Reply to customer conversations and manage bookings across the platform.
               </p>
             </div>
             <Button
@@ -140,28 +300,136 @@ export function SupportDashboard({
             </Button>
           </div>
 
-          <div className="mt-8 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Open chats</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                {openChats.length}
-              </p>
-            </div>
-            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Resolved</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                {closedChats.length}
-              </p>
-            </div>
-            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Awaiting reply</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                {awaitingReplyCount}
-              </p>
-            </div>
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={tab === "conversations" ? "default" : "outline"}
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link href="/support" />}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Conversations
+            </Button>
+            <Button
+              size="sm"
+              variant={tab === "bookings" ? "default" : "outline"}
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link href="/support?tab=bookings" />}
+            >
+              <Ticket className="h-3.5 w-3.5" />
+              Bookings
+            </Button>
           </div>
+
+          {tab === "bookings" ? (
+            <div className="mt-6 grid gap-3 md:grid-cols-4">
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Total bookings</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {initialBookings.length}
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Pending payment</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {pendingCount}
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Confirmed</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {confirmedCount}
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Cancelled</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {cancelledCount}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Open chats</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {openChats.length}
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Resolved</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {closedChats.length}
+                </p>
+              </div>
+              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Awaiting reply</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
+                  {awaitingReplyCount}
+                </p>
+              </div>
+            </div>
+          )}
         </header>
 
+        {tab === "bookings" ? (
+          <section className="min-w-0">
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                  All bookings
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Cancel any reservation — including confirmed ones — and see who cancelled each booking.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {bookingFilterOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    size="sm"
+                    variant={statusFilter === option.value ? "default" : "outline"}
+                    className="rounded-full"
+                    onClick={() => setStatusFilter(option.value)}
+                  >
+                    {option.label}
+                    <span className="ml-1 text-[0.65rem] opacity-70">
+                      ({statusCount(initialBookings, option.value)})
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {initialBookings.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
+                <Ticket className="h-8 w-8 text-muted-foreground/50" />
+                <div>
+                  <p className="font-medium text-foreground">No bookings yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Reservations will appear here as soon as travellers book a trip.
+                  </p>
+                </div>
+              </div>
+            ) : filteredBookings.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
+                <Ticket className="h-8 w-8 text-muted-foreground/50" />
+                <div>
+                  <p className="font-medium text-foreground">No bookings match this filter</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try selecting a different status to see more reservations.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {filteredBookings.map((booking) => renderBookingItem(booking))}
+              </div>
+            )}
+          </section>
+        ) : (
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* Conversation list */}
           <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
@@ -215,6 +483,7 @@ export function SupportDashboard({
             )}
           </section>
         </div>
+        )}
       </div>
     </div>
   );

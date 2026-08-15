@@ -2,23 +2,23 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 
-export type Role = "USER" | "GUIDE" | "ADMIN" | "SUPPORT";
+export type Role = "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT";
 
 /**
  * Central, auditable authorization rules.
  *
  * Role hierarchy:
- *   - ADMIN  -> everything (admin tooling + support desk).
+ *   - ADMIN / ADMAX -> everything (admin tooling + support desk).
  *   - SUPPORT -> support desk only.
  *   - USER / GUIDE -> their own account data only.
  */
 
-export function isAdmin(role: Role | undefined): role is "ADMIN" {
-  return role === "ADMIN";
+export function isAdmin(role: Role | undefined): role is "ADMIN" | "ADMAX" {
+  return role === "ADMIN" || role === "ADMAX";
 }
 
-export function isSupportAgent(role: Role | undefined): role is "ADMIN" | "SUPPORT" {
-  return role === "SUPPORT" || role === "ADMIN";
+export function isSupportAgent(role: Role | undefined): role is "ADMIN" | "ADMAX" | "SUPPORT" {
+  return role === "SUPPORT" || isAdmin(role);
 }
 
 /**

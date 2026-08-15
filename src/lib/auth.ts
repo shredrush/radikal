@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
-import { prisma } from "@/lib/prisma";
+import { findUserByIdentifier } from "@/lib/login";
 import { loginSchema } from "@/lib/validations/auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -17,16 +17,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (rawCredentials) => {
         const parsed = loginSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
 
-        const { email, password } = parsed.data;
+        const { identifier, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await findUserByIdentifier(identifier);
         if (!user) return null;
 
         const passwordMatches = await bcrypt.compare(
@@ -54,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (username) {
           token.username = username;
         }
-        const role = (user as { role?: "USER" | "GUIDE" | "ADMIN" | "SUPPORT" }).role;
+        const role = (user as { role?: "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT" }).role;
         if (role) {
           token.role = role;
         }
@@ -65,7 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.id) {
         session.user.id = token.id as string;
         session.user.username = token.username as string | undefined;
-        session.user.role = token.role as "USER" | "GUIDE" | "ADMIN" | "SUPPORT" | undefined;
+        session.user.role = token.role as "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT" | undefined;
       }
       return session;
     },

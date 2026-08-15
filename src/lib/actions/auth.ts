@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
+import { findUserByIdentifier } from "@/lib/login";
 import {
   isReservedUsername,
   isValidUsername,
@@ -19,7 +20,7 @@ export async function logoutAction() {
 
 export type LoginActionState = {
   error?: string;
-  email?: string;
+  identifier?: string;
 };
 
 export async function loginAction(
@@ -27,13 +28,13 @@ export async function loginAction(
   formData: FormData
 ): Promise<LoginActionState> {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    const email = formData.get("email")?.toString().trim() ?? "";
-    return { error: "Enter a valid email and password.", email };
+    const identifier = formData.get("identifier")?.toString().trim() ?? "";
+    return { error: "Enter your email or username and password.", identifier };
   }
 
   const rawCallbackUrl = formData.get("callbackUrl");
@@ -44,27 +45,27 @@ export async function loginAction(
       ? rawCallbackUrl
       : "/";
 
-  const { email, password } = parsed.data;
+  const { identifier, password } = parsed.data;
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await findUserByIdentifier(identifier);
   if (!existingUser) {
-    return { error: "Invalid email. Create an account", email };
+    return { error: "No account found with this email or username.", identifier };
   }
 
   try {
     await signIn("credentials", {
-      email,
+      identifier,
       password,
       redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid password", email };
+      return { error: "Invalid password", identifier };
     }
     throw error;
   }
 
-  return { email };
+  return { identifier };
 }
 
 export type SignupActionState = {

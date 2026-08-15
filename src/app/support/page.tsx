@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { requireSupport } from "@/lib/authz";
-import { toSupportChatListItem, toSupportMessageViews } from "@/lib/support";
+import {
+  toSupportBookingListItem,
+  toSupportChatListItem,
+  toSupportMessageViews,
+} from "@/lib/support";
 import {
   SupportDashboard,
   type SupportDashboardSelectedChat,
@@ -11,17 +15,27 @@ export const dynamic = "force-dynamic";
 export default async function SupportDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ chat?: string }>;
+  searchParams: Promise<{ chat?: string; tab?: string }>;
 }) {
   const session = await requireSupport("/login?callbackUrl=/support");
 
-  const { chat: chatId } = await searchParams;
+  const { chat: chatId, tab } = await searchParams;
 
   const chats = await prisma.supportChat.findMany({
     orderBy: { updatedAt: "desc" },
     include: {
       user: { select: { id: true, name: true, email: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+
+  const bookings = await prisma.booking.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { name: true, email: true } },
+      activity: { select: { title: true, location: true, durationDays: true } },
+      slot: { select: { date: true } },
+      cancelledBy: { select: { name: true } },
     },
   });
 
@@ -48,7 +62,9 @@ export default async function SupportDashboardPage({
   return (
     <SupportDashboard
       initialChats={chats.map(toSupportChatListItem)}
+      initialBookings={bookings.map(toSupportBookingListItem)}
       chatId={chatId}
+      tab={tab === "bookings" ? "bookings" : "conversations"}
       selectedChat={selectedChatData}
     />
   );

@@ -20,6 +20,7 @@ enum UserRole {
   USER
   GUIDE
   ADMIN
+  ADMAX
   SUPPORT
 }
 
@@ -84,6 +85,7 @@ model User {
   guide            Guide?
   supportChat      SupportChat?
   supportMessages  SupportMessage[]
+  cancelledBookings Booking[] @relation("BookingCancelledBy")
 
   @@map("users")
 }
@@ -221,12 +223,17 @@ model Booking {
   paymentTransactionId String?
   participantCount     Int           @default(1)
   totalPriceRupees     Int
+  // Audit trail for cancellations: who cancelled and in which role, so the
+  // support dashboard can show exactly who cancelled a booking.
+  cancelledById        String?
+  cancelledByRole      UserRole?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id])
-  activity Activity @relation(fields: [activityId], references: [id])
-  slot     Slot     @relation(fields: [slotId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  activity    Activity @relation(fields: [activityId], references: [id])
+  slot        Slot     @relation(fields: [slotId], references: [id])
+  cancelledBy User?    @relation("BookingCancelledBy", fields: [cancelledById], references: [id])
 
   @@index([userId])
   @@index([slotId])

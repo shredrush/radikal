@@ -18,7 +18,6 @@ const contentSecurityPolicy = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  upgrade-insecure-requests;
   report-uri /api/csp-report;
 `
   .replace(/\s{2,}/g, " ")

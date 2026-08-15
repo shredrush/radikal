@@ -16,13 +16,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
     loginAction,
     initialState
   );
-  const [email, setEmail] = useState(state.email ?? "");
+  const [identifier, setIdentifier] = useState(state.identifier ?? "");
 
   useEffect(() => {
-    if (state.email) {
-      setEmail(state.email);
+    if (state.identifier) {
+      setIdentifier(state.identifier);
     }
-  }, [state.email]);
+  }, [state.identifier]);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -57,15 +57,15 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         ) : null}
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="identifier">Email or username</Label>
           <Input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            id="identifier"
+            name="identifier"
+            type="text"
+            autoComplete="username email"
+            placeholder="you@example.com/username"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
             required
           />
         </div>

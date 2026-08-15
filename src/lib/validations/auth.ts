@@ -32,7 +32,7 @@ export const signupSchema = z.object({
 export type SignupInput = z.infer<typeof signupSchema>;
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().max(254).email("Enter a valid email address"),
+  identifier: z.string().trim().min(1, "Enter your email or username").max(254),
   password: z.string().min(1, "Password is required").max(200),
 });
 
