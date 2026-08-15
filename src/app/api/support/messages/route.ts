@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { toSupportMessageViews } from "@/lib/support";
+import { countUnreadSupportMessages, toSupportMessageViews } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +38,15 @@ export async function GET(request: Request) {
       where: { userId: session.user.id },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
+
+    // Viewing the thread marks any pending agent replies as read for the
+    // customer, which clears the unread notification badge.
+    if (chat && countUnreadSupportMessages(chat, session.user.id) > 0) {
+      await prisma.supportChat.update({
+        where: { id: chat.id },
+        data: { customerLastReadAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       status: chat?.status ?? "OPEN",

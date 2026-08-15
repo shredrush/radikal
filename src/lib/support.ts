@@ -67,3 +67,22 @@ export function toSupportChatListItem(chat: {
     lastMessageBody: lastMessage?.body ?? null,
   };
 }
+
+/**
+ * Count support-agent replies the customer has not read yet. A message counts
+ * as unread when it was sent by someone other than the customer after the
+ * customer last viewed the thread.
+ */
+export function countUnreadSupportMessages(
+  chat: {
+    createdAt: Date;
+    customerLastReadAt: Date | null;
+    messages: Array<{ senderId: string; createdAt: Date }>;
+  },
+  currentUserId: string,
+): number {
+  const lastReadAt = chat.customerLastReadAt ?? chat.createdAt;
+  return chat.messages.filter(
+    (message) => message.senderId !== currentUserId && message.createdAt > lastReadAt,
+  ).length;
+}

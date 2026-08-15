@@ -28,7 +28,7 @@ import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
-import { toSupportMessageViews, type SupportMessageView } from "@/lib/support";
+import { toSupportMessageViews, countUnreadSupportMessages, type SupportMessageView } from "@/lib/support";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -88,13 +88,19 @@ export default async function ProfilePage({
   const upcoming = confirmed.filter((b) => new Date(b.slot.date) >= now).length;
 
   let supportMessages: SupportMessageView[] = [];
-  if (activeTab === "support" && !isSupportAgent) {
+  let supportChatStatus: "OPEN" | "CLOSED" = "OPEN";
+  let supportUnreadCount = 0;
+  if (!isSupportAgent) {
     const supportChat = await prisma.supportChat.findUnique({
       where: { userId: user.id },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
     if (supportChat) {
-      supportMessages = toSupportMessageViews(supportChat.messages, user.id);
+      supportChatStatus = supportChat.status;
+      supportUnreadCount = countUnreadSupportMessages(supportChat, user.id);
+      if (activeTab === "support") {
+        supportMessages = toSupportMessageViews(supportChat.messages, user.id);
+      }
     }
   }
 
@@ -209,18 +215,6 @@ export default async function ProfilePage({
                 Bookings
               </Link>
               <Link
-                href="/profile?tab=support"
-                className={cn(
-                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-                  activeTab === "support"
-                    ? "border-primary/30 bg-primary/5 text-foreground"
-                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
-                )}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Support
-              </Link>
-              <Link
                 href="/profile?tab=settings"
                 className={cn(
                   "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
@@ -231,6 +225,23 @@ export default async function ProfilePage({
               >
                 <Settings2 className="h-4 w-4" />
                 Settings
+              </Link>
+              <Link
+                href="/profile?tab=support"
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                  activeTab === "support"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Support
+                {supportUnreadCount > 0 ? (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">
+                    {supportUnreadCount > 9 ? "9+" : supportUnreadCount}
+                  </span>
+                ) : null}
               </Link>
             </nav>
           </aside>
@@ -285,7 +296,7 @@ export default async function ProfilePage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <SupportChatPanel messages={supportMessages} />
+                    <SupportChatPanel messages={supportMessages} status={supportChatStatus} />
                   </CardContent>
                 </Card>
               )

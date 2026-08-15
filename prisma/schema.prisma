@@ -248,11 +248,12 @@ model Review {
 // in the dashboard and reply from there. Closing a chat marks it resolved;
 // the next customer message reopens it.
 model SupportChat {
-  id        String            @id @default(cuid())
-  userId    String            @unique
-  status    SupportChatStatus @default(OPEN)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id                 String            @id @default(cuid())
+  userId             String            @unique
+  status             SupportChatStatus @default(OPEN)
+  customerLastReadAt DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   user     User             @relation(fields: [userId], references: [id])
   messages SupportMessage[]

@@ -102,3 +102,40 @@ export async function setSupportChatStatusAction(
   revalidatePath("/support");
   revalidatePath("/profile");
 }
+
+/**
+ * Customer-facing action: reopen their own support thread after a support
+ * agent has closed it.
+ */
+export async function reopenSupportChatAction() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login?callbackUrl=/profile?tab=support");
+  }
+
+  await prisma.supportChat.updateMany({
+    where: { userId: session.user.id },
+    data: { status: "OPEN" },
+  });
+
+  revalidatePath("/profile");
+  revalidatePath("/support");
+}
+
+/**
+ * Customer-facing action: mark their support thread as resolved, which removes
+ * it from their view so they get a fresh chat the next time they need help.
+ */
+export async function resolveSupportChatAction() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login?callbackUrl=/profile?tab=support");
+  }
+
+  await prisma.supportChat.deleteMany({
+    where: { userId: session.user.id },
+  });
+
+  revalidatePath("/profile");
+  revalidatePath("/support");
+}

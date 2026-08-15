@@ -6,6 +6,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
+import { SupportWidget } from "@/components/support/support-widget";
 import { Toaster } from "@/components/ui/sonner";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
@@ -46,6 +47,7 @@ export default function RootLayout({
           {children}
         </main>
         <SiteFooterWrapper />
+        <SupportWidget />
         <Toaster />
         <Analytics />
         <SpeedInsights />
