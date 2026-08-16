@@ -121,6 +121,21 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             className={inputClassName}
           />
         </div>
+        {isEditing ? null : (
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="new-guide-email">Account email (optional)</Label>
+            <input
+              id="new-guide-email"
+              name="email"
+              type="email"
+              placeholder="Link an existing account and notify them"
+              className={inputClassName}
+            />
+            <p className="text-xs text-muted-foreground">
+              If this guide already has a Radikal account, enter their email to link it and send them a welcome email.
+            </p>
+          </div>
+        )}
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor={isEditing ? `photo1-${guide?.id}` : "new-guide-photo1"}>Photo 1 URL</Label>
           <input

@@ -422,6 +422,27 @@ export function guideApplicationDecisionEmail({
   };
 }
 
+export function guideWelcomeEmail({
+  to,
+  name,
+}: {
+  to: string;
+  name: string;
+}): EmailInput {
+  return {
+    to,
+    subject: `You're now a ${SITE_NAME} guide!`,
+    html: layout(
+      "You're now a guide",
+      heading(`Welcome to the team, ${escapeHtml(name || "there")}!`) +
+        paragraph(
+          `You've been added as a guide on ${SITE_NAME}. Your profile is now live on the community page, and travellers can discover and book your trips.`,
+        ) +
+        button(siteUrl("/community"), "View the community"),
+    ),
+  };
+}
+
 export function supportReplyEmail({
   to,
   name,

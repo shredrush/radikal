@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
+import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isValidUsername, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
@@ -123,10 +124,38 @@ export async function createGuideAction(formData: FormData) {
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
 
+  // Optional account link: when the admin supplies the guide's email, link the
+  // guide to that existing account and notify them by email. Guides without a
+  // Radikal account can still be created without an email.
+  const email = asString(formData.get("email")).trim().toLowerCase();
+  let linkedUser: { id: string; email: string; name: string } | null = null;
+
+  if (email) {
+    linkedUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true },
+    });
+
+    if (!linkedUser) {
+      throw new Error(
+        "No account found with this email. Leave it blank to create the guide without linking an account.",
+      );
+    }
+
+    const alreadyLinked = await prisma.guide.findUnique({
+      where: { userId: linkedUser.id },
+      select: { id: true },
+    });
+    if (alreadyLinked) {
+      throw new Error("This account is already linked to a guide.");
+    }
+  }
+
   try {
     await prisma.guide.create({
       data: {
         ...guideData,
+        ...(linkedUser ? { userId: linkedUser.id } : {}),
         certifications: { create: certifications },
       },
     });
@@ -138,6 +167,13 @@ export async function createGuideAction(formData: FormData) {
   }
 
   revalidateGuidePages(fields.slug);
+
+  // Notify the newly added guide in the background — never block the action.
+  if (linkedUser) {
+    sendEmailAfter(
+      guideWelcomeEmail({ to: linkedUser.email, name: linkedUser.name }),
+    );
+  }
 }
 
 export async function updateGuideAction(formData: FormData) {
