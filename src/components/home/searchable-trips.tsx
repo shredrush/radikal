@@ -374,11 +374,11 @@ export function SearchableTrips({
   return (
     <section
       id="upcoming-trips"
-      className="mx-auto flex w-full max-w-none flex-col gap-8 bg-white px-4 py-10 sm:px-6 sm:py-16 lg:px-10"
+      className="mx-auto flex w-full max-w-none flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10"
     >
       <div className="-mt-3 mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-1 sm:-mt-4">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-          Find your adventure
+          Find your Himalayan adventure
         </h3>
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts
@@ -759,7 +759,7 @@ export function SearchableTrips({
         </div>
       </div>
 
-      <div className="border-b border-border/60 bg-white px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
+      <div className="border-b border-border/60 px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
          <div className="mx-auto max-w-8xl">
            <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">

@@ -93,7 +93,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     <div className="flex-1 bg-app-gradient">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
-        <article className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
+        <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
               <div className="grid h-full min-h-[320px] grid-cols-2 grid-rows-2 gap-0.5 sm:min-h-[400px] lg:min-h-[420px]">
@@ -180,7 +180,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
           </div>
         </article>
 
-        <section className="mt-10 rounded-[2rem] border border-border/70 bg-white p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
+        <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
           <div className="mb-6 flex flex-col gap-2">
             <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Adventures organised by {guide.name}

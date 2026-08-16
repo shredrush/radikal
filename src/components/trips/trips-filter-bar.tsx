@@ -47,7 +47,7 @@ export function TripsFilterBar({
   const normalizedSelectedSports = selectedSport.map((sport) => (sport === "climb" ? "expedition" : sport));
 
   return (
-    <div className="flex flex-col gap-3 rounded-[1.25rem] border border-orange-100 bg-background/70 p-3 sm:p-4">
+    <div className="flex flex-col gap-3 rounded-[1.25rem] border border-orange-100 p-3 sm:p-4">
       <Button
         type="button"
         variant="outline"
@@ -75,8 +75,8 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("sport", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 bg-orange-100 text-orange-800 hover:bg-orange-200"
-                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4"
+                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 bg-orange-100 text-orange-800 hover:bg-orange-100 hover:text-orange-800"
+                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 hover:border-orange-300 hover:bg-orange-100/60 hover:text-orange-800"
                     }
                   >
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
@@ -101,8 +101,8 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("travelStyle", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal !normal-case !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4"
+                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-800"
+                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 hover:border-emerald-300 hover:bg-emerald-100/60 hover:text-emerald-800"
                     }
                   >
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
@@ -113,10 +113,6 @@ export function TripsFilterBar({
           </div>
         </div>
       ) : null}
-
-      <p className="text-xs text-muted-foreground">
-        Showing {filteredCount} of {totalCount} trips
-      </p>
     </div>
   );
 }

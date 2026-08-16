@@ -128,7 +128,7 @@ export default async function CommunityPage() {
   return (
     <div className="flex-1 bg-app-gradient">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
-        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="px-6 py-7 sm:px-8 lg:px-10 lg:py-8">
             <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700">
@@ -177,7 +177,7 @@ export default async function CommunityPage() {
               </div>
             </div>
 
-            <div className="mt-7 grid gap-5 md:grid-cols-2 lg:mt-8">
+            <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 md:grid-cols-2 lg:mt-8">
               {pillars.map((pillar) => {
                 const Icon = pillar.icon;
                 const tone = pillarToneStyles[pillar.tone];
@@ -227,7 +227,7 @@ export default async function CommunityPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
           <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col gap-4 pb-6 sm:pb-8">

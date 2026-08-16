@@ -39,7 +39,7 @@ export default async function BecomeAGuidePage() {
   return (
     <div className="min-h-screen bg-app-gradient">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
-        <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+        <header className="rounded-[2rem] border border-border/80 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">Guide programme</p>
           <h1 className="mt-3 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
             Become a Radikal guide

@@ -6,12 +6,12 @@ import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type FaqItem = {
+export type FaqItem = {
   question: string;
   answer: string;
 };
 
-const FAQ_ITEMS: FaqItem[] = [
+const DEFAULT_FAQ_ITEMS: FaqItem[] = [
   {
     question: "How do I book a trip?",
     answer:
@@ -87,15 +87,21 @@ function FaqItemRow({ item, index }: { item: FaqItem; index: number }) {
   );
 }
 
-export function FaqSection() {
+export function FaqSection({
+  items = DEFAULT_FAQ_ITEMS,
+  title = "Frequently asked questions",
+}: {
+  items?: FaqItem[];
+  title?: string;
+}) {
   return (
     <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
       <CardHeader>
-        <CardTitle className="text-2xl">Frequently asked questions</CardTitle>
+        <CardTitle className="text-2xl">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="divide-y divide-border/60 rounded-[1rem] border border-border/60 bg-background/60">
-          {FAQ_ITEMS.map((item, index) => (
+          {items.map((item, index) => (
             <FaqItemRow key={item.question} item={item} index={index} />
           ))}
         </ul>
