@@ -8,9 +8,10 @@ interface TripGalleryProps {
   images: string[];
   fallbackImage: string;
   alt: string;
+  compact?: boolean;
 }
 
-export function TripGallery({ images, fallbackImage, alt }: TripGalleryProps) {
+export function TripGallery({ images, fallbackImage, alt, compact = false }: TripGalleryProps) {
   const uniqueImages = Array.from(new Set(images.filter(Boolean)));
   const galleryImages = uniqueImages.length > 0 ? uniqueImages : [fallbackImage];
   // The hero grid always shows 4 tiles, cycling through available images.
@@ -61,7 +62,7 @@ export function TripGallery({ images, fallbackImage, alt }: TripGalleryProps) {
 
   return (
     <>
-      <div className="grid h-[340px] grid-cols-4 grid-rows-2 gap-0.5 sm:h-[420px]">
+      <div className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
         {[
           { slot: 0, layout: "col-span-2 row-span-2" },
           { slot: 1, layout: "col-span-1 row-span-1" },
@@ -95,7 +96,7 @@ export function TripGallery({ images, fallbackImage, alt }: TripGalleryProps) {
       <button
         type="button"
         onClick={openGrid}
-        className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-border/80 bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow backdrop-blur-sm transition hover:bg-background"
+        className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-border/80 bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow backdrop-blur-sm transition hover:bg-background"
       >
         <Images className="h-3.5 w-3.5" />
         View all photos

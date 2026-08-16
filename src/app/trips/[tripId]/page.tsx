@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 
-import { Button } from "@/components/ui/button";
-import { Price } from "@/components/currency/price";
 import {
   Card,
   CardContent,
@@ -12,9 +10,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TripGallery } from "@/components/trips/trip-gallery";
+import { BookingBar } from "@/components/trips/booking-bar";
 import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
+import { FaqSection } from "@/components/trips/faq-section";
 
 // Trip pages were hitting Postgres (with several joined tables) on every
 // request. Admin edits already call updateTag("trips")/revalidatePath for
@@ -104,32 +104,38 @@ export default async function TripDetailPage({
   return (
     <div className="flex flex-1 flex-col bg-app-gradient">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
-        <div className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-10">
-          <div className="relative mb-8 overflow-hidden rounded-[1.5rem] border border-border/80">
-            <TripGallery
-              images={activity.images.map((image) => normalizeTripImagePath(image, activity.slug)).filter(Boolean)}
-              fallbackImage={`/activities/${activity.slug}/cover.png`}
-              alt={activity.title}
-            />
-          </div>
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                {getActivityTypeLabel(activity)}
-              </p>
-              <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
-                {activity.title}
-              </h1>
-              <p className="text-base leading-8 text-muted-foreground">
-                {activity.description}
-              </p>
+        <div className="overflow-hidden rounded-[2rem] border border-border/80 bg-background/90 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+          <div className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <div className="relative overflow-hidden bg-muted/60">
+              <TripGallery
+                images={activity.images.map((image) => normalizeTripImagePath(image, activity.slug)).filter(Boolean)}
+                fallbackImage={`/activities/${activity.slug}/cover.png`}
+                alt={activity.title}
+                compact
+              />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {activity.categories.map((category) => (
-                <span key={category} className="rounded-full border border-border/80 bg-muted px-3 py-1 text-sm text-muted-foreground">
-                  {CATEGORY_LABELS[category] ?? category}
-                </span>
-              ))}
+            <div className="flex flex-col justify-between gap-6 px-8 py-8 sm:px-10 sm:py-10 lg:px-0 lg:pt-4 lg:pb-8 lg:pr-10">
+              <div className="space-y-4">
+                <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
+                  {activity.title}
+                </h1>
+                <p className="line-clamp-6 text-base leading-8 text-muted-foreground">
+                  {activity.description}
+                </p>
+                <div className="flex flex-wrap items-start gap-2">
+                  {activity.categories.map((category) => (
+                    <span key={category} className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                      {CATEGORY_LABELS[category] ?? category}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <BookingBar
+                activityId={activity.id}
+                pricePerPerson={activity.priceInRupees}
+                durationDays={activity.durationDays}
+                maxGroupSize={activity.maxGroupSize}
+              />
             </div>
           </div>
         </div>
@@ -141,49 +147,26 @@ export default async function TripDetailPage({
               <CardDescription>Everything you need to know before you go.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
-              <div className="grid gap-4 grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Pickup</p>
-                  <p className="mt-2 font-medium text-foreground">{activity.tripLocation?.pickup ?? activity.location}</p>
+              <p className="text-foreground">{activity.description}</p>
+              <div className="grid gap-3 grid-cols-2">
+                <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pickup</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{activity.tripLocation?.pickup ?? activity.location}</p>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Drop</p>
-                  <p className="mt-2 font-medium text-foreground">{activity.tripLocation?.drop ?? activity.location}</p>
-                </div>
-              </div>
-              <div className="grid gap-4 grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Duration</p>
-                  <p className="mt-2 font-medium text-foreground">{activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}</p>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Group size</p>
-                  <p className="mt-2 font-medium text-foreground">Up to {activity.maxGroupSize} travellers</p>
+                <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Drop</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{activity.tripLocation?.drop ?? activity.location}</p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Available dates</p>
-                {activity.slots.length > 0 ? (
-                  <ul className="mt-3 space-y-2">
-                    {activity.slots.map((slot) => (
-                      <li key={slot.id}>
-                        <Link
-                          href={`/booking/${activity.id}/checkout?slot=${slot.id}`}
-                          className="group flex items-center justify-between rounded-xl border border-orange-700/70 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-orange-700 hover:bg-orange-700/10"
-                        >
-                          <span className="font-medium text-foreground transition-colors group-hover:text-orange-800">
-                            {formatTripDateRange(slot.date, activity.durationDays)}
-                          </span>
-                          <span className="text-muted-foreground transition-colors group-hover:text-orange-900/80">
-                            {Math.max(slot.capacity - slot.booked, 0)} spots left
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 font-medium text-foreground">No upcoming dates are available yet.</p>
-                )}
+              <div className="grid gap-3 grid-cols-2">
+                <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Duration</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Group size</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">Up to {activity.maxGroupSize} travellers</p>
+                </div>
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>
@@ -204,34 +187,34 @@ export default async function TripDetailPage({
           </Card>
 
           <div className="flex flex-col gap-6">
-            <div className="rounded-[1.75rem] bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.45)]">
-              <p className="text-sm uppercase tracking-[0.3em] text-white/70">Starting from</p>
-              <p className="mt-3 font-heading text-3xl font-semibold">
-                <Price amount={activity.priceInRupees} />
-              </p>
-              <p className="mt-2 text-sm text-white/80">
-                {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"} • {activity.maxGroupSize} guests max
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button
-                  size="sm"
-                  className="rounded-full bg-orange-700 text-white hover:bg-orange-800"
-                  nativeButton={false}
-                  render={<Link href={`/booking/${activity.id}/checkout`} />}
-                >
-                  Book now
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
-                  nativeButton={false}
-                  render={<Link href="/trips" />}
-                >
-                  Back to trips
-                </Button>
-              </div>
-            </div>
+            <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+              <CardHeader>
+                <CardTitle className="text-xl">Available dates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activity.slots.length > 0 ? (
+                  <ul className="space-y-2">
+                    {activity.slots.map((slot) => (
+                      <li key={slot.id}>
+                        <Link
+                          href={`/booking/${activity.id}/checkout?slot=${slot.id}`}
+                          className="group flex items-center justify-between rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
+                        >
+                          <span className="font-medium text-foreground transition-colors group-hover:text-emerald-700">
+                            {formatTripDateRange(slot.date, activity.durationDays)}
+                          </span>
+                          <span className="text-muted-foreground transition-colors group-hover:text-emerald-800/80">
+                            {Math.max(slot.capacity - slot.booked, 0)} spots left
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No upcoming dates are available yet.</p>
+                )}
+              </CardContent>
+            </Card>
 
             <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
               <CardHeader>
@@ -339,6 +322,8 @@ export default async function TripDetailPage({
             )}
           </CardContent>
         </Card>
+
+        <FaqSection />
       </section>
     </div>
   );

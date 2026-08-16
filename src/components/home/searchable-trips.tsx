@@ -378,7 +378,7 @@ export function SearchableTrips({
     >
       <div className="-mt-3 mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-1 sm:-mt-4">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-          Adventure, Reimagined
+          Find your adventure
         </h3>
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts

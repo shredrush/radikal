@@ -147,7 +147,7 @@ export function CheckoutFlow({
             value={slotId}
             disabled={step !== "select"}
             onChange={(event) => setSlotId(event.target.value)}
-            className="h-12 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-12 w-full rounded-xl border border-emerald-600/40 bg-background/80 px-3 text-sm shadow-sm outline-none transition hover:border-emerald-600 focus:border-emerald-600 focus-visible:ring-2 focus-visible:ring-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {availableSlots.map((slot) => (
               <option key={slot.id} value={slot.id} disabled={slot.spotsLeft <= 0}>

@@ -15,6 +15,7 @@ import {
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
 import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
+import { FaqSection } from "@/components/trips/faq-section";
 
 // The filter UI (sport/travel style/location/date) is applied in memory below,
 // so every filter combination reuses this single cached query instead of
@@ -139,6 +140,15 @@ export default async function TripsPage({
   return (
     <div className="flex flex-1 flex-col bg-app-gradient">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
+        <div className="space-y-3">
+          <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
+            Small groups. Big adventures. Sustainable travel.
+          </h1>
+          <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+            We curate small group trips and education courses for adventure enthusiasts, led by certified experts
+          </p>
+        </div>
+
         <TripsFilterBar
           selectedSport={selectedSport}
           selectedTravelStyle={selectedTravelStyle}
@@ -286,6 +296,8 @@ export default async function TripsPage({
             )}
           </div>
         )}
+
+        <FaqSection />
       </section>
     </div>
   );
