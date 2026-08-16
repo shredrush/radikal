@@ -30,7 +30,12 @@ import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
-import { toSupportMessageViews, countUnreadSupportMessages, type SupportMessageView } from "@/lib/support";
+import {
+  formatCancelledBy,
+  toSupportMessageViews,
+  countUnreadSupportMessages,
+  type SupportMessageView,
+} from "@/lib/support";
 import { cn } from "@/lib/utils";
 
 const STATUS_FILTERS = [
@@ -82,12 +87,25 @@ export default async function ProfilePage({
           ? "booked-trips"
           : "bookings";
   const isSupportAgent = isSupportAgentRole(user.role);
+  const isAdminUser = isAdmin(user.role);
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
     include: { activity: true, slot: true },
     orderBy: { createdAt: "desc" },
   });
+
+  const allBookings = isAdminUser
+    ? await prisma.booking.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          activity: true,
+          slot: true,
+          user: { select: { id: true, name: true, username: true, email: true } },
+          cancelledBy: { select: { name: true } },
+        },
+      })
+    : [];
 
   const guideBookings = isGuide
     ? await prisma.booking.findMany({
@@ -474,6 +492,64 @@ export default async function ProfilePage({
                         </ul>
                       )}
                     </>
+                  )}
+                </CardContent>
+              </Card>
+            ) : isAdminUser ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <CardTitle>All bookings</CardTitle>
+                  <CardDescription>
+                    A live view of every reservation across the platform.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {allBookings.length === 0 ? (
+                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                      <Ticket className="h-8 w-8 text-muted-foreground/50" />
+                      <div>
+                        <p className="font-medium text-foreground">No bookings yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Reservations will appear here as soon as travellers book a trip.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="flex flex-col gap-3">
+                      {allBookings.map((booking) => (
+                        <li key={booking.id}>
+                          <BookingCard
+                            booking={{
+                              id: booking.id,
+                              tripSlug: booking.activity.slug,
+                              title: booking.activity.title,
+                              location: booking.activity.location,
+                              image: getTripCardImage(booking.activity),
+                              dateRange: formatTripDateRange(
+                                booking.slot.date,
+                                booking.activity.durationDays
+                              ),
+                              participantCount: booking.participantCount,
+                              totalPriceRupees: booking.totalPriceRupees,
+                              status: booking.status,
+                              paymentTransactionId: booking.paymentTransactionId,
+                              bookedAt: booking.createdAt.toISOString(),
+                              customer: {
+                                name: booking.user.name,
+                                username: booking.user.username,
+                                email: booking.user.email,
+                              },
+                              cancelledByText: formatCancelledBy(
+                                booking.cancelledBy?.name ?? null,
+                                booking.cancelledByRole
+                              ),
+                              showAdminCancel: true,
+                              showAdminConfirm: true,
+                            }}
+                          />
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </CardContent>
               </Card>

@@ -1,4 +1,5 @@
 import { formatTripDateRange } from "@/lib/trip-dates";
+import { getTripCardImage } from "@/lib/trip-card-image";
 
 export type SupportMessageView = {
   id: string;
@@ -10,16 +11,22 @@ export type SupportMessageView = {
 export type SupportBookingListItem = {
   id: string;
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  tripSlug: string;
   title: string;
   location: string;
-  travellerName: string;
-  travellerEmail: string;
+  image: string;
   dateRange: string;
   participantCount: number;
   totalPriceRupees: number;
+  paymentTransactionId: string | null;
+  bookedAt: string;
   cancelledByName: string | null;
   cancelledByRole: string | null;
-  bookedAt: string;
+  customer: {
+    name: string;
+    username: string | null;
+    email: string;
+  };
 };
 
 /**
@@ -31,27 +38,68 @@ export function toSupportBookingListItem(booking: {
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
   totalPriceRupees: number;
   participantCount: number;
+  paymentTransactionId: string | null;
   createdAt: Date;
   cancelledByRole: string | null;
-  activity: { title: string; location: string; durationDays: number };
+  activity: {
+    slug: string;
+    title: string;
+    location: string;
+    durationDays: number;
+    description: string;
+    categories: string[];
+    images?: string[];
+    type?: string;
+  };
   slot: { date: Date };
-  user: { name: string | null; email: string };
+  user: { name: string | null; email: string; username: string | null };
   cancelledBy: { name: string | null } | null;
 }): SupportBookingListItem {
   return {
     id: booking.id,
     status: booking.status,
+    tripSlug: booking.activity.slug,
     title: booking.activity.title,
     location: booking.activity.location,
-    travellerName: booking.user.name || booking.user.email,
-    travellerEmail: booking.user.email,
+    image: getTripCardImage(booking.activity),
     dateRange: formatTripDateRange(booking.slot.date, booking.activity.durationDays),
     participantCount: booking.participantCount,
     totalPriceRupees: booking.totalPriceRupees,
+    paymentTransactionId: booking.paymentTransactionId,
+    bookedAt: booking.createdAt.toISOString(),
     cancelledByName: booking.cancelledBy?.name ?? null,
     cancelledByRole: booking.cancelledByRole ?? null,
-    bookedAt: booking.createdAt.toISOString(),
+    customer: {
+      name: booking.user.name || booking.user.email,
+      username: booking.user.username,
+      email: booking.user.email,
+    },
   };
+}
+
+function roleLabel(role: string | null) {
+  switch (role) {
+    case "GUIDE":
+      return "guide";
+    case "ADMIN":
+    case "ADMAX":
+      return "admin";
+    case "SUPPORT":
+      return "support";
+    case "USER":
+      return "traveller";
+    default:
+      return null;
+  }
+}
+
+export function formatCancelledBy(
+  name: string | null,
+  role: string | null,
+): string | null {
+  if (!name) return null;
+  const roleText = roleLabel(role);
+  return roleText ? `${name} (${roleText})` : name;
 }
 
 /**

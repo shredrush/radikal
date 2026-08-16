@@ -32,8 +32,8 @@ export default async function SupportDashboardPage({
   const bookings = await prisma.booking.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { name: true, email: true } },
-      activity: { select: { title: true, location: true, durationDays: true } },
+      user: { select: { name: true, email: true, username: true } },
+      activity: true,
       slot: { select: { date: true } },
       cancelledBy: { select: { name: true } },
     },

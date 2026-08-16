@@ -4,23 +4,20 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
-  Ban,
-  CalendarDays,
-  MapPin,
   MessageSquare,
   Ticket,
   User,
-  Users,
 } from "lucide-react";
 
 import {
+  formatCancelledBy,
   formatSupportMessageTime,
   type SupportBookingListItem,
   type SupportChatListItem,
   type SupportMessageView,
 } from "@/lib/support";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
-import { CancelBookingAsSupportButton } from "@/components/support/cancel-booking-as-support-button";
+import { BookingCard } from "@/components/profile/booking-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -47,16 +44,6 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
-}
-
 type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";
 
 const bookingFilterOptions: { value: BookingStatusFilter; label: string }[] = [
@@ -69,40 +56,6 @@ const bookingFilterOptions: { value: BookingStatusFilter; label: string }[] = [
 function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFilter) {
   if (value === "ALL") return bookings.length;
   return bookings.filter((booking) => booking.status === value).length;
-}
-
-const bookingStatusStyles: Record<string, string> = {
-  PENDING: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  CONFIRMED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
-};
-
-function bookingStatusLabel(status: string) {
-  if (status === "CONFIRMED") return "Confirmed";
-  if (status === "CANCELLED") return "Cancelled";
-  return "Pending payment";
-}
-
-function roleLabel(role: string | null) {
-  switch (role) {
-    case "GUIDE":
-      return "guide";
-    case "ADMIN":
-    case "ADMAX":
-      return "admin";
-    case "SUPPORT":
-      return "support";
-    case "USER":
-      return "traveller";
-    default:
-      return null;
-  }
-}
-
-function cancelledByText(booking: SupportBookingListItem) {
-  const name = booking.cancelledByName ?? "Unknown";
-  const role = roleLabel(booking.cancelledByRole);
-  return role ? `${name} (${role})` : name;
 }
 
 export function SupportDashboard({
@@ -192,85 +145,6 @@ export function SupportDashboard({
           ) : null}
         </div>
       </Link>
-    );
-  }
-
-  function renderBookingItem(booking: SupportBookingListItem) {
-    return (
-      <div
-        key={booking.id}
-        className="flex flex-col gap-4 rounded-[1.25rem] border border-border/70 bg-background/95 p-5 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest ${
-                  bookingStatusStyles[booking.status] ?? bookingStatusStyles.PENDING
-                }`}
-              >
-                {bookingStatusLabel(booking.status)}
-              </span>
-              <Badge
-                variant="outline"
-                className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground"
-              >
-                {booking.location}
-              </Badge>
-            </div>
-            <h3 className="font-heading text-lg font-semibold leading-snug text-foreground">
-              {booking.title}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {booking.travellerName} · {booking.travellerEmail}
-            </p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-              Total paid
-            </p>
-            <p className="mt-1 font-heading text-xl font-semibold text-foreground">
-              {formatRupees(booking.totalPriceRupees)}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4 text-primary" />
-            {booking.dateRange}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="h-4 w-4 text-primary" />
-            {booking.participantCount}{" "}
-            {booking.participantCount === 1 ? "participant" : "participants"}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-4 w-4 text-primary" />
-            {booking.location}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-          {booking.status === "CANCELLED" ? (
-            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Ban className="h-4 w-4 text-rose-500" />
-              Cancelled by{" "}
-              <strong className="font-medium text-foreground">
-                {cancelledByText(booking)}
-              </strong>
-            </span>
-          ) : (
-            <span className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Booking reference:</span>{" "}
-              <span className="font-mono text-xs">{booking.id}</span>
-            </span>
-          )}
-          {booking.status !== "CANCELLED" ? (
-            <CancelBookingAsSupportButton bookingId={booking.id} />
-          ) : null}
-        </div>
-      </div>
     );
   }
 
@@ -384,7 +258,7 @@ export function SupportDashboard({
                   All bookings
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Cancel any reservation — including confirmed ones — and see who cancelled each booking.
+                  Confirm payments and cancel reservations — including confirmed ones — just like the admin board.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -427,7 +301,35 @@ export function SupportDashboard({
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {filteredBookings.map((booking) => renderBookingItem(booking))}
+                {filteredBookings.map((booking) => (
+                  <BookingCard
+                    key={booking.id}
+                    booking={{
+                      id: booking.id,
+                      tripSlug: booking.tripSlug,
+                      title: booking.title,
+                      location: booking.location,
+                      image: booking.image,
+                      dateRange: booking.dateRange,
+                      participantCount: booking.participantCount,
+                      totalPriceRupees: booking.totalPriceRupees,
+                      status: booking.status,
+                      paymentTransactionId: booking.paymentTransactionId,
+                      bookedAt: booking.bookedAt,
+                      customer: {
+                        name: booking.customer.name,
+                        username: booking.customer.username,
+                        email: booking.customer.email,
+                      },
+                      cancelledByText:
+                        booking.status === "CANCELLED"
+                          ? formatCancelledBy(booking.cancelledByName, booking.cancelledByRole)
+                          : undefined,
+                      showAdminCancel: true,
+                      showAdminConfirm: true,
+                    }}
+                  />
+                ))}
               </div>
             )}
           </section>

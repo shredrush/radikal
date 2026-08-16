@@ -186,6 +186,10 @@ export default async function AdminBookingsPage() {
                         <ConfirmPaymentButton bookingId={booking.id} />
                       </div>
                     </div>
+                  ) : booking.status === "CONFIRMED" ? (
+                    <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-border/60 pt-4">
+                      <CancelBookingButton bookingId={booking.id} />
+                    </div>
                   ) : null}
                 </CardContent>
               </Card>

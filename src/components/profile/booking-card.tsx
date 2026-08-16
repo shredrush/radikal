@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
+  Ban,
   Banknote,
   CalendarDays,
   ChevronDown,
@@ -17,6 +18,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CancelBookingButton } from "@/components/admin/cancel-booking-button";
+import { ConfirmPaymentButton } from "@/components/admin/confirm-payment-button";
 import { CancelGuideBookingButton } from "@/components/profile/cancel-guide-booking-button";
 import { CancelUserBookingButton } from "@/components/profile/cancel-user-booking-button";
 import { cn } from "@/lib/utils";
@@ -74,6 +77,9 @@ export type BookingCardData = {
   };
   showGuideCancel?: boolean;
   showUserCancel?: boolean;
+  showAdminCancel?: boolean;
+  showAdminConfirm?: boolean;
+  cancelledByText?: string | null;
 };
 
 export function BookingCard({ booking }: { booking: BookingCardData }) {
@@ -205,6 +211,15 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
               </dt>
               <dd className="text-right text-foreground">{formatDateTime(booking.bookedAt)}</dd>
             </div>
+            {booking.cancelledByText ? (
+              <div className="flex items-center justify-between gap-4">
+                <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Ban className="h-3.5 w-3.5 text-rose-500" />
+                  Cancelled by
+                </dt>
+                <dd className="text-right text-foreground">{booking.cancelledByText}</dd>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-2.5">
               <dt className="font-medium text-foreground">Total paid</dt>
               <dd className="font-heading text-lg font-semibold text-foreground">
@@ -219,6 +234,12 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
             ) : null}
             {booking.showUserCancel && booking.status !== "CANCELLED" ? (
               <CancelUserBookingButton bookingId={booking.id} />
+            ) : null}
+            {booking.showAdminCancel && booking.status !== "CANCELLED" ? (
+              <CancelBookingButton bookingId={booking.id} />
+            ) : null}
+            {booking.showAdminConfirm && booking.status === "PENDING" ? (
+              <ConfirmPaymentButton bookingId={booking.id} />
             ) : null}
             <Button
               size="sm"
