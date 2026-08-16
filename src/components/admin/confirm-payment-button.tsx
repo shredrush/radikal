@@ -32,7 +32,7 @@ export function ConfirmPaymentButton({ bookingId }: { bookingId: string }) {
     <Button
       type="button"
       size="sm"
-      className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+      className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
       disabled={isPending}
       onClick={handleConfirm}
     >

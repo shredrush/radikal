@@ -1,13 +1,11 @@
-import Link from "next/link";
-
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
 
@@ -73,32 +71,14 @@ export default async function AdminTripsPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
-        <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">Admin board</p>
-              <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">Trip management</h1>
-              <p className="text-sm leading-7 text-muted-foreground">
-                Update the live trips, guide assignments, categories, pricing, and image lists from one streamlined workspace.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/bookings" />}>
-                View bookings
-              </Button>
-              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guides" />}>
-                Manage guides
-              </Button>
-              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/admin/guide-registrations" />}>
-                Guide registrations
-              </Button>
-              <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
-                Back to profile
-              </Button>
-            </div>
-          </div>
+        <AdminPageHeader
+          title="Manage Trips"
+          description="Update the listed  trip details"
+          active="trips"
+        />
 
-          <div className="mt-8 grid gap-3 md:grid-cols-3">
+        <section className="min-w-0">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Trips live</p>
               <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{activities.length}</p>
@@ -112,7 +92,7 @@ export default async function AdminTripsPage() {
               <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalUpcomingSlots}</p>
             </div>
           </div>
-        </header>
+        </section>
 
         <div className="flex items-center justify-between">
           <div>

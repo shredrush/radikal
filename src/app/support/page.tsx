@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireSupport } from "@/lib/authz";
+import { getSupportBookings } from "@/lib/support-bookings";
 import {
-  toSupportBookingListItem,
   toSupportChatListItem,
   toSupportMessageViews,
 } from "@/lib/support";
@@ -29,15 +29,7 @@ export default async function SupportDashboardPage({
     },
   });
 
-  const bookings = await prisma.booking.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: { select: { name: true, email: true, username: true } },
-      activity: true,
-      slot: { select: { date: true } },
-      cancelledBy: { select: { name: true } },
-    },
-  });
+  const bookings = await getSupportBookings();
 
   const selectedChat = chatId
     ? await prisma.supportChat.findUnique({
@@ -62,7 +54,7 @@ export default async function SupportDashboardPage({
   return (
     <SupportDashboard
       initialChats={chats.map(toSupportChatListItem)}
-      initialBookings={bookings.map(toSupportBookingListItem)}
+      initialBookings={bookings}
       chatId={chatId}
       tab={tab === "bookings" ? "bookings" : "conversations"}
       selectedChat={selectedChatData}

@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  MessageSquare,
-  Ticket,
-  User,
-} from "lucide-react";
+import { MessageSquare, Ticket, User } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import {
-  formatCancelledBy,
   formatSupportMessageTime,
   type SupportBookingListItem,
   type SupportChatListItem,
   type SupportMessageView,
 } from "@/lib/support";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
-import { BookingCard } from "@/components/profile/booking-card";
+import { SupportBookingsView } from "@/components/support/bookings-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -44,20 +39,6 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
-type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";
-
-const bookingFilterOptions: { value: BookingStatusFilter; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PENDING", label: "Pending" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
-
-function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFilter) {
-  if (value === "ALL") return bookings.length;
-  return bookings.filter((booking) => booking.status === value).length;
-}
-
 export function SupportDashboard({
   initialChats,
   initialBookings,
@@ -72,7 +53,6 @@ export function SupportDashboard({
   selectedChat: SupportDashboardSelectedChat | null;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
-  const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("ALL");
 
   const loadChats = useCallback(async () => {
     try {
@@ -97,15 +77,6 @@ export function SupportDashboard({
   const awaitingReplyCount = openChats.filter(
     (chat) => chat.lastMessageSenderId != null && chat.lastMessageSenderId === chat.userId,
   ).length;
-
-  const pendingCount = initialBookings.filter((b) => b.status === "PENDING").length;
-  const confirmedCount = initialBookings.filter((b) => b.status === "CONFIRMED").length;
-  const cancelledCount = initialBookings.filter((b) => b.status === "CANCELLED").length;
-
-  const filteredBookings =
-    statusFilter === "ALL"
-      ? initialBookings
-      : initialBookings.filter((b) => b.status === statusFilter);
 
   function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
     const awaitingReply =
@@ -154,79 +125,41 @@ export function SupportDashboard({
         <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
-                Support desk
-              </p>
               <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
                 Support dashboard
               </h1>
-              <p className="text-sm leading-7 text-muted-foreground">
-                Reply to customer conversations and manage bookings across the platform.
-              </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              nativeButton={false}
-              render={<Link href="/profile" />}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to profile
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
+                  tab === "conversations" && "bg-orange-500/10",
+                )}
+                nativeButton={false}
+                render={<Link href="/support" />}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Conversations
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
+                  tab === "bookings" && "bg-orange-500/10",
+                )}
+                nativeButton={false}
+                render={<Link href="/support?tab=bookings" />}
+              >
+                <Ticket className="h-3.5 w-3.5" />
+                Bookings
+              </Button>
+            </div>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant={tab === "conversations" ? "default" : "outline"}
-              className="rounded-full"
-              nativeButton={false}
-              render={<Link href="/support" />}
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              Conversations
-            </Button>
-            <Button
-              size="sm"
-              variant={tab === "bookings" ? "default" : "outline"}
-              className="rounded-full"
-              nativeButton={false}
-              render={<Link href="/support?tab=bookings" />}
-            >
-              <Ticket className="h-3.5 w-3.5" />
-              Bookings
-            </Button>
-          </div>
-
-          {tab === "bookings" ? (
-            <div className="mt-6 grid gap-3 md:grid-cols-4">
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Total bookings</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {initialBookings.length}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Pending payment</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {pendingCount}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Confirmed</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {confirmedCount}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Cancelled</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {cancelledCount}
-                </p>
-              </div>
-            </div>
-          ) : (
+          {tab === "conversations" ? (
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
                 <p className="text-sm text-muted-foreground">Open chats</p>
@@ -247,96 +180,11 @@ export function SupportDashboard({
                 </p>
               </div>
             </div>
-          )}
+          ) : null}
         </header>
 
         {tab === "bookings" ? (
-          <section className="min-w-0">
-            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  All bookings
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Confirm payments and cancel reservations — including confirmed ones — just like the admin board.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {bookingFilterOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    size="sm"
-                    variant={statusFilter === option.value ? "default" : "outline"}
-                    className="rounded-full"
-                    onClick={() => setStatusFilter(option.value)}
-                  >
-                    {option.label}
-                    <span className="ml-1 text-[0.65rem] opacity-70">
-                      ({statusCount(initialBookings, option.value)})
-                    </span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {initialBookings.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
-                <Ticket className="h-8 w-8 text-muted-foreground/50" />
-                <div>
-                  <p className="font-medium text-foreground">No bookings yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Reservations will appear here as soon as travellers book a trip.
-                  </p>
-                </div>
-              </div>
-            ) : filteredBookings.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
-                <Ticket className="h-8 w-8 text-muted-foreground/50" />
-                <div>
-                  <p className="font-medium text-foreground">No bookings match this filter</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Try selecting a different status to see more reservations.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {filteredBookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    booking={{
-                      id: booking.id,
-                      tripSlug: booking.tripSlug,
-                      title: booking.title,
-                      location: booking.location,
-                      image: booking.image,
-                      dateRange: booking.dateRange,
-                      participantCount: booking.participantCount,
-                      totalPriceRupees: booking.totalPriceRupees,
-                      status: booking.status,
-                      paymentTransactionId: booking.paymentTransactionId,
-                      bookedAt: booking.bookedAt,
-                      customer: {
-                        name: booking.customer.name,
-                        username: booking.customer.username,
-                        email: booking.customer.email,
-                      },
-                      cancelledByText:
-                        booking.status === "CANCELLED"
-                          ? formatCancelledBy(booking.cancelledByName, booking.cancelledByRole)
-                          : undefined,
-                      cancellationReason:
-                        booking.status === "CANCELLED"
-                          ? booking.cancellationReason
-                          : undefined,
-                      showAdminCancel: true,
-                      showAdminConfirm: true,
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          <SupportBookingsView bookings={initialBookings} />
         ) : (
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* Conversation list */}

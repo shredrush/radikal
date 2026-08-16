@@ -207,7 +207,7 @@ export default async function ProfilePage({
                       render={<Link href="/admin/guide-registrations" />}
                     >
                       <ClipboardList className="h-3.5 w-3.5" />
-                      Guide registrations
+                      Guide Applications
                     </Button>
                   </div>
                   <div className="flex flex-col gap-2">
