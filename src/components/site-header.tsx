@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { User } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { CurrencySelector } from "@/components/currency/currency-selector";
+import { LogoutButton } from "@/components/profile/logout-button";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -187,15 +188,12 @@ export async function SiteHeader() {
                   <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                     <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                   </Link>
-                  <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                    <Link href="/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                  <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                    <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                      <User className="h-4 w-4" />
                       Profile
                     </Link>
-                    <form action={logoutAction}>
-                      <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                        Logout
-                      </button>
-                    </form>
+                    <LogoutButton variant="menu" />
                   </div>
                 </div>
               ) : (
@@ -372,15 +370,12 @@ export async function SiteHeader() {
                 <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                   <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                 </Link>
-                <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[150px] flex-col rounded-xl border border-border/70 bg-background/95 p-1 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <Link href="/profile" className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                  <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                    <User className="h-4 w-4" />
                     Profile
                   </Link>
-                  <form action={logoutAction}>
-                    <button type="submit" className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      Logout
-                    </button>
-                  </form>
+                  <LogoutButton variant="menu" />
                 </div>
               </div>
             ) : (

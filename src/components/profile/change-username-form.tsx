@@ -1,20 +1,18 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { AlertTriangle, AtSign, Check, Loader2 } from "lucide-react";
 
 import {
   changeUsernameAction,
-  checkUsernameAvailability,
   type ChangeUsernameActionState,
 } from "@/lib/actions/auth";
+import { useUsernameAvailability } from "@/hooks/use-username-availability";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const initialState: ChangeUsernameActionState = {};
-
-type Availability = Awaited<ReturnType<typeof checkUsernameAvailability>>;
 
 export function ChangeUsernameForm({
   currentUsername,
@@ -26,32 +24,12 @@ export function ChangeUsernameForm({
     initialState
   );
 
-  const [availability, setAvailability] = useState<Availability | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-
-  async function handleUsernameBlur(event: React.FocusEvent<HTMLInputElement>) {
-    const value = event.target.value.trim().toLowerCase();
-    if (!value) {
-      setAvailability(null);
-      return;
-    }
-    // The user's own handle is of course "taken" — show a neutral note instead
-    // of calling the availability endpoint for a name that already belongs to
-    // the same account.
-    if (currentUsername && value === currentUsername.toLowerCase()) {
-      setAvailability({
-        status: "available",
-        message: "This is your current username.",
-      });
-      return;
-    }
-    setIsChecking(true);
-    try {
-      setAvailability(await checkUsernameAvailability(value));
-    } finally {
-      setIsChecking(false);
-    }
-  }
+  const { availability, isChecking, check } = useUsernameAvailability({
+    // The user's own handle reads as "taken" — treat it as available instead
+    // of calling the endpoint for a name that already belongs to the account.
+    isCurrentUsername: (value) =>
+      !!currentUsername && value === currentUsername.toLowerCase(),
+  });
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -99,8 +77,7 @@ export function ChangeUsernameForm({
             aria-invalid={
               availability ? availability.status !== "available" : undefined
             }
-            onBlur={handleUsernameBlur}
-            onChange={() => setAvailability(null)}
+            onChange={(event) => check(event.target.value)}
             required
           />
           {isChecking ? (

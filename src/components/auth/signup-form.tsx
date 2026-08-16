@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Check, Loader2 } from "lucide-react";
 
 import {
-  checkUsernameAvailability,
   signupAction,
   type SignupActionState,
 } from "@/lib/actions/auth";
+import { useUsernameAvailability } from "@/hooks/use-username-availability";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,24 +21,11 @@ export function SignupForm() {
     initialState
   );
 
-  const [usernameStatus, setUsernameStatus] = useState<
-    Awaited<ReturnType<typeof checkUsernameAvailability>> | null
-  >(null);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-
-  async function handleUsernameBlur(event: React.FocusEvent<HTMLInputElement>) {
-    const value = event.target.value.trim();
-    if (!value) {
-      setUsernameStatus(null);
-      return;
-    }
-    setIsCheckingUsername(true);
-    try {
-      setUsernameStatus(await checkUsernameAvailability(value));
-    } finally {
-      setIsCheckingUsername(false);
-    }
-  }
+  const {
+    availability: usernameStatus,
+    isChecking: isCheckingUsername,
+    check: checkUsername,
+  } = useUsernameAvailability();
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -98,8 +85,7 @@ export function SignupForm() {
               defaultValue={state.values?.username}
               className="pr-8"
               aria-invalid={usernameStatus ? usernameStatus.status !== "available" : undefined}
-              onBlur={handleUsernameBlur}
-              onChange={() => setUsernameStatus(null)}
+              onChange={(event) => checkUsername(event.target.value)}
               required
             />
             {isCheckingUsername ? (

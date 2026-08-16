@@ -430,11 +430,6 @@ export default async function ProfilePage({
                   <CardTitle>
                     {activeSection === "username" ? "Change username" : "Change password"}
                   </CardTitle>
-                  <CardDescription>
-                    {activeSection === "username"
-                      ? "Update the public handle shown across your profile."
-                      : "Pick a strong password you don&apos;t use anywhere else."}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {activeSection === "username" ? (
