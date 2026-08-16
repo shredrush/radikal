@@ -59,16 +59,9 @@ export default async function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              '(function(){try{var t=localStorage.getItem("radikal-color-theme");if(t&&t!=="taupe"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})();',
-          }}
-        />
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
           disableTransitionOnChange
         >
           <ColorThemeProvider>
