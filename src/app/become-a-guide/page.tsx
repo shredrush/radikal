@@ -37,7 +37,7 @@ export default async function BecomeAGuidePage() {
     application?.status === "APPROVED" ? application : null;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
+    <div className="min-h-screen bg-app-gradient">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">Guide programme</p>

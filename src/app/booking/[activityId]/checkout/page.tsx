@@ -68,7 +68,7 @@ export default async function CheckoutPage({
   );
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.06),_transparent_30%)]">
+    <div className="flex flex-1 flex-col bg-app-gradient">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-10 lg:py-16">
         <Link
           href={`/trips/${activity.slug}`}

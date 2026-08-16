@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { CurrencySelector } from "@/components/currency/currency-selector";
+import { ColorThemeSelector } from "@/components/theme/color-theme-selector";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogoutButton } from "@/components/profile/logout-button";
 
 export async function SiteHeader() {
@@ -45,7 +47,7 @@ export async function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 bg-app-gradient backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
       <div className="mx-auto w-full max-w-8xl px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-4 lg:px-10">
         <div className="flex items-center justify-between md:hidden">
           <SiteLogoLink className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
@@ -60,6 +62,8 @@ export async function SiteHeader() {
           </SiteLogoLink>
 
           <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+            <ThemeToggle />
+            <ColorThemeSelector />
             <CurrencySelector />
             {session?.user ? (
               <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
@@ -182,6 +186,8 @@ export async function SiteHeader() {
               >
                 Become a Guide
               </Button>
+              <ThemeToggle />
+              <ColorThemeSelector />
               <CurrencySelector />
               {session?.user ? (
                 <div className="group relative">
@@ -364,6 +370,8 @@ export async function SiteHeader() {
             >
               Become a Guide
             </Button>
+            <ThemeToggle />
+            <ColorThemeSelector />
             <CurrencySelector />
             {session?.user ? (
               <div className="group relative">

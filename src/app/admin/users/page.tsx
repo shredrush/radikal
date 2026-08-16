@@ -80,7 +80,7 @@ export default async function AdminUsersPage({
     roleCounts.find((group) => group.role === value)?._count._all ?? 0;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
+    <div className="min-h-screen bg-app-gradient">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="Manage Users"

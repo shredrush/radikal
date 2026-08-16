@@ -59,7 +59,7 @@ export default async function Home() {
   const [activities, guides] = await Promise.all([getHomeActivities(), getHomeGuides()]);
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%)]">
+    <div className="flex flex-1 flex-col bg-app-gradient">
       <SearchableTrips
         featuredTripSlugs={FEATURED_TRIP_SLUGS}
         activities={activities.map((activity) => ({

@@ -137,7 +137,7 @@ export default async function TripsPage({
   }));
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.10),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%)]">
+    <div className="flex flex-1 flex-col bg-app-gradient">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <TripsFilterBar
           selectedSport={selectedSport}

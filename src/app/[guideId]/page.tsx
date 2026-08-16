@@ -90,7 +90,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
   const guideImages = Array.from({ length: 3 }, (_, index) => guidePhotoSources[index % guidePhotoSources.length]);
 
   return (
-    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
+    <div className="flex-1 bg-app-gradient">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
         <article className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">

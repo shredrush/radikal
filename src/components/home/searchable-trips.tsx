@@ -676,7 +676,7 @@ export function SearchableTrips({
             <Link
               key={item.title}
               href={item.filter ? `/trips?sport=${item.filter}` : "/trips"}
-              className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:h-[130px] lg:h-[140px]"
+              className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.35)] sm:h-[130px] lg:h-[140px]"
             >
               <Image
                 src={item.image}
@@ -739,7 +739,7 @@ export function SearchableTrips({
               <Link
                 key={item.title}
                 href="/trips"
-                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] sm:min-h-[190px]"
+                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.35)] sm:min-h-[190px]"
               >
                 <Image
                   src={item.image}
@@ -773,7 +773,7 @@ export function SearchableTrips({
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
-                className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border-0 bg-background/95 py-0 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.28)] sm:h-[480px]"
+                className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:h-[480px]"
                 onClick={() => window.location.href = `/trips/${activity.slug}`}
               >
                 <div className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]">
@@ -844,7 +844,7 @@ export function SearchableTrips({
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guides.map((guide) => (
                 <Link key={guide.slug} href={`/${guide.slug}`} className="block">
-                  <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-border/70 bg-card/95 py-0 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.18)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_50px_-28px_rgba(0,0,0,0.22)]">
+                  <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)]">
                     <CardHeader className="gap-0 p-0 pb-0 px-0">
                       <div className="flex flex-col items-center text-center">
                         <Image
@@ -887,7 +887,7 @@ export function SearchableTrips({
 
             <div className="mt-8 !grid !w-full !grid-cols-2 !gap-2 lg:!grid-cols-4">
               {testimonials.map((testimonial) => (
-                <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-border/70 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.18)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
+                <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
                   <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
                     <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
                       “{testimonial.quote}”

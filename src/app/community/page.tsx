@@ -126,7 +126,7 @@ const pillarToneStyles: Record<
 export default async function CommunityPage() {
   const guides = await getCommunityGuides();
   return (
-    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.10),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%)]">
+    <div className="flex-1 bg-app-gradient">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
           <div className="px-6 py-7 sm:px-8 lg:px-10 lg:py-8">

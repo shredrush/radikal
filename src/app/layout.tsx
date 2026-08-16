@@ -9,6 +9,8 @@ import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { SupportWidget } from "@/components/support/support-widget";
 import { Toaster } from "@/components/ui/sonner";
 import { CurrencyProvider } from "@/components/currency/currency-provider";
+import { ColorThemeProvider } from "@/components/theme/color-theme-provider";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { DEFAULT_CURRENCY, currencyForCountry } from "@/lib/currency";
 import { getClientCountry } from "@/lib/geo";
 
@@ -46,6 +48,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -56,17 +59,32 @@ export default async function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <CurrencyProvider initialCurrency={initialCurrency}>
-          <SiteHeader />
-          <main id="top" className="flex flex-1 flex-col">
-            {children}
-          </main>
-          <SiteFooterWrapper />
-          <SupportWidget />
-          <Toaster />
-        </CurrencyProvider>
-        <Analytics />
-        <SpeedInsights />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("radikal-color-theme");if(t&&t!=="taupe"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})();',
+          }}
+        />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ColorThemeProvider>
+            <CurrencyProvider initialCurrency={initialCurrency}>
+              <SiteHeader />
+              <main id="top" className="flex flex-1 flex-col">
+                {children}
+              </main>
+              <SiteFooterWrapper />
+              <SupportWidget />
+              <Toaster />
+            </CurrencyProvider>
+            <Analytics />
+            <SpeedInsights />
+          </ColorThemeProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
