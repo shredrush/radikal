@@ -80,6 +80,7 @@ export type BookingCardData = {
   showAdminCancel?: boolean;
   showAdminConfirm?: boolean;
   cancelledByText?: string | null;
+  cancellationReason?: string | null;
 };
 
 export function BookingCard({ booking }: { booking: BookingCardData }) {
@@ -218,6 +219,15 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
                   Cancelled by
                 </dt>
                 <dd className="text-right text-foreground">{booking.cancelledByText}</dd>
+              </div>
+            ) : null}
+            {booking.cancellationReason ? (
+              <div className="flex items-start justify-between gap-4">
+                <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Ban className="h-3.5 w-3.5 text-rose-500" />
+                  Cancellation reason
+                </dt>
+                <dd className="max-w-[60%] text-right text-foreground">{booking.cancellationReason}</dd>
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-2.5">

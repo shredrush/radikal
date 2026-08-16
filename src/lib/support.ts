@@ -22,6 +22,7 @@ export type SupportBookingListItem = {
   bookedAt: string;
   cancelledByName: string | null;
   cancelledByRole: string | null;
+  cancellationReason: string | null;
   customer: {
     name: string;
     username: string | null;
@@ -41,6 +42,7 @@ export function toSupportBookingListItem(booking: {
   paymentTransactionId: string | null;
   createdAt: Date;
   cancelledByRole: string | null;
+  cancellationReason: string | null;
   activity: {
     slug: string;
     title: string;
@@ -69,6 +71,7 @@ export function toSupportBookingListItem(booking: {
     bookedAt: booking.createdAt.toISOString(),
     cancelledByName: booking.cancelledBy?.name ?? null,
     cancelledByRole: booking.cancelledByRole ?? null,
+    cancellationReason: booking.cancellationReason ?? null,
     customer: {
       name: booking.user.name || booking.user.email,
       username: booking.user.username,

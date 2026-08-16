@@ -194,12 +194,18 @@ export async function confirmBookingPayment(
  * stays accurate.
  */
 export async function cancelBooking(
-  bookingId: string
+  bookingId: string,
+  reason: string
 ): Promise<ProcessPaymentResult> {
   const session = await requireSupport("/login?callbackUrl=/support");
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
+  }
+
+  const cleanReason = sanitizeText(reason, { maxLength: 500 });
+  if (!cleanReason) {
+    return { success: false, error: "Please provide a reason for cancellation." };
   }
 
   let cancellationEmail: CancellationEmail | null = null;
@@ -240,6 +246,7 @@ export async function cancelBooking(
           status: "CANCELLED",
           cancelledById: session.user.id,
           cancelledByRole: session.user.role,
+          cancellationReason: cleanReason,
         },
       });
 
@@ -273,7 +280,8 @@ export async function cancelBooking(
  * slot so the capacity stays accurate.
  */
 export async function cancelBookingAsGuide(
-  bookingId: string
+  bookingId: string,
+  reason: string
 ): Promise<ProcessPaymentResult> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -283,6 +291,11 @@ export async function cancelBookingAsGuide(
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
+  }
+
+  const cleanReason = sanitizeText(reason, { maxLength: 500 });
+  if (!cleanReason) {
+    return { success: false, error: "Please provide a reason for cancellation." };
   }
 
   let cancellationEmail: CancellationEmail | null = null;
@@ -323,6 +336,7 @@ export async function cancelBookingAsGuide(
           status: "CANCELLED",
           cancelledById: userId,
           cancelledByRole: session.user.role,
+          cancellationReason: cleanReason,
         },
       });
 
@@ -354,7 +368,8 @@ export async function cancelBookingAsGuide(
  * CONFIRMED, the reserved spots are released back to the slot.
  */
 export async function cancelBookingAsUser(
-  bookingId: string
+  bookingId: string,
+  reason: string
 ): Promise<ProcessPaymentResult> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -364,6 +379,11 @@ export async function cancelBookingAsUser(
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
+  }
+
+  const cleanReason = sanitizeText(reason, { maxLength: 500 });
+  if (!cleanReason) {
+    return { success: false, error: "Please provide a reason for cancellation." };
   }
 
   let cancellationEmail: CancellationEmail | null = null;
@@ -404,6 +424,7 @@ export async function cancelBookingAsUser(
           status: "CANCELLED",
           cancelledById: userId,
           cancelledByRole: session.user.role,
+          cancellationReason: cleanReason,
         },
       });
 

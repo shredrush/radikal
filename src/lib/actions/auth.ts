@@ -27,6 +27,7 @@ import {
   requestPasswordResetSchema,
   resetPasswordSchema,
   signupSchema,
+  usernameSchema,
 } from "@/lib/validations/auth";
 
 // Password reset codes are 6 digits and single-use, expiring after 60 seconds.
@@ -313,6 +314,68 @@ export async function changePasswordAction(
 
   // Security notification — let the account owner know the password changed.
   sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
+
+  return { success: true };
+}
+
+export type ChangeUsernameActionState = {
+  error?: string;
+  success?: boolean;
+  fieldErrors?: Partial<Record<"username", string>>;
+};
+
+export async function changeUsernameAction(
+  _prevState: ChangeUsernameActionState,
+  formData: FormData
+): Promise<ChangeUsernameActionState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { error: "You must be logged in to change your username." };
+  }
+
+  // Throttle username changes per user to curb rapid renames and enumeration.
+  const usernameLimit = rateLimit(`change-username:user:${userId}`, 10, 15 * 60_000);
+  if (!usernameLimit.success) {
+    return { error: rateLimitError(usernameLimit) };
+  }
+
+  const parsed = usernameSchema.safeParse(formData.get("username"));
+  if (!parsed.success) {
+    const message =
+      parsed.error.issues[0]?.message ?? "Enter a valid username.";
+    return { fieldErrors: { username: message } };
+  }
+
+  const username = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    return { error: "Account not found." };
+  }
+
+  // Nothing to do when the username is unchanged.
+  if (user.username === username) {
+    return { success: true };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { username } });
+  if (existing) {
+    return { fieldErrors: { username: "This username is already taken." } };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { username },
+    });
+  } catch (error) {
+    // The DB unique constraint is the final guard against a rename race.
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      return { fieldErrors: { username: "This username is already taken." } };
+    }
+    throw error;
+  }
 
   return { success: true };
 }

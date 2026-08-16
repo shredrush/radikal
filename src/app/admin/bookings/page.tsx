@@ -50,6 +50,7 @@ export default async function AdminBookingsPage() {
       user: { select: { name: true, email: true } },
       activity: true,
       slot: true,
+      cancelledBy: { select: { name: true } },
     },
   });
 
@@ -189,6 +190,20 @@ export default async function AdminBookingsPage() {
                   ) : booking.status === "CONFIRMED" ? (
                     <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-border/60 pt-4">
                       <CancelBookingButton bookingId={booking.id} />
+                    </div>
+                  ) : booking.status === "CANCELLED" ? (
+                    <div className="mt-4 flex flex-col gap-1.5 border-t border-border/60 pt-4 text-sm text-muted-foreground">
+                      {booking.cancelledBy ? (
+                        <span>
+                          Cancelled by{" "}
+                          <span className="font-medium text-foreground">{booking.cancelledBy.name}</span>
+                        </span>
+                      ) : null}
+                      {booking.cancellationReason ? (
+                        <span>
+                          Reason: <span className="text-foreground">{booking.cancellationReason}</span>
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </CardContent>

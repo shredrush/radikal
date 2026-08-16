@@ -325,6 +325,10 @@ export function SupportDashboard({
                         booking.status === "CANCELLED"
                           ? formatCancelledBy(booking.cancelledByName, booking.cancelledByRole)
                           : undefined,
+                      cancellationReason:
+                        booking.status === "CANCELLED"
+                          ? booking.cancellationReason
+                          : undefined,
                       showAdminCancel: true,
                       showAdminConfirm: true,
                     }}

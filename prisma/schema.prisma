@@ -312,6 +312,7 @@ model Booking {
   // support dashboard can show exactly who cancelled a booking.
   cancelledById        String?
   cancelledByRole      UserRole?
+  cancellationReason   String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
