@@ -2,7 +2,22 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
-import { ArrowRight, Compass, Leaf, MapPin, ShieldCheck, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Compass,
+  Footprints,
+  HandCoins,
+  HeartHandshake,
+  Home,
+  Leaf,
+  MapPin,
+  Mountain,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 
@@ -39,70 +54,172 @@ const guideImageMap: Record<string, string> = {
   pema: "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=900&q=80",
 };
 
-const pillars = [
+type PillarTone = "orange" | "green";
+
+const pillars: {
+  title: string;
+  tagline: string;
+  description: string;
+  icon: LucideIcon;
+  tone: PillarTone;
+  points: { icon: LucideIcon; text: string }[];
+}[] = [
   {
     title: "Small-group travel",
+    tagline: "Fewer people, more meaning",
     description:
-      "We keep groups intentionally small so you can travel with more freedom, more connection and less crowding.",
-    icon: Compass,
+      "We keep groups intentionally small so every journey feels personal — more freedom, more connection, and far less crowding on the trails.",
+    icon: Users,
+    tone: "orange",
+    points: [
+      { icon: Users, text: "Groups capped at around 8 travellers" },
+      { icon: Footprints, text: "Flexible, unhurried itineraries" },
+      { icon: HeartHandshake, text: "Genuine connection with guides and locals" },
+      { icon: Compass, text: "Quieter trails and hidden spots" },
+    ],
   },
   {
     title: "Sustainable exploration",
+    tagline: "Travel that gives back",
     description:
-      "Every trip is designed to support local communities, protect fragile landscapes and help you slow down in nature.",
+      "Every trip is designed to protect the places we love and support the people who call them home — travelling lightly and leaving things better than we found them.",
     icon: Leaf,
+    tone: "green",
+    points: [
+      { icon: HandCoins, text: "Local guides and fair wages" },
+      { icon: Home, text: "Homestays and local businesses" },
+      { icon: Sprout, text: "Leave-no-trace principles" },
+      { icon: Mountain, text: "Protecting fragile landscapes" },
+    ],
   },
 ];
+
+const pillarToneStyles: Record<
+  PillarTone,
+  {
+    card: string;
+    iconBadge: string;
+    tagline: string;
+    pointIcon: string;
+    divider: string;
+    topBar: string;
+  }
+> = {
+  orange: {
+    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-white",
+    iconBadge: "bg-orange-100 text-orange-700",
+    tagline: "text-orange-700",
+    pointIcon: "bg-orange-100 text-orange-600",
+    divider: "border-orange-100",
+    topBar: "bg-orange-500",
+  },
+  green: {
+    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-white to-white",
+    iconBadge: "bg-emerald-100 text-emerald-700",
+    tagline: "text-emerald-700",
+    pointIcon: "bg-emerald-100 text-emerald-600",
+    divider: "border-emerald-100",
+    topBar: "bg-emerald-500",
+  },
+};
 
 export default async function CommunityPage() {
   const guides = await getCommunityGuides();
   return (
-    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(17,17,17,0.08),_transparent_35%)]">
-      <div className="mx-auto flex w-full max-w-8xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
+    <div className="flex-1 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.10),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%)]">
+      <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
-          <div className="grid gap-8 px-6 py-10 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-16">
-            <div className="flex flex-col justify-center gap-6">
-              <div className="inline-flex w-fit items-center rounded-full border border-black/10 bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground">
+          <div className="px-6 py-7 sm:px-8 lg:px-10 lg:py-8">
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700">
+                <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
               </div>
-              <div className="space-y-4">
-                <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                  A community for travellers who want meaningful adventures in nature.
+
+              <div className="space-y-3">
+                <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                  Meaningful adventures, made responsibly
                 </h1>
-                <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                  We bring together adventure seekers and local experts to create journeys that are personal, responsible and deeply rooted in place.
+                <p className="mx-auto max-w-2xl text-base leading-7 text-muted-foreground">
+                  We bring together adventure seekers and local experts to create journeys that are personal, responsible and deeply rooted in place. Small groups, sustainable choices, and a community that cares.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
+
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link
                   href="/trips"
-                  className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+                  className="inline-flex items-center gap-2 rounded-full bg-orange-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-800"
                 >
                   Explore trips
                   <ArrowRight size={16} />
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-foreground transition hover:border-black/20 hover:text-black"
+                  className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
                 >
                   Join the community
                 </Link>
               </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                  Vetted  guides
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Small group sizes
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  Leave-no-trace travel
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="mt-7 grid gap-5 md:grid-cols-2 lg:mt-8">
               {pillars.map((pillar) => {
                 const Icon = pillar.icon;
+                const tone = pillarToneStyles[pillar.tone];
 
                 return (
-                  <div key={pillar.title} className="flex items-start gap-4 rounded-[1.5rem] border border-black/10 bg-white p-6">
-                    <div className="rounded-full bg-black/5 p-3 text-foreground">
-                      <Icon size={20} />
+                  <div
+                    key={pillar.title}
+                    className={`relative flex flex-col overflow-hidden rounded-[1.75rem] border p-6 shadow-sm sm:p-6 ${tone.card}`}
+                  >
+                    <div className={`absolute inset-x-0 top-0 h-1 ${tone.topBar}`} />
+
+                    <div className="flex items-center gap-4">
+                      <div className={`rounded-2xl p-3 ${tone.iconBadge}`}>
+                        <Icon size={22} />
+                      </div>
+                      <div>
+                        <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${tone.tagline}`}>
+                          {pillar.tagline}
+                        </p>
+                        <h3 className="font-heading text-2xl font-semibold text-foreground">
+                          {pillar.title}
+                        </h3>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-heading text-xl font-semibold text-foreground">{pillar.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-muted-foreground">{pillar.description}</p>
-                    </div>
+
+                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                      {pillar.description}
+                    </p>
+
+                    <ul className={`mt-6 flex flex-col gap-3 border-t pt-6 ${tone.divider}`}>
+                      {pillar.points.map((point) => {
+                        const PointIcon = point.icon;
+                        return (
+                          <li key={point.text} className="flex items-start gap-3">
+                            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tone.pointIcon}`}>
+                              <PointIcon size={13} />
+                            </span>
+                            <span className="text-sm leading-6 text-foreground/80">{point.text}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 );
               })}
@@ -110,9 +227,12 @@ export default async function CommunityPage() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-border/70 bg-white p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-white shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
+          <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col gap-4 pb-6 sm:pb-8">
-            <div className="inline-flex w-fit items-center rounded-full border border-black/10 bg-black/5 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-foreground">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-emerald-700">
+              <Leaf className="h-3.5 w-3.5" />
               Meet the guides
             </div>
             <div className="flex flex-col gap-3">
@@ -128,7 +248,7 @@ export default async function CommunityPage() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {guides.map((guide) => (
               <Link key={guide.id} href={`/${guide.slug}`} className="group block">
-                <article className="h-full overflow-hidden rounded-[1.25rem] border border-border/70 bg-card/95 shadow-[0_16px_45px_-28px_rgba(0,0,0,0.2)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(15,23,42,0.25)]">
+                <article className="h-full overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)]">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
                     <Image
                       src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
@@ -163,22 +283,22 @@ export default async function CommunityPage() {
                       {guide.certifications.slice(0, 2).map((certification) => (
                         <span
                           key={certification.id}
-                          className="rounded-full border border-border/70 bg-background px-2 py-1 text-[0.65rem] font-medium text-foreground/80"
+                          className="rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[0.65rem] font-medium text-orange-700"
                         >
                           {certification.title}
                         </span>
                       ))}
                     </div>
 
-                    <div className="border-t border-border/70 pt-3">
-                      <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    <div className="border-t border-emerald-100 pt-3">
+                      <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
                         Languages
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {guide.languages.map((language) => (
                           <span
                             key={`${guide.id}-${language}`}
-                            className="rounded-full bg-black/5 px-2 py-1 text-[0.68rem] font-medium text-foreground"
+                            className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700"
                           >
                             {language}
                           </span>
@@ -189,6 +309,7 @@ export default async function CommunityPage() {
                 </article>
               </Link>
             ))}
+          </div>
           </div>
         </section>
       </div>

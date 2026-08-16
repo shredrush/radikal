@@ -137,7 +137,7 @@ export default async function TripsPage({
   }));
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
+    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.10),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%)]">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <TripsFilterBar
           selectedSport={selectedSport}
@@ -162,14 +162,16 @@ export default async function TripsPage({
                   <section key={group.id} className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h2 className="text-lg font-semibold tracking-tight text-foreground">{group.label}</h2>
+                        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
+                          {group.label}
+                        </h2>
                         <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                       {group.activities.map((activity) => (
                         <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-                          <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
+                          <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
                             <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
                               <Image
                                 src={getTripCardImage(activity)}
@@ -192,8 +194,8 @@ export default async function TripsPage({
                                   </Badge>
                                 ))}
                               </div>
-                              <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
+                              <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
+                                <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
                                   {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                 </span>
                                 <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
@@ -216,7 +218,9 @@ export default async function TripsPage({
             {hasActiveFilters && (
               <div className="flex flex-col gap-6 border-t border-border/70 pt-2">
                 <div className="space-y-1">
-                  <h2 className="text-xl font-semibold tracking-tight text-muted-foreground/85 sm:text-2xl">explore other adventures ...</h2>
+                  <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-emerald-700 sm:text-2xl">
+                    explore other adventures ...
+                  </h2>
                 </div>
                 <div className="flex flex-col gap-8">
                   {groupedOtherActivities.map((group) => {
@@ -228,14 +232,14 @@ export default async function TripsPage({
                       <section key={`${group.id}-other`} className="space-y-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <h3 className="text-base font-semibold tracking-tight text-foreground">{group.label}</h3>
+                            <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">{group.label}</h3>
                             <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                           {group.activities.map((activity) => (
                             <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-                              <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
+                              <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
                                 <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
                                   <Image
                                     src={getTripCardImage(activity)}
@@ -258,8 +262,8 @@ export default async function TripsPage({
                                       </Badge>
                                     ))}
                                   </div>
-                                  <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                                    <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
+                                  <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
+                                    <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
                                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                     </span>
                                     <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
