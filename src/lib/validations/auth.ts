@@ -50,3 +50,23 @@ export const changePasswordSchema = z
   });
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const requestPasswordResetSchema = z.object({
+  identifier: z.string().trim().min(1, "Enter your email or username").max(254),
+});
+
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    identifier: z.string().trim().min(1, "Enter your email or username").max(254),
+    otp: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters").max(72, "New password must be 72 characters or fewer"),
+    confirmPassword: z.string().min(1, "Confirm your new password").max(200),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

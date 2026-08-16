@@ -328,6 +328,32 @@ export function bookingCancelledEmail({
   };
 }
 
+export function passwordResetOtpEmail({
+  to,
+  name,
+  code,
+}: {
+  to: string;
+  name: string;
+  code: string;
+}): EmailInput {
+  return {
+    to,
+    subject: `Your ${SITE_NAME} password reset code`,
+    html: layout(
+      "Reset your password",
+      heading("Reset your password") +
+        paragraph(
+          `Hi ${escapeHtml(name || "there")}, use the one-time code below to reset your ${SITE_NAME} password:`,
+        ) +
+        `<p style="margin:0 0 16px;padding:16px 20px;background:#f4f4f5;border-radius:12px;font-size:32px;font-weight:700;letter-spacing:0.4em;text-align:center;color:${BRAND};">${escapeHtml(code)}</p>` +
+        paragraph(
+          `This code expires in 60 seconds and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password won't change.`,
+        ),
+    ),
+  };
+}
+
 export function passwordChangedEmail({
   to,
   name,

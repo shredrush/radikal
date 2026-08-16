@@ -1,11 +1,18 @@
 "use server";
 
+import crypto from "node:crypto";
+
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
-import { passwordChangedEmail, sendEmailAfter, welcomeEmail } from "@/lib/email";
+import {
+  passwordChangedEmail,
+  passwordResetOtpEmail,
+  sendEmailAfter,
+  welcomeEmail,
+} from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
@@ -14,7 +21,22 @@ import {
   normalizeUsername,
   sanitizeText,
 } from "@/lib/sanitize";
-import { changePasswordSchema, loginSchema, signupSchema } from "@/lib/validations/auth";
+import {
+  changePasswordSchema,
+  loginSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+  signupSchema,
+} from "@/lib/validations/auth";
+
+// Password reset codes are 6 digits and single-use, expiring after 60 seconds.
+// A new code can't be requested until this cooldown elapses.
+const OTP_TTL_MS = 60_000;
+const OTP_RESEND_COOLDOWN_MS = 60_000;
+// Burn a code after this many wrong guesses, on top of the in-memory rate
+// limiter. Persisted per code so it survives restarts and works across
+// serverless instances.
+const OTP_MAX_ATTEMPTS = 5;
 
 export async function logoutAction() {
   await signOut({ redirectTo: "/" });
@@ -293,4 +315,227 @@ export async function changePasswordAction(
   sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
 
   return { success: true };
+}
+
+export type RequestPasswordResetState = {
+  error?: string;
+  identifier?: string;
+  sent?: boolean;
+};
+
+export async function requestPasswordResetAction(
+  _prevState: RequestPasswordResetState,
+  formData: FormData
+): Promise<RequestPasswordResetState> {
+  const parsed = requestPasswordResetSchema.safeParse({
+    identifier: formData.get("identifier"),
+  });
+
+  if (!parsed.success) {
+    const identifier = formData.get("identifier")?.toString().trim() ?? "";
+    return { error: "Enter your email or username.", identifier };
+  }
+
+  const { identifier } = parsed.data;
+
+  // Throttle code requests both per client IP and per account identifier to
+  // prevent OTP spam and enumeration sweeps. These apply uniformly whether or
+  // not the account exists, so they don't reveal account existence.
+  const ip = await getClientIp();
+  const ipLimit = rateLimit(`password-reset:ip:${ip}`, 5, 15 * 60_000);
+  if (!ipLimit.success) {
+    return { error: rateLimitError(ipLimit), identifier };
+  }
+  const idLimit = rateLimit(
+    `password-reset:id:${identifier.trim().toLowerCase()}`,
+    5,
+    15 * 60_000,
+  );
+  if (!idLimit.success) {
+    return { error: rateLimitError(idLimit), identifier };
+  }
+
+  // Generate and hash a code up front. bcrypt dominates this action's runtime,
+  // so doing it before the account lookup keeps the response timing roughly
+  // identical whether or not the account exists — a faster "no account" path
+  // would otherwise leak which emails/usernames are registered.
+  const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+  const codeHash = await bcrypt.hash(code, 10);
+
+  const user = await findUserByIdentifier(identifier);
+  if (!user) {
+    // Always report success so the response can't be used to enumerate which
+    // email addresses or usernames have accounts.
+    return { sent: true, identifier };
+  }
+
+  // Enforce a resend cooldown silently: within the cooldown window we still
+  // report success but skip issuing and sending a fresh code. Returning an
+  // error here would reveal the account exists (non-existent identifiers never
+  // reach this branch), so the response stays identical either way.
+  const latestOtp = await prisma.passwordResetOtp.findFirst({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  if (latestOtp) {
+    const elapsed = Date.now() - latestOtp.createdAt.getTime();
+    if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+      return { sent: true, identifier };
+    }
+  }
+
+  // Delete any consumed or expired codes for this account (keeps the table
+  // small and guarantees only one active code exists), then issue a fresh
+  // single-use code.
+  await prisma.$transaction(async (tx) => {
+    await tx.passwordResetOtp.deleteMany({
+      where: {
+        userId: user.id,
+        OR: [
+          { expiresAt: { lte: new Date() } },
+          { usedAt: { not: null } },
+        ],
+      },
+    });
+    await tx.passwordResetOtp.create({
+      data: {
+        userId: user.id,
+        codeHash,
+        expiresAt: new Date(Date.now() + OTP_TTL_MS),
+      },
+    });
+  });
+
+  // Deliver the code in the background so the action never blocks on email.
+  sendEmailAfter(passwordResetOtpEmail({ to: user.email, name: user.name, code }));
+
+  return { sent: true, identifier };
+}
+
+export type ResetPasswordState = {
+  error?: string;
+  fieldErrors?: Partial<
+    Record<"identifier" | "otp" | "newPassword" | "confirmPassword", string>
+  >;
+  identifier?: string;
+  success?: boolean;
+};
+
+export async function resetPasswordAction(
+  _prevState: ResetPasswordState,
+  formData: FormData
+): Promise<ResetPasswordState> {
+  const parsed = resetPasswordSchema.safeParse({
+    identifier: formData.get("identifier"),
+    otp: formData.get("otp"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  const identifier = formData.get("identifier")?.toString().trim() ?? "";
+
+  if (!parsed.success) {
+    const fieldErrors: ResetPasswordState["fieldErrors"] = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0];
+      if (
+        field === "identifier" ||
+        field === "otp" ||
+        field === "newPassword" ||
+        field === "confirmPassword"
+      ) {
+        fieldErrors[field] = issue.message;
+      }
+    }
+    return { fieldErrors, identifier };
+  }
+
+  const { otp, newPassword } = parsed.data;
+
+  // Throttle verification attempts both per client IP and per identifier to
+  // slow brute-forcing of the 6-digit code.
+  const ip = await getClientIp();
+  const ipLimit = rateLimit(`password-reset-verify:ip:${ip}`, 20, 15 * 60_000);
+  if (!ipLimit.success) {
+    return { error: rateLimitError(ipLimit), identifier };
+  }
+  const idLimit = rateLimit(
+    `password-reset-verify:id:${identifier.trim().toLowerCase()}`,
+    10,
+    15 * 60_000,
+  );
+  if (!idLimit.success) {
+    return { error: rateLimitError(idLimit), identifier };
+  }
+
+  const user = await findUserByIdentifier(identifier);
+  if (!user) {
+    return { error: "Invalid or expired code.", identifier };
+  }
+
+  const record = await prisma.passwordResetOtp.findFirst({
+    where: {
+      userId: user.id,
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!record) {
+    return { error: "Invalid or expired code.", identifier };
+  }
+
+  // Persistent lockout: burn a code after too many wrong guesses. This is
+  // stored on the record itself, so — unlike the in-memory rate limiter — it
+  // survives restarts and is shared across serverless instances.
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    await prisma.passwordResetOtp.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() },
+    });
+    return { error: "Invalid or expired code.", identifier };
+  }
+
+  const matches = await bcrypt.compare(otp, record.codeHash);
+  if (!matches) {
+    await prisma.passwordResetOtp.update({
+      where: { id: record.id },
+      data: { attempts: { increment: 1 } },
+    });
+    return { error: "Invalid or expired code.", identifier };
+  }
+
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+  // Consume the code atomically. The conditional update returns a count so a
+  // code can't be replayed by two concurrent requests — both would otherwise
+  // pass the bcrypt check above before either marks it used.
+  const consumed = await prisma.$transaction(async (tx) => {
+    const result = await tx.passwordResetOtp.updateMany({
+      where: {
+        id: record.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { usedAt: new Date() },
+    });
+    if (result.count !== 1) {
+      return false;
+    }
+    await tx.user.update({
+      where: { id: user.id },
+      data: { passwordHash: newPasswordHash },
+    });
+    return true;
+  });
+
+  if (!consumed) {
+    return { error: "Invalid or expired code.", identifier };
+  }
+
+  // Security notification — let the account owner know the password changed.
+  sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
+
+  return { success: true, identifier };
 }

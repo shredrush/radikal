@@ -96,8 +96,29 @@ model User {
   supportChat      SupportChat?
   supportMessages  SupportMessage[]
   cancelledBookings Booking[] @relation("BookingCancelledBy")
+  passwordResetOtps PasswordResetOtp[]
 
   @@map("users")
+}
+
+// A short-lived one-time password reset code. Only the bcrypt hash of the
+// 6-digit code is stored, so a database leak can't be replayed to reset a
+// password. Codes are single-use, expire after 60 seconds, and lock out after
+// too many failed verification attempts.
+model PasswordResetOtp {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, expiresAt])
+  @@map("password_reset_otps")
 }
 
 // A certified local guide. Optionally linked to a User account so a guide
