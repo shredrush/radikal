@@ -97,6 +97,7 @@ model User {
   supportMessages  SupportMessage[]
   cancelledBookings Booking[] @relation("BookingCancelledBy")
   passwordResetOtps PasswordResetOtp[]
+  activityLogs      ActivityLog[]
 
   @@map("users")
 }
@@ -373,4 +374,24 @@ model SupportMessage {
   @@index([chatId])
   @@index([senderId])
   @@map("support_messages")
+}
+
+// Append-only audit trail of a user's in-app actions (signup, login, booking,
+// payment, support, and admin edits). Stores the client IP and user agent so
+// admins can review where and how each action was performed.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  label     String
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("activity_logs")
 }

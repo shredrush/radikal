@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Price } from "@/components/currency/price";
 import { TripsFilterBar } from "@/components/trips/trips-filter-bar";
 import {
   SPORT_FILTERS,
@@ -56,16 +57,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   SELF_GUIDED: "Self Guided",
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
-
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
-}
 
 function normalizeLocationFilter(value: string | string[] | null | undefined) {
   const values = Array.isArray(value) ? value : value ? [value] : [];
@@ -206,9 +197,10 @@ export default async function TripsPage({
                                   {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                 </span>
                                 <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                                  <span className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base">
-                                    {formatRupees(activity.priceInRupees)}
-                                  </span>
+                                  <Price
+                                    className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                                    amount={activity.priceInRupees}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -271,9 +263,10 @@ export default async function TripsPage({
                                       {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                                     </span>
                                     <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                                      <span className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base">
-                                        {formatRupees(activity.priceInRupees)}
-                                      </span>
+                                      <Price
+                                        className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                                        amount={activity.priceInRupees}
+                                      />
                                     </div>
                                   </div>
                                 </div>

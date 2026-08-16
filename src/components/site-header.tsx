@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
+import { CurrencySelector } from "@/components/currency/currency-selector";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -58,6 +59,7 @@ export async function SiteHeader() {
           </SiteLogoLink>
 
           <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+            <CurrencySelector />
             {session?.user ? (
               <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
                 <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
@@ -179,6 +181,7 @@ export async function SiteHeader() {
               >
                 Become a Guide
               </Button>
+              <CurrencySelector />
               {session?.user ? (
                 <div className="group relative">
                   <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
@@ -363,6 +366,7 @@ export async function SiteHeader() {
             >
               Become a Guide
             </Button>
+            <CurrencySelector />
             {session?.user ? (
               <div className="group relative">
                 <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">

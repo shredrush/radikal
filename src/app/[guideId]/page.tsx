@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Price } from "@/components/currency/price";
 import { prisma } from "@/lib/prisma";
 import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
 
@@ -51,16 +52,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   SELF_GUIDED: "Self Guided",
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
-
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
   const { guideId } = await params;
@@ -234,9 +225,10 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                         <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
                           {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
                         </span>
-                        <span className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base">
-                          {formatRupees(activity.priceInRupees)}
-                        </span>
+                        <Price
+                          className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                          amount={activity.priceInRupees}
+                        />
                       </div>
                     </div>
                   </Card>

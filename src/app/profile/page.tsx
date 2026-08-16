@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Settings2,
   Ticket,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -204,10 +205,20 @@ export default async function ProfilePage({
                       size="sm"
                       className="w-full justify-start rounded-full"
                       nativeButton={false}
-                      render={<Link href="/admin/guide-registrations" />}
+                      render={<Link href="/admin/guide-applications" />}
                     >
                       <ClipboardList className="h-3.5 w-3.5" />
                       Guide Applications
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start rounded-full"
+                      nativeButton={false}
+                      render={<Link href="/admin/users" />}
+                    >
+                      <UserCog className="h-3.5 w-3.5" />
+                      Manage users
                     </Button>
                   </div>
                   <div className="flex flex-col gap-2">

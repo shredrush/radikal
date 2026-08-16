@@ -11,6 +11,7 @@ import {
   sendEmailAfter,
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
 import { processPaymentSchema } from "@/lib/validations/booking";
 
@@ -75,6 +76,13 @@ export async function submitTransactionId(
       data: { paymentTransactionId: cleanTransactionId },
     });
 
+    await logActivity({
+      userId,
+      action: "PAYMENT_REFERENCE_SUBMITTED",
+      label: "Submitted a payment reference",
+      metadata: { bookingId: booking.id, transactionId: cleanTransactionId },
+    });
+
     sendEmailAfter(
       paymentReferenceReceivedEmail({
         to: booking.user.email,
@@ -123,6 +131,7 @@ export async function confirmBookingPayment(
         totalPriceRupees: number;
       }
     | null = null;
+  let confirmationUserId = "";
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -162,6 +171,7 @@ export async function confirmBookingPayment(
         data: { status: "CONFIRMED" },
       });
 
+      confirmationUserId = booking.userId;
       confirmationEmail = {
         to: booking.user.email,
         name: booking.user.name,
@@ -177,6 +187,13 @@ export async function confirmBookingPayment(
       error instanceof Error ? error.message : "Failed to confirm payment.";
     return { success: false, error: message };
   }
+
+  await logActivity({
+    userId: confirmationUserId,
+    action: "BOOKING_CONFIRMED",
+    label: "Booking confirmed (payment verified)",
+    metadata: { bookingId },
+  });
 
   if (confirmationEmail) {
     sendEmailAfter(bookingConfirmedEmail(confirmationEmail));
@@ -209,6 +226,7 @@ export async function cancelBooking(
   }
 
   let cancellationEmail: CancellationEmail | null = null;
+  let cancellationUserId = "";
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -250,6 +268,7 @@ export async function cancelBooking(
         },
       });
 
+      cancellationUserId = booking.userId;
       cancellationEmail = {
         to: booking.user.email,
         name: booking.user.name,
@@ -263,6 +282,13 @@ export async function cancelBooking(
       error instanceof Error ? error.message : "Failed to cancel booking.";
     return { success: false, error: message };
   }
+
+  await logActivity({
+    userId: cancellationUserId,
+    action: "BOOKING_CANCELLED",
+    label: "Booking cancelled",
+    metadata: { bookingId, reason: cleanReason },
+  });
 
   if (cancellationEmail) {
     sendEmailAfter(bookingCancelledEmail(cancellationEmail));
@@ -299,6 +325,7 @@ export async function cancelBookingAsGuide(
   }
 
   let cancellationEmail: CancellationEmail | null = null;
+  let cancellationUserId = "";
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -340,6 +367,7 @@ export async function cancelBookingAsGuide(
         },
       });
 
+      cancellationUserId = booking.userId;
       cancellationEmail = {
         to: booking.user.email,
         name: booking.user.name,
@@ -353,6 +381,13 @@ export async function cancelBookingAsGuide(
       error instanceof Error ? error.message : "Failed to cancel trip.";
     return { success: false, error: message };
   }
+
+  await logActivity({
+    userId: cancellationUserId,
+    action: "BOOKING_CANCELLED",
+    label: "Booking cancelled by guide",
+    metadata: { bookingId, reason: cleanReason },
+  });
 
   if (cancellationEmail) {
     sendEmailAfter(bookingCancelledEmail(cancellationEmail));
@@ -441,6 +476,13 @@ export async function cancelBookingAsUser(
       error instanceof Error ? error.message : "Failed to cancel booking.";
     return { success: false, error: message };
   }
+
+  await logActivity({
+    userId,
+    action: "BOOKING_CANCELLED",
+    label: "Booking cancelled",
+    metadata: { bookingId, reason: cleanReason },
+  });
 
   if (cancellationEmail) {
     sendEmailAfter(bookingCancelledEmail(cancellationEmail));

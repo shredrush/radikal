@@ -23,6 +23,7 @@ import { ConfirmPaymentButton } from "@/components/admin/confirm-payment-button"
 import { CancelGuideBookingButton } from "@/components/profile/cancel-guide-booking-button";
 import { CancelUserBookingButton } from "@/components/profile/cancel-user-booking-button";
 import { cn } from "@/lib/utils";
+import { Price } from "@/components/currency/price";
 
 type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 
@@ -36,16 +37,6 @@ function statusLabel(status: string) {
   if (status === "CONFIRMED") return "Confirmed";
   if (status === "CANCELLED") return "Cancelled";
   return "Pending payment";
-}
-
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
 }
 
 function formatDateTime(iso: string) {
@@ -233,7 +224,7 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
             <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-2.5">
               <dt className="font-medium text-foreground">Total paid</dt>
               <dd className="font-heading text-lg font-semibold text-foreground">
-                {formatRupees(booking.totalPriceRupees)}
+                <Price amount={booking.totalPriceRupees} />
               </dd>
             </div>
           </dl>

@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
@@ -45,8 +48,14 @@ function getActivityTypeLabel(value: string) {
   return ACTIVITY_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
-export default async function AdminTripsPage() {
+export default async function AdminTripsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string | string[] | undefined }>;
+}) {
   await requireAdmin("/login?callbackUrl=/admin/trips");
+  const { type } = await searchParams;
+  const selectedType = typeof type === "string" ? type : "";
 
   const [activities, guides] = await Promise.all([
     prisma.activity.findMany({
@@ -67,6 +76,10 @@ export default async function AdminTripsPage() {
 
   const totalUpcomingSlots = activities.reduce((count, activity) => count + activity.slots.length, 0);
   const categoriesInUse = new Set(activities.flatMap((activity) => activity.categories)).size;
+
+  const visibleActivities = selectedType
+    ? activities.filter((activity) => activity.type === selectedType)
+    : activities;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
@@ -94,15 +107,39 @@ export default async function AdminTripsPage() {
           </div>
         </section>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Trips catalog</h2>
-            <p className="text-sm text-muted-foreground">{categoriesInUse} active travel-style categories across the catalog.</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
+            <Button
+              variant={selectedType === "" ? "default" : "outline"}
+              size="xs"
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link href="/admin/trips" />}
+            >
+              All
+            </Button>
+            {ACTIVITY_TYPE_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                variant={selectedType === option.value ? "default" : "outline"}
+                size="xs"
+                className="rounded-full"
+                nativeButton={false}
+                render={<Link href={`/admin/trips?type=${option.value}`} />}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
         </div>
 
+        {visibleActivities.length === 0 ? (
+          <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
+            No trips match this sport type. Try another filter.
+          </div>
+        ) : (
         <div className="flex flex-col gap-6">
-          {activities.map((activity) => (
+          {visibleActivities.map((activity) => (
             <Card key={activity.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
               <CardHeader className="border-b border-border/70 bg-muted/20">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -146,6 +183,7 @@ export default async function AdminTripsPage() {
             </Card>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

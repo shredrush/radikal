@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 
 import { Button } from "@/components/ui/button";
+import { Price } from "@/components/currency/price";
 import {
   Card,
   CardContent,
@@ -86,18 +87,6 @@ function getActivityTypeLabel(activity: { type: string; title: string; descripti
 
   return ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type;
 }
-
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
-}
-
-
 
 export default async function TripDetailPage({
   params,
@@ -217,7 +206,9 @@ export default async function TripDetailPage({
           <div className="flex flex-col gap-6">
             <div className="rounded-[1.75rem] bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] p-6 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.45)]">
               <p className="text-sm uppercase tracking-[0.3em] text-white/70">Starting from</p>
-              <p className="mt-3 font-heading text-3xl font-semibold">{formatRupees(activity.priceInRupees)}</p>
+              <p className="mt-3 font-heading text-3xl font-semibold">
+                <Price amount={activity.priceInRupees} />
+              </p>
               <p className="mt-2 text-sm text-white/80">
                 {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"} • {activity.maxGroupSize} guests max
               </p>

@@ -10,6 +10,7 @@ import { sanitizeText } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Price } from "@/components/currency/price";
 
 type Activity = {
   id: string;
@@ -26,16 +27,6 @@ type SlotOption = {
   dateRange: string;
   spotsLeft: number;
 };
-
-const rupeeFormatter = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-function formatRupees(amount: number) {
-  return rupeeFormatter.format(amount);
-}
 
 const DEMO_PAYMENT_DETAILS = [
   { label: "Bank", value: "HDFC Bank" },
@@ -197,23 +188,25 @@ export function CheckoutFlow({
         <div className="space-y-2 border-t border-border/70 pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
-              {formatRupees(activity.priceInRupees)} × {participantCount}{" "}
+              <Price amount={activity.priceInRupees} /> × {participantCount}{" "}
               {participantCount === 1 ? "person" : "people"}
             </span>
             <span className="text-foreground">
-              {formatRupees(totalPrice)}
+              <Price amount={totalPrice} />
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
             <span>Booking fee</span>
-            <span className="text-foreground">₹0</span>
+            <span className="text-foreground">
+              <Price amount={0} />
+            </span>
           </div>
         </div>
 
         <div className="flex items-center justify-between rounded-[1.25rem] border border-border/70 bg-muted/20 px-4 py-3">
           <span className="text-sm font-medium text-foreground">Total due</span>
           <span className="font-heading text-2xl font-semibold text-foreground">
-            {formatRupees(totalPrice)}
+            <Price amount={totalPrice} />
           </span>
         </div>
 

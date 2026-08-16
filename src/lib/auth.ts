@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 
 import { findUserByIdentifier } from "@/lib/login";
 import { loginSchema } from "@/lib/validations/auth";
+import { logActivity } from "@/lib/activity-log";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
@@ -68,6 +69,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT" | undefined;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      const userId = (user as { id?: string }).id;
+      if (userId) {
+        await logActivity({
+          userId,
+          action: "LOGIN_SUCCESS",
+          label: "Signed in",
+        });
+      }
     },
   },
 });

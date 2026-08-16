@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireSupport } from "@/lib/authz";
 import { sendEmailAfter, supportReplyEmail } from "@/lib/email";
+import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { supportMessageSchema } from "@/lib/validations/support";
 
@@ -46,6 +47,12 @@ export async function sendSupportMessageAction(formData: FormData) {
     await tx.supportMessage.create({
       data: { chatId: chat.id, senderId: userId, body },
     });
+  });
+
+  await logActivity({
+    userId,
+    action: "SUPPORT_MESSAGE_SENT",
+    label: "Sent a support message",
   });
 
   revalidatePath("/profile");
@@ -88,6 +95,13 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
     });
 
     return { email: chat.user.email, name: chat.user.name };
+  });
+
+  await logActivity({
+    userId: session.user!.id,
+    action: "SUPPORT_REPLY_SENT",
+    label: "Replied to a support chat",
+    metadata: { chatId },
   });
 
   // Notify the customer that an agent replied, without blocking the reply.

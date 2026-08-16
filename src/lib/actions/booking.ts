@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity-log";
 import { createBookingSchema } from "@/lib/validations/booking";
 
 export type CreateBookingResult =
@@ -73,6 +74,18 @@ export async function createBooking(
   if (result.status === "full") {
     return { success: false, error: "Not enough spots left in this slot." };
   }
+
+  await logActivity({
+    userId,
+    action: "BOOKING_CREATED",
+    label: "Created a booking",
+    metadata: {
+      bookingId: result.booking.id,
+      activityId,
+      slotId,
+      participantCount,
+    },
+  });
 
   return { success: true, bookingId: result.booking.id };
 }

@@ -19,7 +19,6 @@ export default async function AdminGuidesPage() {
   });
 
   const totalLinkedTrips = guides.reduce((sum, guide) => sum + guide._count.activities, 0);
-  const languagesInUse = new Set(guides.flatMap((guide) => guide.languages)).size;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.08),_transparent_30%)]">
@@ -31,7 +30,7 @@ export default async function AdminGuidesPage() {
         />
 
         <section className="min-w-0">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Guides live</p>
               <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{guides.length}</p>
@@ -39,10 +38,6 @@ export default async function AdminGuidesPage() {
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Trips linked</p>
               <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalLinkedTrips}</p>
-            </div>
-            <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Languages covered</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{languagesInUse}</p>
             </div>
           </div>
         </section>

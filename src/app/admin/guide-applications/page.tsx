@@ -9,8 +9,8 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminGuideRegistrationsPage() {
-  await requireAdmin("/login?callbackUrl=/admin/guide-registrations");
+export default async function AdminGuideApplicationsPage() {
+  await requireAdmin("/login?callbackUrl=/admin/guide-applications");
 
   const applications = await prisma.guideApplication.findMany({
     orderBy: { submittedAt: "desc" },
@@ -53,7 +53,7 @@ export default async function AdminGuideRegistrationsPage() {
         <AdminPageHeader
           title="Guide Applications"
           description={'Review guide applications submitted through the "Become a Guide" flow'}
-          active="registrations"
+          active="applications"
         />
 
         <section className="min-w-0">

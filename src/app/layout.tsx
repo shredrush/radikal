@@ -8,6 +8,9 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { SupportWidget } from "@/components/support/support-widget";
 import { Toaster } from "@/components/ui/sonner";
+import { CurrencyProvider } from "@/components/currency/currency-provider";
+import { DEFAULT_CURRENCY, currencyForCountry } from "@/lib/currency";
+import { getClientCountry } from "@/lib/geo";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
 const interSans = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -24,11 +27,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Default the currency selector to the visitor's country (Vercel geo header).
+  // `getClientCountry` only trusts the header on Vercel and validates its shape.
+  // Gracefully falls back to INR locally or when the header is absent.
+  let initialCurrency = DEFAULT_CURRENCY;
+  try {
+    initialCurrency =
+      currencyForCountry(await getClientCountry()) ?? DEFAULT_CURRENCY;
+  } catch {
+    // headers() unavailable outside a request scope — keep INR.
+  }
+
   return (
     <html
       lang="en"
@@ -42,13 +56,15 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <SiteHeader />
-        <main id="top" className="flex flex-1 flex-col">
-          {children}
-        </main>
-        <SiteFooterWrapper />
-        <SupportWidget />
-        <Toaster />
+        <CurrencyProvider initialCurrency={initialCurrency}>
+          <SiteHeader />
+          <main id="top" className="flex flex-1 flex-col">
+            {children}
+          </main>
+          <SiteFooterWrapper />
+          <SupportWidget />
+          <Toaster />
+        </CurrencyProvider>
         <Analytics />
         <SpeedInsights />
       </body>

@@ -10,6 +10,7 @@ import {
   sendEmailAfter,
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity-log";
 import { isSafeHttpUrl, isValidUsername, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
@@ -148,6 +149,12 @@ export async function submitGuideApplicationAction(
     },
   });
 
+  await logActivity({
+    userId: session.user.id,
+    action: "GUIDE_APPLICATION_SUBMITTED",
+    label: "Submitted a guide application",
+  });
+
   // Acknowledge receipt in the background — never block submission on email.
   sendEmailAfter(
     guideApplicationReceivedEmail({
@@ -157,7 +164,7 @@ export async function submitGuideApplicationAction(
   );
 
   revalidatePath("/become-a-guide");
-  revalidatePath("/admin/guide-registrations");
+  revalidatePath("/admin/guide-applications");
 
   return { success: true };
 }
@@ -196,7 +203,7 @@ async function uniqueGuideSlug(name: string): Promise<string> {
 }
 
 export async function approveGuideApplicationAction(applicationId: string) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/guide-registrations");
+  const session = await requireAdmin("/login?callbackUrl=/admin/guide-applications");
 
   if (!applicationId) {
     throw new Error("Missing application id.");
@@ -269,12 +276,25 @@ export async function approveGuideApplicationAction(applicationId: string) {
     throw error;
   }
 
-  revalidatePath("/admin/guide-registrations");
+  revalidatePath("/admin/guide-applications");
   revalidatePath("/become-a-guide");
   revalidatePath("/community");
   revalidatePath("/");
   revalidatePath(`/${slug}`);
   updateTag("guides");
+
+  await logActivity({
+    userId: application.userId,
+    action: "GUIDE_APPLICATION_APPROVED",
+    label: "Guide application approved",
+    metadata: { applicationId },
+  });
+  await logActivity({
+    userId: application.userId,
+    action: "USER_ROLE_CHANGED",
+    label: "Role changed to GUIDE",
+    metadata: { role: "GUIDE" },
+  });
 
   sendEmailAfter(
     guideApplicationDecisionEmail({
@@ -286,7 +306,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
 }
 
 export async function rejectGuideApplicationAction(applicationId: string) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/guide-registrations");
+  const session = await requireAdmin("/login?callbackUrl=/admin/guide-applications");
 
   if (!applicationId) {
     throw new Error("Missing application id.");
@@ -296,6 +316,7 @@ export async function rejectGuideApplicationAction(applicationId: string) {
     where: { id: applicationId },
     select: {
       id: true,
+      userId: true,
       status: true,
       user: { select: { email: true, name: true } },
     },
@@ -318,7 +339,14 @@ export async function rejectGuideApplicationAction(applicationId: string) {
     },
   });
 
-  revalidatePath("/admin/guide-registrations");
+  await logActivity({
+    userId: application.userId,
+    action: "GUIDE_APPLICATION_REJECTED",
+    label: "Guide application rejected",
+    metadata: { applicationId },
+  });
+
+  revalidatePath("/admin/guide-applications");
   revalidatePath("/become-a-guide");
 
   sendEmailAfter(

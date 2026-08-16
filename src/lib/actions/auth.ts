@@ -14,6 +14,7 @@ import {
   welcomeEmail,
 } from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
+import { logActivity } from "@/lib/activity-log";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
   isReservedUsername,
@@ -40,6 +41,12 @@ const OTP_RESEND_COOLDOWN_MS = 60_000;
 const OTP_MAX_ATTEMPTS = 5;
 
 export async function logoutAction() {
+  const session = await auth();
+  await logActivity({
+    userId: session?.user?.id,
+    action: "LOGOUT",
+    label: "Signed out",
+  });
   await signOut({ redirectTo: "/" });
 }
 
@@ -101,6 +108,12 @@ export async function loginAction(
     });
   } catch (error) {
     if (error instanceof AuthError) {
+      await logActivity({
+        userId: existingUser.id,
+        action: "LOGIN_FAILED",
+        label: "Failed to sign in (incorrect password)",
+        metadata: { reason: "invalid_password" },
+      });
       return { error: "Invalid password", identifier };
     }
     throw error;
@@ -170,10 +183,12 @@ export async function signupAction(
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  let newUserId = "";
   try {
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: { name, email, username, passwordHash },
     });
+    newUserId = createdUser.id;
   } catch (error) {
     // Handles a race where the username is taken between the check above and
     // the insert. The DB unique constraint is the final guard.
@@ -182,6 +197,13 @@ export async function signupAction(
     }
     throw error;
   }
+
+  await logActivity({
+    userId: newUserId,
+    action: "ACCOUNT_CREATED",
+    label: "Account created",
+    metadata: { email },
+  });
 
   // Welcome the new account in the background — never block signup on email.
   sendEmailAfter(welcomeEmail({ to: email, name }));
@@ -312,6 +334,12 @@ export async function changePasswordAction(
     data: { passwordHash: newPasswordHash },
   });
 
+  await logActivity({
+    userId,
+    action: "PASSWORD_CHANGED",
+    label: "Changed password",
+  });
+
   // Security notification — let the account owner know the password changed.
   sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
 
@@ -376,6 +404,13 @@ export async function changeUsernameAction(
     }
     throw error;
   }
+
+  await logActivity({
+    userId,
+    action: "USERNAME_CHANGED",
+    label: "Changed username",
+    metadata: { username },
+  });
 
   return { success: true };
 }
@@ -467,6 +502,12 @@ export async function requestPasswordResetAction(
         expiresAt: new Date(Date.now() + OTP_TTL_MS),
       },
     });
+  });
+
+  await logActivity({
+    userId: user.id,
+    action: "PASSWORD_RESET_REQUESTED",
+    label: "Requested a password reset code",
   });
 
   // Deliver the code in the background so the action never blocks on email.
@@ -596,6 +637,12 @@ export async function resetPasswordAction(
   if (!consumed) {
     return { error: "Invalid or expired code.", identifier };
   }
+
+  await logActivity({
+    userId: user.id,
+    action: "PASSWORD_RESET_COMPLETED",
+    label: "Reset password",
+  });
 
   // Security notification — let the account owner know the password changed.
   sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
