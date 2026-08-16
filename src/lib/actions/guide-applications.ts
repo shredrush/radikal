@@ -4,6 +4,11 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/authz";
+import {
+  guideApplicationDecisionEmail,
+  guideApplicationReceivedEmail,
+  sendEmailAfter,
+} from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { isSafeHttpUrl, isValidUsername, sanitizeText } from "@/lib/sanitize";
 
@@ -143,6 +148,14 @@ export async function submitGuideApplicationAction(
     },
   });
 
+  // Acknowledge receipt in the background — never block submission on email.
+  sendEmailAfter(
+    guideApplicationReceivedEmail({
+      to: session.user.email ?? "",
+      name: session.user.name ?? fields.name,
+    }),
+  );
+
   revalidatePath("/become-a-guide");
   revalidatePath("/admin/guide-registrations");
 
@@ -191,7 +204,10 @@ export async function approveGuideApplicationAction(applicationId: string) {
 
   const application = await prisma.guideApplication.findUnique({
     where: { id: applicationId },
-    include: { certifications: true },
+    include: {
+      certifications: true,
+      user: { select: { email: true, name: true } },
+    },
   });
 
   if (!application) {
@@ -259,6 +275,14 @@ export async function approveGuideApplicationAction(applicationId: string) {
   revalidatePath("/");
   revalidatePath(`/${slug}`);
   updateTag("guides");
+
+  sendEmailAfter(
+    guideApplicationDecisionEmail({
+      to: application.user.email,
+      name: application.user.name,
+      approved: true,
+    }),
+  );
 }
 
 export async function rejectGuideApplicationAction(applicationId: string) {
@@ -270,7 +294,11 @@ export async function rejectGuideApplicationAction(applicationId: string) {
 
   const application = await prisma.guideApplication.findUnique({
     where: { id: applicationId },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      user: { select: { email: true, name: true } },
+    },
   });
 
   if (!application) {
@@ -292,4 +320,12 @@ export async function rejectGuideApplicationAction(applicationId: string) {
 
   revalidatePath("/admin/guide-registrations");
   revalidatePath("/become-a-guide");
+
+  sendEmailAfter(
+    guideApplicationDecisionEmail({
+      to: application.user.email,
+      name: application.user.name,
+      approved: false,
+    }),
+  );
 }

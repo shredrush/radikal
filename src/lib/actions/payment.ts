@@ -4,9 +4,23 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { requireAdmin, requireSupport } from "@/lib/authz";
+import {
+  bookingCancelledEmail,
+  bookingConfirmedEmail,
+  paymentReferenceReceivedEmail,
+  sendEmailAfter,
+} from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText } from "@/lib/sanitize";
 import { processPaymentSchema } from "@/lib/validations/booking";
+
+type CancellationEmail = {
+  to: string;
+  name: string;
+  tripTitle: string;
+  date: Date;
+  cancelledByUser: boolean;
+};
 
 export type ProcessPaymentResult =
   | { success: true }
@@ -41,6 +55,11 @@ export async function submitTransactionId(
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
+      include: {
+        user: { select: { email: true, name: true } },
+        activity: { select: { title: true, location: true } },
+        slot: { select: { date: true } },
+      },
     });
 
     if (!booking || booking.userId !== userId) {
@@ -55,6 +74,19 @@ export async function submitTransactionId(
       where: { id: booking.id },
       data: { paymentTransactionId: cleanTransactionId },
     });
+
+    sendEmailAfter(
+      paymentReferenceReceivedEmail({
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        location: booking.activity.location,
+        date: booking.slot.date,
+        participantCount: booking.participantCount,
+        totalPriceRupees: booking.totalPriceRupees,
+        transactionId: cleanTransactionId,
+      }),
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Something went wrong. Please try again.";
@@ -80,11 +112,27 @@ export async function confirmBookingPayment(
     return { success: false, error: "Missing booking id." };
   }
 
+  let confirmationEmail:
+    | {
+        to: string;
+        name: string;
+        tripTitle: string;
+        location: string;
+        date: Date;
+        participantCount: number;
+        totalPriceRupees: number;
+      }
+    | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
-        include: { slot: true },
+        include: {
+          slot: true,
+          user: { select: { email: true, name: true } },
+          activity: { select: { title: true, location: true } },
+        },
       });
 
       if (!booking) {
@@ -113,11 +161,25 @@ export async function confirmBookingPayment(
         where: { id: booking.id },
         data: { status: "CONFIRMED" },
       });
+
+      confirmationEmail = {
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        location: booking.activity.location,
+        date: booking.slot.date,
+        participantCount: booking.participantCount,
+        totalPriceRupees: booking.totalPriceRupees,
+      };
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to confirm payment.";
     return { success: false, error: message };
+  }
+
+  if (confirmationEmail) {
+    sendEmailAfter(bookingConfirmedEmail(confirmationEmail));
   }
 
   revalidatePath("/admin/bookings");
@@ -138,11 +200,17 @@ export async function cancelBooking(
     return { success: false, error: "Missing booking id." };
   }
 
+  let cancellationEmail: CancellationEmail | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
-        include: { slot: true },
+        include: {
+          slot: true,
+          user: { select: { email: true, name: true } },
+          activity: { select: { title: true } },
+        },
       });
 
       if (!booking) {
@@ -172,11 +240,23 @@ export async function cancelBooking(
           cancelledByRole: session.user.role,
         },
       });
+
+      cancellationEmail = {
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        date: booking.slot.date,
+        cancelledByUser: false,
+      };
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to cancel booking.";
     return { success: false, error: message };
+  }
+
+  if (cancellationEmail) {
+    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/admin/bookings");
@@ -203,12 +283,15 @@ export async function cancelBookingAsGuide(
     return { success: false, error: "Missing booking id." };
   }
 
+  let cancellationEmail: CancellationEmail | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {
           slot: true,
+          user: { select: { email: true, name: true } },
           activity: { include: { guide: true } },
         },
       });
@@ -240,11 +323,23 @@ export async function cancelBookingAsGuide(
           cancelledByRole: session.user.role,
         },
       });
+
+      cancellationEmail = {
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        date: booking.slot.date,
+        cancelledByUser: false,
+      };
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to cancel trip.";
     return { success: false, error: message };
+  }
+
+  if (cancellationEmail) {
+    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/profile");
@@ -269,11 +364,17 @@ export async function cancelBookingAsUser(
     return { success: false, error: "Missing booking id." };
   }
 
+  let cancellationEmail: CancellationEmail | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
-        include: { slot: true },
+        include: {
+          slot: true,
+          user: { select: { email: true, name: true } },
+          activity: { select: { title: true } },
+        },
       });
 
       if (!booking || booking.userId !== userId) {
@@ -303,11 +404,23 @@ export async function cancelBookingAsUser(
           cancelledByRole: session.user.role,
         },
       });
+
+      cancellationEmail = {
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        date: booking.slot.date,
+        cancelledByUser: true,
+      };
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to cancel booking.";
     return { success: false, error: message };
+  }
+
+  if (cancellationEmail) {
+    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/profile");
@@ -329,11 +442,17 @@ export async function cancelBookingAsSupport(
     return { success: false, error: "Missing booking id." };
   }
 
+  let cancellationEmail: CancellationEmail | null = null;
+
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
-        include: { slot: true },
+        include: {
+          slot: true,
+          user: { select: { email: true, name: true } },
+          activity: { select: { title: true } },
+        },
       });
 
       if (!booking) {
@@ -363,11 +482,23 @@ export async function cancelBookingAsSupport(
           cancelledByRole: session.user.role,
         },
       });
+
+      cancellationEmail = {
+        to: booking.user.email,
+        name: booking.user.name,
+        tripTitle: booking.activity.title,
+        date: booking.slot.date,
+        cancelledByUser: false,
+      };
     });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to cancel booking.";
     return { success: false, error: message };
+  }
+
+  if (cancellationEmail) {
+    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/support");

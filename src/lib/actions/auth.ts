@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
+import { passwordChangedEmail, sendEmailAfter, welcomeEmail } from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
@@ -159,10 +160,15 @@ export async function signupAction(
     throw error;
   }
 
+  // Welcome the new account in the background — never block signup on email.
+  sendEmailAfter(welcomeEmail({ to: email, name }));
+
   try {
-    // Log the new user in immediately after signup.
+    // Log the new user in immediately after signup. The credentials provider
+    // reads `identifier` (email or username), not `email` — passing `email`
+    // here would fail `loginSchema` and abort the automatic sign-in.
     await signIn("credentials", {
-      email,
+      identifier: email,
       password,
       redirectTo: "/",
     });
@@ -282,6 +288,9 @@ export async function changePasswordAction(
     where: { id: userId },
     data: { passwordHash: newPasswordHash },
   });
+
+  // Security notification — let the account owner know the password changed.
+  sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
 
   return { success: true };
 }

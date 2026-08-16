@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireSupport } from "@/lib/authz";
+import { sendEmailAfter, supportReplyEmail } from "@/lib/email";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { supportMessageSchema } from "@/lib/validations/support";
 
@@ -65,8 +66,13 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
 
   const { body } = parsed.data;
 
-  await prisma.$transaction(async (tx) => {
-    const chat = await tx.supportChat.findUnique({ where: { id: chatId } });
+  // Resolve the customer inside the transaction so we can notify them afterwards
+  // without TypeScript losing track of the value assigned in the callback.
+  const customer = await prisma.$transaction(async (tx) => {
+    const chat = await tx.supportChat.findUnique({
+      where: { id: chatId },
+      include: { user: { select: { email: true, name: true } } },
+    });
     if (!chat) {
       throw new Error("Conversation not found.");
     }
@@ -80,7 +86,18 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
       where: { id: chatId },
       data: { status: chat.status },
     });
+
+    return { email: chat.user.email, name: chat.user.name };
   });
+
+  // Notify the customer that an agent replied, without blocking the reply.
+  sendEmailAfter(
+    supportReplyEmail({
+      to: customer.email,
+      name: customer.name,
+      reply: body,
+    }),
+  );
 
   revalidatePath("/support");
   revalidatePath("/profile");
