@@ -47,7 +47,7 @@ export function CurrencySelector({ className }: { className?: string }) {
         aria-expanded={open}
         aria-label="Select currency"
         className={cn(
-          "inline-flex h-9 items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-3 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground",
+          "group relative inline-flex h-9 items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-3 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground",
           open && "border-primary/40 text-foreground",
           className,
         )}
@@ -60,6 +60,9 @@ export function CurrencySelector({ className }: { className?: string }) {
             open && "rotate-180",
           )}
         />
+        <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-border/70 bg-background/95 px-2 py-1 text-xs font-medium text-foreground opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-opacity duration-200 group-hover:opacity-100">
+          Currency
+        </span>
       </button>
 
       {open ? (
