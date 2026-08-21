@@ -13,12 +13,12 @@ export type ActivityCardItem = {
 
 export const SPORT_FILTERS = [
   { id: "all", label: "All" },
-  { id: "trek", label: "Hiking and Trekking" },
   { id: "bike", label: "Cycling" },
-  { id: "expedition", label: "Summit Expedition" },
   { id: "rockclimb", label: "Rock Climbing" },
-  { id: "yoga", label: "Yoga and Meditation" },
   { id: "winter", label: "Snowboard and Ski" },
+  { id: "trek", label: "Hiking and Trekking" },
+  { id: "yoga", label: "Yoga and Meditation" },
+  { id: "expedition", label: "Summit Expedition" },
 ] as const;
 
 export const TRAVEL_STYLE_FILTERS = [

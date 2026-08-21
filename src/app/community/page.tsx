@@ -106,19 +106,19 @@ const pillarToneStyles: Record<
   }
 > = {
   orange: {
-    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-white",
-    iconBadge: "bg-orange-100 text-orange-700",
-    tagline: "text-orange-700",
-    pointIcon: "bg-orange-100 text-orange-600",
-    divider: "border-orange-100",
+    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-white dark:border-orange-500/20 dark:from-orange-500/10 dark:via-card dark:to-card",
+    iconBadge: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+    tagline: "text-orange-700 dark:text-orange-300",
+    pointIcon: "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300",
+    divider: "border-orange-100 dark:border-orange-500/15",
     topBar: "bg-orange-500",
   },
   green: {
-    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-white to-white",
-    iconBadge: "bg-emerald-100 text-emerald-700",
-    tagline: "text-emerald-700",
-    pointIcon: "bg-emerald-100 text-emerald-600",
-    divider: "border-emerald-100",
+    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-white to-white dark:border-emerald-500/20 dark:from-emerald-500/10 dark:via-card dark:to-card",
+    iconBadge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    tagline: "text-emerald-700 dark:text-emerald-300",
+    pointIcon: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+    divider: "border-emerald-100 dark:border-emerald-500/15",
     topBar: "bg-emerald-500",
   },
 };
@@ -131,7 +131,7 @@ export default async function CommunityPage() {
         <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="px-6 py-7 sm:px-8 lg:px-10 lg:py-8">
             <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300">
                 <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
               </div>
@@ -155,7 +155,7 @@ export default async function CommunityPage() {
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                  className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-500/40 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-500/10"
                 >
                   Join the community
                 </Link>
@@ -231,7 +231,7 @@ export default async function CommunityPage() {
           <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
           <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col gap-4 pb-6 sm:pb-8">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-emerald-700">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               <Leaf className="h-3.5 w-3.5" />
               Meet the guides
             </div>
@@ -248,7 +248,7 @@ export default async function CommunityPage() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {guides.map((guide) => (
               <Link key={guide.id} href={`/${guide.slug}`} className="group block">
-                <article className="h-full overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)]">
+                <article className="h-full overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
                     <Image
                       src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
@@ -263,7 +263,7 @@ export default async function CommunityPage() {
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <h3 className="font-heading text-xl font-semibold text-foreground">{guide.name}</h3>
-                        <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[0.6rem] font-medium text-emerald-700">
+                        <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[0.6rem] font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
                           <ShieldCheck className="h-3 w-3" />
                           Vetted
                         </div>
@@ -283,22 +283,22 @@ export default async function CommunityPage() {
                       {guide.certifications.slice(0, 2).map((certification) => (
                         <span
                           key={certification.id}
-                          className="rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[0.65rem] font-medium text-orange-700"
+                          className="rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[0.65rem] font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300"
                         >
                           {certification.title}
                         </span>
                       ))}
                     </div>
 
-                    <div className="border-t border-emerald-100 pt-3">
-                      <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                    <div className="border-t border-emerald-100 pt-3 dark:border-emerald-500/15">
+                      <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
                         Languages
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {guide.languages.map((language) => (
                           <span
                             key={`${guide.id}-${language}`}
-                            className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700"
+                            className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                           >
                             {language}
                           </span>

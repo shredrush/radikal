@@ -62,7 +62,7 @@ export function TripsFilterBar({
         <div className="flex flex-col gap-3">
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-orange-700">Sport</p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-2.5">
               {SPORT_FILTERS.map((filter) => {
                const isActive = normalizedSelectedSports.includes(filter.id) || (filter.id === "all" && normalizedSelectedSports.length === 0);
 
@@ -88,7 +88,7 @@ export function TripsFilterBar({
 
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-700">Travel Style</p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-3.5">
               {TRAVEL_STYLE_FILTERS.map((filter) => {
                 const isActive = selectedTravelStyles.includes(filter.id) || (filter.id === "all" && selectedTravelStyles.length === 0);
 

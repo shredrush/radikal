@@ -49,6 +49,9 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Base page background/foreground. The `.bg-app-gradient` wrappers only paint
+   a radial tint (background-image) and rely on this for their base color. */
+
 /* ============================================================================
    Brand gradient (orange → green)
    ----------------------------------------------------------------------------
@@ -438,7 +441,6 @@ header [class*="invisible absolute"] {
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #ffffff;
     background-image: none;
   }
   html {

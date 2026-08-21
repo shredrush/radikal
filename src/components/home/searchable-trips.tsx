@@ -378,12 +378,12 @@ export function SearchableTrips({
     >
       <div className="-mt-3 mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-1 sm:-mt-4">
         <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-          Find your Himalayan adventure
+          Learn. Explore. Belong.
         </h3>
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts
         </p>
-        <div className="mt-1 flex w-full max-w-6xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
+        <div className="mt-1 mx-auto flex w-full max-w-4xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
             {[
               { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },

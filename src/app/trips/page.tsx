@@ -85,6 +85,65 @@ function isDateWithinRange(slotDate: Date, startDate: string | null, endDate: st
   return true;
 }
 
+const GROUP_SPAN_CLASSES: Record<number, string> = {
+  1: "md:col-span-1",
+  2: "md:col-span-2",
+  3: "md:col-span-3",
+  4: "md:col-span-4",
+};
+
+const GROUP_GRID_CLASSES: Record<number, string> = {
+  1: "md:grid-cols-1",
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-4",
+};
+
+type TripCardActivity = Awaited<ReturnType<typeof getTripsPageActivities>>[number];
+
+function TripCard({ activity }: { activity: TripCardActivity }) {
+  return (
+    <Link href={`/trips/${activity.slug}`} className="block">
+      <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
+        <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
+          <Image
+            src={getTripCardImage(activity)}
+            alt={activity.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+        </div>
+        <div className="flex flex-1 flex-col justify-between gap-2 p-4">
+          <div className="space-y-1.5">
+            <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
+            <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
+          </div>
+          <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
+            {activity.categories.map((category) => (
+              <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
+                {CATEGORY_LABELS[category] ?? category}
+              </Badge>
+            ))}
+          </div>
+          <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
+            <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
+              {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+            </span>
+            <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
+              <Price
+                className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                amount={activity.priceInRupees}
+              />
+            </div>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
 export default async function TripsPage({
   searchParams,
 }: {
@@ -162,14 +221,16 @@ export default async function TripsPage({
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
               {groupedActivities.map((group) => {
                 if (group.activities.length === 0) {
                   return null;
                 }
 
+                const columnCount = Math.min(group.activities.length, 4);
+
                 return (
-                  <section key={group.id} className="space-y-4">
+                  <section key={group.id} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <h2 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
@@ -178,46 +239,9 @@ export default async function TripsPage({
                         <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
                       {group.activities.map((activity) => (
-                        <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-                          <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
-                            <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
-                              <Image
-                                src={getTripCardImage(activity)}
-                                alt={activity.title}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                            </div>
-                            <div className="flex flex-1 flex-col justify-between gap-2 p-4">
-                              <div className="space-y-1.5">
-                                <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                                <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
-                              </div>
-                              <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                                {activity.categories.map((category) => (
-                                  <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
-                                    {CATEGORY_LABELS[category] ?? category}
-                                  </Badge>
-                                ))}
-                              </div>
-                              <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
-                                <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
-                                  {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
-                                </span>
-                                <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                                  <Price
-                                    className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                                    amount={activity.priceInRupees}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        </Link>
+                        <TripCard key={activity.id} activity={activity} />
                       ))}
                     </div>
                   </section>
@@ -232,60 +256,25 @@ export default async function TripsPage({
                     explore other adventures ...
                   </h2>
                 </div>
-                <div className="flex flex-col gap-8">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
                   {groupedOtherActivities.map((group) => {
                     if (group.activities.length === 0) {
                       return null;
                     }
 
+                    const columnCount = Math.min(group.activities.length, 4);
+
                     return (
-                      <section key={`${group.id}-other`} className="space-y-4">
+                      <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">{group.label}</h3>
                             <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
                           {group.activities.map((activity) => (
-                            <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
-                              <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
-                                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
-                                  <Image
-                                    src={getTripCardImage(activity)}
-                                    alt={activity.title}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                                </div>
-                                <div className="flex flex-1 flex-col justify-between gap-2 p-4">
-                                  <div className="space-y-1.5">
-                                    <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                                    <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
-                                  </div>
-                                  <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                                    {activity.categories.map((category) => (
-                                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
-                                        {CATEGORY_LABELS[category] ?? category}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                  <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
-                                    <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
-                                      {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
-                                    </span>
-                                    <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                                      <Price
-                                        className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                                        amount={activity.priceInRupees}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </Card>
-                            </Link>
+                            <TripCard key={activity.id} activity={activity} />
                           ))}
                         </div>
                       </section>
