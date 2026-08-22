@@ -23,7 +23,7 @@ export function BookingBar({
   const total = pricePerPerson * people;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-border/70 bg-app-gradient-subtle p-5 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)]">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-border/70 p-5 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)]">
       <div>
         <p className="font-heading text-2xl font-semibold text-foreground">
           <Price amount={total} />

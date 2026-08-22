@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { matchesSearchQuery } from "@/components/trips/sport-filters";
-import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
+import { getTripCardImage } from "@/lib/trip-card-image";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -82,6 +82,7 @@ export function SearchableTrips({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
 
@@ -93,6 +94,18 @@ export function SearchableTrips({
     }
 
     return rankedActivities.filter((activity) => matchesSearchQuery(activity, normalizedQuery)).slice(0, 4);
+  }, [query, rankedActivities]);
+
+  const suggestions = useMemo(() => {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    return rankedActivities
+      .filter((activity) => matchesSearchQuery(activity, normalizedQuery))
+      .slice(0, 6);
   }, [query, rankedActivities]);
 
   const visibleActivities = filteredActivities;
@@ -166,10 +179,10 @@ export function SearchableTrips({
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts
         </p>
-        <div className="mt-1 mx-auto flex w-full max-w-2xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
+        <div className="mt-1 mx-auto flex w-full max-w-xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-center gap-2 rounded-full border border-orange-100 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition focus-within:border-emerald-200 focus-within:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:pl-5"
+            className="relative flex items-center gap-2 rounded-full border border-orange-100 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition focus-within:border-emerald-200 focus-within:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:pl-5"
           >
             <Search className="size-4 shrink-0 text-muted-foreground sm:size-5" />
             <input
@@ -179,6 +192,8 @@ export function SearchableTrips({
               placeholder="Search trips, sports, or destinations…"
               aria-label="Search trips, sports, or destinations"
               autoComplete="off"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               className="h-10 w-full min-w-0 border-0 bg-transparent px-0 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:text-base"
             />
             {query ? (
@@ -198,10 +213,58 @@ export function SearchableTrips({
               <Search className="size-3.5" />
               <span>Search</span>
             </button>
+            {isFocused && query.trim() ? (
+              <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] backdrop-blur">
+                {suggestions.length > 0 ? (
+                  <ul className="max-h-[320px] overflow-y-auto py-1">
+                    {suggestions.map((activity) => (
+                      <li key={activity.id}>
+                        <button
+                          type="button"
+                          onMouseDown={() => router.push(`/trips/${activity.slug}`)}
+                          className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-orange-50"
+                        >
+                          <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            <Image
+                              src={getTripCardImage(activity)}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="40px"
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-foreground">
+                              {activity.title}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {activity.location}
+                            </span>
+                          </span>
+                          <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    No trips found for “{query.trim()}”
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onMouseDown={() => router.push(`/trips?q=${encodeURIComponent(query.trim())}`)}
+                  className="flex w-full items-center justify-between gap-2 border-t border-border/60 px-4 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-orange-50"
+                >
+                  <span className="flex items-center gap-2">
+                    <Search className="size-4 text-muted-foreground" />
+                    See all trips for “{query.trim()}”
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              </div>
+            ) : null}
           </form>
-          <p className="px-2 text-center text-[0.7rem] text-muted-foreground sm:text-xs">
-            Search by sport, destination, trip name, travel style, or guide
-          </p>
         </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">

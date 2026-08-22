@@ -112,7 +112,7 @@ export default async function CheckoutPage({
   );
 
   return (
-    <div className="flex flex-1 flex-col bg-app-gradient">
+    <div className="flex flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-10 lg:py-16">
         <Link
           href={`/trips/${activity.slug}`}

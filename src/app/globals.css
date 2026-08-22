@@ -49,35 +49,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Base page background/foreground. The `.bg-app-gradient` wrappers only paint
-   a radial tint (background-image) and rely on this for their base color. */
-
-/* ============================================================================
-   Brand gradient (orange → green)
-   ----------------------------------------------------------------------------
-   The orange/green radial gradient applied consistently behind page
-   backgrounds and floating dropdown panels for a uniform color schema.
-   ============================================================================ */
-.bg-app-gradient {
-  background-image:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.10), transparent 35%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 35%);
-}
-
-/* Floating dropdowns/popovers: much fainter tint so they stay near-white. */
-.bg-app-gradient-subtle {
-  background-image:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.04), transparent 35%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 35%);
-}
-
-/* Header dropdown panels reuse the subtle brand gradient over their backdrop blur. */
-header [class*="invisible absolute"] {
-  background-image:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.04), transparent 35%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 35%);
-}
-
 :root {
   --background: #ffffff;
   --foreground: #080808;

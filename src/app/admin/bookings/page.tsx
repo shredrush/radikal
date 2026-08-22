@@ -11,7 +11,7 @@ export default async function AdminBookingsPage() {
   const bookings = await getSupportBookings();
 
   return (
-    <div className="min-h-screen bg-app-gradient">
+    <div className="min-h-screen">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="Manage Bookings"

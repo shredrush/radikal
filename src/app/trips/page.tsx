@@ -202,7 +202,7 @@ export default async function TripsPage({
   }));
 
   return (
-    <div className="flex flex-1 flex-col bg-app-gradient">
+    <div className="flex flex-1 flex-col">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 pt-4 sm:px-6 sm:pb-16 sm:pt-6 lg:px-10">
         <div className="space-y-3">
           <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">

@@ -66,7 +66,7 @@ export function CurrencySelector({ className }: { className?: string }) {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border/70 bg-background/95 bg-app-gradient-subtle p-1 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] backdrop-blur">
+        <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border/70 bg-background/95 p-1 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] backdrop-blur">
           <div>
             {CURRENCIES.map((option) => (
               <button
