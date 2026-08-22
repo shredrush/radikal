@@ -110,3 +110,65 @@ export function matchesTravelStyleFilter(activity: ActivityCardItem, travelStyle
     }
   });
 }
+
+// Maps each activity `type` to human-readable keywords so a single free-text
+// search can match sport names (e.g. "trekking", "cycling", "snowboard").
+const SPORT_TYPE_KEYWORDS: Record<string, string> = {
+  TREK: "trek trekking hiking hike hiking and trekking",
+  BIKE: "cycling bike biking cycle mountain bike mtb",
+  SKI: "ski skiing snow winter snowboard snowboarding",
+  SNOWBOARD: "snowboard snowboarding snow winter ski skiing",
+  ROCKCLIMB: "rock climbing climbing rockclimb bouldering",
+  YOGA: "yoga meditation wellness",
+  EXPEDITION: "expedition summit peak mountaineering summit expedition",
+};
+
+const CATEGORY_KEYWORDS: Record<string, string> = {
+  ADVENTURE_ENTHUSIAST: "adventure enthusiast adventure",
+  WOMEN_ONLY: "women only women",
+  CORPORATE: "corporate",
+  LUXURY: "luxury",
+  FAMILY: "family for family",
+  COURSE: "course courses",
+  SELF_GUIDED: "self guided self-guided",
+  BEGINNER_FRIENDLY: "beginner friendly beginner",
+};
+
+export type SearchableActivity = {
+  title: string;
+  description?: string | null;
+  location: string;
+  categories?: readonly string[];
+  type?: string | null;
+  guide?: { name: string } | null;
+};
+
+export function buildActivitySearchText(activity: SearchableActivity) {
+  const categoryKeywords = (activity.categories ?? []).map(
+    (category) => CATEGORY_KEYWORDS[category] ?? category.toLowerCase().replace(/_/g, " "),
+  );
+
+  const parts = [
+    activity.title,
+    activity.description ?? "",
+    activity.location,
+    activity.type ? (SPORT_TYPE_KEYWORDS[activity.type] ?? activity.type.toLowerCase()) : "",
+    ...categoryKeywords,
+    activity.guide?.name ?? "",
+  ];
+
+  return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
+export function matchesSearchQuery(activity: SearchableActivity, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+  const searchText = buildActivitySearchText(activity);
+
+  return terms.every((term) => searchText.includes(term));
+}

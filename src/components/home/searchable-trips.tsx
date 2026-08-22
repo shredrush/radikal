@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, MapPin, Search, Sparkles, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, Search, X } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -43,124 +44,6 @@ type GuideProfile = {
   photo: string | null;
   certifications: string[];
 };
-
-type FilterPanel = "what" | "when" | "where" | "who" | null;
-
-const SPORT_OPTIONS = [
-  { id: "winter", label: "Snowboard and Ski" },
-  { id: "bike", label: "Cycling" },
-  { id: "trek", label: "Hiking and Trekking" },
-  { id: "expedition", label: "Summit Expedition" },
-  { id: "rockclimb", label: "Rock Climbing" },
-  { id: "yoga", label: "Yoga and Meditation" },
-] as const;
-
-const TRAVEL_STYLE_OPTIONS = [
-  { id: "beginner-friendly", label: "Beginner Friendly" },
-  { id: "women-only", label: "Women Only" },
-  { id: "family", label: "For Family" },
-  { id: "adventure-enthusiast", label: "Adventure Enthusiast" },
-  { id: "course", label: "Courses" },
-  { id: "self-guided", label: "Self Guided" },
-] as const;
-
-const dateDisplayFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-function formatDateForDisplay(value: string) {
-  if (!value) {
-    return "";
-  }
-
-  const parsed = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return dateDisplayFormatter.format(parsed);
-}
-
-function getCalendarDays(viewDate: Date) {
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const leadingDays = (firstDay.getDay() + 6) % 7;
-  const cells: Array<{ date: Date; isCurrentMonth: boolean }> = [];
-
-  for (let index = 0; index < leadingDays; index += 1) {
-    const date = new Date(year, month, -leadingDays + index + 1);
-    cells.push({ date, isCurrentMonth: false });
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push({ date: new Date(year, month, day), isCurrentMonth: true });
-  }
-
-  while (cells.length % 7 !== 0) {
-    const nextDay = cells.length - (daysInMonth + leadingDays) + 1;
-    cells.push({ date: new Date(year, month + 1, nextDay), isCurrentMonth: false });
-  }
-
-  return cells;
-}
-
-function isSameDay(left: Date, right: Date) {
-  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth() && left.getDate() === right.getDate();
-}
-
-function isWithinRange(day: Date, startDate: string, endDate: string) {
-  if (!startDate || !endDate) {
-    return false;
-  }
-
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-
-  return day >= start && day <= end;
-}
-
-function matchesSportSelection(activity: ActivityCardItem, sportId: string) {
-  switch (sportId) {
-    case "winter":
-      return activity.type === "SKI" || activity.type === "SNOWBOARD";
-    case "bike":
-      return activity.type === "BIKE";
-    case "trek":
-      return activity.type === "TREK";
-    case "expedition":
-      return activity.type === "EXPEDITION";
-    case "rockclimb":
-      return activity.type === "ROCKCLIMB";
-    case "yoga":
-      return activity.type === "YOGA";
-    default:
-      return true;
-  }
-}
-
-function matchesTravelStyleSelection(activity: ActivityCardItem, styleId: string) {
-  switch (styleId) {
-    case "beginner-friendly":
-      return activity.categories.includes("BEGINNER_FRIENDLY");
-    case "women-only":
-      return activity.categories.includes("WOMEN_ONLY");
-    case "family":
-      return activity.categories.includes("FAMILY");
-    case "adventure-enthusiast":
-      return activity.categories.includes("ADVENTURE_ENTHUSIAST");
-    case "course":
-      return activity.categories.includes("COURSE");
-    case "self-guided":
-      return activity.categories.includes("SELF_GUIDED");
-    default:
-      return false;
-  }
-}
 
 function prioritizeFeaturedActivities(activities: ActivityCardItem[], featuredTripSlugs: readonly string[]) {
   const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
@@ -198,126 +81,26 @@ export function SearchableTrips({
   guides?: GuideProfile[];
 }) {
   const router = useRouter();
-  const [activePanel, setActivePanel] = useState<FilterPanel>(null);
-  const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [selectedTravelStyles, setSelectedTravelStyles] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [displayMonth, setDisplayMonth] = useState(() => new Date());
-
-  const locationOptions = useMemo(() => {
-    return Array.from(new Set(activities.map((activity) => activity.location).filter(Boolean))).sort();
-  }, [activities]);
+  const [query, setQuery] = useState("");
 
   const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
 
   const filteredActivities = useMemo(() => {
-    const hasActiveFilters = selectedSports.length > 0 || selectedLocations.length > 0 || selectedTravelStyles.length > 0 || startDate || endDate;
+    const normalizedQuery = query.trim();
 
-    if (!hasActiveFilters) {
+    if (!normalizedQuery) {
       return rankedActivities.slice(0, 4);
     }
 
-    return rankedActivities.filter((activity) => {
-      const sportMatch = selectedSports.length === 0 || selectedSports.some((sportId) => matchesSportSelection(activity, sportId));
-      const locationMatch =
-        selectedLocations.length === 0 || selectedLocations.some((location) => activity.location.toLowerCase().includes(location.toLowerCase()));
-      const travelStyleMatch =
-        selectedTravelStyles.length === 0 || selectedTravelStyles.some((style) => matchesTravelStyleSelection(activity, style));
-      const dateMatch = true;
+    return rankedActivities.filter((activity) => matchesSearchQuery(activity, normalizedQuery)).slice(0, 4);
+  }, [query, rankedActivities]);
 
-      return sportMatch && locationMatch && travelStyleMatch && dateMatch;
-    }).slice(0, 4);
-  }, [endDate, rankedActivities, selectedLocations, selectedSports, selectedTravelStyles, startDate]);
-
-  const hasActiveFilters = selectedSports.length > 0 || selectedLocations.length > 0 || selectedTravelStyles.length > 0 || startDate || endDate;
   const visibleActivities = filteredActivities;
 
-  const toggleSelection = (value: string, current: string[], setter: (next: string[]) => void) => {
-    if (current.includes(value)) {
-      setter(current.filter((item) => item !== value));
-      return;
-    }
-
-    setter([...current, value]);
-  };
-
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-
-    selectedSports.forEach((sport) => params.append("sport", sport));
-    selectedLocations.forEach((location) => params.append("location", location));
-    selectedTravelStyles.forEach((travelStyle) => params.append("travelStyle", travelStyle));
-
-    if (startDate) {
-      params.set("startDate", startDate);
-    }
-
-    if (endDate) {
-      params.set("endDate", endDate);
-    }
-
-    router.push(`/trips${params.toString() ? `?${params.toString()}` : ""}`);
-  };
-
-  const handleDateSelection = (selectedDate: string) => {
-    if (!selectedDate) {
-      return;
-    }
-
-    const nextSelection = new Date(`${selectedDate}T00:00:00`);
-
-    if (!startDate || (startDate && endDate)) {
-      setStartDate(selectedDate);
-      setEndDate("");
-      setDisplayMonth(nextSelection);
-      return;
-    }
-
-    const currentStart = new Date(`${startDate}T00:00:00`);
-
-    if (nextSelection < currentStart) {
-      setStartDate(selectedDate);
-      setEndDate("");
-      setDisplayMonth(nextSelection);
-      return;
-    }
-
-    if (nextSelection.getTime() === currentStart.getTime()) {
-      setEndDate(selectedDate);
-      setDisplayMonth(nextSelection);
-      return;
-    }
-
-    setEndDate(selectedDate);
-    setDisplayMonth(nextSelection);
-  };
-
-  const getPanelSummary = (panel: FilterPanel) => {
-    switch (panel) {
-      case "what":
-        return selectedSports.length > 0 ? selectedSports.map((sportId) => SPORT_OPTIONS.find((sport) => sport.id === sportId)?.label ?? sportId).join(", ") : "All sports";
-      case "when":
-        if (startDate && endDate) {
-          return `${formatDateForDisplay(startDate)} → ${formatDateForDisplay(endDate)}`;
-        }
-        if (startDate) {
-          return `From ${formatDateForDisplay(startDate)}`;
-        }
-        if (endDate) {
-          return `Until ${formatDateForDisplay(endDate)}`;
-        }
-        return "Any dates";
-      case "where":
-        return selectedLocations.length > 0 ? selectedLocations.join(", ") : "Any location";
-      case "who":
-        return selectedTravelStyles.length > 0
-          ? selectedTravelStyles.map((styleId) => TRAVEL_STYLE_OPTIONS.find((style) => style.id === styleId)?.label ?? styleId).join(", ")
-          : "Any travel style";
-      default:
-        return "";
-    }
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedQuery = query.trim();
+    router.push(trimmedQuery ? `/trips?q=${encodeURIComponent(trimmedQuery)}` : "/trips");
   };
 
   const guideImageMap: Record<string, string> = {
@@ -383,235 +166,42 @@ export function SearchableTrips({
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts
         </p>
-        <div className="mt-1 mx-auto flex w-full max-w-4xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
-          <div className="flex flex-wrap items-stretch gap-1.5 sm:gap-2">
-            {[
-              { id: "what", label: "What", icon: Sparkles, description: getPanelSummary("what") },
-              { id: "when", label: "When", icon: CalendarDays, description: getPanelSummary("when") },
-              { id: "where", label: "Where", icon: MapPin, description: getPanelSummary("where") },
-              { id: "who", label: "Who", icon: Users, description: getPanelSummary("who") },
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive = activePanel === item.id;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActivePanel(isActive ? null : (item.id as FilterPanel))}
-                  className={`flex min-w-[calc(50%-0.375rem)] flex-1 flex-col items-start gap-0.5 rounded-[0.9rem] border px-1.5 py-1.25 text-left transition sm:min-w-0 sm:flex-[1_1_0%] sm:px-2.5 sm:py-1.5 ${
-                    isActive ? "border-black bg-black/10 shadow-sm" : "border-border/70 bg-background/80 hover:border-black/30"
-                  }`}
-                >
-                  <span className="flex items-center gap-1 text-[0.72rem] font-semibold text-foreground sm:text-sm">
-                    <Icon className="size-3 shrink-0 text-foreground sm:size-3.5" />
-                    {item.label}
-                  </span>
-                  <span className="hidden text-[0.65rem] text-muted-foreground sm:block sm:text-xs">{item.description}</span>
-                </button>
-              );
-            })}
+        <div className="mt-1 mx-auto flex w-full max-w-2xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-center gap-2 rounded-full border border-orange-100 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition focus-within:border-emerald-200 focus-within:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:pl-5"
+          >
+            <Search className="size-4 shrink-0 text-muted-foreground sm:size-5" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search trips, sports, or destinations…"
+              aria-label="Search trips, sports, or destinations"
+              autoComplete="off"
+              className="h-10 w-full min-w-0 border-0 bg-transparent px-0 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:text-base"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
             <button
-              type="button"
-              onClick={handleSearch}
-              className="flex min-w-[calc(50%-0.375rem)] flex-1 items-center justify-center gap-1 rounded-[0.9rem] border border-black bg-background/95 px-1.25 py-1 text-foreground transition hover:bg-black/5 sm:min-w-0 sm:flex-[0_0_auto] sm:px-2 sm:py-1.5"
+              type="submit"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:px-5"
             >
-              <Search className="size-3.5 shrink-0 sm:size-4" />
-              <span className="text-[0.72rem] font-semibold sm:text-xs">Search</span>
+              <Search className="size-3.5" />
+              <span>Search</span>
             </button>
-          </div>
-
-          {activePanel ? (
-            <div className="rounded-[1.25rem] p-4">
-              {activePanel === "what" ? (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Choose one or more sports</p>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                    {SPORT_OPTIONS.map((sport) => {
-                      const isSelected = selectedSports.includes(sport.id);
-
-                      return (
-                        <button
-                          key={sport.id}
-                          type="button"
-                          onClick={() => toggleSelection(sport.id, selectedSports, setSelectedSports)}
-                          className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
-                          }`}
-                        >
-                          {isSelected ? <Check className="size-3.5" /> : null}
-                          <span className="min-w-0 break-words whitespace-normal leading-5">{sport.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {activePanel === "when" ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Select a date range</p>
-                      <p className="text-sm text-muted-foreground">
-                        Pick a start date, then choose an end date to tailor your trip search.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStartDate("");
-                        setEndDate("");
-                        setDisplayMonth(new Date());
-                      }}
-                      className="text-sm font-medium text-foreground transition hover:text-black"
-                    >
-                      Clear dates
-                    </button>
-                  </div>
-
-                  <div className="mx-auto w-full max-w-[18rem] rounded-[1rem] border border-border/70 bg-background/70 p-2.5 sm:max-w-[16rem]">
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))}
-                        className="rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                        aria-label="Previous month"
-                      >
-                        <ChevronLeft className="size-3.5" />
-                      </button>
-                      <p className="text-xs font-semibold text-foreground">
-                        {displayMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))}
-                        className="rounded-full p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                        aria-label="Next month"
-                      >
-                        <ChevronRight className="size-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                        <div key={day} className="py-1">
-                          {day}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-1 grid grid-cols-7 gap-1">
-                      {getCalendarDays(displayMonth).map((cell, index) => {
-                        const dateValue = `${cell.date.getFullYear()}-${String(cell.date.getMonth() + 1).padStart(2, "0")}-${String(cell.date.getDate()).padStart(2, "0")}`;
-                        const isSelected = startDate && endDate
-                          ? isSameDay(cell.date, new Date(`${startDate}T00:00:00`)) || isSameDay(cell.date, new Date(`${endDate}T00:00:00`))
-                          : startDate
-                            ? isSameDay(cell.date, new Date(`${startDate}T00:00:00`))
-                            : false;
-                        const isInRange = startDate && endDate ? isWithinRange(cell.date, startDate, endDate) : false;
-
-                        return (
-                          <button
-                            key={`${dateValue}-${index}`}
-                            type="button"
-                            onClick={() => handleDateSelection(dateValue)}
-                            className={`flex h-8 items-center justify-center rounded-full text-xs transition ${
-                              cell.isCurrentMonth ? "text-foreground" : "text-muted-foreground/70"
-                            } ${isSelected ? "bg-black text-white" : isInRange ? "bg-black/10 text-foreground" : "hover:bg-muted"}`}
-                          >
-                            {cell.date.getDate()}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {startDate ? (
-                      <span className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-sm font-medium text-foreground">
-                        From {formatDateForDisplay(startDate)}
-                      </span>
-                    ) : null}
-                    {endDate ? (
-                      <span className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-sm font-medium text-foreground">
-                        To {formatDateForDisplay(endDate)}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-
-              {activePanel === "where" ? (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Choose one or more destinations</p>
-                  <div className="flex flex-wrap gap-2">
-                    {locationOptions.map((location) => {
-                      const isSelected = selectedLocations.includes(location);
-
-                      return (
-                        <button
-                          key={location}
-                          type="button"
-                          onClick={() => toggleSelection(location, selectedLocations, setSelectedLocations)}
-                          className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
-                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
-                          }`}
-                        >
-                          {isSelected ? <Check className="size-3.5" /> : null}
-                          {location}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {activePanel === "who" ? (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Choose one or more travel styles</p>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                    {TRAVEL_STYLE_OPTIONS.map((style) => {
-                      const isSelected = selectedTravelStyles.includes(style.id);
-
-                      return (
-                        <button
-                          key={style.id}
-                          type="button"
-                          onClick={() => toggleSelection(style.id, selectedTravelStyles, setSelectedTravelStyles)}
-                          className={`flex w-full min-w-0 items-start gap-2 rounded-2xl border px-3 py-2 text-left text-sm transition ${
-                            isSelected ? "border-black bg-black text-white" : "border-border/70 bg-background text-foreground"
-                          }`}
-                        >
-                          {isSelected ? <Check className="size-3.5" /> : null}
-                          <span className="min-w-0 break-words whitespace-normal leading-5">{style.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {hasActiveFilters ? (
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSports([]);
-                      setSelectedLocations([]);
-                      setSelectedTravelStyles([]);
-                      setStartDate("");
-                      setEndDate("");
-                      setActivePanel(null);
-                    }}
-                    className="text-sm font-medium text-foreground transition hover:text-black"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+          </form>
+          <p className="px-2 text-center text-[0.7rem] text-muted-foreground sm:text-xs">
+            Search by sport, destination, trip name, travel style, or guide
+          </p>
         </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
@@ -770,6 +360,11 @@ export function SearchableTrips({
              </h4>
            </div>
            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-3">
+             {visibleActivities.length === 0 ? (
+               <p className="col-span-full rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
+                 No trips match your search yet. Try a broader destination or activity name.
+               </p>
+             ) : null}
              {visibleActivities.map((activity) => (
               <Card
                 key={activity.id}
@@ -906,12 +501,6 @@ export function SearchableTrips({
             </div>
           </div>
         </div>
-
-      {filteredActivities.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No trips match your search yet. Try a broader destination or activity name.
-        </p>
-      ) : null}
 
     </section>
   );

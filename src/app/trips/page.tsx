@@ -9,6 +9,7 @@ import { Price } from "@/components/currency/price";
 import { TripsFilterBar } from "@/components/trips/trips-filter-bar";
 import {
   SPORT_FILTERS,
+  matchesSearchQuery,
   matchesSportFilter,
   matchesTravelStyleFilter,
   normalizeSportFilter,
@@ -148,6 +149,7 @@ export default async function TripsPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    q?: string | undefined;
     sport?: string | string[] | undefined;
     travelStyle?: string | string[] | undefined;
     location?: string | string[] | undefined;
@@ -155,7 +157,8 @@ export default async function TripsPage({
     endDate?: string | undefined;
   }>;
 }) {
-  const { sport, travelStyle, location, startDate, endDate } = await searchParams;
+  const { sport, travelStyle, location, startDate, endDate, q } = await searchParams;
+  const searchQuery = typeof q === "string" ? q.trim().slice(0, 200) : "";
   const selectedSport = normalizeSportFilter(sport);
   const selectedTravelStyle = normalizeTravelStyleFilter(travelStyle);
   const selectedLocation = normalizeLocationFilter(location);
@@ -163,6 +166,8 @@ export default async function TripsPage({
   const activities = await getTripsPageActivities();
 
   const filteredActivities = activities.filter((activity) => {
+    const queryMatch = searchQuery ? matchesSearchQuery(activity, searchQuery) : true;
+
     const locationMatch =
       selectedLocation.length === 0 || selectedLocation.some((locationValue) => activity.location.toLowerCase().includes(locationValue.toLowerCase()));
 
@@ -171,10 +176,10 @@ export default async function TripsPage({
         ? true
         : activity.slots.some((slot) => isDateWithinRange(slot.date, startDate ?? null, endDate ?? null));
 
-    return locationMatch && dateMatch && matchesSportFilter(activity, selectedSport) && matchesTravelStyleFilter(activity, selectedTravelStyle);
+    return queryMatch && locationMatch && dateMatch && matchesSportFilter(activity, selectedSport) && matchesTravelStyleFilter(activity, selectedTravelStyle);
   });
 
-  const hasActiveFilters = selectedSport.length > 0 || selectedTravelStyle.length > 0 || selectedLocation.length > 0 || Boolean(startDate) || Boolean(endDate);
+  const hasActiveFilters = selectedSport.length > 0 || selectedTravelStyle.length > 0 || selectedLocation.length > 0 || Boolean(searchQuery) || Boolean(startDate) || Boolean(endDate);
 
   const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
     ...sport,
@@ -198,7 +203,7 @@ export default async function TripsPage({
 
   return (
     <div className="flex flex-1 flex-col bg-app-gradient">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 pt-4 sm:px-6 sm:pb-16 sm:pt-6 lg:px-10">
         <div className="space-y-3">
           <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
             Small groups. Big adventures. Sustainable travel.
@@ -217,7 +222,7 @@ export default async function TripsPage({
 
         {filteredActivities.length === 0 ? (
           <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
-            No trips match this sport yet. Try another filter.
+            No trips match your search yet. Try another sport, destination, or keyword.
           </div>
         ) : (
           <div className="flex flex-col gap-8">
