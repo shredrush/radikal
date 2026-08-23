@@ -48,15 +48,15 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
-      <div className="mx-auto w-full px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-4 lg:px-10 xl:px-16 2xl:px-24">
+      <div className="mx-auto w-full max-w-8xl px-3 py-2 sm:px-6 sm:py-2.5 md:px-6 md:py-4 lg:px-8">
         <div className="flex items-center justify-between md:hidden">
           <SiteLogoLink className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
             <img
               src="/logo.svg"
               alt="Radikal logo"
-              className="-my-2.5 h-[4.6rem] w-[4.6rem] flex-none rounded-xl object-contain dark:invert sm:-my-3.5 sm:h-[5.4rem] sm:w-[5.4rem] md:h-[5.7rem] md:w-[5.7rem]"
+              className="-my-3 h-20 w-20 flex-none rounded-xl object-contain dark:invert sm:-my-4 sm:h-24 sm:w-24"
             />
-            <p className="font-heading text-lg font-semibold uppercase tracking-[0.24em] text-foreground sm:text-xl md:text-2xl md:tracking-[0.3em]">
+            <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground sm:text-2xl sm:tracking-[0.3em]">
               Radikal
             </p>
           </SiteLogoLink>
@@ -72,7 +72,7 @@ export async function SiteHeader() {
             ) : (
               <Button
                 size="sm"
-                className="min-w-[84px] rounded-full px-3 py-1.5 text-xs font-semibold"
+                className="min-w-[96px] rounded-full px-4 py-2 text-sm font-semibold"
                 nativeButton={false}
                 render={<Link href="/login" />}
               >
@@ -146,6 +146,15 @@ export async function SiteHeader() {
                 size="xs"
                 className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
+                render={<Link href="/custom-trip" />}
+              >
+                Custom Trips
+              </Button>
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
+                nativeButton={false}
                 render={<Link href="/community" />}
               >
                 Community
@@ -169,9 +178,9 @@ export async function SiteHeader() {
               <img
                 src="/logo.svg"
                 alt="Radikal logo"
-                className="-my-2.5 h-[5.1rem] w-[5.1rem] flex-none rounded-xl object-contain dark:invert lg:h-[5.7rem] lg:w-[5.7rem]"
+                className="-my-3 h-24 w-24 flex-none rounded-xl object-contain dark:invert lg:-my-4 lg:h-28 lg:w-28"
               />
-              <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
+              <p className="font-heading text-2xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-3xl lg:tracking-[0.3em]">
                 Radikal
               </p>
             </SiteLogoLink>
@@ -204,8 +213,8 @@ export async function SiteHeader() {
                 </div>
               ) : (
                 <Button
-                  size="sm"
-                  className="min-w-[96px] rounded-full px-4 py-2.5 text-sm font-semibold sm:min-w-[112px]"
+                  size="lg"
+                  className="min-w-[128px] rounded-full px-6 text-base font-semibold sm:min-w-[152px]"
                   nativeButton={false}
                   render={<Link href="/login" />}
                 >
@@ -279,6 +288,15 @@ export async function SiteHeader() {
             >
               Community
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
+              nativeButton={false}
+              render={<Link href="/custom-trip" />}
+            >
+              Custom Trips
+            </Button>
           </nav>
         </div>
 
@@ -287,9 +305,9 @@ export async function SiteHeader() {
             <img
               src="/logo.svg"
               alt="Radikal logo"
-              className="-my-2.5 h-[5.1rem] w-[5.1rem] flex-none rounded-xl object-contain dark:invert lg:h-[5.7rem] lg:w-[5.7rem]"
+              className="-my-3 h-24 w-24 flex-none rounded-xl object-contain dark:invert lg:-my-4 lg:h-28 lg:w-28"
             />
-            <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-2xl lg:tracking-[0.3em]">
+            <p className="font-heading text-2xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-3xl lg:tracking-[0.3em]">
               Radikal
             </p>
           </SiteLogoLink>
@@ -358,6 +376,15 @@ export async function SiteHeader() {
             >
               Community
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
+              nativeButton={false}
+              render={<Link href="/custom-trip" />}
+            >
+              Custom Trips
+            </Button>
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 lg:gap-2">
@@ -388,8 +415,8 @@ export async function SiteHeader() {
               </div>
             ) : (
               <Button
-                size="sm"
-                className="min-w-[96px] rounded-full px-4 py-2.5 text-sm font-semibold sm:min-w-[112px]"
+                size="lg"
+                className="min-w-[128px] rounded-full px-6 text-base font-semibold sm:min-w-[152px]"
                 nativeButton={false}
                 render={<Link href="/login" />}
               >

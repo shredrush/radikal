@@ -4,7 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, X } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +89,11 @@ export function SearchableTrips({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [query]);
 
   const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
 
@@ -114,6 +125,23 @@ export function SearchableTrips({
     event.preventDefault();
     const trimmedQuery = query.trim();
     router.push(trimmedQuery ? `/trips?q=${encodeURIComponent(trimmedQuery)}` : "/trips");
+  };
+
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (suggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length);
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      router.push(`/trips/${suggestions[activeIndex].slug}`);
+    }
   };
 
   const guideImageMap: Record<string, string> = {
@@ -194,6 +222,7 @@ export function SearchableTrips({
               autoComplete="off"
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
+              onKeyDown={handleSearchKeyDown}
               className="h-10 w-full min-w-0 border-0 bg-transparent px-0 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:text-base"
             />
             {query ? (
@@ -217,12 +246,17 @@ export function SearchableTrips({
               <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] backdrop-blur">
                 {suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">
-                    {suggestions.map((activity) => (
+                    {suggestions.map((activity, index) => (
                       <li key={activity.id}>
                         <button
                           type="button"
                           onMouseDown={() => router.push(`/trips/${activity.slug}`)}
-                          className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-orange-50"
+                          onMouseEnter={() => setActiveIndex(index)}
+                          className={`flex w-full items-center gap-3 px-3 py-2 text-left transition ${
+                            index === activeIndex
+                              ? "bg-orange-50"
+                              : "hover:bg-orange-50"
+                          }`}
                         >
                           <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
                             <Image
@@ -328,7 +362,7 @@ export function SearchableTrips({
           ].map((item) => (
             <Link
               key={item.title}
-              href={item.filter ? `/trips?sport=${item.filter}` : "/trips"}
+              href={item.filter ? `/trips?sport=${item.filter}` : "/custom-trip"}
               className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.35)] sm:h-[130px] lg:h-[140px]"
             >
               <Image

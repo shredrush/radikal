@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { MessageSquare, Ticket, User } from "lucide-react";
+import { Compass, MessageSquare, Ticket, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -11,8 +11,13 @@ import {
   type SupportChatListItem,
   type SupportMessageView,
 } from "@/lib/support";
+import type {
+  CustomTripRequestDetail,
+  CustomTripRequestListItem,
+} from "@/lib/custom-trips";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
 import { SupportBookingsView } from "@/components/support/bookings-view";
+import { CustomTripsView } from "@/components/custom-trips/custom-trips-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -42,15 +47,21 @@ function chatListSignature(chats: SupportChatListItem[]) {
 export function SupportDashboard({
   initialChats,
   initialBookings,
+  initialCustomRequests,
   chatId,
   tab,
   selectedChat,
+  selectedCustomRequestId,
+  selectedCustomRequest,
 }: {
   initialChats: SupportChatListItem[];
   initialBookings: SupportBookingListItem[];
+  initialCustomRequests: CustomTripRequestListItem[];
   chatId?: string;
-  tab: "conversations" | "bookings";
+  tab: "conversations" | "bookings" | "custom";
   selectedChat: SupportDashboardSelectedChat | null;
+  selectedCustomRequestId?: string;
+  selectedCustomRequest: CustomTripRequestDetail | null;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
 
@@ -156,6 +167,19 @@ export function SupportDashboard({
                 <Ticket className="h-3.5 w-3.5" />
                 Bookings
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
+                  tab === "custom" && "bg-orange-500/10",
+                )}
+                nativeButton={false}
+                render={<Link href="/support?tab=custom" />}
+              >
+                <Compass className="h-3.5 w-3.5" />
+                Custom
+              </Button>
             </div>
           </div>
 
@@ -185,6 +209,12 @@ export function SupportDashboard({
 
         {tab === "bookings" ? (
           <SupportBookingsView bookings={initialBookings} />
+        ) : tab === "custom" ? (
+          <CustomTripsView
+            initialRequests={initialCustomRequests}
+            selectedRequestId={selectedCustomRequestId}
+            selectedRequest={selectedCustomRequest}
+          />
         ) : (
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
           {/* Conversation list */}

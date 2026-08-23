@@ -34,6 +34,10 @@ import { ChangeUsernameForm } from "@/components/profile/change-username-form";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
+import {
+  CustomTripRequestCard,
+  CustomTripRequestEmpty,
+} from "@/components/custom-trips/custom-trip-request-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import {
@@ -42,6 +46,7 @@ import {
   countUnreadSupportMessages,
   type SupportMessageView,
 } from "@/lib/support";
+import { toCustomTripRequestListItem } from "@/lib/custom-trips";
 import { cn } from "@/lib/utils";
 
 const STATUS_FILTERS = [
@@ -102,6 +107,15 @@ export default async function ProfilePage({
     where: { userId: user.id },
     include: { activity: true, slot: true },
     orderBy: { createdAt: "desc" },
+  });
+
+  const customTripRequests = await prisma.customTripRequest.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true, username: true } },
+      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    },
   });
 
   const allBookings = isAdminUser
@@ -654,13 +668,38 @@ export default async function ProfilePage({
                 </CardContent>
               </Card>
             ) : (
-              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-                <CardHeader>
-                  <CardTitle>Your bookings</CardTitle>
-                  <CardDescription>
-                    Every trip you&apos;ve reserved with Radikal, past and upcoming.
-                  </CardDescription>
-                </CardHeader>
+              <div className="flex flex-col gap-6">
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>Custom trips</CardTitle>
+                    <CardDescription>
+                      Private group and corporate trips you&apos;ve requested on your own dates.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {customTripRequests.length === 0 ? (
+                      <CustomTripRequestEmpty />
+                    ) : (
+                      <ul className="flex flex-col gap-3">
+                        {customTripRequests.map((request) => (
+                          <li key={request.id}>
+                            <CustomTripRequestCard
+                              request={toCustomTripRequestListItem(request)}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>Your bookings</CardTitle>
+                    <CardDescription>
+                      Every trip you&apos;ve reserved with Radikal, past and upcoming.
+                    </CardDescription>
+                  </CardHeader>
                 <CardContent>
                   {bookings.length === 0 ? (
                     <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
@@ -710,6 +749,7 @@ export default async function ProfilePage({
                   )}
                 </CardContent>
               </Card>
+              </div>
             )}
           </div>
         </div>

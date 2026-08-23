@@ -65,13 +65,12 @@ export function BookingBar({
             Book Your Spot
           </Button>
         </div>
-        <button
-          type="button"
-          onClick={() => {}}
+        <Link
+          href="/custom-trip"
           className="text-xs font-medium text-blue-600 underline underline-offset-2 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
           Private trip with your crew? Click here
-        </button>
+        </Link>
       </div>
     </div>
   );

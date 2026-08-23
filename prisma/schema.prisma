@@ -70,6 +70,23 @@ enum GuideApplicationStatus {
   REJECTED
 }
 
+// A custom trip is booked for a private group or a corporate team instead of a
+// fixed, scheduled slot. The traveller describes what they want (sports, dates,
+// group size, budget) and a support agent quotes + confirms it over chat.
+enum CustomTripGroupType {
+  PRIVATE
+  CORPORATE
+}
+
+// Lifecycle of a custom trip request, driven by the support team.
+enum CustomTripStatus {
+  NEW
+  IN_REVIEW
+  QUOTED
+  CONFIRMED
+  CANCELLED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -98,6 +115,8 @@ model User {
   cancelledBookings Booking[] @relation("BookingCancelledBy")
   passwordResetOtps PasswordResetOtp[]
   activityLogs      ActivityLog[]
+  customTripRequests CustomTripRequest[]
+  customTripMessages CustomTripMessage[]
 
   @@map("users")
 }
@@ -374,6 +393,60 @@ model SupportMessage {
   @@index([chatId])
   @@index([senderId])
   @@map("support_messages")
+}
+
+// A traveller's request for a bespoke trip (private group or corporate booking)
+// instead of a scheduled slot. Each request gets its own chat thread so the
+// support team can discuss requirements and quote a price.
+model CustomTripRequest {
+  id               String             @id @default(cuid())
+  userId           String
+  groupType        CustomTripGroupType
+  sports           String[]           @default([])
+  startDate        DateTime
+  endDate          DateTime
+  location         String
+  participantCount Int                @default(1)
+  budgetRupees     Int?
+  requirements     String?
+  status           CustomTripStatus   @default(NEW)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat CustomTripChat?
+
+  @@index([userId])
+  @@index([status])
+  @@map("custom_trip_requests")
+}
+
+// One chat thread per custom trip request.
+model CustomTripChat {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  request  CustomTripRequest   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  messages CustomTripMessage[]
+
+  @@map("custom_trip_chats")
+}
+
+model CustomTripMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  senderId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  chat   CustomTripChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User           @relation(fields: [senderId], references: [id])
+
+  @@index([chatId])
+  @@index([senderId])
+  @@map("custom_trip_messages")
 }
 
 // Append-only audit trail of a user's in-app actions (signup, login, booking,
