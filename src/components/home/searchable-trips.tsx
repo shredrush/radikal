@@ -563,6 +563,20 @@ export function SearchableTrips({
                 </Link>
               ))}
             </div>
+
+            <div className="mt-6 flex justify-center">
+              <Button
+                size="sm"
+                className="rounded-full bg-black px-5 text-white hover:bg-neutral-800"
+                nativeButton={false}
+                render={<Link href="/become-a-guide" />}
+              >
+                <span className="flex items-center gap-2">
+                  <span>Become a Guide</span>
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
 

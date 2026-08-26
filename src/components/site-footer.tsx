@@ -32,6 +32,9 @@ export function SiteFooter() {
               <Link href="/community" className="transition hover:text-orange-600">
                 Community
               </Link>
+              <Link href="/become-a-guide" className="transition hover:text-orange-600">
+                Become a Guide
+              </Link>
               <Link href="/signup" className="transition hover:text-orange-600">
                 Create account
               </Link>

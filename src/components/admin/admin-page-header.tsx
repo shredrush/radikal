@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft, Headset } from "lucide-react";
 
+import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { hasPermission, type Permission, type Role } from "@/lib/authz";
 
 const ADMIN_SECTIONS = [
   { key: "trips", href: "/admin/trips", label: "Manage trips", permission: "trips.manage" },
+  { key: "trip-changes", href: "/admin/trip-changes", label: "Trip changes", permission: "trips.manage" },
   { key: "bookings", href: "/admin/bookings", label: "Manage bookings", permission: "bookings.read" },
   { key: "guides", href: "/admin/guides", label: "Manage guides", permission: "guides.manage" },
   { key: "applications", href: "/admin/guide-applications", label: "Guide Applications", permission: "guideApplications.manage" },
@@ -14,7 +16,7 @@ const ADMIN_SECTIONS = [
 
 export type AdminSection = (typeof ADMIN_SECTIONS)[number]["key"];
 
-export function AdminPageHeader({
+export async function AdminPageHeader({
   title,
   description,
   active,
@@ -28,6 +30,10 @@ export function AdminPageHeader({
   const visibleSections = ADMIN_SECTIONS.filter((section) =>
     hasPermission(role, section.permission),
   );
+
+  const pendingTripChanges = hasPermission(role, "trips.manage")
+    ? await prisma.tripChangeRequest.count({ where: { status: "PENDING" } })
+    : 0;
 
   return (
     <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
@@ -69,6 +75,11 @@ export function AdminPageHeader({
               render={<Link href={section.href} />}
             >
               {section.label}
+              {section.key === "trip-changes" && pendingTripChanges > 0 ? (
+                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[0.65rem] font-bold leading-none text-white">
+                  {pendingTripChanges > 9 ? "9+" : pendingTripChanges}
+                </span>
+              ) : null}
             </Button>
           ))}
         </div>

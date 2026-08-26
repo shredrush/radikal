@@ -47,6 +47,8 @@ import {
   type SupportMessageView,
 } from "@/lib/support";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
+import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
+import { GuideTripsManager } from "@/components/guides/guide-trips-manager";
 import { cn } from "@/lib/utils";
 
 const STATUS_FILTERS = [
@@ -135,7 +137,7 @@ export default async function ProfilePage({
   const guide = isGuide
     ? await prisma.guide.findUnique({
         where: { userId: user.id },
-        select: { slug: true },
+        select: { id: true, slug: true },
       })
     : null;
   const activeTab =
@@ -145,9 +147,11 @@ export default async function ProfilePage({
         ? "support"
         : tab === "notifications"
           ? "notifications"
-          : isGuide && tab === "booked-trips"
-            ? "booked-trips"
-            : "bookings";
+          : isGuide && tab === "trips"
+            ? "trips"
+            : isGuide && tab === "booked-trips"
+              ? "booked-trips"
+              : "bookings";
   const canAccessSupportDesk = hasPermission(user.role, "support.manage");
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
   const canConfirmBookings = hasPermission(user.role, "bookings.confirm");
@@ -195,6 +199,13 @@ export default async function ProfilePage({
   const visibleGuideBookings = statusFilter
     ? guideBookings.filter((b) => b.status === statusFilter)
     : guideBookings;
+
+  const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  const unreadNotificationsCount = notifications.filter((n) => !n.readAt).length;
 
   const now = new Date();
   const confirmed = bookings.filter((b) => b.status === "CONFIRMED");
@@ -283,6 +294,16 @@ export default async function ProfilePage({
                     size="sm"
                     className="rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
                     nativeButton={false}
+                    render={<Link href="/profile?tab=trips" />}
+                  >
+                    <Compass className="h-3.5 w-3.5" />
+                    Edit trips
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
+                    nativeButton={false}
                     render={<Link href="/profile?tab=booked-trips" />}
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
@@ -320,6 +341,20 @@ export default async function ProfilePage({
             <nav className="flex gap-2 overflow-x-auto lg:flex-col">
               {isGuide ? (
                 <Link
+                  href="/profile?tab=trips"
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    activeTab === "trips"
+                      ? "border-primary/40 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <Compass className="h-4 w-4" />
+                  My trips
+                </Link>
+              ) : null}
+              {isGuide ? (
+                <Link
                   href="/profile?tab=booked-trips"
                   className={cn(
                     "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
@@ -355,6 +390,11 @@ export default async function ProfilePage({
               >
                 <Bell className="h-4 w-4" />
                 Notifications
+                {unreadNotificationsCount > 0 ? (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">
+                    {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                  </span>
+                ) : null}
               </Link>
               <Link
                 href="/profile?tab=settings"
@@ -437,24 +477,94 @@ export default async function ProfilePage({
                   )}
                 </CardContent>
               </Card>
-            ) : activeTab === "notifications" ? (
+            ) : activeTab === "trips" ? (
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>
-                  <CardTitle>Notifications</CardTitle>
+                  <CardTitle>My trips</CardTitle>
                   <CardDescription>
-                    Updates about your bookings, trips, and account.
+                    Add or edit the trips you lead. Changes go live after our team reviews them.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
-                    <Bell className="h-8 w-8 text-muted-foreground/50" />
+                  {guide ? (
+                    <GuideTripsManager guideId={guide.id} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No guide profile linked to this account.</p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : activeTab === "notifications" ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-medium text-foreground">No notifications yet</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        When something important happens, it will show up here.
-                      </p>
+                      <CardTitle>Notifications</CardTitle>
+                      <CardDescription>
+                        Updates about your bookings, trips, and account.
+                      </CardDescription>
                     </div>
+                    {unreadNotificationsCount > 0 ? (
+                      <form action={markAllNotificationsReadAction}>
+                        <Button type="submit" variant="outline" size="sm" className="rounded-full">
+                          Mark all read
+                        </Button>
+                      </form>
+                    ) : null}
                   </div>
+                </CardHeader>
+                <CardContent>
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                      <Bell className="h-8 w-8 text-muted-foreground/50" />
+                      <div>
+                        <p className="font-medium text-foreground">No notifications yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          When something important happens, it will show up here.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="flex flex-col gap-3">
+                      {notifications.map((notification) => (
+                        <li
+                          key={notification.id}
+                          className={cn(
+                            "rounded-[1.2rem] border px-4 py-3",
+                            notification.readAt
+                              ? "border-border/70 bg-background/60"
+                              : "border-primary/30 bg-primary/5"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground">{notification.title}</p>
+                              <p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.body}</p>
+                              <p className="mt-2 text-xs text-muted-foreground/70">
+                                {notification.createdAt.toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                            {!notification.readAt ? (
+                              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                            ) : null}
+                          </div>
+                          {notification.href ? (
+                            <Link
+                              href={notification.href}
+                              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary underline underline-offset-4"
+                            >
+                              View <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             ) : activeTab === "support" ? (

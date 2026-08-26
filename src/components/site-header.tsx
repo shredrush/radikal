@@ -160,15 +160,6 @@ export async function SiteHeader() {
               >
                 Community
               </Button>
-              <Button
-                variant="ghost"
-                size="xs"
-                className="h-8 w-full rounded-full px-2 text-[10px] font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary"
-                nativeButton={false}
-                render={<Link href="/become-a-guide" />}
-              >
-                Become a Guide
-              </Button>
             </div>
           </nav>
         </div>
@@ -187,15 +178,6 @@ export async function SiteHeader() {
             </SiteLogoLink>
 
             <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary sm:px-5"
-                nativeButton={false}
-                render={<Link href="/become-a-guide" />}
-              >
-                Become a Guide
-              </Button>
               <ThemeToggle />
               <CurrencySelector />
               {session?.user ? (
@@ -392,15 +374,6 @@ export async function SiteHeader() {
           </nav>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full px-4 py-2.5 text-sm font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary sm:px-5"
-              nativeButton={false}
-              render={<Link href="/become-a-guide" />}
-            >
-              Become a Guide
-            </Button>
             <ThemeToggle />
             <CurrencySelector />
             {session?.user ? (

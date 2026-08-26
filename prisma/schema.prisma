@@ -89,6 +89,20 @@ enum CustomTripStatus {
   CANCELLED
 }
 
+// A guide either proposes a brand-new trip or edits one of their existing trips.
+// Both are staged as a reviewable change rather than applied directly.
+enum TripChangeType {
+  CREATE
+  UPDATE
+}
+
+// A guide's trip change must be reviewed by a staff member before it goes live.
+enum TripChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -119,6 +133,9 @@ model User {
   activityLogs      ActivityLog[]
   customTripRequests CustomTripRequest[]
   customTripMessages CustomTripMessage[]
+  notifications Notification[]
+  tripChangesSubmitted TripChangeRequest[] @relation("TripChangeSubmittedBy")
+  tripChangesReviewed TripChangeRequest[] @relation("TripChangeReviewedBy")
 
   @@map("users")
 }
@@ -167,6 +184,7 @@ model Guide {
   certifications Certification[]
   activities     Activity[]
   reviews        Review[]
+  tripChanges    TripChangeRequest[]
 
   @@map("guides")
 }
@@ -258,6 +276,7 @@ model Activity {
   tripLocation TripLocation?
   inclusions   TripInclusion[]
   highlights   TripHighlight[]
+  tripChanges  TripChangeRequest[]
 
   @@map("activities")
 }
@@ -469,4 +488,51 @@ model ActivityLog {
   @@index([userId, createdAt])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+// A guide's proposed trip change (new trip or edit) awaiting staff review.
+// `proposed` holds the full trip snapshot the guide wants; `original` holds the
+// pre-change snapshot for UPDATE changes so the admin UI can render a diff.
+model TripChangeRequest {
+  id            String           @id @default(cuid())
+  type          TripChangeType
+  guideId       String
+  activityId    String?
+  proposed      Json
+  original      Json?
+  status        TripChangeStatus @default(PENDING)
+  submittedById String
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  guide       Guide?    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  activity    Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  submittedBy User      @relation("TripChangeSubmittedBy", fields: [submittedById], references: [id])
+  reviewedBy  User?     @relation("TripChangeReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@index([guideId])
+  @@index([activityId])
+  @@map("trip_change_requests")
+}
+
+// In-app notification for a user (e.g. staff being told a guide trip change
+// awaits review). Read state is tracked via `readAt`.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

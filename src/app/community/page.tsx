@@ -310,6 +310,16 @@ export default async function CommunityPage() {
               </Link>
             ))}
           </div>
+
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/become-a-guide"
+              className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+            >
+              Become a Guide
+              <ArrowRight size={16} />
+            </Link>
+          </div>
           </div>
         </section>
       </div>
