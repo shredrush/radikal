@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { isSupportAgent } from "@/lib/authz";
+import { hasPermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { countUnreadSupportMessages, toSupportMessageViews } from "@/lib/support";
 
@@ -17,9 +17,9 @@ export async function GET(request: Request) {
   const chatId = searchParams.get("chatId");
 
   try {
-    // Support agents (and admins) may read any conversation by id; everyone
+    // Users with support access may read any conversation by id; everyone
     // else reads their own (single) support thread.
-    if (isSupportAgent(session.user.role) && chatId) {
+    if (hasPermission(session.user.role, "support.manage") && chatId) {
       const chat = await prisma.supportChat.findUnique({
         where: { id: chatId },
         include: { messages: { orderBy: { createdAt: "asc" } } },

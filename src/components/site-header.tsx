@@ -5,9 +5,9 @@ import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { CurrencySelector } from "@/components/currency/currency-selector";
-import { ColorThemeSelector } from "@/components/theme/color-theme-selector";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogoutButton } from "@/components/profile/logout-button";
+import { SportIcon } from "@/components/trips/sport-icon";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -18,23 +18,23 @@ export async function SiteHeader() {
     {
       heading: "Climbing",
       items: [
-        { label: "Hiking and Trekking", href: "/trips?sport=trek" },
-        { label: "Rock Climbing", href: "/trips?sport=rockclimb" },
-        { label: "Summit Expedition", href: "/trips?sport=expedition" },
+        { label: "Hiking and Trekking", href: "/trips?sport=trek", sport: "trek" },
+        { label: "Rock Climbing", href: "/trips?sport=rockclimb", sport: "rockclimb" },
+        { label: "Summit Expedition", href: "/trips?sport=expedition", sport: "expedition" },
       ],
     },
     {
       heading: "Cycling",
       items: [
-        { label: "Cross Country Cycling", href: "/trips?sport=bike" },
-        { label: "Downhill MTB", href: "/trips?sport=bike" },
+        { label: "Cross Country Cycling", href: "/trips?sport=bike", sport: "bike" },
+        { label: "Downhill MTB", href: "/trips?sport=bike", sport: "bike" },
       ],
     },
     {
       heading: "Winter Sports",
       items: [
-        { label: "Snowboarding", href: "/trips?sport=winter" },
-        { label: "Skiing", href: "/trips?sport=winter" },
+        { label: "Snowboarding", href: "/trips?sport=winter", sport: "winter" },
+        { label: "Skiing", href: "/trips?sport=winter", sport: "winter" },
       ],
     },
   ];
@@ -42,15 +42,15 @@ export async function SiteHeader() {
   const wellnessGroups = [
     {
       heading: "Wellness",
-      items: [{ label: "Yoga and Meditation", href: "/trips?sport=yoga" }],
+      items: [{ label: "Yoga and Meditation", href: "/trips?sport=yoga", sport: "yoga" }],
     },
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
-      <div className="mx-auto w-full max-w-8xl px-3 py-2 sm:px-6 sm:py-2.5 md:px-6 md:py-4 lg:px-8">
+      <div className="mx-auto w-full max-w-8xl px-4 py-2 sm:px-6 sm:py-2.5 md:px-6 md:py-4 lg:px-10">
         <div className="flex items-center justify-between md:hidden">
-          <SiteLogoLink className="flex items-center gap-2 rounded-full px-1 py-0.5 sm:gap-3 sm:px-2 sm:py-1">
+          <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 sm:gap-3 sm:py-1">
             <img
               src="/logo.svg"
               alt="Radikal logo"
@@ -61,9 +61,8 @@ export async function SiteHeader() {
             </p>
           </SiteLogoLink>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:hidden">
             <ThemeToggle />
-            <ColorThemeSelector />
             <CurrencySelector />
             {session?.user ? (
               <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
@@ -102,7 +101,8 @@ export async function SiteHeader() {
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
-                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                              <SportIcon sport={item.sport} className="size-4" />
                               {item.label}
                             </Link>
                           ))}
@@ -129,7 +129,8 @@ export async function SiteHeader() {
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
-                            <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                              <SportIcon sport={item.sport} className="size-4" />
                               {item.label}
                             </Link>
                           ))}
@@ -174,7 +175,7 @@ export async function SiteHeader() {
 
         <div className="hidden md:flex md:flex-col md:gap-2 xl:hidden">
           <div className="flex items-center justify-between gap-3">
-            <SiteLogoLink className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
+            <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
               <img
                 src="/logo.svg"
                 alt="Radikal logo"
@@ -185,7 +186,7 @@ export async function SiteHeader() {
               </p>
             </SiteLogoLink>
 
-            <div className="flex shrink-0 items-center gap-1.5 lg:gap-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -196,7 +197,6 @@ export async function SiteHeader() {
                 Become a Guide
               </Button>
               <ThemeToggle />
-              <ColorThemeSelector />
               <CurrencySelector />
               {session?.user ? (
                 <div className="group relative">
@@ -242,7 +242,8 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <SportIcon sport={item.sport} className="size-4" />
                             {item.label}
                           </Link>
                         ))}
@@ -269,7 +270,8 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <SportIcon sport={item.sport} className="size-4" />
                             {item.label}
                           </Link>
                         ))}
@@ -284,24 +286,24 @@ export async function SiteHeader() {
               size="sm"
               className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
-              render={<Link href="/community" />}
+              render={<Link href="/custom-trip" />}
             >
-              Community
+              Custom Trips
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
-              render={<Link href="/custom-trip" />}
+              render={<Link href="/community" />}
             >
-              Custom Trips
+              Community
             </Button>
           </nav>
         </div>
 
         <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
-          <SiteLogoLink className="flex items-center gap-2 rounded-full px-1 py-0.5 lg:gap-3 lg:px-2 lg:py-1">
+          <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
             <img
               src="/logo.svg"
               alt="Radikal logo"
@@ -330,7 +332,8 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <SportIcon sport={item.sport} className="size-4" />
                             {item.label}
                           </Link>
                         ))}
@@ -357,7 +360,8 @@ export async function SiteHeader() {
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                            <SportIcon sport={item.sport} className="size-4" />
                             {item.label}
                           </Link>
                         ))}
@@ -372,22 +376,22 @@ export async function SiteHeader() {
               size="sm"
               className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
-              render={<Link href="/community" />}
+              render={<Link href="/custom-trip" />}
             >
-              Community
+              Custom Trips
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
               nativeButton={false}
-              render={<Link href="/custom-trip" />}
+              render={<Link href="/community" />}
             >
-              Custom Trips
+              Community
             </Button>
           </nav>
 
-          <div className="flex shrink-0 items-center gap-1.5 lg:gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -398,7 +402,6 @@ export async function SiteHeader() {
               Become a Guide
             </Button>
             <ThemeToggle />
-            <ColorThemeSelector />
             <CurrencySelector />
             {session?.user ? (
               <div className="group relative">

@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isValidUsername, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
 
@@ -119,7 +119,7 @@ function isUniqueConstraint(error: unknown) {
 }
 
 export async function createGuideAction(formData: FormData) {
-  await requireAdmin("/login?callbackUrl=/admin/guides");
+  await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
@@ -177,7 +177,7 @@ export async function createGuideAction(formData: FormData) {
 }
 
 export async function updateGuideAction(formData: FormData) {
-  await requireAdmin("/login?callbackUrl=/admin/guides");
+  await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   const guideId = asString(formData.get("guideId"));
   const fields = validateGuideFields(readGuideFields(formData));
@@ -226,7 +226,7 @@ export async function updateGuideAction(formData: FormData) {
 }
 
 export async function deleteGuideAction(guideId: string) {
-  await requireAdmin("/login?callbackUrl=/admin/guides");
+  await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   if (!guideId) {
     throw new Error("Missing guide id.");

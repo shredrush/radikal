@@ -1,13 +1,13 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
+import { AddTripForm } from "@/components/admin/add-trip-form";
+import { type SlotItem } from "@/components/admin/admin-trip-slots";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
@@ -20,17 +20,6 @@ const ACTIVITY_TYPE_OPTIONS = [
   { value: "ROCKCLIMB", label: "Rock Climbing" },
   { value: "EXPEDITION", label: "Summit Expedition" },
   { value: "YOGA", label: "Yoga & Meditation" },
-] as const;
-
-const TRIP_CATEGORY_OPTIONS = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
 ] as const;
 
 const TRIP_CATEGORY_LABELS: Record<string, string> = {
@@ -48,12 +37,39 @@ function getActivityTypeLabel(value: string) {
   return ACTIVITY_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
+// Format the stored slot date in the server's local timezone, matching how the
+// public trip pages render the same dates (see lib/trip-dates.ts).
+function toSlotItem(slot: {
+  id: string;
+  date: Date;
+  capacity: number;
+  booked: number;
+}): SlotItem {
+  const date = new Date(slot.date);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const dateInput = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const dateLabel = date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return {
+    id: slot.id,
+    dateInput,
+    dateLabel,
+    capacity: slot.capacity,
+    booked: slot.booked,
+    spotsLeft: Math.max(0, slot.capacity - slot.booked),
+  };
+}
+
 export default async function AdminTripsPage({
   searchParams,
 }: {
   searchParams: Promise<{ type?: string | string[] | undefined }>;
 }) {
-  await requireAdmin("/login?callbackUrl=/admin/trips");
+  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
   const { type } = await searchParams;
   const selectedType = typeof type === "string" ? type : "";
 
@@ -62,7 +78,7 @@ export default async function AdminTripsPage({
       orderBy: { createdAt: "desc" },
       include: {
         guide: true,
-        slots: true,
+        slots: { orderBy: { date: "asc" } },
         tripLocation: true,
         inclusions: { orderBy: { order: "asc" } },
         highlights: { orderBy: { order: "asc" } },
@@ -75,7 +91,6 @@ export default async function AdminTripsPage({
   ]);
 
   const totalUpcomingSlots = activities.reduce((count, activity) => count + activity.slots.length, 0);
-  const categoriesInUse = new Set(activities.flatMap((activity) => activity.categories)).size;
 
   const visibleActivities = selectedType
     ? activities.filter((activity) => activity.type === selectedType)
@@ -88,6 +103,7 @@ export default async function AdminTripsPage({
           title="Manage Trips"
           description="Update the listed  trip details"
           active="trips"
+          role={session.user.role}
         />
 
         <section className="min-w-0">
@@ -106,6 +122,8 @@ export default async function AdminTripsPage({
             </div>
           </div>
         </section>
+
+        <AddTripForm guides={guides} />
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
@@ -172,13 +190,18 @@ export default async function AdminTripsPage({
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <AdminTripForm activity={activity} guides={guides} supplemental={{
+                <AdminTripForm
+                  activity={activity}
+                  guides={guides}
+                  slots={activity.slots.map(toSlotItem)}
+                  supplemental={{
                     pickup: activity.tripLocation?.pickup ?? "",
                     drop: activity.tripLocation?.drop ?? "",
                     inclusions: activity.inclusions.filter(i => i.included).map(i => i.item),
                     exclusions: activity.inclusions.filter(i => !i.included).map(i => i.item),
                     highlights: activity.highlights.map(h => h.text),
-                  }} />
+                  }}
+                />
               </CardContent>
             </Card>
           ))}

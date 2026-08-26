@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireSupport } from "@/lib/authz";
+import { hasPermission, requirePermission } from "@/lib/authz";
 import { getSupportBookings } from "@/lib/support-bookings";
 import {
   toSupportChatListItem,
@@ -22,7 +22,7 @@ export default async function SupportDashboardPage({
 }: {
   searchParams: Promise<{ chat?: string; tab?: string; request?: string }>;
 }) {
-  const session = await requireSupport("/login?callbackUrl=/support");
+  const session = await requirePermission("support.manage", "/login?callbackUrl=/support");
 
   const { chat: chatId, tab, request: requestId } = await searchParams;
 
@@ -95,6 +95,8 @@ export default async function SupportDashboardPage({
       selectedChat={selectedChatData}
       selectedCustomRequestId={requestId}
       selectedCustomRequest={selectedCustomRequestData}
+      canConfirmBookings={hasPermission(session.user.role, "bookings.confirm")}
+      canCancelBookings={hasPermission(session.user.role, "bookings.cancel")}
     />
   );
 }

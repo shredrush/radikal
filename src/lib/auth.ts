@@ -55,7 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (username) {
           token.username = username;
         }
-        const role = (user as { role?: "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT" }).role;
+        const role = (user as { role?: "USER" | "GUIDE" | "SUPPORT" | "FINANCE" | "CONTENT" | "ADMIN" | "ADMAX" }).role;
         if (role) {
           token.role = role;
         }
@@ -66,7 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.id) {
         session.user.id = token.id as string;
         session.user.username = token.username as string | undefined;
-        session.user.role = token.role as "USER" | "GUIDE" | "ADMIN" | "ADMAX" | "SUPPORT" | undefined;
+        session.user.role = token.role as "USER" | "GUIDE" | "SUPPORT" | "FINANCE" | "CONTENT" | "ADMIN" | "ADMAX" | undefined;
       }
       return session;
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -26,6 +26,17 @@ import { Label } from "@/components/ui/label";
 const inputClassName =
   "h-12 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
 
+const errorInputClassName =
+  "border-destructive/60 focus:border-destructive focus-visible:ring-destructive/10";
+
+function RequiredAsterisk() {
+  return (
+    <span aria-hidden="true" className="text-destructive">
+      *
+    </span>
+  );
+}
+
 function today() {
   const now = new Date();
   const year = now.getFullYear();
@@ -46,8 +57,17 @@ export function CustomTripForm() {
   const [budget, setBudget] = useState("");
   const [requirements, setRequirements] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<
+    "sports" | "startDate" | "endDate" | "location" | null
+  >(null);
+
+  const sportsRef = useRef<HTMLDivElement>(null);
+  const startDateRef = useRef<HTMLInputElement>(null);
+  const endDateRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
 
   function toggleSport(value: string) {
+    setErrorField(null);
     setSports((current) =>
       current.includes(value)
         ? current.filter((sport) => sport !== value)
@@ -58,24 +78,34 @@ export function CustomTripForm() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setErrorField(null);
 
     if (sports.length === 0) {
       setError("Select at least one sport.");
+      setErrorField("sports");
+      sportsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     if (!startDate || !endDate) {
       setError("Choose both a start and an end date.");
+      setErrorField(!startDate ? "startDate" : "endDate");
+      const target = !startDate ? startDateRef : endDateRef;
+      target.current?.focus();
       return;
     }
 
     if (endDate < startDate) {
       setError("End date must be on or after the start date.");
+      setErrorField("endDate");
+      endDateRef.current?.focus();
       return;
     }
 
     if (!location.trim()) {
       setError("Tell us where you'd like to go.");
+      setErrorField("location");
+      locationRef.current?.focus();
       return;
     }
 
@@ -106,9 +136,6 @@ export function CustomTripForm() {
       className="overflow-hidden rounded-[2rem] border border-border/80 bg-background/90 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]"
     >
       <div className="border-b border-border/70 bg-muted/20 px-6 py-5 sm:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-          Plan your trip
-        </p>
         <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground">
           Tell us what you have in mind
         </h2>
@@ -118,15 +145,6 @@ export function CustomTripForm() {
       </div>
 
       <div className="flex flex-col gap-6 px-6 py-6 sm:px-8">
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        ) : null}
-
         {/* Group type */}
         <div className="flex flex-col gap-2">
           <Label className="text-muted-foreground">Who is this trip for?</Label>
@@ -170,9 +188,16 @@ export function CustomTripForm() {
         {/* Sports */}
         <div className="flex flex-col gap-2">
           <Label className="text-muted-foreground">
-            What sports would you like? <span className="font-normal normal-case">(choose one or more)</span>
+            What sports would you like? <RequiredAsterisk />{" "}
+            <span className="font-normal normal-case">(choose one or more)</span>
           </Label>
-          <div className="flex flex-wrap gap-2">
+          <div
+            ref={sportsRef}
+            className={cn(
+              "flex flex-wrap gap-2 rounded-lg border border-transparent",
+              errorField === "sports" && "border-destructive/50 bg-destructive/5",
+            )}
+          >
             {CUSTOM_TRIP_SPORTS.map((sport) => {
               const selected = sports.includes(sport.value);
               return (
@@ -201,29 +226,37 @@ export function CustomTripForm() {
           <div className="flex flex-col gap-2">
             <Label htmlFor="start-date" className="text-muted-foreground">
               <CalendarDays className="h-3.5 w-3.5" />
-              Start date
+              Start date <RequiredAsterisk />
             </Label>
             <input
               id="start-date"
+              ref={startDateRef}
               type="date"
               min={today()}
               value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className={inputClassName}
+              onChange={(event) => {
+                setStartDate(event.target.value);
+                setErrorField(null);
+              }}
+              className={cn(inputClassName, errorField === "startDate" && errorInputClassName)}
             />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="end-date" className="text-muted-foreground">
               <CalendarDays className="h-3.5 w-3.5" />
-              End date
+              End date <RequiredAsterisk />
             </Label>
             <input
               id="end-date"
+              ref={endDateRef}
               type="date"
               min={startDate || today()}
               value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className={inputClassName}
+              onChange={(event) => {
+                setEndDate(event.target.value);
+                setErrorField(null);
+              }}
+              className={cn(inputClassName, errorField === "endDate" && errorInputClassName)}
             />
           </div>
         </div>
@@ -232,15 +265,19 @@ export function CustomTripForm() {
         <div className="flex flex-col gap-2">
           <Label htmlFor="location" className="text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
-            Where would you like to go?
+            Where would you like to go? <RequiredAsterisk />
           </Label>
           <input
             id="location"
+            ref={locationRef}
             type="text"
             value={location}
-            onChange={(event) => setLocation(event.target.value)}
+            onChange={(event) => {
+              setLocation(event.target.value);
+              setErrorField(null);
+            }}
             placeholder="e.g. Manali, Ladakh, Kashmir, Lahaul-Spiti"
-            className={inputClassName}
+            className={cn(inputClassName, errorField === "location" && errorInputClassName)}
           />
         </div>
 
@@ -309,6 +346,14 @@ export function CustomTripForm() {
               </Badge>
             ) : null}
           </div>
+          {error ? (
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          ) : null}
           <Button type="submit" size="lg" disabled={isPending} className="w-full rounded-xl bg-orange-700 text-white hover:bg-orange-800 sm:w-auto">
             {isPending ? "Sending request…" : "Send trip request"}
             <ArrowRight className="h-4 w-4" />

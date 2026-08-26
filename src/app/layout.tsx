@@ -9,7 +9,6 @@ import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { SupportWidget } from "@/components/support/support-widget";
 import { Toaster } from "@/components/ui/sonner";
 import { CurrencyProvider } from "@/components/currency/currency-provider";
-import { ColorThemeProvider } from "@/components/theme/color-theme-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { DEFAULT_CURRENCY, currencyForCountry } from "@/lib/currency";
 import { getClientCountry } from "@/lib/geo";
@@ -64,19 +63,17 @@ export default async function RootLayout({
           defaultTheme="light"
           disableTransitionOnChange
         >
-          <ColorThemeProvider>
-            <CurrencyProvider initialCurrency={initialCurrency}>
-              <SiteHeader />
-              <main id="top" className="flex flex-1 flex-col">
-                {children}
-              </main>
-              <SiteFooterWrapper />
-              <SupportWidget />
-              <Toaster />
-            </CurrencyProvider>
-            <Analytics />
-            <SpeedInsights />
-          </ColorThemeProvider>
+          <CurrencyProvider initialCurrency={initialCurrency}>
+            <SiteHeader />
+            <main id="top" className="flex flex-1 flex-col">
+              {children}
+            </main>
+            <SiteFooterWrapper />
+            <SupportWidget />
+            <Toaster />
+          </CurrencyProvider>
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>

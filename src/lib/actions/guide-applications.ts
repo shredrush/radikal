@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import {
   guideApplicationDecisionEmail,
   guideApplicationReceivedEmail,
@@ -203,7 +203,7 @@ async function uniqueGuideSlug(name: string): Promise<string> {
 }
 
 export async function approveGuideApplicationAction(applicationId: string) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/guide-applications");
+  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
   if (!applicationId) {
     throw new Error("Missing application id.");
@@ -306,7 +306,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
 }
 
 export async function rejectGuideApplicationAction(applicationId: string) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/guide-applications");
+  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
   if (!applicationId) {
     throw new Error("Missing application id.");

@@ -1,7 +1,7 @@
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, XCircle } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApproveGuideButton, RejectGuideButton } from "@/components/admin/review-guide-application-buttons";
@@ -10,7 +10,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 export const dynamic = "force-dynamic";
 
 export default async function AdminGuideApplicationsPage() {
-  await requireAdmin("/login?callbackUrl=/admin/guide-applications");
+  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
   const applications = await prisma.guideApplication.findMany({
     orderBy: { submittedAt: "desc" },
@@ -54,6 +54,7 @@ export default async function AdminGuideApplicationsPage() {
           title="Guide Applications"
           description={'Review guide applications submitted through the "Become a Guide" flow'}
           active="applications"
+          role={session.user.role}
         />
 
         <section className="min-w-0">

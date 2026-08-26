@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { SPORT_FILTERS, TRAVEL_STYLE_FILTERS } from "@/components/trips/sport-filters";
+import { SportIcon } from "@/components/trips/sport-icon";
 
 type TripsFilterBarProps = {
   selectedSport: string[];
@@ -79,6 +80,7 @@ export function TripsFilterBar({
                         : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase !tracking-normal px-2 py-1.5 text-left text-[10px] leading-4 hover:border-orange-300 hover:bg-orange-100/60 hover:text-orange-800"
                     }
                   >
+                    {filter.id !== "all" ? <SportIcon sport={filter.id} className="size-3.5" /> : null}
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
                   </Button>
                 );

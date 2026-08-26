@@ -13,9 +13,11 @@ const inputClassName =
 const USER_ROLE_OPTIONS = [
   { value: "USER", label: "Traveller (USER)" },
   { value: "GUIDE", label: "Guide (GUIDE)" },
-  { value: "ADMIN", label: "Admin (ADMIN)" },
-  { value: "ADMAX", label: "Super admin (ADMAX)" },
   { value: "SUPPORT", label: "Support (SUPPORT)" },
+  { value: "FINANCE", label: "Finance (FINANCE)" },
+  { value: "CONTENT", label: "Content (CONTENT)" },
+  { value: "ADMIN", label: "Operations admin (ADMIN)" },
+  { value: "ADMAX", label: "Super admin (ADMAX)" },
 ] as const;
 
 export type AdminUserFormUser = {

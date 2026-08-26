@@ -20,7 +20,7 @@ import {
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isSupportAgent as isSupportAgentRole, isAdmin } from "@/lib/authz";
+import { hasPermission, type Role } from "@/lib/authz";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -55,6 +55,54 @@ const STATUS_FILTERS = [
   { value: "PENDING", label: "Pending" },
   { value: "CANCELLED", label: "Cancelled" },
 ] as const;
+
+/** Staff shortcuts shown on the profile page, filtered by the user's permissions. */
+function staffNavItems(role: Role | undefined) {
+  const items: { href: string; label: string; icon: React.ReactNode }[] = [];
+  if (hasPermission(role, "support.manage")) {
+    items.push({
+      href: "/support",
+      label: "Support dashboard",
+      icon: <Headset className="h-3.5 w-3.5" />,
+    });
+  }
+  if (hasPermission(role, "bookings.read")) {
+    items.push({
+      href: "/admin/bookings",
+      label: "Manage bookings",
+      icon: <Ticket className="h-3.5 w-3.5" />,
+    });
+  }
+  if (hasPermission(role, "trips.manage")) {
+    items.push({
+      href: "/admin/trips",
+      label: "Manage trips",
+      icon: <Compass className="h-3.5 w-3.5" />,
+    });
+  }
+  if (hasPermission(role, "guides.manage")) {
+    items.push({
+      href: "/admin/guides",
+      label: "Manage guides",
+      icon: <Users className="h-3.5 w-3.5" />,
+    });
+  }
+  if (hasPermission(role, "guideApplications.manage")) {
+    items.push({
+      href: "/admin/guide-applications",
+      label: "Guide Applications",
+      icon: <ClipboardList className="h-3.5 w-3.5" />,
+    });
+  }
+  if (hasPermission(role, "users.manage")) {
+    items.push({
+      href: "/admin/users",
+      label: "Manage users",
+      icon: <UserCog className="h-3.5 w-3.5" />,
+    });
+  }
+  return items;
+}
 
 export const metadata: Metadata = {
   title: "Profile — Radikal",
@@ -100,8 +148,10 @@ export default async function ProfilePage({
           : isGuide && tab === "booked-trips"
             ? "booked-trips"
             : "bookings";
-  const isSupportAgent = isSupportAgentRole(user.role);
-  const isAdminUser = isAdmin(user.role);
+  const canAccessSupportDesk = hasPermission(user.role, "support.manage");
+  const canReadAllBookings = hasPermission(user.role, "bookings.read");
+  const canConfirmBookings = hasPermission(user.role, "bookings.confirm");
+  const canCancelBookings = hasPermission(user.role, "bookings.cancel");
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
@@ -118,7 +168,7 @@ export default async function ProfilePage({
     },
   });
 
-  const allBookings = isAdminUser
+  const allBookings = canReadAllBookings
     ? await prisma.booking.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -153,7 +203,7 @@ export default async function ProfilePage({
   let supportMessages: SupportMessageView[] = [];
   let supportChatStatus: "OPEN" | "CLOSED" = "OPEN";
   let supportUnreadCount = 0;
-  if (!isSupportAgent) {
+  if (!canAccessSupportDesk) {
     const supportChat = await prisma.supportChat.findUnique({
       where: { userId: user.id },
       include: { messages: { orderBy: { createdAt: "asc" } } },
@@ -201,85 +251,19 @@ export default async function ProfilePage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {isAdmin(user.role) ? (
-                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/support" />}
-                    >
-                      <Headset className="h-3.5 w-3.5" />
-                      Support dashboard
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/admin/guide-applications" />}
-                    >
-                      <ClipboardList className="h-3.5 w-3.5" />
-                      Guide Applications
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/admin/users" />}
-                    >
-                      <UserCog className="h-3.5 w-3.5" />
-                      Manage users
-                    </Button>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/admin/bookings" />}
-                    >
-                      <Ticket className="h-3.5 w-3.5" />
-                      Manage bookings
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/admin/trips" />}
-                    >
-                      <Compass className="h-3.5 w-3.5" />
-                      Manage trips
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start rounded-full"
-                      nativeButton={false}
-                      render={<Link href="/admin/guides" />}
-                    >
-                      <Users className="h-3.5 w-3.5" />
-                      Manage guides
-                    </Button>
-                  </div>
-                </div>
-              ) : isSupportAgent ? (
+              {staffNavItems(user.role).map((item) => (
                 <Button
+                  key={item.href}
                   variant="outline"
                   size="sm"
-                  className="rounded-full"
+                  className="w-full justify-start rounded-full sm:w-auto"
                   nativeButton={false}
-                  render={<Link href="/support" />}
+                  render={<Link href={item.href} />}
                 >
-                  <Headset className="h-3.5 w-3.5" />
-                  Support dashboard
+                  {item.icon}
+                  {item.label}
                 </Button>
-              ) : null}
+              ))}
               {isGuide ? (
                 <>
                   {guide ? (
@@ -474,7 +458,7 @@ export default async function ProfilePage({
                 </CardContent>
               </Card>
             ) : activeTab === "support" ? (
-              isSupportAgent ? (
+              canAccessSupportDesk ? (
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                   <CardHeader>
                     <CardTitle>Support dashboard</CardTitle>
@@ -608,7 +592,7 @@ export default async function ProfilePage({
                   )}
                 </CardContent>
               </Card>
-            ) : isAdminUser ? (
+            ) : canReadAllBookings ? (
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>
                   <CardTitle>All bookings</CardTitle>
@@ -657,8 +641,8 @@ export default async function ProfilePage({
                                 booking.cancelledByRole
                               ),
                               cancellationReason: booking.cancellationReason,
-                              showAdminCancel: true,
-                              showAdminConfirm: true,
+                              showAdminCancel: canCancelBookings,
+                              showAdminConfirm: canConfirmBookings,
                             }}
                           />
                         </li>
@@ -669,6 +653,63 @@ export default async function ProfilePage({
               </Card>
             ) : (
               <div className="flex flex-col gap-6">
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>Your bookings</CardTitle>
+                    <CardDescription>
+                      Every trip you&apos;ve reserved with Radikal, past and upcoming.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {bookings.length === 0 ? (
+                      <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                        <Ticket className="h-8 w-8 text-muted-foreground/50" />
+                        <div>
+                          <p className="font-medium text-foreground">No bookings yet</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Once you book a trip, it will show up here with its status.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="rounded-full"
+                          nativeButton={false}
+                          render={<Link href="/trips" />}
+                        >
+                          Explore trips
+                        </Button>
+                      </div>
+                    ) : (
+                      <ul className="flex flex-col gap-3">
+                        {bookings.map((booking) => (
+                          <li key={booking.id}>
+                            <BookingCard
+                              booking={{
+                                id: booking.id,
+                                tripSlug: booking.activity.slug,
+                                title: booking.activity.title,
+                                location: booking.activity.location,
+                                image: getTripCardImage(booking.activity),
+                                dateRange: formatTripDateRange(
+                                  booking.slot.date,
+                                  booking.activity.durationDays
+                                ),
+                                participantCount: booking.participantCount,
+                                totalPriceRupees: booking.totalPriceRupees,
+                                status: booking.status,
+                                paymentTransactionId: booking.paymentTransactionId,
+                                bookedAt: booking.createdAt.toISOString(),
+                                cancellationReason: booking.cancellationReason,
+                                showUserCancel: true,
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                   <CardHeader>
                     <CardTitle>Custom trips</CardTitle>
@@ -692,63 +733,6 @@ export default async function ProfilePage({
                     )}
                   </CardContent>
                 </Card>
-
-                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-                  <CardHeader>
-                    <CardTitle>Your bookings</CardTitle>
-                    <CardDescription>
-                      Every trip you&apos;ve reserved with Radikal, past and upcoming.
-                    </CardDescription>
-                  </CardHeader>
-                <CardContent>
-                  {bookings.length === 0 ? (
-                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
-                      <Ticket className="h-8 w-8 text-muted-foreground/50" />
-                      <div>
-                        <p className="font-medium text-foreground">No bookings yet</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Once you book a trip, it will show up here with its status.
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="rounded-full"
-                        nativeButton={false}
-                        render={<Link href="/trips" />}
-                      >
-                        Explore trips
-                      </Button>
-                    </div>
-                  ) : (
-                    <ul className="flex flex-col gap-3">
-                      {bookings.map((booking) => (
-                        <li key={booking.id}>
-                          <BookingCard
-                            booking={{
-                              id: booking.id,
-                              tripSlug: booking.activity.slug,
-                              title: booking.activity.title,
-                              location: booking.activity.location,
-                              image: getTripCardImage(booking.activity),
-                              dateRange: formatTripDateRange(
-                                booking.slot.date,
-                                booking.activity.durationDays
-                              ),
-                              participantCount: booking.participantCount,
-                              totalPriceRupees: booking.totalPriceRupees,
-                              status: booking.status,
-                              paymentTransactionId: booking.paymentTransactionId,
-                              bookedAt: booking.createdAt.toISOString(),
-                              cancellationReason: booking.cancellationReason,
-                              showUserCancel: true,
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
               </div>
             )}
           </div>

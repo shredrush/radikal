@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { requireSupport } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
@@ -156,7 +156,7 @@ export async function sendCustomTripMessageAction(requestId: string, formData: F
  * Support agent replies to a custom trip request thread.
  */
 export async function replyCustomTripMessageAction(requestId: string, formData: FormData) {
-  const session = await requireSupport("/login?callbackUrl=/support");
+  const session = await requirePermission("support.manage", "/login?callbackUrl=/support");
 
   if (!requestId) {
     throw new Error("Missing request.");
@@ -206,7 +206,7 @@ export async function setCustomTripStatusAction(
   requestId: string,
   status: "NEW" | "IN_REVIEW" | "QUOTED" | "CONFIRMED" | "CANCELLED",
 ) {
-  await requireSupport("/login?callbackUrl=/support");
+  await requirePermission("support.manage", "/login?callbackUrl=/support");
 
   if (!requestId) {
     throw new Error("Missing request.");

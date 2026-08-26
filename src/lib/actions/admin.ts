@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 
 const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
@@ -57,52 +57,188 @@ function parseList(value: string) {
   );
 }
 
-export async function updateActivityAction(formData: FormData) {
-  await requireAdmin("/login?callbackUrl=/admin/trips");
+type ActivityFields = {
+  title: string;
+  slug: string;
+  location: string;
+  description: string;
+  type: string;
+  priceInRupees: number;
+  durationDays: number;
+  maxGroupSize: number;
+  guideId: string;
+  images: string[];
+  categories: (typeof validCategories)[number][];
+  pickup: string;
+  drop: string;
+  inclusions: string[];
+  exclusions: string[];
+  highlights: string[];
+};
 
-  const activityId = asString(formData.get("activityId"));
-  const title = sanitizeText(asString(formData.get("title")), { maxLength: 200 });
-  const slug = sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase();
-  const location = sanitizeText(asString(formData.get("location")), { maxLength: 200 });
-  const description = sanitizeText(asString(formData.get("description")), {
-    maxLength: 5000,
-    allowNewlines: true,
-  });
-  const type = asString(formData.get("type"));
-  const priceInRupees = Number.parseInt(asString(formData.get("priceInRupees")), 10);
-  const durationDays = Number.parseInt(asString(formData.get("durationDays")), 10);
-  const maxGroupSize = Number.parseInt(asString(formData.get("maxGroupSize")), 10);
-  const guideId = asString(formData.get("guideId"));
-  const images = parseImages(asString(formData.get("images")));
-  const categories = parseCategories(formData.getAll("categories"));
-  const pickup = sanitizeText(asString(formData.get("pickup")), { maxLength: 200 });
-  const drop = sanitizeText(asString(formData.get("drop")), { maxLength: 200 });
-  const inclusions = parseList(asString(formData.get("inclusions")));
-  const exclusions = parseList(asString(formData.get("exclusions")));
-  const highlights = parseList(asString(formData.get("highlights")));
+function readActivityFields(formData: FormData): ActivityFields {
+  return {
+    title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
+    slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
+    location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
+    description: sanitizeText(asString(formData.get("description")), {
+      maxLength: 5000,
+      allowNewlines: true,
+    }),
+    type: asString(formData.get("type")),
+    priceInRupees: Number.parseInt(asString(formData.get("priceInRupees")), 10),
+    durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
+    maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
+    guideId: asString(formData.get("guideId")),
+    images: parseImages(asString(formData.get("images"))),
+    categories: parseCategories(formData.getAll("categories")),
+    pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
+    drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
+    inclusions: parseList(asString(formData.get("inclusions"))),
+    exclusions: parseList(asString(formData.get("exclusions"))),
+    highlights: parseList(asString(formData.get("highlights"))),
+  };
+}
 
-  if (!activityId) {
-    throw new Error("Missing activity id.");
-  }
-
-  if (!title || !slug || !location || !description) {
+function validateActivityFields(fields: ActivityFields): ActivityFields {
+  if (!fields.title || !fields.slug || !fields.location || !fields.description) {
     throw new Error("Title, slug, location, and description are required.");
   }
 
-  if (!isValidSlug(slug)) {
+  if (!isValidSlug(fields.slug)) {
     throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
   }
 
-  if (!validTypes.includes(type as (typeof validTypes)[number])) {
+  if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {
     throw new Error("Invalid activity type.");
   }
 
-  if (Number.isNaN(priceInRupees) || Number.isNaN(durationDays) || Number.isNaN(maxGroupSize)) {
+  if (
+    Number.isNaN(fields.priceInRupees) ||
+    Number.isNaN(fields.durationDays) ||
+    Number.isNaN(fields.maxGroupSize)
+  ) {
     throw new Error("One or more numeric fields are invalid.");
   }
 
-  if (priceInRupees < 0 || durationDays < 1 || maxGroupSize < 1) {
+  if (fields.priceInRupees < 0 || fields.durationDays < 1 || fields.maxGroupSize < 1) {
     throw new Error("Price must be >= 0 and duration/group size must be at least 1.");
+  }
+
+  return fields;
+}
+
+function revalidateActivityPages(slug: string) {
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  updateTag("trips");
+  revalidatePath(`/trips/${slug}`);
+}
+
+function isUniqueConstraint(error: unknown) {
+  return error instanceof Error && error.message.includes("Unique constraint failed");
+}
+
+export async function createActivityAction(formData: FormData) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  const fields = validateActivityFields(readActivityFields(formData));
+  const {
+    title,
+    slug,
+    location,
+    description,
+    type,
+    priceInRupees,
+    durationDays,
+    maxGroupSize,
+    guideId,
+    images,
+    categories,
+    pickup,
+    drop,
+    inclusions,
+    exclusions,
+    highlights,
+  } = fields;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const activity = await tx.activity.create({
+        data: {
+          title,
+          slug,
+          location,
+          description,
+          type: type as (typeof validTypes)[number],
+          priceInRupees,
+          durationDays,
+          maxGroupSize,
+          categories,
+          images,
+          guideId: guideId || null,
+        },
+      });
+
+      if (pickup || drop) {
+        await tx.tripLocation.create({
+          data: { activityId: activity.id, pickup, drop },
+        });
+      }
+
+      if (inclusions.length > 0 || exclusions.length > 0) {
+        await tx.tripInclusion.createMany({
+          data: [
+            ...inclusions.map((item, order) => ({ activityId: activity.id, item, included: true, order })),
+            ...exclusions.map((item, order) => ({ activityId: activity.id, item, included: false, order })),
+          ],
+        });
+      }
+
+      if (highlights.length > 0) {
+        await tx.tripHighlight.createMany({
+          data: highlights.map((text, order) => ({ activityId: activity.id, text, order })),
+        });
+      }
+    });
+  } catch (error) {
+    if (isUniqueConstraint(error)) {
+      throw new Error("Slug already exists. Please choose a different slug.");
+    }
+
+    throw error;
+  }
+
+  revalidateActivityPages(slug);
+}
+
+export async function updateActivityAction(formData: FormData) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  const activityId = asString(formData.get("activityId"));
+  const fields = validateActivityFields(readActivityFields(formData));
+  const {
+    title,
+    slug,
+    location,
+    description,
+    type,
+    priceInRupees,
+    durationDays,
+    maxGroupSize,
+    guideId,
+    images,
+    categories,
+    pickup,
+    drop,
+    inclusions,
+    exclusions,
+    highlights,
+  } = fields;
+
+  if (!activityId) {
+    throw new Error("Missing activity id.");
   }
 
   let previousSlug = "";
@@ -166,18 +302,14 @@ export async function updateActivityAction(formData: FormData) {
       }
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+    if (isUniqueConstraint(error)) {
       throw new Error("Slug already exists. Please choose a different slug.");
     }
 
     throw error;
   }
 
-  revalidatePath("/admin/trips");
-  revalidatePath("/trips");
-  revalidatePath("/");
-  updateTag("trips");
-  revalidatePath(`/trips/${previousSlug}`);
+  revalidateActivityPages(previousSlug);
 
   if (slug !== previousSlug) {
     revalidatePath(`/trips/${slug}`);
@@ -185,7 +317,7 @@ export async function updateActivityAction(formData: FormData) {
 }
 
 export async function deleteActivityAction(activityId: string) {
-  await requireAdmin("/login?callbackUrl=/admin/trips");
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   if (!activityId) {
     throw new Error("Missing activity id.");
@@ -207,4 +339,183 @@ export async function deleteActivityAction(activityId: string) {
   revalidatePath("/");
   updateTag("trips");
   revalidatePath(`/trips/${activity.slug}`);
+}
+
+// ---------------------------------------------------------------------------
+// Slot management
+// ---------------------------------------------------------------------------
+
+// Upper bound so a typo can't open thousands of spots on a single date.
+const MAX_SLOT_CAPACITY = 100;
+
+/**
+ * Parse a `<input type="date">` value (YYYY-MM-DD) into a Date stored at UTC
+ * noon. Noon keeps the calendar date stable across server timezones (the rest
+ * of the app formats slot dates in the server's local timezone), and rejects
+ * impossible dates like 2026-02-31.
+ */
+function parseSlotDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+/** Revalidate every page that renders a trip's available dates. */
+function revalidateSlotPages(slug: string) {
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  updateTag("trips");
+  if (slug) {
+    revalidatePath(`/trips/${slug}`);
+  }
+}
+
+export async function createSlotAction(formData: FormData) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  const activityId = asString(formData.get("activityId"));
+  const dateValue = asString(formData.get("date"));
+  const capacity = Number.parseInt(asString(formData.get("capacity")), 10);
+
+  if (!activityId) {
+    throw new Error("Missing activity id.");
+  }
+
+  if (!dateValue) {
+    throw new Error("Please choose a date.");
+  }
+
+  if (Number.isNaN(capacity) || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+    throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+
+  const date = parseSlotDate(dateValue);
+  if (!date) {
+    throw new Error("Please enter a valid date.");
+  }
+
+  let slug = "";
+  await prisma.$transaction(async (tx) => {
+    const activity = await tx.activity.findUnique({
+      where: { id: activityId },
+      select: { slug: true },
+    });
+
+    if (!activity) {
+      throw new Error("Activity not found.");
+    }
+
+    slug = activity.slug;
+
+    await tx.slot.create({
+      data: { activityId, date, capacity },
+    });
+  });
+
+  revalidateSlotPages(slug);
+}
+
+export async function updateSlotAction(formData: FormData) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  const slotId = asString(formData.get("slotId"));
+  const dateValue = asString(formData.get("date"));
+  const capacity = Number.parseInt(asString(formData.get("capacity")), 10);
+
+  if (!slotId) {
+    throw new Error("Missing slot id.");
+  }
+
+  if (!dateValue) {
+    throw new Error("Please choose a date.");
+  }
+
+  if (Number.isNaN(capacity) || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+    throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+
+  const date = parseSlotDate(dateValue);
+  if (!date) {
+    throw new Error("Please enter a valid date.");
+  }
+
+  let slug = "";
+  await prisma.$transaction(async (tx) => {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: { activity: { select: { slug: true } } },
+    });
+
+    if (!slot) {
+      throw new Error("Slot not found.");
+    }
+
+    slug = slot.activity.slug;
+
+    // Never shrink capacity below the number of already-booked spots.
+    if (capacity < slot.booked) {
+      throw new Error(
+        `Capacity cannot be lower than the ${slot.booked} already booked spot${slot.booked === 1 ? "" : "s"}.`
+      );
+    }
+
+    await tx.slot.update({
+      where: { id: slotId },
+      data: { date, capacity },
+    });
+  });
+
+  revalidateSlotPages(slug);
+}
+
+export async function deleteSlotAction(slotId: string) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  if (!slotId) {
+    throw new Error("Missing slot id.");
+  }
+
+  let slug = "";
+  await prisma.$transaction(async (tx) => {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: {
+        activity: { select: { slug: true } },
+        _count: { select: { bookings: true } },
+      },
+    });
+
+    if (!slot) {
+      throw new Error("Slot not found.");
+    }
+
+    slug = slot.activity.slug;
+
+    // `Booking.slot` has no cascade, so deleting a slot with bookings would
+    // violate the foreign key. Cancel the bookings first instead.
+    if (slot._count.bookings > 0) {
+      throw new Error(
+        "This date has bookings and cannot be deleted. Cancel the bookings first."
+      );
+    }
+
+    await tx.slot.delete({ where: { id: slotId } });
+  });
+
+  revalidateSlotPages(slug);
 }

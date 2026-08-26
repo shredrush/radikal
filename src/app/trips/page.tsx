@@ -17,6 +17,7 @@ import {
 } from "@/components/trips/sport-filters";
 import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
+import { SportIcon } from "@/components/trips/sport-icon";
 
 // The filter UI (sport/travel style/location/date) is applied in memory below,
 // so every filter combination reuses this single cached query instead of
@@ -239,6 +240,7 @@ export default async function TripsPage({
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <h2 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
+                          <SportIcon sport={group.id} className="size-5" />
                           {group.label}
                         </h2>
                         <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
@@ -273,7 +275,10 @@ export default async function TripsPage({
                       <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">{group.label}</h3>
+                            <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
+                              <SportIcon sport={group.id} className="size-5" />
+                              {group.label}
+                            </h3>
                             <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
                           </div>
                         </div>

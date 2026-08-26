@@ -89,6 +89,10 @@ function roleLabel(role: string | null) {
       return "admin";
     case "SUPPORT":
       return "support";
+    case "FINANCE":
+      return "finance";
+    case "CONTENT":
+      return "content";
     case "USER":
       return "traveller";
     default:

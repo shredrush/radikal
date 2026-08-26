@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isValidUsername } from "@/lib/sanitize";
 
-export const USER_ROLES = ["USER", "GUIDE", "ADMIN", "ADMAX", "SUPPORT"] as const;
+export const USER_ROLES = ["USER", "GUIDE", "SUPPORT", "FINANCE", "CONTENT", "ADMIN", "ADMAX"] as const;
 
 export type UserRoleValue = (typeof USER_ROLES)[number];
 

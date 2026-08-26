@@ -529,7 +529,7 @@ export function SearchableTrips({
                 More than a booking platform — a home for guides
               </p>
               <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-                Tours crafted by certified local guides, with a commitment to sustainable travel
+                Tours crafted by certified professional guides, with a commitment to sustainable travel
               </h4>
             </div>
 

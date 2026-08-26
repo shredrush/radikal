@@ -25,8 +25,19 @@ function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFil
  * Shared bookings view used by both the support dashboard and the admin
  * booking-management page. Keeping this as a single component means any
  * future design change is automatically reflected in both places.
+ *
+ * `canConfirm` / `canCancel` are derived server-side from the caller's
+ * permissions and gate the corresponding actions per booking.
  */
-export function SupportBookingsView({ bookings }: { bookings: SupportBookingListItem[] }) {
+export function SupportBookingsView({
+  bookings,
+  canConfirm = false,
+  canCancel = false,
+}: {
+  bookings: SupportBookingListItem[];
+  canConfirm?: boolean;
+  canCancel?: boolean;
+}) {
   const [statusFilter, setStatusFilter] = useState<BookingStatusFilter>("ALL");
 
   const pendingCount = bookings.filter((b) => b.status === "PENDING").length;
@@ -142,8 +153,8 @@ export function SupportBookingsView({ bookings }: { bookings: SupportBookingList
                   booking.status === "CANCELLED"
                     ? booking.cancellationReason
                     : undefined,
-                showAdminCancel: true,
-                showAdminConfirm: true,
+                showAdminCancel: canCancel,
+                showAdminConfirm: canConfirm,
               }}
             />
           ))}

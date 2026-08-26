@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/authz";
+import { hasPermission, requirePermission } from "@/lib/authz";
 import { getSupportBookings } from "@/lib/support-bookings";
 import { SupportBookingsView } from "@/components/support/bookings-view";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -6,7 +6,10 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 export const dynamic = "force-dynamic";
 
 export default async function AdminBookingsPage() {
-  await requireAdmin("/login?callbackUrl=/admin/bookings");
+  const session = await requirePermission(
+    "bookings.read",
+    "/login?callbackUrl=/admin/bookings",
+  );
 
   const bookings = await getSupportBookings();
 
@@ -17,9 +20,14 @@ export default async function AdminBookingsPage() {
           title="Manage Bookings"
           description="A live view of every reservation made on the platform, across all travellers and trips."
           active="bookings"
+          role={session.user.role}
         />
 
-        <SupportBookingsView bookings={bookings} />
+        <SupportBookingsView
+          bookings={bookings}
+          canConfirm={hasPermission(session.user.role, "bookings.confirm")}
+          canCancel={hasPermission(session.user.role, "bookings.cancel")}
+        />
       </div>
     </div>
   );

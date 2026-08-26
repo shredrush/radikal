@@ -53,6 +53,8 @@ export function SupportDashboard({
   selectedChat,
   selectedCustomRequestId,
   selectedCustomRequest,
+  canConfirmBookings = false,
+  canCancelBookings = false,
 }: {
   initialChats: SupportChatListItem[];
   initialBookings: SupportBookingListItem[];
@@ -62,6 +64,8 @@ export function SupportDashboard({
   selectedChat: SupportDashboardSelectedChat | null;
   selectedCustomRequestId?: string;
   selectedCustomRequest: CustomTripRequestDetail | null;
+  canConfirmBookings?: boolean;
+  canCancelBookings?: boolean;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
 
@@ -88,6 +92,14 @@ export function SupportDashboard({
   const awaitingReplyCount = openChats.filter(
     (chat) => chat.lastMessageSenderId != null && chat.lastMessageSenderId === chat.userId,
   ).length;
+
+  const newBookingsCount = initialBookings.filter(
+    (booking) => booking.status === "PENDING",
+  ).length;
+  const newCustomRequestsCount = initialCustomRequests.filter(
+    (request) => request.status === "NEW",
+  ).length;
+  const newConversationsCount = awaitingReplyCount;
 
   function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
     const awaitingReply =
@@ -146,19 +158,6 @@ export function SupportDashboard({
                 variant="outline"
                 className={cn(
                   "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
-                  tab === "conversations" && "bg-orange-500/10",
-                )}
-                nativeButton={false}
-                render={<Link href="/support" />}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Conversations
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn(
-                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
                   tab === "bookings" && "bg-orange-500/10",
                 )}
                 nativeButton={false}
@@ -166,6 +165,11 @@ export function SupportDashboard({
               >
                 <Ticket className="h-3.5 w-3.5" />
                 Bookings
+                {newBookingsCount > 0 ? (
+                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
+                    {newBookingsCount}
+                  </span>
+                ) : null}
               </Button>
               <Button
                 size="sm"
@@ -179,6 +183,29 @@ export function SupportDashboard({
               >
                 <Compass className="h-3.5 w-3.5" />
                 Custom
+                {newCustomRequestsCount > 0 ? (
+                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
+                    {newCustomRequestsCount}
+                  </span>
+                ) : null}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
+                  tab === "conversations" && "bg-orange-500/10",
+                )}
+                nativeButton={false}
+                render={<Link href="/support" />}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Conversations
+                {newConversationsCount > 0 ? (
+                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
+                    {newConversationsCount}
+                  </span>
+                ) : null}
               </Button>
             </div>
           </div>
@@ -208,7 +235,11 @@ export function SupportDashboard({
         </header>
 
         {tab === "bookings" ? (
-          <SupportBookingsView bookings={initialBookings} />
+          <SupportBookingsView
+            bookings={initialBookings}
+            canConfirm={canConfirmBookings}
+            canCancel={canCancelBookings}
+          />
         ) : tab === "custom" ? (
           <CustomTripsView
             initialRequests={initialCustomRequests}

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminGuideForm } from "@/components/admin/admin-guide-form";
@@ -8,7 +8,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 export const dynamic = "force-dynamic";
 
 export default async function AdminGuidesPage() {
-  await requireAdmin("/login?callbackUrl=/admin/guides");
+  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   const guides = await prisma.guide.findMany({
     orderBy: { name: "asc" },
@@ -27,6 +27,7 @@ export default async function AdminGuidesPage() {
           title="Manage Guides"
           description="Add, edit, and remove the vetted local guides shown across the community and trip pages."
           active="guides"
+          role={session.user.role}
         />
 
         <section className="min-w-0">

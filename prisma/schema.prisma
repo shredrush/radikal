@@ -22,6 +22,8 @@ enum UserRole {
   ADMIN
   ADMAX
   SUPPORT
+  FINANCE
+  CONTENT
 }
 
 enum ActivityType {

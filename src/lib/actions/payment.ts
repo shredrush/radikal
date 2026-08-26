@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
-import { requireSupport } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import {
   bookingCancelledEmail,
   bookingConfirmedEmail,
@@ -107,14 +107,14 @@ export async function submitTransactionId(
 }
 
 /**
- * Staff action (SUPPORT or ADMIN) that verifies a PENDING booking's payment
+ * Staff action (FINANCE, SUPPORT or ADMIN) that verifies a PENDING booking's payment
  * and marks it CONFIRMED. It increments `Slot.booked` inside a transaction,
  * re-checking capacity so we never oversell a slot.
  */
 export async function confirmBookingPayment(
   bookingId: string
 ): Promise<ProcessPaymentResult> {
-  await requireSupport("/login?callbackUrl=/support");
+  await requirePermission("bookings.confirm", "/login?callbackUrl=/admin/bookings");
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
@@ -214,7 +214,7 @@ export async function cancelBooking(
   bookingId: string,
   reason: string
 ): Promise<ProcessPaymentResult> {
-  const session = await requireSupport("/login?callbackUrl=/support");
+  const session = await requirePermission("bookings.cancel", "/login?callbackUrl=/admin/bookings");
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };

@@ -237,7 +237,7 @@ export default async function CommunityPage() {
             </div>
             <div className="flex flex-col gap-3">
               <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                Experienced local leaders behind every journey
+                Experienced leaders behind every journey
               </h2>
               <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
                 Our guides bring deep regional knowledge, safety expertise and a personal connection to the places you travel.

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { isSupportAgent } from "@/lib/authz";
+import { hasPermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
 
-  if (!session?.user || !isSupportAgent(session.user.role)) {
+  if (!session?.user || !hasPermission(session.user.role, "support.manage")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

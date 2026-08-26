@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
@@ -17,7 +17,7 @@ function asString(value: FormDataEntryValue | null) {
  * recorded in the target user's activity log so there is a full audit trail.
  */
 export async function updateUserAction(formData: FormData) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/users");
+  const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
 
   const userId = asString(formData.get("userId"));
   const name = sanitizeText(asString(formData.get("name")), { maxLength: 100 });

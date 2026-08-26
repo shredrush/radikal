@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, MapPin, Monitor, UserX } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -14,17 +14,21 @@ export const dynamic = "force-dynamic";
 const ROLE_LABELS: Record<string, string> = {
   USER: "Traveller",
   GUIDE: "Guide",
-  ADMIN: "Admin",
-  ADMAX: "Super admin",
   SUPPORT: "Support",
+  FINANCE: "Finance",
+  CONTENT: "Content",
+  ADMIN: "Operations admin",
+  ADMAX: "Super admin",
 };
 
 const ROLE_BADGE_CLASSES: Record<string, string> = {
   USER: "border-border/70 bg-background/80 text-muted-foreground",
   GUIDE: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  SUPPORT: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+  FINANCE: "border-teal-500/40 bg-teal-500/10 text-teal-600",
+  CONTENT: "border-pink-500/40 bg-pink-500/10 text-pink-600",
   ADMIN: "border-blue-500/40 bg-blue-500/10 text-blue-600",
   ADMAX: "border-violet-500/40 bg-violet-500/10 text-violet-600",
-  SUPPORT: "border-amber-500/40 bg-amber-500/10 text-amber-600",
 };
 
 function roleBadgeClass(role: string) {
@@ -84,7 +88,7 @@ export default async function AdminUserDetailPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const session = await requireAdmin("/login?callbackUrl=/admin/users");
+  const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
   const { userId } = await params;
 
   const [user, activityLogs] = await Promise.all([
@@ -115,6 +119,7 @@ export default async function AdminUserDetailPage({
           title="User Details"
           description="Update this account's details and role, and review its full activity history."
           active="users"
+          role={session.user.role}
         />
 
         <Link

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { isSupportAgent } from "@/lib/authz";
+import { hasPermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { toCustomTripMessageViews } from "@/lib/custom-trips";
 
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const where = isSupportAgent(session.user.role)
+    const where = hasPermission(session.user.role, "support.manage")
       ? { id: requestId }
       : { id: requestId, userId: session.user.id };
 
