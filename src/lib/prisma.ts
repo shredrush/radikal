@@ -34,8 +34,17 @@ const basePrisma =
       connectionTimeoutMillis: 10000,
     };
 
+    let sslMode: string | null = null;
+    try {
+      sslMode = new URL(databaseUrl).searchParams.get("sslmode");
+    } catch {}
+
     return new PrismaClient({
-      adapter: new PrismaPg({ connectionString: databaseUrl, ...poolConfig }),
+      adapter: new PrismaPg({
+        connectionString: databaseUrl,
+        ...poolConfig,
+        ...(sslMode === "require" ? { ssl: { rejectUnauthorized: false } } : {}),
+      }),
     });
   })();
 
