@@ -41,9 +41,7 @@ export async function GET(request: Request) {
       messages: toCustomTripMessageViews(customTrip.chat.messages, session.user.id),
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load messages" },
-      { status: 500 },
-    );
+    console.error("[api/custom-trips/messages] failed to load messages", error);
+    return NextResponse.json({ error: "Failed to load messages" }, { status: 500 });
   }
 }

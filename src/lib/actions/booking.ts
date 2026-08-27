@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
+import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { createBookingSchema } from "@/lib/validations/booking";
 
 export type CreateBookingResult =
@@ -28,6 +29,11 @@ export async function createBooking(
   const userId = session?.user?.id;
   if (!userId) {
     return { success: false, error: "You must be logged in to book." };
+  }
+
+  const bookingLimit = rateLimit(`booking-create:user:${userId}`, 10, 15 * 60_000);
+  if (!bookingLimit.success) {
+    return { success: false, error: rateLimitError(bookingLimit) };
   }
 
   const { activityId, slotId, participantCount } = parsed.data;

@@ -66,28 +66,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
-const ACTIVITY_TYPE_LABELS: Record<string, string> = {
-  SKI: "Skiing",
-  SNOWBOARD: "Snowboarding",
-  BIKE: "Cycling",
-  TREK: "Hiking and Trekking",
-};
-
-function getActivityTypeLabel(activity: { type: string; title: string; description: string; slug: string }) {
-  if (activity.type === "TREK") {
-    const haystack = [activity.title, activity.description, activity.slug]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    if (haystack.includes("climb") || haystack.includes("summit")) {
-      return "Summit Expedition";
-    }
-  }
-
-  return ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type;
-}
-
 function getSlotOccupancyPercent(slot: { capacity: number; booked: number; reserved: number }) {
   if (slot.capacity <= 0) {
     return 100;

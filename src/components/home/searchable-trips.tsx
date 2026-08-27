@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, X } from "lucide-react";
 import {
-  useEffect,
   useMemo,
   useState,
   type FormEvent,
@@ -90,10 +89,6 @@ export function SearchableTrips({
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-
-  useEffect(() => {
-    setActiveIndex(-1);
-  }, [query]);
 
   const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
 
@@ -216,7 +211,10 @@ export function SearchableTrips({
             <input
               type="text"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(-1);
+              }}
               placeholder="Search trips, sports, or destinations…"
               aria-label="Search trips, sports, or destinations"
               autoComplete="off"
@@ -228,7 +226,10 @@ export function SearchableTrips({
             {query ? (
               <button
                 type="button"
-                onClick={() => setQuery("")}
+                onClick={() => {
+                  setQuery("");
+                  setActiveIndex(-1);
+                }}
                 aria-label="Clear search"
                 className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >

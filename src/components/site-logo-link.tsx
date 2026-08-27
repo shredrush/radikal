@@ -5,6 +5,10 @@ import type { MouseEvent, ReactNode } from "react";
 
 export function SiteLogoLink({ className, children }: { className?: string; children: ReactNode }) {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey) {
+      return;
+    }
+
     if (window.location.pathname === "/") {
       event.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });

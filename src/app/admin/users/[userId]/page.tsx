@@ -79,7 +79,8 @@ function extractGeo(metadata: unknown): GeoDisplay | null {
 /** Return metadata with the `geo` key removed, or null when nothing else remains. */
 function metadataWithoutGeo(metadata: unknown): unknown {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return metadata;
-  const { geo: _geo, ...rest } = metadata as Record<string, unknown>;
+  const rest = { ...(metadata as Record<string, unknown>) };
+  delete rest.geo;
   return Object.keys(rest).length > 0 ? rest : null;
 }
 

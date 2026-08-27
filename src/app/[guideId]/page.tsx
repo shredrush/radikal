@@ -3,13 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { ArrowLeft, MapPin, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/currency/price";
 import { prisma } from "@/lib/prisma";
-import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
+import { getTripCardImage } from "@/lib/trip-card-image";
 
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).

@@ -23,6 +23,19 @@ type CancellationEmail = {
   cancelledByUser: boolean;
 };
 
+function safePaymentError(
+  error: unknown,
+  fallback: string,
+  expectedMessages: readonly string[],
+): string {
+  if (error instanceof Error && expectedMessages.includes(error.message)) {
+    return error.message;
+  }
+
+  console.error(`[payment] ${fallback}`, error);
+  return fallback;
+}
+
 export type ProcessPaymentResult =
   | { success: true }
   | { success: false; error: string };
@@ -96,8 +109,7 @@ export async function submitTransactionId(
       }),
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Something went wrong. Please try again.";
+    const message = safePaymentError(error, "Something went wrong. Please try again.", []);
     return { success: false, error: message };
   }
 
@@ -183,8 +195,11 @@ export async function confirmBookingPayment(
       };
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to confirm payment.";
+    const message = safePaymentError(error, "Failed to confirm payment.", [
+      "Booking not found.",
+      "Only pending bookings can be confirmed.",
+      "This slot filled up before the payment could be confirmed.",
+    ]);
     return { success: false, error: message };
   }
 
@@ -278,8 +293,9 @@ export async function cancelBooking(
       };
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to cancel booking.";
+    const message = safePaymentError(error, "Failed to cancel booking.", [
+      "Booking not found.",
+    ]);
     return { success: false, error: message };
   }
 
@@ -377,8 +393,9 @@ export async function cancelBookingAsGuide(
       };
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to cancel trip.";
+    const message = safePaymentError(error, "Failed to cancel trip.", [
+      "Booking not found.",
+    ]);
     return { success: false, error: message };
   }
 
@@ -472,8 +489,9 @@ export async function cancelBookingAsUser(
       };
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to cancel booking.";
+    const message = safePaymentError(error, "Failed to cancel booking.", [
+      "Booking not found.",
+    ]);
     return { success: false, error: message };
   }
 

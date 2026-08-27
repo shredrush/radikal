@@ -15,7 +15,7 @@ import {
   normalizeSportFilter,
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
-import { getTripCardImage, getTripCardImagePosition } from "@/lib/trip-card-image";
+import { getTripCardImage } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
 import { SportIcon } from "@/components/trips/sport-icon";
 
@@ -217,8 +217,6 @@ export default async function TripsPage({
         <TripsFilterBar
           selectedSport={selectedSport}
           selectedTravelStyle={selectedTravelStyle}
-          filteredCount={filteredActivities.length}
-          totalCount={activities.length}
         />
 
         {filteredActivities.length === 0 ? (

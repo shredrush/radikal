@@ -25,9 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ requests: requests.map(toCustomTripRequestListItem) });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load requests" },
-      { status: 500 },
-    );
+    console.error("[api/custom-trips/requests] failed to load requests", error);
+    return NextResponse.json({ error: "Failed to load requests" }, { status: 500 });
   }
 }

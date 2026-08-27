@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { User } from "lucide-react";
 
 import { auth } from "@/lib/auth";
@@ -51,9 +52,11 @@ export async function SiteHeader() {
       <div className="mx-auto w-full max-w-8xl px-4 py-2 sm:px-6 sm:py-2.5 md:px-6 md:py-4 lg:px-10">
         <div className="flex items-center justify-between md:hidden">
           <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 sm:gap-3 sm:py-1">
-            <img
+            <Image
               src="/logo.svg"
               alt="Radikal logo"
+              width={112}
+              height={112}
               className="-my-3 h-20 w-20 flex-none rounded-xl object-contain dark:invert sm:-my-4 sm:h-24 sm:w-24"
             />
             <p className="font-heading text-xl font-semibold uppercase tracking-[0.24em] text-foreground sm:text-2xl sm:tracking-[0.3em]">
@@ -66,7 +69,7 @@ export async function SiteHeader() {
             <CurrencySelector />
             {session?.user ? (
               <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                <Image src={avatarUrl} alt="Profile" width={32} height={32} unoptimized className="h-8 w-8 rounded-full object-cover" />
               </Link>
             ) : (
               <Button
@@ -167,9 +170,11 @@ export async function SiteHeader() {
         <div className="hidden md:flex md:flex-col md:gap-2 xl:hidden">
           <div className="flex items-center justify-between gap-3">
             <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
-              <img
+              <Image
                 src="/logo.svg"
                 alt="Radikal logo"
+                width={112}
+                height={112}
                 className="-my-3 h-24 w-24 flex-none rounded-xl object-contain dark:invert lg:-my-4 lg:h-28 lg:w-28"
               />
               <p className="font-heading text-2xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-3xl lg:tracking-[0.3em]">
@@ -183,7 +188,7 @@ export async function SiteHeader() {
               {session?.user ? (
                 <div className="group relative">
                   <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                    <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                    <Image src={avatarUrl} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" />
                   </Link>
                   <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
                     <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
@@ -286,9 +291,11 @@ export async function SiteHeader() {
 
         <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
           <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
-            <img
+            <Image
               src="/logo.svg"
               alt="Radikal logo"
+              width={112}
+              height={112}
               className="-my-3 h-24 w-24 flex-none rounded-xl object-contain dark:invert lg:-my-4 lg:h-28 lg:w-28"
             />
             <p className="font-heading text-2xl font-semibold uppercase tracking-[0.24em] text-foreground lg:text-3xl lg:tracking-[0.3em]">
@@ -379,7 +386,7 @@ export async function SiteHeader() {
             {session?.user ? (
               <div className="group relative">
                 <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                  <img src={avatarUrl} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+                  <Image src={avatarUrl} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" />
                 </Link>
                 <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
                   <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">

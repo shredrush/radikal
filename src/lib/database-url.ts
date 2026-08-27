@@ -28,8 +28,8 @@ function applyDatabaseUrlDefaults(rawUrl: string) {
 
     const currentSslMode = url.searchParams.get("sslmode");
     if (!currentSslMode) {
-      url.searchParams.set("sslmode", "disable");
-    } else if (currentSslMode === "require") {
+      url.searchParams.set("sslmode", process.env.NODE_ENV === "production" ? "require" : "disable");
+    } else if (process.env.NODE_ENV === "production" && currentSslMode === "disable") {
       url.searchParams.set("sslmode", "require");
     }
 

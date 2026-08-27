@@ -25,9 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ chats: chats.map(toSupportChatListItem) });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load conversations" },
-      { status: 500 },
-    );
+    console.error("[api/support/chats] failed to load conversations", error);
+    return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
   }
 }

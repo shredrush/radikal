@@ -37,12 +37,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
 
   const [identifier, setIdentifier] = useState(loginState.identifier ?? "");
 
-  useEffect(() => {
-    if (loginState.identifier) {
-      setIdentifier(loginState.identifier);
-    }
-  }, [loginState.identifier]);
-
   if (mode === "forgot") {
     return (
       <ForgotPasswordFlow
@@ -155,21 +149,7 @@ function ForgotPasswordFlow({
   const [resetIdentifier, setResetIdentifier] = useState(
     requestState.identifier ?? ""
   );
-  const [step, setStep] = useState<"request" | "reset" | "success">("request");
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
-
-  useEffect(() => {
-    if (requestState.identifier) {
-      setResetIdentifier(requestState.identifier);
-    }
-  }, [requestState.identifier]);
-
-  useEffect(() => {
-    if (requestState.sent) {
-      setStep("reset");
-      setCooldownSeconds(RESEND_COOLDOWN_SECONDS);
-    }
-  }, [requestState.sent]);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -185,12 +165,18 @@ function ForgotPasswordFlow({
     if (!resetState.success) {
       return;
     }
-    setStep("success");
     const id = setTimeout(() => {
       onSuccess(resetIdentifier);
     }, 1500);
     return () => clearTimeout(id);
   }, [resetState.success, resetIdentifier, onSuccess]);
+
+  const effectiveResetIdentifier = requestState.identifier ?? resetIdentifier;
+  const currentStep = resetState.success
+    ? "success"
+    : requestState.sent
+      ? "reset"
+      : "request";
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -209,7 +195,7 @@ function ForgotPasswordFlow({
         </div>
       </div>
 
-      {step === "success" ? (
+      {currentStep === "success" ? (
         <div className="flex flex-col gap-4 rounded-[1.25rem] border border-green-500/30 bg-green-500/10 p-6 text-sm text-green-500">
           <p className="font-semibold">Password updated</p>
           <p>
@@ -221,10 +207,10 @@ function ForgotPasswordFlow({
             <ArrowLeft />
           </Button>
         </div>
-      ) : step === "reset" ? (
+      ) : currentStep === "reset" ? (
         <div className="flex flex-col gap-5 rounded-[1.25rem] border border-border/70 bg-background/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-7">
           <form action={requestFormAction} className="flex flex-col gap-5">
-            <input type="hidden" name="identifier" value={resetIdentifier} />
+            <input type="hidden" name="identifier" value={effectiveResetIdentifier} />
 
             {requestState.error ? (
               <p
@@ -238,7 +224,7 @@ function ForgotPasswordFlow({
             <div className="flex flex-col gap-2">
               <p className="rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-500">
                 If an account exists for{" "}
-                <span className="font-semibold">{resetIdentifier}</span>,
+                <span className="font-semibold">{effectiveResetIdentifier}</span>,
                 we&apos;ve sent a one-time code to your inbox.
               </p>
 
@@ -258,7 +244,7 @@ function ForgotPasswordFlow({
           </form>
 
           <form action={resetFormAction} className="flex flex-col gap-5">
-            <input type="hidden" name="identifier" value={resetIdentifier} />
+            <input type="hidden" name="identifier" value={effectiveResetIdentifier} />
 
             {resetState.error ? (
               <p

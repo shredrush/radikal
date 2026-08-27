@@ -43,6 +43,11 @@ export async function createCustomTripRequestAction(
     return { success: false, error: "You must be logged in to request a custom trip." };
   }
 
+  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
+  if (!requestLimit.success) {
+    return { success: false, error: rateLimitError(requestLimit) };
+  }
+
   const {
     groupType,
     sports,
@@ -168,6 +173,11 @@ export async function replyCustomTripMessageAction(requestId: string, formData: 
   }
 
   const { body } = parsed.data;
+
+  const replyLimit = rateLimit(`custom-trip-reply:user:${session.user.id}`, 60, 60_000);
+  if (!replyLimit.success) {
+    throw new Error(rateLimitError(replyLimit));
+  }
 
   await prisma.$transaction(async (tx) => {
     const request = await tx.customTripRequest.findUnique({

@@ -36,9 +36,7 @@ export async function GET() {
       status: chat.status,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to load notifications" },
-      { status: 500 },
-    );
+    console.error("[api/support/unread] failed to load notifications", error);
+    return NextResponse.json({ error: "Failed to load notifications" }, { status: 500 });
   }
 }

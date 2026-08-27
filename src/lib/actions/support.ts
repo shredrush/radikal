@@ -73,6 +73,11 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
 
   const { body } = parsed.data;
 
+  const replyLimit = rateLimit(`support-reply:user:${session.user.id}`, 60, 60_000);
+  if (!replyLimit.success) {
+    throw new Error(rateLimitError(replyLimit));
+  }
+
   // Resolve the customer inside the transaction so we can notify them afterwards
   // without TypeScript losing track of the value assigned in the callback.
   const customer = await prisma.$transaction(async (tx) => {

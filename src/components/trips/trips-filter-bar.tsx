@@ -10,14 +10,10 @@ import { SportIcon } from "@/components/trips/sport-icon";
 type TripsFilterBarProps = {
   selectedSport: string[];
   selectedTravelStyle: string[];
-  filteredCount: number;
-  totalCount: number;
 };
 
 export function TripsFilterBar({
   selectedSport,
-  filteredCount,
-  totalCount,
 }: TripsFilterBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
