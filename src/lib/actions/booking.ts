@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { createBookingSchema } from "@/lib/validations/booking";
@@ -31,6 +32,17 @@ export async function createBooking(
     return { success: false, error: "You must be logged in to book." };
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!user) {
+    return {
+      success: false,
+      error: "Your session is no longer valid. Please sign out and sign in again.",
+    };
+  }
+
   const bookingLimit = rateLimit(`booking-create:user:${userId}`, 10, 15 * 60_000);
   if (!bookingLimit.success) {
     return { success: false, error: rateLimitError(bookingLimit) };
@@ -38,60 +50,70 @@ export async function createBooking(
 
   const { activityId, slotId, participantCount } = parsed.data;
 
-  const result = await prisma.$transaction(async (tx) => {
-    const slot = await tx.slot.findUnique({
-      where: { id: slotId },
-      include: { activity: true },
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const slot = await tx.slot.findUnique({
+        where: { id: slotId },
+        include: { activity: true },
+      });
+
+      if (!slot || slot.activityId !== activityId) {
+        return { status: "unavailable" as const };
+      }
+
+      // `slot.booked` only counts CONFIRMED bookings (incremented when payment
+      // is confirmed). Count PENDING bookings too so a burst of concurrent
+      // checkouts cannot oversell a slot before payment is captured.
+      const pendingCount = await tx.booking.count({
+        where: { slotId, status: "PENDING" },
+      });
+
+      if (slot.booked + slot.reserved + pendingCount + participantCount > slot.capacity) {
+        return { status: "full" as const };
+      }
+
+      const booking = await tx.booking.create({
+        data: {
+          userId,
+          activityId,
+          slotId,
+          participantCount,
+          totalPriceRupees: slot.activity.priceInRupees * participantCount,
+          status: "PENDING",
+        },
+      });
+
+      return { status: "created" as const, booking };
     });
 
-    if (!slot || slot.activityId !== activityId) {
-      return { status: "unavailable" as const };
+    if (result.status === "unavailable") {
+      return { success: false, error: "This slot is no longer available." };
     }
 
-    // `slot.booked` only counts CONFIRMED bookings (incremented when payment
-    // is confirmed). Count PENDING bookings too so a burst of concurrent
-    // checkouts cannot oversell a slot before payment is captured.
-    const pendingCount = await tx.booking.count({
-      where: { slotId, status: "PENDING" },
-    });
-
-    if (slot.booked + slot.reserved + pendingCount + participantCount > slot.capacity) {
-      return { status: "full" as const };
+    if (result.status === "full") {
+      return { success: false, error: "Not enough spots left in this slot." };
     }
 
-    const booking = await tx.booking.create({
-      data: {
-        userId,
+    await logActivity({
+      userId,
+      action: "BOOKING_CREATED",
+      label: "Created a booking",
+      metadata: {
+        bookingId: result.booking.id,
         activityId,
         slotId,
         participantCount,
-        totalPriceRupees: slot.activity.priceInRupees * participantCount,
-        status: "PENDING",
       },
     });
 
-    return { status: "created" as const, booking };
-  });
-
-  if (result.status === "unavailable") {
-    return { success: false, error: "This slot is no longer available." };
+    return { success: true, bookingId: result.booking.id };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return {
+        success: false,
+        error: "Your session is no longer valid. Please sign out and sign in again.",
+      };
+    }
+    throw error;
   }
-
-  if (result.status === "full") {
-    return { success: false, error: "Not enough spots left in this slot." };
-  }
-
-  await logActivity({
-    userId,
-    action: "BOOKING_CREATED",
-    label: "Created a booking",
-    metadata: {
-      bookingId: result.booking.id,
-      activityId,
-      slotId,
-      participantCount,
-    },
-  });
-
-  return { success: true, bookingId: result.booking.id };
 }
