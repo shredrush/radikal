@@ -560,6 +560,10 @@ export function SearchableTrips({
                         </div>
                       </div>
                     </CardHeader>
+                    <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2 text-[0.68rem] font-semibold text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground sm:text-xs">
+                      View public profile
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </div>
                   </Card>
                 </Link>
               ))}

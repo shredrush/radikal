@@ -8,6 +8,7 @@ import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/currency/price";
+import { TripGallery } from "@/components/trips/trip-gallery";
 import { prisma } from "@/lib/prisma";
 import { getTripCardImage } from "@/lib/trip-card-image";
 
@@ -87,7 +88,6 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
       : guide.photo
         ? [guide.photo]
         : [fallbackImage];
-  const guideImages = Array.from({ length: 3 }, (_, index) => guidePhotoSources[index % guidePhotoSources.length]);
 
   return (
     <div className="flex-1">
@@ -96,35 +96,12 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
         <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
-              <div className="grid h-full min-h-[320px] grid-cols-2 grid-rows-2 gap-0.5 sm:min-h-[400px] lg:min-h-[420px]">
-                <div className="relative col-span-1 row-span-2 overflow-hidden bg-muted/60">
-                  <Image
-                    src={guideImages[0]}
-                    alt={guide.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 50vw, 30vw"
-                  />
-                </div>
-                <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                  <Image
-                    src={guideImages[1]}
-                    alt={`${guide.name} photo 2`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 50vw, 30vw"
-                  />
-                </div>
-                <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                  <Image
-                    src={guideImages[2]}
-                    alt={`${guide.name} photo 3`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 50vw, 30vw"
-                  />
-                </div>
-              </div>
+              <TripGallery
+                images={guidePhotoSources}
+                fallbackImage={fallbackImage}
+                alt={guide.name}
+                compact
+              />
             </div>
 
             <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-8">

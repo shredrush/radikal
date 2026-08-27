@@ -49,6 +49,21 @@ function formatDateTime(iso: string) {
   });
 }
 
+function formatBookingReference(id: string) {
+  const compactId = id.replace(/[^a-zA-Z0-9]/g, "");
+
+  if (!compactId) return "BK-0000";
+
+  let hash = 2166136261;
+  for (let index = 0; index < compactId.length; index += 1) {
+    hash ^= compactId.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  const shortCode = (hash >>> 0).toString(36).toUpperCase().padStart(6, "0");
+  return `BK-${shortCode}`;
+}
+
 export type BookingCardData = {
   id: string;
   tripSlug: string;
@@ -76,6 +91,7 @@ export type BookingCardData = {
 
 export function BookingCard({ booking }: { booking: BookingCardData }) {
   const [open, setOpen] = useState(false);
+  const bookingReference = formatBookingReference(booking.id);
 
   return (
     <div className="overflow-hidden rounded-[1rem] border border-border/70 bg-background/60 transition-colors hover:border-border">
@@ -162,8 +178,8 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
                 <Hash className="h-3.5 w-3.5" />
                 Booking reference
               </dt>
-              <dd className="break-all text-right font-mono text-xs text-foreground">
-                {booking.id}
+              <dd className="text-right font-mono text-xs tracking-[0.12em] text-foreground">
+                {bookingReference}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-4">

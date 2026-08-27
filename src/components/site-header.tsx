@@ -9,11 +9,15 @@ import { CurrencySelector } from "@/components/currency/currency-selector";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SportIcon } from "@/components/trips/sport-icon";
+import { prisma } from "@/lib/prisma";
 
 export async function SiteHeader() {
   const session = await auth();
   const displayName = session?.user?.name ?? session?.user?.email ?? "User";
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=111111&color=fff&size=128&rounded=true`;
+  const currentUser = session?.user?.id
+    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } })
+    : null;
+  const avatarUrl = currentUser?.image ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=111111&color=fff&size=128&rounded=true`;
 
   const sportGroups = [
     {

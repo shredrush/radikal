@@ -248,7 +248,7 @@ export default async function CommunityPage() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {guides.map((guide) => (
               <Link key={guide.id} href={`/${guide.slug}`} className="group block">
-                <article className="h-full overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
+                <article className="flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
                     <Image
                       src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
@@ -305,6 +305,10 @@ export default async function CommunityPage() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+                    View public profile
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </div>
                 </article>
               </Link>

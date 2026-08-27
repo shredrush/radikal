@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import {
   AtSign,
   Bell,
+  Camera,
   CalendarDays,
   ClipboardList,
   Compass,
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/card";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { ChangeUsernameForm } from "@/components/profile/change-username-form";
+import { ProfilePhotoForm } from "@/components/profile/profile-photo-form";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
@@ -123,6 +125,10 @@ export default async function ProfilePage({
   }
 
   const user = session.user;
+  const currentUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { image: true },
+  });
   const name = user.name ?? "traveller";
   const firstName = name.split(" ")[0];
   const initial = (name.trim()[0] ?? "R").toUpperCase();
@@ -233,31 +239,65 @@ export default async function ProfilePage({
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
         {/* Hero */}
         <div className="rounded-[1.5rem] border border-border/80 p-5 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              {user.image ? (
-                <Image
-                  src={user.image}
-                  alt={name}
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-xl object-cover ring-1 ring-border/70"
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 sm:-my-6 sm:-ml-6 sm:w-56 sm:self-stretch">
+                <ProfilePhotoForm
+                  currentImage={currentUser?.image ?? null}
+                  trigger={
+                    <div className="group relative h-full w-full cursor-pointer overflow-hidden rounded-l-[1.5rem] ring-1 ring-border/70">
+                      {currentUser?.image ? (
+                        <Image
+                          src={currentUser.image}
+                          alt={name}
+                          width={224}
+                          height={224}
+                          className="aspect-square h-44 w-full object-cover sm:aspect-auto sm:h-full sm:min-h-56"
+                        />
+                      ) : (
+                        <div className="flex aspect-square h-44 w-full items-center justify-center bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] font-heading text-5xl font-semibold text-white sm:aspect-auto sm:h-full sm:min-h-56">
+                          {initial}
+                        </div>
+                      )}
+                      <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-zinc-500/55 px-3 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-white transition-colors group-hover:bg-zinc-500/65">
+                        <Camera className="size-3" />
+                        Edit profile photo
+                      </span>
+                    </div>
+                  }
                 />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] font-heading text-xl font-semibold text-white">
-                  {initial}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                  Profile
-                </p>
+              </div>
+              <div className="flex min-w-0 flex-col self-stretch pt-1">
                 <h1 className="truncate font-heading text-lg font-semibold tracking-wide sm:text-xl">
                   Welcome back, {firstName}
                 </h1>
                 <p className="truncate text-sm text-muted-foreground">
                   {user.username ? `@${user.username}` : user.email}
                 </p>
+                {isGuide && guide ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 rounded-full"
+                    nativeButton={false}
+                    render={<Link href={`/${guide.slug}`} />}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    View public profile
+                  </Button>
+                ) : null}
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    <strong className="font-semibold text-foreground">{bookings.length}</strong>{" "}
+                    bookings
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="h-4 w-4 text-primary" />
+                    <strong className="font-semibold text-foreground">{upcoming}</strong>{" "}
+                    upcoming
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -275,64 +315,16 @@ export default async function ProfilePage({
                   {item.label}
                 </Button>
               ))}
-              {isGuide ? (
-                <>
-                  {guide ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                      nativeButton={false}
-                      render={<Link href={`/${guide.slug}`} />}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      View public profile
-                    </Button>
-                  ) : null}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                    nativeButton={false}
-                    render={<Link href="/profile?tab=trips" />}
-                  >
-                    <Compass className="h-3.5 w-3.5" />
-                    Edit trips
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10"
-                    nativeButton={false}
-                    render={<Link href="/profile?tab=booked-trips" />}
-                  >
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    My Bookings
-                  </Button>
-                </>
-              ) : null}
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/60 pt-4 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Ticket className="h-4 w-4 text-primary" />
-              <strong className="font-semibold text-foreground">{bookings.length}</strong>{" "}
-              bookings
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              <strong className="font-semibold text-foreground">{upcoming}</strong>{" "}
-              upcoming
-            </span>
-          </div>
         </div>
 
         <div
           className={cn(
             "grid gap-6",
             activeTab === "settings"
-              ? "lg:grid-cols-[220px_200px_1fr]"
+              ? "lg:grid-cols-[220px_280px_1fr]"
               : "lg:grid-cols-[220px_1fr]"
           )}
         >
@@ -343,7 +335,7 @@ export default async function ProfilePage({
                 <Link
                   href="/profile?tab=trips"
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
                     activeTab === "trips"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
@@ -357,7 +349,7 @@ export default async function ProfilePage({
                 <Link
                   href="/profile?tab=booked-trips"
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
                     activeTab === "booked-trips"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
@@ -435,7 +427,7 @@ export default async function ProfilePage({
                 <Link
                   href="/profile?tab=settings&section=password"
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
                     activeSection === "password"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
@@ -447,7 +439,7 @@ export default async function ProfilePage({
                 <Link
                   href="/profile?tab=settings&section=username"
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
                     activeSection === "username"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
