@@ -3,6 +3,8 @@ import { CheckCircle2, Clock3, Compass, XCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData } from "@/components/guides/guide-trip-form";
+import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
+import type { SlotItem } from "@/components/admin/admin-trip-slots";
 
 function toGuideTripData(activity: {
   id: string;
@@ -38,6 +40,21 @@ function toGuideTripData(activity: {
   };
 }
 
+function toSlotItem(slot: { id: string; date: Date; capacity: number; booked: number; reserved: number }): SlotItem {
+  const date = new Date(slot.date);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return {
+    id: slot.id,
+    dateInput: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    dateLabel: date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+    capacity: slot.capacity,
+    booked: slot.booked,
+    reserved: slot.reserved,
+    spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
+  };
+}
+
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
   const [activities, pendingChanges] = await Promise.all([
     prisma.activity.findMany({
@@ -47,6 +64,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
         tripLocation: true,
         inclusions: { orderBy: { order: "asc" } },
         highlights: { orderBy: { order: "asc" } },
+        slots: { orderBy: { date: "asc" } },
       },
     }),
     prisma.tripChangeRequest.findMany({
@@ -88,14 +106,18 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               const data = toGuideTripData(activity);
               return (
                 <li key={activity.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-foreground">{activity.title}</p>
-                      <p className="truncate text-sm text-muted-foreground">
-                        {activity.location} · {activity.durationDays} day{activity.durationDays === 1 ? "" : "s"}
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-foreground">{activity.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {activity.location} · {activity.durationDays} day{activity.durationDays === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex flex-col items-end gap-3">
                     <GuideTripForm guideId={guideId} activity={data} />
+                    <GuideTripSlotsToggle
+                      activityId={activity.id}
+                      slots={activity.slots.map(toSlotItem)}
+                    />
                   </div>
                 </li>
               );

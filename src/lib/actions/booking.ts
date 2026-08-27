@@ -49,7 +49,7 @@ export async function createBooking(
       where: { slotId, status: "PENDING" },
     });
 
-    if (slot.booked + pendingCount + participantCount > slot.capacity) {
+    if (slot.booked + slot.reserved + pendingCount + participantCount > slot.capacity) {
       return { status: "full" as const };
     }
 

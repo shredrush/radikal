@@ -168,7 +168,7 @@ export default async function CheckoutPage({
                 id: slot.id,
                 date: slot.date.toISOString(),
                 dateRange: formatTripDateRange(slot.date, activity.durationDays),
-                spotsLeft: slot.capacity - slot.booked,
+                spotsLeft: slot.capacity - slot.booked - slot.reserved,
               }))}
               initialSlotId={selectedSlot.id}
             />

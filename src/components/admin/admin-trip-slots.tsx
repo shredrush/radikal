@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { parseSlotInteger } from "@/lib/validations/slots";
 
 export type SlotItem = {
   id: string;
@@ -22,6 +23,7 @@ export type SlotItem = {
   dateLabel: string;
   capacity: number;
   booked: number;
+  reserved: number;
   spotsLeft: number;
 };
 
@@ -30,16 +32,28 @@ const inputClassName =
 
 const MAX_SLOT_CAPACITY = 100;
 
-function readCapacity(formData: FormData) {
-  return Number.parseInt(String(formData.get("capacity") ?? ""), 10);
+type SlotActions = {
+  create: (formData: FormData) => Promise<void>;
+  update: (formData: FormData) => Promise<void>;
+  remove: (slotId: string) => Promise<void>;
+};
+
+function readSlotNumber(formData: FormData, field: string) {
+  return parseSlotInteger(String(formData.get(field) ?? ""));
 }
 
 export function SlotsManager({
   activityId,
   slots,
+  actions = {
+    create: createSlotAction,
+    update: updateSlotAction,
+    remove: deleteSlotAction,
+  },
 }: {
   activityId: string;
   slots: SlotItem[];
+  actions?: SlotActions;
 }) {
   return (
     <div className="space-y-4">
@@ -50,7 +64,7 @@ export function SlotsManager({
         </span>
       </div>
 
-      <AddSlotForm activityId={activityId} />
+      <AddSlotForm activityId={activityId} createAction={actions.create} />
 
       {slots.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
@@ -59,7 +73,12 @@ export function SlotsManager({
       ) : (
         <ul className="flex flex-col gap-2">
           {slots.map((slot) => (
-            <SlotRow key={slot.id} activityId={activityId} slot={slot} />
+            <SlotRow
+              key={slot.id}
+              slot={slot}
+              updateAction={actions.update}
+              deleteAction={actions.remove}
+            />
           ))}
         </ul>
       )}
@@ -67,7 +86,13 @@ export function SlotsManager({
   );
 }
 
-function AddSlotForm({ activityId }: { activityId: string }) {
+function AddSlotForm({
+  activityId,
+  createAction,
+}: {
+  activityId: string;
+  createAction: SlotActions["create"];
+}) {
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -79,14 +104,24 @@ function AddSlotForm({ activityId }: { activityId: string }) {
       toast.error("Please choose a date.");
       return;
     }
-    if (Number.isNaN(readCapacity(formData))) {
-      toast.error("Please enter a capacity.");
+    const capacity = readSlotNumber(formData, "capacity");
+    const reserved = readSlotNumber(formData, "reserved");
+    if (capacity === null || capacity < 1) {
+      toast.error("Please enter a valid capacity.");
+      return;
+    }
+    if (reserved === null) {
+      toast.error("Reserve must be a whole number of 0 or more.");
+      return;
+    }
+    if (reserved > capacity) {
+      toast.error("Reserve cannot be greater than the slot capacity.");
       return;
     }
 
     startTransition(async () => {
       try {
-        await createSlotAction(formData);
+        await createAction(formData);
         (event.currentTarget as HTMLFormElement).reset();
         toast.success("Date added.");
       } catch (error) {
@@ -102,16 +137,12 @@ function AddSlotForm({ activityId }: { activityId: string }) {
         <input id="new-slot-date" name="date" type="date" required className={inputClassName} />
       </div>
       <div className="w-full space-y-1.5 sm:w-40">
+        <Label htmlFor="new-slot-reserved">Reserve</Label>
+        <input id="new-slot-reserved" name="reserved" type="number" min="0" max={MAX_SLOT_CAPACITY} defaultValue="0" required className={inputClassName} />
+      </div>
+      <div className="w-full space-y-1.5 sm:w-40">
         <Label htmlFor="new-slot-capacity">Capacity</Label>
-        <input
-          id="new-slot-capacity"
-          name="capacity"
-          type="number"
-          min="1"
-          max={MAX_SLOT_CAPACITY}
-          required
-          className={inputClassName}
-        />
+        <input id="new-slot-capacity" name="capacity" type="number" min="1" max={MAX_SLOT_CAPACITY} required className={inputClassName} />
       </div>
       <Button type="submit" size="sm" className="rounded-full" disabled={isPending}>
         <Plus className="h-3.5 w-3.5" />
@@ -122,11 +153,13 @@ function AddSlotForm({ activityId }: { activityId: string }) {
 }
 
 function SlotRow({
-  activityId,
   slot,
+  updateAction,
+  deleteAction,
 }: {
-  activityId: string;
   slot: SlotItem;
+  updateAction: SlotActions["update"];
+  deleteAction: SlotActions["remove"];
 }) {
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -140,14 +173,24 @@ function SlotRow({
       toast.error("Please choose a date.");
       return;
     }
-    if (Number.isNaN(readCapacity(formData))) {
-      toast.error("Please enter a capacity.");
+    const capacity = readSlotNumber(formData, "capacity");
+    const reserved = readSlotNumber(formData, "reserved");
+    if (capacity === null || capacity < 1) {
+      toast.error("Please enter a valid capacity.");
+      return;
+    }
+    if (reserved === null) {
+      toast.error("Reserve must be a whole number of 0 or more.");
+      return;
+    }
+    if (reserved > capacity - slot.booked) {
+      toast.error(`Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
       return;
     }
 
     startTransition(async () => {
       try {
-        await updateSlotAction(formData);
+        await updateAction(formData);
         setEditing(false);
         toast.success("Date updated.");
       } catch (error) {
@@ -164,7 +207,7 @@ function SlotRow({
 
     startTransition(async () => {
       try {
-        await deleteSlotAction(slot.id);
+        await deleteAction(slot.id);
         toast.success(`Date ${slot.dateLabel} deleted.`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not delete date.");
@@ -181,17 +224,21 @@ function SlotRow({
             <input id={`slot-date-${slot.id}`} name="date" type="date" defaultValue={slot.dateInput} required className={inputClassName} />
           </div>
           <div className="w-full space-y-1.5 sm:w-40">
-            <Label htmlFor={`slot-capacity-${slot.id}`}>Capacity</Label>
+            <Label htmlFor={`slot-reserved-${slot.id}`}>Reserve</Label>
             <input
-              id={`slot-capacity-${slot.id}`}
-              name="capacity"
+              id={`slot-reserved-${slot.id}`}
+              name="reserved"
               type="number"
-              min={slot.booked}
+              min="0"
               max={MAX_SLOT_CAPACITY}
-              defaultValue={slot.capacity}
+              defaultValue={slot.reserved}
               required
               className={inputClassName}
             />
+          </div>
+          <div className="w-full space-y-1.5 sm:w-40">
+            <Label htmlFor={`slot-capacity-${slot.id}`}>Capacity</Label>
+            <input id={`slot-capacity-${slot.id}`} name="capacity" type="number" min={slot.booked + slot.reserved} max={MAX_SLOT_CAPACITY} defaultValue={slot.capacity} required className={inputClassName} />
           </div>
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" className="rounded-full" disabled={isPending}>
@@ -236,7 +283,7 @@ function SlotRow({
             : `${slot.spotsLeft} spot${slot.spotsLeft === 1 ? "" : "s"} left`}
         </Badge>
         <span className="text-xs text-muted-foreground">
-          {slot.booked}/{slot.capacity} booked
+          {slot.booked} booked{slot.reserved > 0 ? ` · ${slot.reserved} reserved` : ""} / {slot.capacity}
         </span>
         <div className="flex items-center gap-1">
           <Button

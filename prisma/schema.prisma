@@ -108,34 +108,34 @@ enum TripChangeStatus {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String   @unique
   // Public, lowercase-alphanumeric handle used as the user's slug. Uniqueness
   // is enforced by a DB constraint; the app layer additionally validates the
   // format, length and reserved-name rules (see lib/sanitize.ts).
-  username     String?   @unique
+  username     String?  @unique
   passwordHash String
-  role         UserRole  @default(USER)
+  role         UserRole @default(USER)
   image        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  bookings         Booking[]
-  reviews          Review[]
-  guide            Guide?
+  bookings                  Booking[]
+  reviews                   Review[]
+  guide                     Guide?
   guideApplications         GuideApplication[]
-  reviewedGuideApplications GuideApplication[] @relation("GuideApplicationReviewedBy")
-  supportChat      SupportChat?
-  supportMessages  SupportMessage[]
-  cancelledBookings Booking[] @relation("BookingCancelledBy")
-  passwordResetOtps PasswordResetOtp[]
-  activityLogs      ActivityLog[]
-  customTripRequests CustomTripRequest[]
-  customTripMessages CustomTripMessage[]
-  notifications Notification[]
-  tripChangesSubmitted TripChangeRequest[] @relation("TripChangeSubmittedBy")
-  tripChangesReviewed TripChangeRequest[] @relation("TripChangeReviewedBy")
+  reviewedGuideApplications GuideApplication[]  @relation("GuideApplicationReviewedBy")
+  supportChat               SupportChat?
+  supportMessages           SupportMessage[]
+  cancelledBookings         Booking[]           @relation("BookingCancelledBy")
+  passwordResetOtps         PasswordResetOtp[]
+  activityLogs              ActivityLog[]
+  customTripRequests        CustomTripRequest[]
+  customTripMessages        CustomTripMessage[]
+  notifications             Notification[]
+  tripChangesSubmitted      TripChangeRequest[] @relation("TripChangeSubmittedBy")
+  tripChangesReviewed       TripChangeRequest[] @relation("TripChangeReviewedBy")
 
   @@map("users")
 }
@@ -180,7 +180,7 @@ model Guide {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user           User?           @relation(fields: [userId], references: [id])
+  user           User?               @relation(fields: [userId], references: [id])
   certifications Certification[]
   activities     Activity[]
   reviews        Review[]
@@ -227,8 +227,8 @@ model GuideApplication {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  user           User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewedBy     User?                         @relation("GuideApplicationReviewedBy", fields: [reviewedById], references: [id])
+  user           User                            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy     User?                           @relation("GuideApplicationReviewedBy", fields: [reviewedById], references: [id])
   certifications GuideApplicationCertification[]
 
   @@index([status])
@@ -269,7 +269,7 @@ model Activity {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  guide        Guide?          @relation(fields: [guideId], references: [id])
+  guide        Guide?              @relation(fields: [guideId], references: [id])
   slots        Slot[]
   bookings     Booking[]
   reviews      Review[]
@@ -330,6 +330,7 @@ model Slot {
   date       DateTime
   capacity   Int
   booked     Int      @default(0)
+  reserved   Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -420,19 +421,19 @@ model SupportMessage {
 // instead of a scheduled slot. Each request gets its own chat thread so the
 // support team can discuss requirements and quote a price.
 model CustomTripRequest {
-  id               String             @id @default(cuid())
+  id               String              @id @default(cuid())
   userId           String
   groupType        CustomTripGroupType
-  sports           String[]           @default([])
+  sports           String[]            @default([])
   startDate        DateTime
   endDate          DateTime
   location         String
-  participantCount Int                @default(1)
+  participantCount Int                 @default(1)
   budgetRupees     Int?
   requirements     String?
-  status           CustomTripStatus   @default(NEW)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  status           CustomTripStatus    @default(NEW)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat CustomTripChat?

@@ -307,7 +307,7 @@ export default async function ProfilePage({
                     render={<Link href="/profile?tab=booked-trips" />}
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
-                    Bookings with you
+                    My Bookings
                   </Button>
                 </>
               ) : null}
@@ -364,7 +364,7 @@ export default async function ProfilePage({
                   )}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  Bookings with you
+                  My Bookings
                 </Link>
               ) : null}
               <Link
@@ -610,7 +610,7 @@ export default async function ProfilePage({
             ) : activeTab === "booked-trips" ? (
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>
-                  <CardTitle>Bookings with you</CardTitle>
+                  <CardTitle>My Bookings</CardTitle>
                   <CardDescription>
                     Trips travellers have reserved with you as their guide.
                   </CardDescription>
@@ -620,7 +620,7 @@ export default async function ProfilePage({
                     <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
                       <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
                       <div>
-                        <p className="font-medium text-foreground">No bookings with you yet</p>
+                        <p className="font-medium text-foreground">No bookings yet</p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           When travellers reserve one of your trips, it will show up here.
                         </p>

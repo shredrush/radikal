@@ -88,6 +88,14 @@ function getActivityTypeLabel(activity: { type: string; title: string; descripti
   return ACTIVITY_TYPE_LABELS[activity.type] ?? activity.type;
 }
 
+function getSlotOccupancyPercent(slot: { capacity: number; booked: number; reserved: number }) {
+  if (slot.capacity <= 0) {
+    return 100;
+  }
+
+  return Math.min(100, Math.max(0, ((slot.booked + slot.reserved) / slot.capacity) * 100));
+}
+
 export default async function TripDetailPage({
   params,
 }: {
@@ -198,14 +206,22 @@ export default async function TripDetailPage({
                       <li key={slot.id}>
                         <Link
                           href={`/booking/${activity.id}/checkout?slot=${slot.id}`}
-                          className="group flex items-center justify-between rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
+                          className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
                         >
-                          <span className="font-medium text-foreground transition-colors group-hover:text-emerald-700">
+                          <span
+                            className="absolute inset-y-0 left-0 bg-emerald-100/90 transition-[width] duration-300"
+                            style={{ width: `${getSlotOccupancyPercent(slot)}%` }}
+                            aria-hidden="true"
+                          />
+                          <span className="relative z-10 font-medium transition-colors">
                             {formatTripDateRange(slot.date, activity.durationDays)}
                           </span>
-                          <span className="text-muted-foreground transition-colors group-hover:text-emerald-800/80">
-                            {Math.max(slot.capacity - slot.booked, 0)} spots left
+                          <span className="relative z-10 opacity-90 transition-colors">
+                            {getSlotOccupancyPercent(slot) >= 100 ? "Sold out" : `${Math.max(slot.capacity - slot.booked - slot.reserved, 0)} spots left`}
                           </span>
+                          {getSlotOccupancyPercent(slot) >= 100 ? (
+                            <span className="absolute inset-x-0 top-1/2 z-20 h-px bg-emerald-800/70" aria-hidden="true" />
+                          ) : null}
                         </Link>
                       </li>
                     ))}

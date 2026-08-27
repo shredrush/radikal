@@ -144,7 +144,7 @@ export function GuideTripForm({
   }
 
   return (
-    <div className="space-y-4 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
+    <div className="w-full space-y-4 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-foreground">
           {isEditing ? `Edit “${title}”` : "New trip"}

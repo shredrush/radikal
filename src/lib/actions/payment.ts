@@ -157,7 +157,7 @@ export async function confirmBookingPayment(
         throw new Error("Only pending bookings can be confirmed.");
       }
 
-      if (booking.slot.booked + booking.participantCount > booking.slot.capacity) {
+      if (booking.slot.booked + booking.slot.reserved + booking.participantCount > booking.slot.capacity) {
         throw new Error("This slot filled up before the payment could be confirmed.");
       }
 

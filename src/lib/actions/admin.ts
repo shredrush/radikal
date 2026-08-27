@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
+import { parseSlotInteger } from "@/lib/validations/slots";
 
 const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
 const validCategories = [
@@ -390,7 +391,8 @@ export async function createSlotAction(formData: FormData) {
 
   const activityId = asString(formData.get("activityId"));
   const dateValue = asString(formData.get("date"));
-  const capacity = Number.parseInt(asString(formData.get("capacity")), 10);
+  const capacity = parseSlotInteger(asString(formData.get("capacity")));
+  const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
 
   if (!activityId) {
     throw new Error("Missing activity id.");
@@ -400,8 +402,14 @@ export async function createSlotAction(formData: FormData) {
     throw new Error("Please choose a date.");
   }
 
-  if (Number.isNaN(capacity) || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+  if (capacity === null || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
     throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+  if (reserved === null) {
+    throw new Error("Reserve must be a whole number of 0 or more.");
+  }
+  if (reserved > capacity) {
+    throw new Error("Reserve cannot be greater than the slot capacity.");
   }
 
   const date = parseSlotDate(dateValue);
@@ -423,7 +431,7 @@ export async function createSlotAction(formData: FormData) {
     slug = activity.slug;
 
     await tx.slot.create({
-      data: { activityId, date, capacity },
+      data: { activityId, date, capacity, reserved },
     });
   });
 
@@ -435,7 +443,8 @@ export async function updateSlotAction(formData: FormData) {
 
   const slotId = asString(formData.get("slotId"));
   const dateValue = asString(formData.get("date"));
-  const capacity = Number.parseInt(asString(formData.get("capacity")), 10);
+  const capacity = parseSlotInteger(asString(formData.get("capacity")));
+  const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
 
   if (!slotId) {
     throw new Error("Missing slot id.");
@@ -445,8 +454,11 @@ export async function updateSlotAction(formData: FormData) {
     throw new Error("Please choose a date.");
   }
 
-  if (Number.isNaN(capacity) || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+  if (capacity === null || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
     throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+  if (reserved === null) {
+    throw new Error("Reserve must be a whole number of 0 or more.");
   }
 
   const date = parseSlotDate(dateValue);
@@ -468,15 +480,15 @@ export async function updateSlotAction(formData: FormData) {
     slug = slot.activity.slug;
 
     // Never shrink capacity below the number of already-booked spots.
-    if (capacity < slot.booked) {
+    if (reserved > capacity - slot.booked) {
       throw new Error(
-        `Capacity cannot be lower than the ${slot.booked} already booked spot${slot.booked === 1 ? "" : "s"}.`
+        `Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`
       );
     }
 
     await tx.slot.update({
       where: { id: slotId },
-      data: { date, capacity },
+      data: { date, capacity, reserved },
     });
   });
 

@@ -44,6 +44,7 @@ function toSlotItem(slot: {
   date: Date;
   capacity: number;
   booked: number;
+  reserved: number;
 }): SlotItem {
   const date = new Date(slot.date);
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -60,7 +61,8 @@ function toSlotItem(slot: {
     dateLabel,
     capacity: slot.capacity,
     booked: slot.booked,
-    spotsLeft: Math.max(0, slot.capacity - slot.booked),
+    reserved: slot.reserved,
+    spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
   };
 }
 

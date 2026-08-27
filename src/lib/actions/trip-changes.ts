@@ -10,6 +10,7 @@ import { logActivity } from "@/lib/activity-log";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 import { notifyTripReviewStaff, notifyUser } from "@/lib/notifications";
 import { slugifyTripTitle, type TripProposal } from "@/lib/trip-changes";
+import { parseSlotInteger } from "@/lib/validations/slots";
 import {
   sendEmailAfter,
   tripChangeDecisionEmail,
@@ -30,6 +31,28 @@ const validCategories = [
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
+}
+
+const MAX_SLOT_CAPACITY = 100;
+
+function parseSlotDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
 }
 
 function parseImages(value: string) {
@@ -277,6 +300,108 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   revalidatePath("/profile");
   revalidatePath("/admin/trip-changes");
+}
+
+async function requireGuideActivity(activityId: string) {
+  const { guide } = await requireGuide();
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
+    select: { id: true, slug: true, guideId: true },
+  });
+
+  if (!activity || activity.guideId !== guide.id) {
+    throw new Error("You can only manage dates for your own trips.");
+  }
+
+  return activity;
+}
+
+function revalidateGuideSlotPages(slug: string) {
+  revalidatePath("/profile");
+  revalidatePath("/trips");
+  revalidatePath(`/trips/${slug}`);
+  updateTag("trips");
+}
+
+export async function createGuideSlotAction(formData: FormData): Promise<void> {
+  const activityId = asString(formData.get("activityId"));
+  const dateValue = asString(formData.get("date"));
+  const capacity = parseSlotInteger(asString(formData.get("capacity")));
+  const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
+
+  if (!activityId) throw new Error("Missing activity id.");
+  if (!dateValue) throw new Error("Please choose a date.");
+  if (capacity === null || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+    throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+  if (reserved === null) {
+    throw new Error("Reserve must be a whole number of 0 or more.");
+  }
+  if (reserved > capacity) {
+    throw new Error("Reserve cannot be greater than the slot capacity.");
+  }
+
+  const date = parseSlotDate(dateValue);
+  if (!date) throw new Error("Please enter a valid date.");
+
+  const activity = await requireGuideActivity(activityId);
+  await prisma.slot.create({ data: { activityId: activity.id, date, capacity, reserved } });
+  revalidateGuideSlotPages(activity.slug);
+}
+
+export async function updateGuideSlotAction(formData: FormData): Promise<void> {
+  const slotId = asString(formData.get("slotId"));
+  const dateValue = asString(formData.get("date"));
+  const capacity = parseSlotInteger(asString(formData.get("capacity")));
+  const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
+
+  if (!slotId) throw new Error("Missing slot id.");
+  if (!dateValue) throw new Error("Please choose a date.");
+  if (capacity === null || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
+    throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
+  }
+  if (reserved === null) {
+    throw new Error("Reserve must be a whole number of 0 or more.");
+  }
+
+  const date = parseSlotDate(dateValue);
+  if (!date) throw new Error("Please enter a valid date.");
+
+  const { guide } = await requireGuide();
+  const slot = await prisma.slot.findUnique({
+    where: { id: slotId },
+    include: { activity: { select: { guideId: true, slug: true } } },
+  });
+
+  if (!slot || slot.activity.guideId !== guide.id) {
+    throw new Error("You can only manage dates for your own trips.");
+  }
+  if (reserved > capacity - slot.booked) {
+    throw new Error(`Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
+  }
+
+  await prisma.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
+  revalidateGuideSlotPages(slot.activity.slug);
+}
+
+export async function deleteGuideSlotAction(slotId: string): Promise<void> {
+  if (!slotId) throw new Error("Missing slot id.");
+
+  const { guide } = await requireGuide();
+  const slot = await prisma.slot.findUnique({
+    where: { id: slotId },
+    include: { activity: { select: { guideId: true, slug: true } }, _count: { select: { bookings: true } } },
+  });
+
+  if (!slot || slot.activity.guideId !== guide.id) {
+    throw new Error("You can only manage dates for your own trips.");
+  }
+  if (slot._count.bookings > 0) {
+    throw new Error("Dates with bookings cannot be deleted. Ask support to cancel them first.");
+  }
+
+  await prisma.slot.delete({ where: { id: slotId } });
+  revalidateGuideSlotPages(slot.activity.slug);
 }
 
 /** Apply the supplemental (location/inclusions/highlights) side tables. */
