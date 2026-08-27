@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const loginInitialState: LoginActionState = {};
 const requestResetInitialState: RequestPasswordResetState = {};
@@ -93,10 +94,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             className="placeholder:text-neutral-400"
@@ -278,10 +278,9 @@ function ForgotPasswordFlow({
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="new-password">New password</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
                 name="newPassword"
-                type="password"
                 autoComplete="new-password"
                 placeholder="At least 6 characters"
                 required
@@ -295,10 +294,9 @@ function ForgotPasswordFlow({
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="confirm-password">Confirm new password</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
                 name="confirmPassword"
-                type="password"
                 autoComplete="new-password"
                 placeholder="Re-enter your password"
                 required

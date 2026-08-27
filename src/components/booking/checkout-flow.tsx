@@ -40,14 +40,16 @@ export function CheckoutFlow({
   activity,
   availableSlots,
   initialSlotId,
+  initialParticipantCount,
 }: {
   activity: Activity;
   availableSlots: SlotOption[];
   initialSlotId: string;
+  initialParticipantCount: number;
 }) {
   const router = useRouter();
   const [slotId, setSlotId] = useState(initialSlotId);
-  const [participantCount, setParticipantCount] = useState(1);
+  const [participantCount, setParticipantCount] = useState(initialParticipantCount);
   const [step, setStep] = useState<Step>("select");
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState("");

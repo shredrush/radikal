@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
@@ -15,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
+import { getGuideImage } from "@/lib/guide-images";
 
 // Trip pages were hitting Postgres (with several joined tables) on every
 // request. Admin edits already call updateTag("trips")/revalidatePath for
@@ -28,6 +30,11 @@ const getTripDetail = unstable_cache(
         guide: {
           include: {
             certifications: true,
+            user: {
+              select: {
+                image: true,
+              },
+            },
           },
         },
         slots: {
@@ -86,6 +93,9 @@ export default async function TripDetailPage({
   if (!activity) {
     notFound();
   }
+
+  const guide = activity.guide;
+  const guideProfileImage = guide ? getGuideImage(guide) : "/avatars/fox.svg";
 
   return (
     <div className="flex flex-1 flex-col">
@@ -252,35 +262,78 @@ export default async function TripDetailPage({
         <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <CardHeader>
             <CardTitle className="text-2xl">Your guide</CardTitle>
-            <CardDescription>Certified local experts with deep Himalayan knowledge.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 text-sm leading-7 text-muted-foreground">
-            {activity.guide ? (
-              <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-lg font-semibold text-foreground">{activity.guide.name}</p>
-                    <p className="mt-1">{activity.guide.bio}</p>
+            {guide ? (
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden">
+                    <Image
+                      src={guideProfileImage}
+                      alt={guide.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 24vw"
+                    />
                   </div>
-                  <div className="rounded-2xl border border-border/70 bg-muted/50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Base</p>
-                    <p className="mt-2 font-medium text-foreground">{activity.guide.location}</p>
-                    <p className="mt-1">{activity.guide.experienceYears} years of guiding experience</p>
-                  </div>
-                  {activity.guide.certifications.length > 0 ? (
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Certifications</p>
-                      <ul className="mt-2 space-y-2">
-                        {activity.guide.certifications.map((certification) => (
-                          <li key={certification.id} className="rounded-xl border border-border/70 bg-background/70 px-3 py-2">
-                            <p className="font-medium text-foreground">{certification.title}</p>
-                            <p className="text-xs text-muted-foreground">{certification.issuingBody}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
                 </div>
+
+                <div className="flex flex-col justify-center">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                        {guide.name}
+                      </h3>
+                      <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                        {guide.location}
+                      </p>
+                    </div>
+
+                    <p className="text-base leading-7 text-muted-foreground">
+                      {guide.experienceYears}+ years experience
+                    </p>
+                    <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
+                  </div>
+
+                  <div className="mt-6 space-y-5">
+                    {guide.certifications.length > 0 ? (
+                      <div>
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                          Certifications
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {guide.certifications.map((certification) => (
+                            <span
+                              key={certification.id}
+                              className="rounded-full border border-border/70 bg-background px-3 py-1.5 text-sm font-medium text-foreground/80"
+                            >
+                              {certification.title}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {guide.languages.length > 0 ? (
+                      <div>
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                          Languages
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {guide.languages.map((language) => (
+                            <span
+                              key={`${guide.id}-${language}`}
+                              className="rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground"
+                            >
+                              {language}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
                 <div className="lg:border-l lg:border-border/60 lg:pl-6">
                   <p className="text-sm font-semibold text-foreground">
                     Traveller reviews

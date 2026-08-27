@@ -60,7 +60,11 @@ export function BookingBar({
             size="sm"
             className="shrink-0 rounded-full bg-orange-700 text-white hover:bg-orange-800"
             nativeButton={false}
-            render={<Link href={`/booking/${activityId}/checkout`} />}
+            render={
+              <Link
+                href={`/booking/${activityId}/checkout?participants=${people}`}
+              />
+            }
           >
             Book Your Spot
           </Button>

@@ -31,9 +31,9 @@ import {
   usernameSchema,
 } from "@/lib/validations/auth";
 
-// Password reset codes are 6 digits and single-use, expiring after 60 seconds.
+// Password reset codes are 6 digits and single-use, expiring after 5 minutes.
 // A new code can't be requested until this cooldown elapses.
-const OTP_TTL_MS = 60_000;
+const OTP_TTL_MS = 5 * 60_000;
 const OTP_RESEND_COOLDOWN_MS = 60_000;
 // Burn a code after this many wrong guesses, on top of the in-memory rate
 // limiter. Persisted per code so it survives restarts and works across

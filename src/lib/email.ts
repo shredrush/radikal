@@ -348,7 +348,7 @@ export function passwordResetOtpEmail({
         ) +
         `<p style="margin:0 0 16px;padding:16px 20px;background:#f4f4f5;border-radius:12px;font-size:32px;font-weight:700;letter-spacing:0.4em;text-align:center;color:${BRAND};">${escapeHtml(code)}</p>` +
         paragraph(
-          `This code expires in 60 seconds and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password won't change.`,
+          `This code expires in 5 minutes and can only be used once. If you didn't request a password reset, you can safely ignore this email — your password won't change.`,
         ),
     ),
   };

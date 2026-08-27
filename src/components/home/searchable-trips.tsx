@@ -46,7 +46,7 @@ type GuideProfile = {
   slug: string;
   name: string;
   location: string;
-  photo: string | null;
+  photo: string;
   certifications: string[];
 };
 
@@ -138,22 +138,6 @@ export function SearchableTrips({
       router.push(`/trips/${suggestions[activeIndex].slug}`);
     }
   };
-
-  const guideImageMap: Record<string, string> = {
-    tenzin:
-      "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=400&q=80",
-    tashi:
-      "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=400&q=80",
-    meera:
-      "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=400&q=80",
-    nawang:
-      "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=400&q=80",
-    pema:
-      "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=400&q=80",
-  };
-
-  const guideFallbackImage =
-    "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=400&q=80";
 
   const testimonials = [
     {
@@ -541,7 +525,7 @@ export function SearchableTrips({
                     <CardHeader className="gap-0 p-0 pb-0 px-0">
                       <div className="flex flex-col items-center text-center">
                         <Image
-                          src={guide.photo ?? guideImageMap[guide.slug] ?? guideFallbackImage}
+                          src={guide.photo}
                           alt={guide.name}
                           width={400}
                           height={320}

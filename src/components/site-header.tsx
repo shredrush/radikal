@@ -10,14 +10,20 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SportIcon } from "@/components/trips/sport-icon";
 import { prisma } from "@/lib/prisma";
+import { getProfileInitials } from "@/lib/profile-initials";
+import { getGuideImage } from "@/lib/guide-images";
 
 export async function SiteHeader() {
   const session = await auth();
   const displayName = session?.user?.name ?? session?.user?.email ?? "User";
   const currentUser = session?.user?.id
-    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } })
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
+      })
     : null;
-  const avatarUrl = currentUser?.image ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=111111&color=fff&size=128&rounded=true`;
+  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
+  const profileInitials = getProfileInitials(displayName);
 
   const sportGroups = [
     {
@@ -73,7 +79,7 @@ export async function SiteHeader() {
             <CurrencySelector />
             {session?.user ? (
               <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                <Image src={avatarUrl} alt="Profile" width={32} height={32} unoptimized className="h-8 w-8 rounded-full object-cover" />
+                {profileImage ? <Image src={profileImage} alt="Profile" width={32} height={32} unoptimized className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground font-heading text-xs font-semibold text-background">{profileInitials}</span>}
               </Link>
             ) : (
               <Button
@@ -192,7 +198,7 @@ export async function SiteHeader() {
               {session?.user ? (
                 <div className="group relative">
                   <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                    <Image src={avatarUrl} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" />
+                    {profileImage ? <Image src={profileImage} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">{profileInitials}</span>}
                   </Link>
                   <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
                     <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
@@ -390,7 +396,7 @@ export async function SiteHeader() {
             {session?.user ? (
               <div className="group relative">
                 <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                  <Image src={avatarUrl} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" />
+                  {profileImage ? <Image src={profileImage} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">{profileInitials}</span>}
                 </Link>
                 <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
                   <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">

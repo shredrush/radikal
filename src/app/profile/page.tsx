@@ -33,6 +33,8 @@ import {
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { ChangeUsernameForm } from "@/components/profile/change-username-form";
 import { ProfilePhotoForm } from "@/components/profile/profile-photo-form";
+import { getProfileInitials } from "@/lib/profile-initials";
+import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
@@ -127,11 +129,12 @@ export default async function ProfilePage({
   const user = session.user;
   const currentUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { image: true },
+    select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
   });
-  const name = user.name ?? "traveller";
+  const name = user.name ?? user.email ?? "User";
   const firstName = name.split(" ")[0];
-  const initial = (name.trim()[0] ?? "R").toUpperCase();
+  const profileInitials = getProfileInitials(name);
+  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
 
   const { tab, status, section } = await searchParams;
   const statusFilter =
@@ -245,10 +248,13 @@ export default async function ProfilePage({
                 <ProfilePhotoForm
                   currentImage={currentUser?.image ?? null}
                   trigger={
-                    <div className="group relative h-full w-full cursor-pointer overflow-hidden rounded-l-[1.5rem] ring-1 ring-border/70">
-                      {currentUser?.image ? (
+                    <button
+                      type="button"
+                      className="group relative h-full w-full cursor-pointer overflow-hidden rounded-l-[1.5rem] ring-1 ring-border/70"
+                    >
+                      {profileImage ? (
                         <Image
-                          src={currentUser.image}
+                          src={profileImage}
                           alt={name}
                           width={224}
                           height={224}
@@ -256,14 +262,14 @@ export default async function ProfilePage({
                         />
                       ) : (
                         <div className="flex aspect-square h-44 w-full items-center justify-center bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] font-heading text-5xl font-semibold text-white sm:aspect-auto sm:h-full sm:min-h-56">
-                          {initial}
+                          {profileInitials}
                         </div>
                       )}
                       <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-zinc-500/55 px-3 py-2 text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-white transition-colors group-hover:bg-zinc-500/65">
                         <Camera className="size-3" />
                         Edit profile photo
                       </span>
-                    </div>
+                    </button>
                   }
                 />
               </div>

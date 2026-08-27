@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
+import { getGuideImage } from "@/lib/guide-images";
 
 const FEATURED_TRIP_SLUGS = [
   "miyar-valley-trek",
@@ -79,7 +80,7 @@ export default async function Home() {
           slug: guide.slug,
           name: guide.name,
           location: guide.location,
-          photo: guide.photos[0] ?? guide.photo,
+          photo: getGuideImage(guide),
           certifications: guide.certifications.map((certification) => certification.title),
         }))}
       />

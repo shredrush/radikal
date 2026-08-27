@@ -20,6 +20,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { getGuideImage } from "@/lib/guide-images";
 
 export const metadata: Metadata = {
   title: "Community | Radikal",
@@ -45,14 +46,6 @@ const getCommunityGuides = unstable_cache(
   ["community-guides"],
   { tags: ["guides"], revalidate: 3600 },
 );
-
-const guideImageMap: Record<string, string> = {
-  tenzin: "https://images.unsplash.com/photo-1601224748193-d24f166b5c77?auto=format&fit=crop&w=900&q=80",
-  tashi: "https://images.unsplash.com/photo-1599405653894-8a595f692abf?auto=format&fit=crop&w=900&q=80",
-  meera: "https://images.unsplash.com/photo-1661892526325-813afd121a4e?auto=format&fit=crop&w=900&q=80",
-  nawang: "https://images.unsplash.com/photo-1447452001602-7090c7ab2db3?auto=format&fit=crop&w=900&q=80",
-  pema: "https://images.unsplash.com/photo-1548789997-82da68437ad8?auto=format&fit=crop&w=900&q=80",
-};
 
 type PillarTone = "orange" | "green";
 
@@ -251,7 +244,7 @@ export default async function CommunityPage() {
                 <article className="flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
                     <Image
-                      src={guide.photo ?? guideImageMap[guide.slug] ?? "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80"}
+                      src={getGuideImage(guide)}
                       alt={guide.name}
                       fill
                       className="object-cover transition duration-500 group-hover:scale-[1.03]"

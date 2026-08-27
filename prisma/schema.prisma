@@ -142,7 +142,7 @@ model User {
 
 // A short-lived one-time password reset code. Only the bcrypt hash of the
 // 6-digit code is stored, so a database leak can't be replayed to reset a
-// password. Codes are single-use, expire after 60 seconds, and lock out after
+// password. Codes are single-use, expire after 5 minutes, and lock out after
 // too many failed verification attempts.
 model PasswordResetOtp {
   id        String    @id @default(cuid())

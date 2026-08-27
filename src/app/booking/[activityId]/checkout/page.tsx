@@ -66,16 +66,25 @@ export default async function CheckoutPage({
   searchParams,
 }: {
   params: Promise<{ activityId: string }>;
-  searchParams: Promise<{ slot?: string }>;
+  searchParams: Promise<{ slot?: string; participants?: string }>;
 }) {
   const { activityId } = await params;
-  const { slot: slotIdParam } = await searchParams;
+  const {
+    slot: slotIdParam,
+    participants: participantCountParam,
+  } = await searchParams;
+
+  const parsedParticipantCount = Number.parseInt(participantCountParam ?? "1", 10);
+  const requestedParticipantCount = Number.isFinite(parsedParticipantCount)
+    ? parsedParticipantCount
+    : 1;
 
   const session = await auth();
   if (!session?.user) {
-    const callbackUrl = slotIdParam
-      ? `/booking/${activityId}/checkout?slot=${slotIdParam}`
-      : `/booking/${activityId}/checkout`;
+    const callbackParams = new URLSearchParams();
+    if (slotIdParam) callbackParams.set("slot", slotIdParam);
+    callbackParams.set("participants", String(Math.max(1, requestedParticipantCount)));
+    const callbackUrl = `/booking/${activityId}/checkout?${callbackParams.toString()}`;
 
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
@@ -98,6 +107,11 @@ export default async function CheckoutPage({
   const selectedSlot = slotIdParam
     ? activity.slots.find((slot) => slot.id === slotIdParam)
     : activity.slots[0];
+
+  const initialParticipantCount = Math.min(
+    Math.max(1, requestedParticipantCount),
+    activity.maxGroupSize,
+  );
 
   const normalizedImages = activity.images
     .map((image) => normalizeTripImagePath(image, activity.slug))
@@ -171,6 +185,7 @@ export default async function CheckoutPage({
                 spotsLeft: slot.capacity - slot.booked - slot.reserved,
               }))}
               initialSlotId={selectedSlot.id}
+              initialParticipantCount={initialParticipantCount}
             />
           )}
         </div>
