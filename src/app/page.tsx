@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getGuideImage } from "@/lib/guide-images";
+import { getDisplayName } from "@/lib/profile-initials";
 
 const FEATURED_TRIP_SLUGS = [
   "miyar-valley-trek",
@@ -130,7 +131,7 @@ export default async function Home() {
           certifications: guide.certifications.map((certification) => certification.title),
         }))}
         testimonials={reviews.map((review) => ({
-          name: review.user.name,
+          name: getDisplayName(review.user.name),
           trip: review.trip?.title ?? "Radikal experience",
           slug: review.trip?.slug,
           quote: review.comment,

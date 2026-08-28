@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { ArrowLeft } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { getDisplayName } from "@/lib/profile-initials";
 
 const getGuideReviews = unstable_cache(
   async (slug: string) => {
@@ -84,7 +85,7 @@ export default async function GuideReviewsPage({ params }: { params: Promise<{ g
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {guide.reviews.map((review) => (
                 <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
-                  <p className="font-medium text-foreground">{review.user.name}</p>
+                  <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
                   <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
                   {review.trip ? (
                     <Link

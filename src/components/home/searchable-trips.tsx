@@ -13,9 +13,10 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
+import { TestimonialCard } from "@/components/reviews/testimonial-card";
 
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
@@ -424,7 +425,7 @@ export function SearchableTrips({
              {visibleTrips.map((trip) => (
               <Link key={trip.id} href={`/trips/${trip.slug}`} className="block h-full">
               <Card
-                className="flex h-[360px] min-w-0 flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:h-[400px]"
+                className="flex h-[360px] min-w-0 flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100/50 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.125)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200/50 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.15)] dark:border-orange-500/10 dark:hover:border-emerald-500/15 sm:h-[400px]"
               >
                 <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[200px]">
                   <Image
@@ -496,7 +497,7 @@ export function SearchableTrips({
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guides.map((guide) => (
                 <Link key={guide.slug} href={`/${guide.slug}`} className="block">
-                   <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
+                   <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100/50 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.125)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200/50 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.15)] dark:border-orange-500/10 dark:hover:border-emerald-500/15">
                     <CardHeader className="gap-0 p-0 pb-0 px-0">
                       <div className="flex flex-col items-center text-center">
                         <Image
@@ -558,38 +559,7 @@ export function SearchableTrips({
             <div className="mt-8 !grid !w-full !grid-cols-2 !gap-2 lg:!grid-cols-4">
               {testimonials.map((testimonial, index) => {
                 const key = `${testimonial.name}-${testimonial.trip}-${index}`;
-                const card = (
-                  <Card className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
-                    <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
-                      <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
-                        “{testimonial.quote}”
-                      </p>
-                      <div className="ml-auto mt-2 flex flex-col items-end text-right">
-                        <p className="text-[clamp(0.78rem,0.9vw,0.95rem)] font-semibold text-foreground">
-                          {testimonial.name}
-                        </p>
-                        <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
-                          {testimonial.trip}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-
-                if (!testimonial.slug) {
-                  return <div key={key} className="h-full">{card}</div>;
-                }
-
-                return (
-                  <Link
-                    key={key}
-                    href={`/trips/${testimonial.slug}`}
-                    aria-label={`Read reviews for ${testimonial.trip}`}
-                    className="block"
-                  >
-                    {card}
-                  </Link>
-                );
+                return <TestimonialCard key={key} testimonial={testimonial} />;
               })}
             </div>
           </div>

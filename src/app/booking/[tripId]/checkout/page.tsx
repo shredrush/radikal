@@ -138,7 +138,7 @@ export default async function CheckoutPage({
 
         <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           {/* Left column — trip photos */}
-          <div className="h-[360px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:h-[540px]">
+          <div className="h-[360px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:h-[540px] lg:h-[740px]">
             <div className="grid h-full grid-cols-4 grid-rows-2 gap-0.5">
               <div className="relative col-span-2 row-span-2 overflow-hidden bg-muted/60">
                 <Image src={gallerySlots[0]} alt={`${trip.title} photo`} fill className="object-cover" sizes="50vw" priority />

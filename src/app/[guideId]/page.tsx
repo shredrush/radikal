@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { ShieldCheck } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Price } from "@/components/currency/price";
 import { TripGallery } from "@/components/trips/trip-gallery";
+import { TripCard } from "@/components/trips/trip-card";
+import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { prisma } from "@/lib/prisma";
-import { getTripCardImage } from "@/lib/trip-card-image";
 import { getGuideImage } from "@/lib/guide-images";
+import { getDisplayName } from "@/lib/profile-initials";
 
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).
@@ -58,17 +56,6 @@ const getGuideDetail = unstable_cache(
   ["guide-detail"],
   { tags: ["guides", "trips"], revalidate: 3600 },
 );
-
-const CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
   const { guideId } = await params;
@@ -125,14 +112,14 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     {guide.name}
                   </h1>
                   <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
-                  <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-foreground">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     Vetted guide
                   </div>
                 </div>
 
                 <p className="text-base leading-7 text-muted-foreground">
-                  {guide.experienceYears}+ years experience
+                  <span className="font-heading text-lg font-semibold text-emerald-700 dark:text-emerald-400">{guide.experienceYears}+</span> years experience
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
               </div>
@@ -144,7 +131,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     {guide.certifications.map((certification) => (
                       <span
                         key={certification.id}
-                        className="rounded-full border border-border/70 bg-background px-3 py-1.5 text-sm font-medium text-foreground/80"
+                        className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300"
                       >
                         {certification.title}
                       </span>
@@ -153,12 +140,12 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                 </div>
 
                 <div>
-                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Signature focus</p>
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Languages</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {guide.languages.map((language) => (
                       <span
                         key={`${guide.id}-${language}`}
-                        className="rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground"
+                        className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                       >
                         {language}
                       </span>
@@ -184,45 +171,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {guide.trips.map((trip) => (
-                <Link key={trip.id} href={`/trips/${trip.slug}`} className="block">
-                  <Card className="flex h-full min-h-[360px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
-                    <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
-                      <Image
-                        src={getTripCardImage(trip)}
-                        alt={trip.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 33vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
-                    </div>
-
-                    <div className="flex flex-1 flex-col justify-between gap-2 p-4">
-                      <div className="space-y-1.5">
-                        <h3 className="text-base font-semibold tracking-tight text-foreground">{trip.title}</h3>
-                        <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{trip.location}</p>
-                      </div>
-
-                      <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                        {trip.categories.map((category) => (
-                          <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
-                            {CATEGORY_LABELS[category] ?? category}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                        <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
-                          {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
-                        </span>
-                        <Price
-                          className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                          amount={trip.priceInRupees}
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
+                <TripCard key={trip.id} trip={trip} />
               ))}
             </div>
           )}
@@ -231,14 +180,8 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
         <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Traveller reviews
-              </h2>
               <p className="text-sm text-muted-foreground">
-                {guide._count.reviews === 0
-                  ? "No reviews yet."
-                  : `${guide._count.reviews} ${guide._count.reviews === 1 ? "review" : "reviews"} from trips led by ${guide.name}`}
-              </p>
+                Hear It From Those Who've Been There  </p>
             </div>
 
             {guide._count.reviews > 0 && (
@@ -256,22 +199,19 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               Travellers haven&apos;t left reviews for {guide.name} yet.
             </div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3">
               {guide.reviews.map((review) => (
-                <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
-                  <p className="font-medium text-foreground">{review.user.name}</p>
-                  <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
-                  {review.trip ? (
-                    <Link
-                      href={`/trips/${review.trip.slug}`}
-                      className="mt-2 inline-block text-xs font-medium text-muted-foreground underline underline-offset-2 transition hover:text-foreground"
-                    >
-                      {review.trip.title}
-                    </Link>
-                  ) : null}
-                </li>
+                <TestimonialCard
+                  key={review.id}
+                  testimonial={{
+                    name: getDisplayName(review.user.name),
+                    trip: review.trip?.title ?? "Radikal experience",
+                    slug: review.trip?.slug,
+                    quote: review.comment,
+                  }}
+                />
               ))}
-            </ul>
+            </div>
           )}
         </section>
       </div>

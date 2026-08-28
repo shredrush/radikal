@@ -23,8 +23,9 @@ import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
 import { auth } from "@/lib/auth";
+import { getDisplayName } from "@/lib/profile-initials";
 
-// Cap the "Traveller reviews" column in the guide section so every trip page
+// Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
 const MAX_REVIEWS = 4;
 
@@ -455,7 +456,7 @@ export default async function TripDetailPage({
 
                 <div className="lg:border-l lg:border-border/60 lg:pl-6">
                   <p className="text-sm font-semibold text-foreground">
-                    Traveller reviews
+                    words from community
                     {trip.reviews.length > 0 && (
                       <span className="ml-2 font-normal text-muted-foreground">({trip.reviews.length})</span>
                     )}
@@ -464,7 +465,7 @@ export default async function TripDetailPage({
                     {reviewSlots.map((review, index) =>
                       review ? (
                         <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
-                          <p className="font-medium text-foreground">{review.user.name}</p>
+                          <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
                           <p className="mt-2 text-muted-foreground">{review.comment}</p>
                         </li>
                       ) : (
