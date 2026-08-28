@@ -25,7 +25,7 @@ const DEFAULT_FAQ_ITEMS: FaqItem[] = [
   {
     question: "What’s included in the price?",
     answer:
-      "Certified local guides, permits, and everything listed under “What’s included” on the trip page. Items marked “Not included” — like travel insurance, some meals or personal gear — are arranged by you.",
+      "Certified local guides, permits, and everything listed under “What’s included” on the trip page. Items marked “Not included” — like some meals or personal gear — are arranged by you.",
   },
   {
     question: "Do I need prior experience?",

@@ -26,6 +26,13 @@ const getGuideDetail = unstable_cache(
         trips: {
           orderBy: { createdAt: "asc" },
         },
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { name: true } },
+            trip: { select: { slug: true, title: true } },
+          },
+        },
         _count: {
           select: { trips: true },
         },
@@ -95,18 +102,17 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               />
             </div>
 
-            <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-8">
-              <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Vetted guide
-              </div>
-
+            <div className="flex flex-col justify-start p-6 sm:p-8 lg:p-8">
               <div className="space-y-3">
                 <div>
                   <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     {guide.name}
                   </h1>
                   <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
+                  <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Vetted guide
+                  </div>
                 </div>
 
                 <p className="text-base leading-7 text-muted-foreground">
@@ -203,6 +209,42 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                 </Link>
               ))}
             </div>
+          )}
+        </section>
+
+        <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
+          <div className="mb-6 flex flex-col gap-2">
+            <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Traveller reviews
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {guide.reviews.length === 0
+                ? "No reviews yet."
+                : `${guide.reviews.length} ${guide.reviews.length === 1 ? "review" : "reviews"} from trips led by ${guide.name}`}
+            </p>
+          </div>
+
+          {guide.reviews.length === 0 ? (
+            <div className="rounded-[1.25rem] border border-dashed border-border/80 bg-background/80 p-6 text-sm text-muted-foreground">
+              Travellers haven&apos;t left reviews for {guide.name} yet.
+            </div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {guide.reviews.map((review) => (
+                <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
+                  <p className="font-medium text-foreground">{review.user.name}</p>
+                  <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
+                  {review.trip ? (
+                    <Link
+                      href={`/trips/${review.trip.slug}`}
+                      className="mt-2 inline-block text-xs font-medium text-muted-foreground underline underline-offset-2 transition hover:text-foreground"
+                    >
+                      {review.trip.title}
+                    </Link>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>

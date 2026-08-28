@@ -7,10 +7,12 @@ import {
   Bell,
   Camera,
   CalendarDays,
+  CheckCircle2,
   ClipboardList,
   Compass,
   ExternalLink,
   Headset,
+  Heart,
   KeyRound,
   MessageSquare,
   Settings2,
@@ -38,12 +40,13 @@ import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
+import { WishlistCard } from "@/components/profile/wishlist-card";
 import {
   CustomTripRequestCard,
   CustomTripRequestEmpty,
 } from "@/components/custom-trips/custom-trip-request-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
-import { formatTripDateRange } from "@/lib/trip-dates";
+import { formatTripDateRange, isTripCompleted } from "@/lib/trip-dates";
 import {
   formatCancelledBy,
   toSupportMessageViews,
@@ -60,6 +63,7 @@ const STATUS_FILTERS = [
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "PENDING", label: "Pending" },
   { value: "CANCELLED", label: "Cancelled" },
+  { value: "COMPLETED", label: "Completed" },
 ] as const;
 
 /** Staff shortcuts shown on the profile page, filtered by the user's permissions. */
@@ -138,7 +142,10 @@ export default async function ProfilePage({
 
   const { tab, status, section } = await searchParams;
   const statusFilter =
-    status === "PENDING" || status === "CONFIRMED" || status === "CANCELLED"
+    status === "PENDING" ||
+    status === "CONFIRMED" ||
+    status === "CANCELLED" ||
+    status === "COMPLETED"
       ? status
       : null;
   const activeSection = section === "username" ? "username" : "password";
@@ -156,7 +163,9 @@ export default async function ProfilePage({
         ? "support"
         : tab === "notifications"
           ? "notifications"
-          : isGuide && tab === "trips"
+          : tab === "wishlist"
+            ? "wishlist"
+            : isGuide && tab === "trips"
             ? "trips"
             : isGuide && tab === "booked-trips"
               ? "booked-trips"
@@ -169,6 +178,12 @@ export default async function ProfilePage({
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
     include: { trip: true, slot: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const wishlistItems = await prisma.wishlistItem.findMany({
+    where: { userId: user.id },
+    include: { trip: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -220,6 +235,28 @@ export default async function ProfilePage({
   const confirmed = bookings.filter((b) => b.status === "CONFIRMED");
   const upcoming = confirmed.filter((b) => new Date(b.slot.date) >= now).length;
 
+  // A booking is treated as completed when its trip dates have fully passed
+  // (or it was explicitly marked COMPLETED). Used to badge past trips and to
+  // populate the "Completed trips" section.
+  type BookingStatusValue = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+  function bookingDisplayStatus(booking: {
+    status: string;
+    slot: { date: Date };
+    trip: { durationDays: number };
+  }): BookingStatusValue {
+    if (booking.status === "COMPLETED") return "COMPLETED";
+    if (
+      booking.status === "CONFIRMED" &&
+      isTripCompleted(booking.slot.date, booking.trip.durationDays, now)
+    ) {
+      return "COMPLETED";
+    }
+    return booking.status as BookingStatusValue;
+  }
+  const completedBookings = bookings.filter(
+    (booking) => bookingDisplayStatus(booking) === "COMPLETED",
+  );
+
   let supportMessages: SupportMessageView[] = [];
   let supportChatStatus: "OPEN" | "CLOSED" = "OPEN";
   let supportUnreadCount = 0;
@@ -236,6 +273,56 @@ export default async function ProfilePage({
       }
     }
   }
+
+  const completedTripsSection = (
+    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+      <CardHeader>
+        <CardTitle>Completed trips</CardTitle>
+        <CardDescription>
+          Trips you&apos;ve already finished with Radikal.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {completedBookings.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+            <CheckCircle2 className="h-8 w-8 text-muted-foreground/50" />
+            <div>
+              <p className="font-medium text-foreground">No completed trips yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Trips you finish will appear here once their dates have passed.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {completedBookings.map((booking) => (
+              <li key={booking.id}>
+                <BookingCard
+                  booking={{
+                    id: booking.id,
+                    tripSlug: booking.trip.slug,
+                    title: booking.trip.title,
+                    location: booking.trip.location,
+                    image: getTripCardImage(booking.trip),
+                    dateRange: formatTripDateRange(
+                      booking.slot.date,
+                      booking.trip.durationDays
+                    ),
+                    participantCount: booking.participantCount,
+                    totalPriceRupees: booking.totalPriceRupees,
+                    status: "COMPLETED",
+                    paymentTransactionId: booking.paymentTransactionId,
+                    bookedAt: booking.createdAt.toISOString(),
+                    cancellationReason: booking.cancellationReason,
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -378,6 +465,18 @@ export default async function ProfilePage({
                 Bookings
               </Link>
               <Link
+                href="/profile?tab=wishlist"
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  activeTab === "wishlist"
+                    ? "border-primary/40 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <Heart className="h-4 w-4" />
+                Wishlist
+              </Link>
+              <Link
                 href="/profile?tab=notifications"
                 className={cn(
                   "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
@@ -488,6 +587,44 @@ export default async function ProfilePage({
                     <GuideTripsManager guideId={guide.id} />
                   ) : (
                     <p className="text-sm text-muted-foreground">No guide profile linked to this account.</p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : activeTab === "wishlist" ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <CardTitle>Wishlist</CardTitle>
+                  <CardDescription>
+                    Trips you&apos;ve saved for later.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {wishlistItems.length === 0 ? (
+                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+                      <Heart className="h-8 w-8 text-muted-foreground/50" />
+                      <div>
+                        <p className="font-medium text-foreground">Your wishlist is empty</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Tap the heart on any trip page to save it here.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        nativeButton={false}
+                        render={<Link href="/trips" />}
+                      >
+                        Explore trips
+                      </Button>
+                    </div>
+                  ) : (
+                    <ul className="flex flex-col gap-3">
+                      {wishlistItems.map((item) => (
+                        <li key={item.id}>
+                          <WishlistCard trip={item.trip} />
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </CardContent>
               </Card>
@@ -680,7 +817,7 @@ export default async function ProfilePage({
                                   ),
                                   participantCount: booking.participantCount,
                                   totalPriceRupees: booking.totalPriceRupees,
-                                  status: booking.status,
+                                  status: bookingDisplayStatus(booking),
                                   paymentTransactionId: booking.paymentTransactionId,
                                   bookedAt: booking.createdAt.toISOString(),
                                   customer: {
@@ -701,14 +838,15 @@ export default async function ProfilePage({
                 </CardContent>
               </Card>
             ) : canReadAllBookings ? (
-              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-                <CardHeader>
-                  <CardTitle>All bookings</CardTitle>
-                  <CardDescription>
-                    A live view of every reservation across the platform.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+              <div className="flex flex-col gap-6">
+                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                  <CardHeader>
+                    <CardTitle>All bookings</CardTitle>
+                    <CardDescription>
+                      A live view of every reservation across the platform.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
                   {allBookings.length === 0 ? (
                     <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
                       <Ticket className="h-8 w-8 text-muted-foreground/50" />
@@ -736,7 +874,7 @@ export default async function ProfilePage({
                               ),
                               participantCount: booking.participantCount,
                               totalPriceRupees: booking.totalPriceRupees,
-                              status: booking.status,
+                              status: bookingDisplayStatus(booking),
                               paymentTransactionId: booking.paymentTransactionId,
                               bookedAt: booking.createdAt.toISOString(),
                               customer: {
@@ -759,6 +897,9 @@ export default async function ProfilePage({
                   )}
                 </CardContent>
               </Card>
+
+              {completedTripsSection}
+            </div>
             ) : (
               <div className="flex flex-col gap-6">
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
@@ -804,7 +945,7 @@ export default async function ProfilePage({
                                 ),
                                 participantCount: booking.participantCount,
                                 totalPriceRupees: booking.totalPriceRupees,
-                                status: booking.status,
+                                status: bookingDisplayStatus(booking),
                                 paymentTransactionId: booking.paymentTransactionId,
                                 bookedAt: booking.createdAt.toISOString(),
                                 cancellationReason: booking.cancellationReason,
@@ -817,6 +958,8 @@ export default async function ProfilePage({
                     )}
                   </CardContent>
                 </Card>
+
+                {completedTripsSection}
 
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                   <CardHeader>

@@ -6,6 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { createBookingSchema } from "@/lib/validations/booking";
+import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
 
 export type CreateBookingResult =
   | { success: true; bookingId: string }
@@ -48,7 +49,13 @@ export async function createBooking(
     return { success: false, error: rateLimitError(bookingLimit) };
   }
 
-  const { tripId, slotId, participantCount } = parsed.data;
+  const { tripId, slotId, participantCount, adventureInsurance } = parsed.data;
+
+  // The insurance amount is derived from a server-side constant (never a
+  // client-supplied price), so opting in only adds a fixed per-person charge.
+  const insuranceRupees = adventureInsurance
+    ? ADVENTURE_INSURANCE_PER_PERSON_RUPEES * participantCount
+    : 0;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -93,7 +100,7 @@ export async function createBooking(
           tripId,
           slotId,
           participantCount,
-          totalPriceRupees: slot.trip.priceInRupees * participantCount,
+          totalPriceRupees: slot.trip.priceInRupees * participantCount + insuranceRupees,
           status: "PENDING",
         },
       });
@@ -118,6 +125,8 @@ export async function createBooking(
         tripId,
         slotId,
         participantCount,
+        adventureInsurance,
+        insuranceRupees,
       },
     });
 

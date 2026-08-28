@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
+import { CheckCircle2 } from "lucide-react";
 
 import {
   Card,
@@ -13,10 +14,16 @@ import {
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { BookingBar } from "@/components/trips/booking-bar";
 import { prisma } from "@/lib/prisma";
-import { formatTripDateRange } from "@/lib/trip-dates";
+import { formatTripDateRange, isSlotCompleted } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
+import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
+import { auth } from "@/lib/auth";
+
+// Cap the "Traveller reviews" column in the guide section so every trip page
+// renders a consistent section height regardless of how many reviews exist.
+const MAX_REVIEWS = 4;
 
 // Trip pages were hitting Postgres (with several joined tables) on every
 // request. Admin edits already call updateTag("trips")/revalidatePath for
@@ -38,11 +45,6 @@ const getTripDetail = unstable_cache(
           },
         },
         slots: {
-          where: {
-            date: {
-              gte: new Date(),
-            },
-          },
           orderBy: {
             date: "asc",
           },
@@ -50,7 +52,7 @@ const getTripDetail = unstable_cache(
         reviews: {
           include: { user: { select: { name: true, image: true } } },
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: MAX_REVIEWS,
         },
         tripLocation: true,
         inclusions: { orderBy: { order: "asc" } },
@@ -94,8 +96,27 @@ export default async function TripDetailPage({
     notFound();
   }
 
+  // Wishlist state is per-user, so it is read outside the cached trip query.
+  const session = await auth();
+  const userId = session?.user?.id;
+  const inWishlist = userId
+    ? Boolean(
+        await prisma.wishlistItem.findUnique({
+          where: { userId_tripId: { userId, tripId: trip.id } },
+        }),
+      )
+    : false;
+
   const guide = trip.guide;
   const guideProfileImage = guide ? getGuideImage(guide) : "/avatars/fox.svg";
+
+  const now = new Date();
+  const upcomingSlots = trip.slots.filter((slot) => !isSlotCompleted(slot.date, now));
+  const completedSlots = trip.slots.filter((slot) => isSlotCompleted(slot.date, now));
+
+  // Always render four review rows so the guide section keeps a consistent
+  // height across trips, padding any missing reviews with placeholders.
+  const reviewSlots = Array.from({ length: MAX_REVIEWS }, (_, index) => trip.reviews[index] ?? null);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -112,9 +133,16 @@ export default async function TripDetailPage({
             </div>
             <div className="flex flex-col justify-between gap-6 px-8 py-8 sm:px-10 sm:py-10 lg:px-0 lg:pt-4 lg:pb-8 lg:pr-10">
               <div className="space-y-4">
-                <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
-                  {trip.title}
-                </h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
+                    {trip.title}
+                  </h1>
+                  <WishlistButton
+                    tripId={trip.id}
+                    initialWishlisted={inWishlist}
+                    className="mt-1"
+                  />
+                </div>
                 <p className="line-clamp-6 text-base leading-8 text-muted-foreground">
                   {trip.description}
                 </p>
@@ -188,9 +216,9 @@ export default async function TripDetailPage({
                 <CardTitle className="text-xl">Available dates</CardTitle>
               </CardHeader>
               <CardContent>
-                {trip.slots.length > 0 ? (
+                {upcomingSlots.length > 0 ? (
                   <ul className="space-y-2">
-                    {trip.slots.map((slot) => (
+                    {upcomingSlots.map((slot) => (
                       <li key={slot.id}>
                         <Link
                           href={`/booking/${trip.id}/checkout?slot=${slot.id}`}
@@ -219,6 +247,35 @@ export default async function TripDetailPage({
                 )}
               </CardContent>
             </Card>
+
+            {completedSlots.length > 0 ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <CardTitle className="text-xl">Completed dates</CardTitle>
+                  <CardDescription>Past departures that have already set off.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {completedSlots.map((slot) => (
+                      <li
+                        key={slot.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-sm"
+                      >
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="font-medium text-muted-foreground line-through decoration-muted-foreground/40 decoration-2">
+                            {formatTripDateRange(slot.date, trip.durationDays)}
+                          </span>
+                        </div>
+                        <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Completed
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ) : null}
 
             <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
               <CardHeader>
@@ -261,27 +318,25 @@ export default async function TripDetailPage({
 
         <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <CardHeader>
-            <CardTitle className="text-2xl">Your guide</CardTitle>
+            <CardTitle className="text-xl">Your guide</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 text-sm leading-7 text-muted-foreground">
+          <CardContent className="space-y-5 text-sm leading-6 text-muted-foreground">
             {guide ? (
-              <div className="grid gap-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60">
-                  <div className="relative aspect-[4/5] w-full overflow-hidden">
-                    <Image
-                      src={guideProfileImage}
-                      alt={guide.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 24vw"
-                    />
-                  </div>
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="relative min-h-[288px] overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60 lg:min-h-0">
+                  <Image
+                    src={guideProfileImage}
+                    alt={guide.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 24vw"
+                  />
                 </div>
 
-                <div className="flex flex-col justify-center">
+                <div className="flex flex-col justify-start">
                   <div className="space-y-3">
                     <div>
-                      <h3 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                         {guide.name}
                       </h3>
                       <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">
@@ -341,27 +396,23 @@ export default async function TripDetailPage({
                       <span className="ml-2 font-normal text-muted-foreground">({trip.reviews.length})</span>
                     )}
                   </p>
-                  {trip.reviews.length > 0 ? (
-                    <ul className="mt-3 space-y-4">
-                      {trip.reviews.map((review) => (
-                        <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-foreground">{review.user.name}</span>
-                            <span className="flex items-center gap-0.5 text-white">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className={`h-3.5 w-3.5 ${i < review.rating ? "text-white" : "text-muted-foreground/30"}`}>
-                                  <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
-                                </svg>
-                              ))}
-                            </span>
-                          </div>
+                  <ul className="mt-3 space-y-3">
+                    {reviewSlots.map((review, index) =>
+                      review ? (
+                        <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
+                          <p className="font-medium text-foreground">{review.user.name}</p>
                           <p className="mt-2 text-muted-foreground">{review.comment}</p>
                         </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-3 text-muted-foreground">No reviews yet — be the first to share your experience.</p>
-                  )}
+                      ) : (
+                        <li
+                          key={`review-placeholder-${index}`}
+                          className="flex min-h-[76px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/20 p-3 text-center text-sm text-muted-foreground"
+                        >
+                          {index === 0 ? "No reviews yet — be the first to share your experience." : ""}
+                        </li>
+                      )
+                    )}
+                  </ul>
                 </div>
               </div>
             ) : (

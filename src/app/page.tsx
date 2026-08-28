@@ -56,8 +56,44 @@ const getHomeGuides = unstable_cache(
   { tags: ["guides"], revalidate: 3600 },
 );
 
+// The home-page "Travellers love the Radikal Experiences" section is driven by
+// the reviews travellers leave on completed trips (seeded via the demo data).
+const getHomeReviews = unstable_cache(
+  async () => {
+    const reviews = await prisma.review.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        tripId: true,
+        comment: true,
+        user: { select: { name: true } },
+        trip: { select: { title: true } },
+      },
+    });
+
+    // Surface one review per trip so the home page shows a diverse set of
+    // experiences instead of several comments from the same trip.
+    const seenTrips = new Set<string>();
+    const distinctReviews: typeof reviews = [];
+
+    for (const review of reviews) {
+      if (review.tripId && seenTrips.has(review.tripId)) continue;
+      if (review.tripId) seenTrips.add(review.tripId);
+      distinctReviews.push(review);
+      if (distinctReviews.length >= 4) break;
+    }
+
+    return distinctReviews;
+  },
+  ["home-reviews"],
+  { revalidate: 300 },
+);
+
 export default async function Home() {
-  const [trips, guides] = await Promise.all([getHomeTrips(), getHomeGuides()]);
+  const [trips, guides, reviews] = await Promise.all([
+    getHomeTrips(),
+    getHomeGuides(),
+    getHomeReviews(),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -82,6 +118,11 @@ export default async function Home() {
           location: guide.location,
           photo: getGuideImage(guide),
           certifications: guide.certifications.map((certification) => certification.title),
+        }))}
+        testimonials={reviews.map((review) => ({
+          name: review.user.name,
+          trip: review.trip?.title ?? "Radikal experience",
+          quote: review.comment,
         }))}
       />
     </div>

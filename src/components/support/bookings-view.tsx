@@ -7,13 +7,14 @@ import { BookingCard } from "@/components/profile/booking-card";
 import { Button } from "@/components/ui/button";
 import { formatCancelledBy, type SupportBookingListItem } from "@/lib/support";
 
-type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED";
+type BookingStatusFilter = "ALL" | "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
 const bookingFilterOptions: { value: BookingStatusFilter; label: string }[] = [
   { value: "ALL", label: "All" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "PENDING", label: "Pending" },
   { value: "CANCELLED", label: "Cancelled" },
+  { value: "COMPLETED", label: "Completed" },
 ];
 
 function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFilter) {

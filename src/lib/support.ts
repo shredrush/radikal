@@ -10,7 +10,7 @@ export type SupportMessageView = {
 
 export type SupportBookingListItem = {
   id: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
   tripSlug: string;
   title: string;
   location: string;
@@ -36,7 +36,7 @@ export type SupportBookingListItem = {
  */
 export function toSupportBookingListItem(booking: {
   id: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
   totalPriceRupees: number;
   participantCount: number;
   paymentTransactionId: string | null;

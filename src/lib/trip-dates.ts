@@ -24,3 +24,26 @@ export function formatTripDateRange(startDate: Date | string, durationDays: numb
 
   return `${dateFormatter.format(start)} – ${dateFormatter.format(end)}`;
 }
+
+/**
+ * A slot is "completed" once its departure date has passed — the trip has
+ * started and can no longer be booked. Used to separate upcoming dates from
+ * completed ones on the trip page.
+ */
+export function isSlotCompleted(slotDate: Date | string, now = new Date()): boolean {
+  return new Date(slotDate) < now;
+}
+
+/**
+ * A trip is "completed" once its final day has passed — the whole itinerary
+ * (including multi-day trips) is over. Used to mark past bookings as completed
+ * on the profile page.
+ */
+export function isTripCompleted(
+  startDate: Date | string,
+  durationDays: number,
+  now = new Date(),
+): boolean {
+  const { endDate } = getTripDateRange(startDate, durationDays);
+  return endDate < now;
+}

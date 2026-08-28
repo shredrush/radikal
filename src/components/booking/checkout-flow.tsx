@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Minus, Plus, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Minus, Plus, Shield, ShieldCheck, Users } from "lucide-react";
 
 import { createBooking } from "@/lib/actions/booking";
+import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
 import { submitTransactionId } from "@/lib/actions/payment";
 import { sanitizeText } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export function CheckoutFlow({
   const router = useRouter();
   const [slotId, setSlotId] = useState(initialSlotId);
   const [participantCount, setParticipantCount] = useState(initialParticipantCount);
+  const [adventureInsurance, setAdventureInsurance] = useState(false);
   const [step, setStep] = useState<Step>("select");
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState("");
@@ -61,7 +63,11 @@ export function CheckoutFlow({
     [availableSlots, slotId]
   );
 
-  const totalPrice = trip.priceInRupees * participantCount;
+  const basePrice = trip.priceInRupees * participantCount;
+  const insuranceRupees = adventureInsurance
+    ? ADVENTURE_INSURANCE_PER_PERSON_RUPEES * participantCount
+    : 0;
+  const totalPrice = basePrice + insuranceRupees;
 
   function handleReserve() {
     setError(null);
@@ -70,6 +76,7 @@ export function CheckoutFlow({
         tripId: trip.id,
         slotId,
         participantCount,
+        adventureInsurance,
       });
 
       if (!result.success) {
@@ -187,6 +194,38 @@ export function CheckoutFlow({
           </div>
         </div>
 
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="adventure-insurance" className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            Add-ons
+          </Label>
+          <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/80 px-3 py-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-foreground">Adventure insurance</span>
+              <span className="text-xs text-muted-foreground">
+                <Price amount={ADVENTURE_INSURANCE_PER_PERSON_RUPEES} /> per person
+              </span>
+            </div>
+            <button
+              id="adventure-insurance"
+              type="button"
+              role="switch"
+              aria-checked={adventureInsurance}
+              disabled={step !== "select"}
+              onClick={() => setAdventureInsurance((on) => !on)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                adventureInsurance ? "bg-emerald-600" : "bg-muted"
+              } disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  adventureInsurance ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         <div className="space-y-2 border-t border-border/70 pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
@@ -194,9 +233,20 @@ export function CheckoutFlow({
               {participantCount === 1 ? "person" : "people"}
             </span>
             <span className="text-foreground">
-              <Price amount={totalPrice} />
+              <Price amount={basePrice} />
             </span>
           </div>
+          {adventureInsurance ? (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>
+                Adventure insurance × {participantCount}{" "}
+                {participantCount === 1 ? "person" : "people"}
+              </span>
+              <span className="text-foreground">
+                <Price amount={insuranceRupees} />
+              </span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between text-muted-foreground">
             <span>Booking fee</span>
             <span className="text-foreground">

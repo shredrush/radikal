@@ -25,17 +25,19 @@ import { CancelUserBookingButton } from "@/components/profile/cancel-user-bookin
 import { cn } from "@/lib/utils";
 import { Price } from "@/components/currency/price";
 
-type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
 const statusStyles: Record<string, string> = {
   PENDING: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   CONFIRMED: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  COMPLETED: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
 };
 
 function statusLabel(status: string) {
   if (status === "CONFIRMED") return "Confirmed";
   if (status === "CANCELLED") return "Cancelled";
+  if (status === "COMPLETED") return "Completed";
   return "Pending payment";
 }
 
@@ -246,13 +248,13 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
           </dl>
 
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            {booking.showGuideCancel && booking.status !== "CANCELLED" ? (
+            {booking.showGuideCancel && booking.status !== "CANCELLED" && booking.status !== "COMPLETED" ? (
               <CancelGuideBookingButton bookingId={booking.id} />
             ) : null}
-            {booking.showUserCancel && booking.status !== "CANCELLED" ? (
+            {booking.showUserCancel && booking.status !== "CANCELLED" && booking.status !== "COMPLETED" ? (
               <CancelUserBookingButton bookingId={booking.id} />
             ) : null}
-            {booking.showAdminCancel && booking.status !== "CANCELLED" ? (
+            {booking.showAdminCancel && booking.status !== "CANCELLED" && booking.status !== "COMPLETED" ? (
               <CancelBookingButton bookingId={booking.id} />
             ) : null}
             {booking.showAdminConfirm && booking.status === "PENDING" ? (

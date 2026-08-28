@@ -50,6 +50,12 @@ type GuideProfile = {
   certifications: string[];
 };
 
+type Testimonial = {
+  name: string;
+  trip: string;
+  quote: string;
+};
+
 function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: readonly string[]) {
   const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
 
@@ -80,10 +86,12 @@ export function SearchableTrips({
   trips,
   featuredTripSlugs = [],
   guides = [],
+  testimonials = [],
 }: {
   trips: TripCardItem[];
   featuredTripSlugs?: readonly string[];
   guides?: GuideProfile[];
+  testimonials?: Testimonial[];
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -139,41 +147,6 @@ export function SearchableTrips({
     }
   };
 
-  const testimonials = [
-    {
-      name: "Riya S.",
-      trip: "Snowboarding Escape in Gulmarg",
-      quote:
-        "Every detail felt effortless. The guide was calm, knowledgeable, and made our first snowboarding experience unforgettable.",
-      image:
-        "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Arjun M.",
-      trip: "Ladakh Cycling Adventure",
-      quote:
-        "The route, pacing, and support were incredible. It felt adventurous without losing comfort or safety.",
-      image:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Naina K.",
-      trip: "Women-only Trek in Kashmir",
-      quote:
-        "The whole experience was empowering and beautifully organized. We felt taken care of from start to finish.",
-      image:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Vikram T.",
-      trip: "Expedition in the Zanskar Range",
-      quote:
-        "The crew made difficult terrain feel doable, and every summit push was supported by clear planning and calm leadership.",
-      image:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80",
-    },
-  ];
-
   return (
     <section
       id="upcoming-trips"
@@ -222,7 +195,7 @@ export function SearchableTrips({
             ) : null}
             <button
               type="submit"
-              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:px-5"
+              className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90 sm:px-5"
             >
               <Search className="size-3.5" />
               <span>Search</span>
@@ -450,10 +423,10 @@ export function SearchableTrips({
              {visibleTrips.map((trip) => (
               <Card
                 key={trip.id}
-                className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:h-[480px]"
+                className="flex h-[360px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:h-[400px]"
                 onClick={() => window.location.href = `/trips/${trip.slug}`}
               >
-                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]">
+                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[200px]">
                   <Image
                     src={getTripCardImage(trip)}
                     alt={trip.title}
@@ -495,7 +468,7 @@ export function SearchableTrips({
          <div className="mt-6 flex justify-center">
             <Button
               size="sm"
-              className="rounded-full bg-black px-4 text-white hover:bg-neutral-800"
+              className="rounded-full bg-black px-4 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
               nativeButton={false}
               render={<Link href="/trips" />}
             >
@@ -521,7 +494,7 @@ export function SearchableTrips({
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guides.map((guide) => (
                 <Link key={guide.slug} href={`/${guide.slug}`} className="block">
-                  <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)]">
+                   <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
                     <CardHeader className="gap-0 p-0 pb-0 px-0">
                       <div className="flex flex-col items-center text-center">
                         <Image
@@ -556,7 +529,7 @@ export function SearchableTrips({
             <div className="mt-6 flex justify-center">
               <Button
                 size="sm"
-                className="rounded-full bg-black px-5 text-white hover:bg-neutral-800"
+                className="rounded-full bg-black px-5 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
                 nativeButton={false}
                 render={<Link href="/become-a-guide" />}
               >
@@ -581,8 +554,8 @@ export function SearchableTrips({
             </div>
 
             <div className="mt-8 !grid !w-full !grid-cols-2 !gap-2 lg:!grid-cols-4">
-              {testimonials.map((testimonial) => (
-                <Card key={testimonial.name} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
+              {testimonials.map((testimonial, index) => (
+                <Card key={`${testimonial.name}-${testimonial.trip}-${index}`} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
                   <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
                     <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
                       “{testimonial.quote}”

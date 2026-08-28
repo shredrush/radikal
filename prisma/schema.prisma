@@ -51,10 +51,13 @@ enum TripCategory {
 // Booking status flow is strictly PENDING -> CONFIRMED -> CANCELLED.
 // A booking becomes CONFIRMED only after payment is confirmed
 // (Razorpay webhook in production; a dummy payment action for this MVP).
+// A CONFIRMED booking whose trip dates have fully passed is treated as
+// COMPLETED (derived from the slot date, not written back to the DB).
 enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+  COMPLETED
 }
 
 // A support conversation is either open (visible in the support dashboard)
@@ -122,6 +125,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   bookings                  Booking[]
+  wishlistItems             WishlistItem[]
   reviews                   Review[]
   guide                     Guide?
   guideApplications         GuideApplication[]
@@ -272,6 +276,7 @@ model Trip {
   guide        Guide?              @relation(fields: [guideId], references: [id])
   slots        Slot[]
   bookings     Booking[]
+  wishlistItems WishlistItem[]
   reviews      Review[]
   tripLocation TripLocation?
   inclusions   TripInclusion[]
@@ -369,6 +374,23 @@ model Booking {
   @@index([slotId])
   @@index([status])
   @@map("bookings")
+}
+
+// A traveller's saved trip. One row per user+trip; the composite unique
+// constraint makes the pair idempotent so toggling the heart never duplicates.
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  tripId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tripId])
+  @@index([userId])
+  @@index([tripId])
+  @@map("wishlist_items")
 }
 
 model Review {

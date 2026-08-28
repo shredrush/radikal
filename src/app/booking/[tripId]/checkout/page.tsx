@@ -50,9 +50,9 @@ const BOOKING_FAQ_ITEMS: FaqItem[] = [
       "No — the amount shown at checkout is the trip price only. We don’t add a separate booking fee.",
   },
   {
-    question: "Do I need travel insurance?",
+    question: "Do I need travel/adventure insurance?",
     answer:
-      "We strongly recommend travel insurance covering high-altitude trekking and cancellations. It isn’t included in the trip price.",
+      "You can opt in to adventure insurance as an add-on during checkout.",
   },
   {
     question: "What if Radikal cancels a trip?",
@@ -136,10 +136,10 @@ export default async function CheckoutPage({
           Back to trip
         </Link>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-stretch">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           {/* Left column — trip photos */}
-          <div className="h-full overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-            <div className="grid h-full min-h-[300px] grid-cols-4 grid-rows-2 gap-0.5 sm:min-h-[420px]">
+          <div className="h-[360px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:h-[540px]">
+            <div className="grid h-full grid-cols-4 grid-rows-2 gap-0.5">
               <div className="relative col-span-2 row-span-2 overflow-hidden bg-muted/60">
                 <Image src={gallerySlots[0]} alt={`${trip.title} photo`} fill className="object-cover" sizes="50vw" priority />
               </div>
@@ -192,7 +192,7 @@ export default async function CheckoutPage({
 
         <FaqSection
           items={BOOKING_FAQ_ITEMS}
-          title="Booking & payment FAQs"
+          title="Frequently asked questions"
         />
       </div>
     </div>

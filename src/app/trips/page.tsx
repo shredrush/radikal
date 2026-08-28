@@ -106,7 +106,7 @@ type TripCardTrip = Awaited<ReturnType<typeof getTripsPageTrips>>[number];
 function TripCard({ trip }: { trip: TripCardTrip }) {
   return (
     <Link href={`/trips/${trip.slug}`} className="block">
-      <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
+      <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:min-h-[420px]">
         <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
           <Image
             src={getTripCardImage(trip)}
@@ -129,8 +129,8 @@ function TripCard({ trip }: { trip: TripCardTrip }) {
               </Badge>
             ))}
           </div>
-          <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
-            <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
+          <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2 dark:border-emerald-500/15">
+            <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 sm:text-sm">
               {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
             </span>
             <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">

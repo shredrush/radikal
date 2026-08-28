@@ -4,6 +4,7 @@ export const createBookingSchema = z.object({
   tripId: z.string().min(1, "Trip is required"),
   slotId: z.string().min(1, "Slot is required"),
   participantCount: z.coerce.number().int().min(1).max(20).default(1),
+  adventureInsurance: z.boolean().optional().default(false),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
