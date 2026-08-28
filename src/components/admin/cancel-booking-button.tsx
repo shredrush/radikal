@@ -11,6 +11,7 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
       triggerLabel="Cancel booking"
       confirmLabel="Confirm cancel"
       successMessage="Booking cancelled."
+      alignActions="start"
     />
   );
 }

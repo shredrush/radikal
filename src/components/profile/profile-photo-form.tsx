@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useTransition } from "react";
 import type { ReactElement } from "react";
 import { Camera, Check, ImagePlus, Loader2 } from "lucide-react";
 
@@ -17,9 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PROFILE_AVATARS } from "@/lib/profile-avatars";
-import { updateProfilePhotoAction, type ProfilePhotoActionState } from "@/lib/actions/profile";
-
-const initialState: ProfilePhotoActionState = {};
+import { updateProfilePhotoAction } from "@/lib/actions/profile";
 
 export function ProfilePhotoForm({
   currentImage,
@@ -28,15 +27,47 @@ export function ProfilePhotoForm({
   currentImage: string | null;
   trigger?: ReactElement;
 }) {
-  const [state, formAction, isPending] = useActionState(updateProfilePhotoAction, initialState);
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState(
     PROFILE_AVATARS.find((avatar) => avatar.src === currentImage)?.key ?? "",
   );
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  function resetForm() {
+    setError(null);
+    setPreview(null);
+    setSelectedAvatar(
+      PROFILE_AVATARS.find((avatar) => avatar.src === currentImage)?.key ?? "",
+    );
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (nextOpen) resetForm();
+  }
+
+  function handleSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProfilePhotoAction({}, formData);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setOpen(false);
+      setPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      router.refresh();
+    });
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger ? (
         <DialogTrigger render={trigger} />
       ) : (
@@ -50,9 +81,8 @@ export function ProfilePhotoForm({
           <DialogTitle>Change profile photo</DialogTitle>
           <DialogDescription>Choose an animal avatar or upload a photo from your device.</DialogDescription>
         </DialogHeader>
-        <form action={formAction} className="mt-5 flex flex-col gap-5">
-          {state.success ? <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">Profile photo updated successfully.</p> : null}
-          {state.error ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p> : null}
+        <form action={handleSubmit} className="mt-5 flex flex-col gap-5">
+          {error ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
           <fieldset className="flex flex-col gap-3">
             <legend className="text-sm font-medium">Choose an avatar</legend>

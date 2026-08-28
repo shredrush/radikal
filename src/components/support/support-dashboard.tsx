@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Compass, MessageSquare, Ticket, User } from "lucide-react";
+import { ArrowLeft, Compass, MessageSquare, Ticket, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -146,6 +146,15 @@ export function SupportDashboard({
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to profile
+            </Link>
+          </div>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
               <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">

@@ -18,7 +18,7 @@ export default async function AdminBookingsPage() {
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="Manage Bookings"
-          description="A live view of every reservation made on the platform, across all travellers and trips."
+          description="A live view of every booking on the platform"
           active="bookings"
           role={session.user.role}
         />

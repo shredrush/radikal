@@ -17,6 +17,7 @@ export function CancelBookingFlow({
   confirmLabel,
   successMessage,
   placeholder = "Add a note or reason for the cancellation…",
+  alignActions = "end",
 }: {
   bookingId: string;
   action: CancelAction;
@@ -24,6 +25,7 @@ export function CancelBookingFlow({
   confirmLabel: string;
   successMessage: string;
   placeholder?: string;
+  alignActions?: "start" | "end";
 }) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -71,7 +73,9 @@ export function CancelBookingFlow({
         autoFocus
         className="w-full resize-none rounded-xl border border-border/70 bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-ring/30"
       />
-      <div className="flex flex-wrap justify-end gap-2">
+      <div
+        className={`flex flex-wrap gap-2 ${alignActions === "start" ? "justify-start" : "justify-end"}`}
+      >
         <Button
           type="button"
           size="sm"

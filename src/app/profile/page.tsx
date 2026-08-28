@@ -14,6 +14,7 @@ import {
   Headset,
   Heart,
   KeyRound,
+  ListChecks,
   MessageSquare,
   Settings2,
   Ticket,
@@ -24,6 +25,7 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasPermission, type Role } from "@/lib/authz";
+import { ADMIN_SECTIONS, type AdminSection } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,6 +42,7 @@ import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
 import { BookingCard } from "@/components/profile/booking-card";
+import { LazyBookingsSection } from "@/components/profile/lazy-bookings-section";
 import { WishlistCard } from "@/components/profile/wishlist-card";
 import {
   CustomTripRequestCard,
@@ -48,7 +51,6 @@ import {
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange, isTripCompleted } from "@/lib/trip-dates";
 import {
-  formatCancelledBy,
   toSupportMessageViews,
   type SupportMessageView,
 } from "@/lib/support";
@@ -65,52 +67,46 @@ const STATUS_FILTERS = [
   { value: "COMPLETED", label: "Completed" },
 ] as const;
 
-/** Staff shortcuts shown on the profile page, filtered by the user's permissions. */
-function staffNavItems(role: Role | undefined) {
-  const items: { href: string; label: string; icon: React.ReactNode }[] = [];
-  if (hasPermission(role, "support.manage")) {
-    items.push({
-      href: "/support",
-      label: "Support dashboard",
-      icon: <Headset className="h-3.5 w-3.5" />,
-    });
+/** Icons for the admin sections on the profile page (the admin board header
+ *  renders the same sections without icons). */
+const STAFF_SECTION_ICONS: Record<AdminSection, React.ReactNode> = {
+  "trip-changes": <ListChecks className="h-3.5 w-3.5" />,
+  trips: <Compass className="h-3.5 w-3.5" />,
+  bookings: <Ticket className="h-3.5 w-3.5" />,
+  guides: <Users className="h-3.5 w-3.5" />,
+  applications: <ClipboardList className="h-3.5 w-3.5" />,
+  users: <UserCog className="h-3.5 w-3.5" />,
+};
+
+/**
+ * Staff shortcuts shown on the profile page. The section list (order, labels,
+ * hrefs, and permission gating) is shared with the admin board header via
+ * `ADMIN_SECTIONS` so both stay in sync from a single source. The support
+ * dashboard shortcut is rendered separately (top-right of the hero), mirroring
+ * the admin board header layout.
+ *
+ * Buttons are grouped into columns so related sub-sections sit directly below
+ * their parent: "Trip changes" under "Manage trips" and "Guide Applications"
+ * under "Manage guides".
+ */
+const STAFF_BUTTON_GROUPS: { parent: AdminSection; children?: AdminSection[] }[] = [
+  { parent: "trips", children: ["trip-changes"] },
+  { parent: "bookings" },
+  { parent: "guides", children: ["applications"] },
+  { parent: "users" },
+];
+
+function staffButton(role: Role | undefined, key: AdminSection) {
+  const section = ADMIN_SECTIONS.find((s) => s.key === key);
+  if (!section || !hasPermission(role, section.permission)) {
+    return null;
   }
-  if (hasPermission(role, "bookings.read")) {
-    items.push({
-      href: "/admin/bookings",
-      label: "Manage bookings",
-      icon: <Ticket className="h-3.5 w-3.5" />,
-    });
-  }
-  if (hasPermission(role, "trips.manage")) {
-    items.push({
-      href: "/admin/trips",
-      label: "Manage trips",
-      icon: <Compass className="h-3.5 w-3.5" />,
-    });
-  }
-  if (hasPermission(role, "guides.manage")) {
-    items.push({
-      href: "/admin/guides",
-      label: "Manage guides",
-      icon: <Users className="h-3.5 w-3.5" />,
-    });
-  }
-  if (hasPermission(role, "guideApplications.manage")) {
-    items.push({
-      href: "/admin/guide-applications",
-      label: "Guide Applications",
-      icon: <ClipboardList className="h-3.5 w-3.5" />,
-    });
-  }
-  if (hasPermission(role, "users.manage")) {
-    items.push({
-      href: "/admin/users",
-      label: "Manage users",
-      icon: <UserCog className="h-3.5 w-3.5" />,
-    });
-  }
-  return items;
+  return {
+    key: section.key,
+    href: section.href,
+    label: section.label,
+    icon: STAFF_SECTION_ICONS[section.key],
+  };
 }
 
 export const metadata: Metadata = {
@@ -160,24 +156,26 @@ export default async function ProfilePage({
               : "bookings";
   const canAccessSupportDesk = hasPermission(user.role, "support.manage");
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
-  const canConfirmBookings = hasPermission(user.role, "bookings.confirm");
-  const canCancelBookings = hasPermission(user.role, "bookings.cancel");
+  const isStaffView = canReadAllBookings;
 
   // Fetch only the queries the active tab needs, all in parallel. The page
   // previously ran every query (including the platform-wide "all bookings"
   // list and the full support thread) on every render regardless of tab.
+  // Staff skip their personal booking rows and the platform-wide list entirely
+  // — those sections lazy-load on expand — keeping only cheap counts for the
+  // hero stats.
   const [
     currentUser,
     guide,
     bookings,
     wishlistItems,
     customTripRequests,
-    allBookings,
     guideBookings,
     notifications,
     userReviews,
     supportChat,
     supportUnread,
+    personalBookingCounts,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
@@ -189,11 +187,13 @@ export default async function ProfilePage({
           select: { id: true, slug: true },
         })
       : Promise.resolve(null),
-    prisma.booking.findMany({
-      where: { userId: user.id },
-      include: { trip: true, slot: true },
-      orderBy: { createdAt: "desc" },
-    }),
+    isStaffView
+      ? Promise.resolve([])
+      : prisma.booking.findMany({
+          where: { userId: user.id },
+          include: { trip: true, slot: true },
+          orderBy: { createdAt: "desc" },
+        }),
     activeTab === "wishlist"
       ? prisma.wishlistItem.findMany({
           where: { userId: user.id },
@@ -208,17 +208,6 @@ export default async function ProfilePage({
           include: {
             user: { select: { id: true, name: true, email: true, username: true } },
             chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-          },
-        })
-      : Promise.resolve([]),
-    canReadAllBookings && activeTab === "bookings"
-      ? prisma.booking.findMany({
-          orderBy: { createdAt: "desc" },
-          include: {
-            trip: true,
-            slot: true,
-            user: { select: { id: true, name: true, username: true, email: true } },
-            cancelledBy: { select: { name: true } },
           },
         })
       : Promise.resolve([]),
@@ -238,7 +227,7 @@ export default async function ProfilePage({
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
-    activeTab === "bookings"
+    activeTab === "bookings" && !isStaffView
       ? prisma.review.findMany({
           where: { userId: user.id },
           select: { id: true, tripId: true, rating: true, comment: true },
@@ -269,6 +258,15 @@ export default async function ProfilePage({
           return { status: chat.status, unreadCount };
         })()
       : Promise.resolve(null),
+    isStaffView
+      ? (async () => {
+          const [total, confirmed] = await Promise.all([
+            prisma.booking.count({ where: { userId: user.id } }),
+            prisma.booking.count({ where: { userId: user.id, status: "CONFIRMED" } }),
+          ]);
+          return { total, upcoming: confirmed };
+        })()
+      : Promise.resolve(null),
   ]);
 
   const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
@@ -281,6 +279,8 @@ export default async function ProfilePage({
 
   const now = new Date();
   const upcoming = bookings.filter((b) => b.status === "CONFIRMED").length;
+  const heroBookingCount = isStaffView ? (personalBookingCounts?.total ?? 0) : bookings.length;
+  const heroUpcomingCount = isStaffView ? (personalBookingCounts?.upcoming ?? 0) : upcoming;
 
   // A booking is treated as completed when its trip dates have fully passed
   // (or it was explicitly marked COMPLETED). Used to badge past trips and to
@@ -382,7 +382,7 @@ export default async function ProfilePage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
         {/* Hero */}
         <div className="rounded-[1.5rem] border border-border/80 p-5 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between">
@@ -438,32 +438,67 @@ export default async function ProfilePage({
                 <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Ticket className="h-4 w-4 text-primary" />
-                    <strong className="font-semibold text-foreground">{bookings.length}</strong>{" "}
+                    <strong className="font-semibold text-foreground">{heroBookingCount}</strong>{" "}
                     bookings
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <CalendarDays className="h-4 w-4 text-primary" />
-                    <strong className="font-semibold text-foreground">{upcoming}</strong>{" "}
+                    <strong className="font-semibold text-foreground">{heroUpcomingCount}</strong>{" "}
                     upcoming
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {staffNavItems(user.role).map((item) => (
+            <div className="flex flex-col gap-3 sm:items-end">
+              {canAccessSupportDesk ? (
                 <Button
-                  key={item.href}
                   variant="outline"
                   size="sm"
                   className="w-full justify-start rounded-full sm:w-auto"
                   nativeButton={false}
-                  render={<Link href={item.href} />}
+                  render={<Link href="/support" />}
                 >
-                  {item.icon}
-                  {item.label}
+                  <Headset className="h-3.5 w-3.5" />
+                  Support dashboard
                 </Button>
-              ))}
+              ) : null}
+              <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
+                {STAFF_BUTTON_GROUPS.map((group) => {
+                  const parent = staffButton(user.role, group.parent);
+                  if (!parent) return null;
+                  const children = (group.children ?? [])
+                    .map((key) => staffButton(user.role, key))
+                    .filter((b): b is NonNullable<ReturnType<typeof staffButton>> => b !== null);
+                  return (
+                    <div key={group.parent} className="flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        nativeButton={false}
+                        render={<Link href={parent.href} />}
+                      >
+                        {parent.icon}
+                        {parent.label}
+                      </Button>
+                      {children.map((child) => (
+                        <Button
+                          key={child.key}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                          nativeButton={false}
+                          render={<Link href={child.href} />}
+                        >
+                          {child.icon}
+                          {child.label}
+                        </Button>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -895,67 +930,23 @@ export default async function ProfilePage({
               </Card>
             ) : canReadAllBookings ? (
               <div className="flex flex-col gap-6">
-                <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-                  <CardHeader>
-                    <CardTitle>All bookings</CardTitle>
-                    <CardDescription>
-                      A live view of every reservation across the platform.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                  {allBookings.length === 0 ? (
-                    <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
-                      <Ticket className="h-8 w-8 text-muted-foreground/50" />
-                      <div>
-                        <p className="font-medium text-foreground">No bookings yet</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Reservations will appear here as soon as travellers book a trip.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <ul className="flex flex-col gap-3">
-                      {allBookings.map((booking) => (
-                        <li key={booking.id}>
-                          <BookingCard
-                            booking={{
-                              id: booking.id,
-                              tripSlug: booking.trip.slug,
-                              title: booking.trip.title,
-                              location: booking.trip.location,
-                              image: getTripCardImage(booking.trip),
-                              dateRange: formatTripDateRange(
-                                booking.slot.date,
-                                booking.trip.durationDays
-                              ),
-                              participantCount: booking.participantCount,
-                              totalPriceRupees: booking.totalPriceRupees,
-                              status: bookingDisplayStatus(booking),
-                              paymentTransactionId: booking.paymentTransactionId,
-                              bookedAt: booking.createdAt.toISOString(),
-                              customer: {
-                                name: booking.user.name,
-                                username: booking.user.username,
-                                email: booking.user.email,
-                              },
-                              cancelledByText: formatCancelledBy(
-                                booking.cancelledBy?.name ?? null,
-                                booking.cancelledByRole
-                              ),
-                              cancellationReason: booking.cancellationReason,
-                              showAdminCancel: canCancelBookings,
-                              showAdminConfirm: canConfirmBookings,
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
+                <LazyBookingsSection
+                  kind="upcoming"
+                  title="Upcoming trips"
+                  endpoint="/api/profile/bookings?kind=upcoming"
+                  emptyTitle="No upcoming trips"
+                  emptyDescription="Once you book a trip, it will show up here with its status."
+                />
 
-              {completedTripsSection}
-            </div>
+                <LazyBookingsSection
+                  kind="completed"
+                  title="Completed trips"
+                  description="Trips you've already finished with Radikal."
+                  endpoint="/api/profile/bookings?kind=completed"
+                  emptyTitle="No completed trips yet"
+                  emptyDescription="Trips you finish will appear here once their dates have passed."
+                />
+              </div>
             ) : (
               <div className="flex flex-col gap-6">
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">

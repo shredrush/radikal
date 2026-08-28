@@ -303,9 +303,6 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
             {booking.showAdminCancel && booking.status !== "CANCELLED" && booking.status !== "COMPLETED" ? (
               <CancelBookingButton bookingId={booking.id} />
             ) : null}
-            {booking.showAdminConfirm && booking.status === "PENDING" ? (
-              <ConfirmPaymentButton bookingId={booking.id} />
-            ) : null}
             <Button
               size="sm"
               className="rounded-full"
@@ -315,6 +312,9 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
               Go to trip page
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
+            {booking.showAdminConfirm && booking.status === "PENDING" ? (
+              <ConfirmPaymentButton bookingId={booking.id} />
+            ) : null}
           </div>
         </div>
       ) : null}

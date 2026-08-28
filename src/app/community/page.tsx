@@ -6,10 +6,12 @@ import {
   ArrowRight,
   Compass,
   Footprints,
+  GraduationCap,
   HandCoins,
   HeartHandshake,
   Home,
   Leaf,
+  Lightbulb,
   MapPin,
   Mountain,
   ShieldCheck,
@@ -48,7 +50,7 @@ const getCommunityGuides = unstable_cache(
   { tags: ["guides"], revalidate: 3600 },
 );
 
-type PillarTone = "orange" | "green";
+type PillarTone = "orange" | "blue" | "green";
 
 const pillars: {
   title: string;
@@ -62,7 +64,7 @@ const pillars: {
     title: "Small-group travel",
     tagline: "Fewer people, more meaning",
     description:
-      "We keep groups intentionally small so every journey feels personal — more freedom, more connection, and far less crowding on the trails. This enables one to actually learn from the guides",
+      "We keep groups intentionally small so every journey feels personal — more freedom, more connection, and far less crowding on the trails.",
     icon: Users,
     tone: "orange",
     points: [
@@ -70,6 +72,20 @@ const pillars: {
       { icon: Footprints, text: "Flexible, unhurried itineraries" },
       { icon: HeartHandshake, text: "Genuine connection with guides and locals" },
       { icon: Compass, text: "Quieter trails and hidden spots" },
+    ],
+  },
+  {
+    title: "Learning based approach",
+    tagline: "Learn by doing",
+    description:
+      "Every journey is a chance to pick up real outdoor skills from certified experts — hands-on practice, personal coaching and knowledge you'll carry far beyond the trail.",
+    icon: GraduationCap,
+    tone: "blue",
+    points: [
+      { icon: GraduationCap, text: "Qualified instructors on every course" },
+      { icon: Compass, text: "Hands-on practice in the field" },
+      { icon: Footprints, text: "Progress at your own pace" },
+      { icon: Lightbulb, text: "Skills that last beyond the trip" },
     ],
   },
   {
@@ -107,6 +123,14 @@ const pillarToneStyles: Record<
     divider: "border-orange-100 dark:border-orange-500/15",
     topBar: "bg-orange-500",
   },
+  blue: {
+    card: "border-blue-200/70 bg-gradient-to-br from-blue-50/80 via-white to-white dark:border-blue-500/20 dark:from-blue-500/10 dark:via-card dark:to-card",
+    iconBadge: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    tagline: "text-blue-700 dark:text-blue-300",
+    pointIcon: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    divider: "border-blue-100 dark:border-blue-500/15",
+    topBar: "bg-blue-500",
+  },
   green: {
     card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-white to-white dark:border-emerald-500/20 dark:from-emerald-500/10 dark:via-card dark:to-card",
     iconBadge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
@@ -125,8 +149,8 @@ export default async function CommunityPage() {
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
-          <div className="px-6 py-7 sm:px-8 lg:px-10 lg:py-8">
-            <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
+          <div className="p-6 sm:p-8 lg:p-10">
+            <div className="flex w-full flex-col items-center gap-4 text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300">
                 <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
@@ -173,7 +197,7 @@ export default async function CommunityPage() {
               </div>
             </div>
 
-            <div className="mx-auto mt-7 grid w-full max-w-3xl gap-3 md:grid-cols-2 lg:mt-8">
+            <div className="mt-7 grid w-full gap-3 md:grid-cols-3 lg:mt-8">
               {pillars.map((pillar) => {
                 const Icon = pillar.icon;
                 const tone = pillarToneStyles[pillar.tone];

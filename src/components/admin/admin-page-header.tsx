@@ -3,18 +3,8 @@ import { ArrowLeft, Headset } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { hasPermission, type Permission, type Role } from "@/lib/authz";
-
-const ADMIN_SECTIONS = [
-  { key: "trips", href: "/admin/trips", label: "Manage trips", permission: "trips.manage" },
-  { key: "trip-changes", href: "/admin/trip-changes", label: "Trip changes", permission: "trips.manage" },
-  { key: "bookings", href: "/admin/bookings", label: "Manage bookings", permission: "bookings.read" },
-  { key: "guides", href: "/admin/guides", label: "Manage guides", permission: "guides.manage" },
-  { key: "applications", href: "/admin/guide-applications", label: "Guide Applications", permission: "guideApplications.manage" },
-  { key: "users", href: "/admin/users", label: "Manage users", permission: "users.manage" },
-] as const satisfies ReadonlyArray<{ key: string; href: string; label: string; permission: Permission }>;
-
-export type AdminSection = (typeof ADMIN_SECTIONS)[number]["key"];
+import { hasPermission, type Role } from "@/lib/authz";
+import { ADMIN_SECTIONS, type AdminSection } from "@/lib/admin-sections";
 
 export async function AdminPageHeader({
   title,
