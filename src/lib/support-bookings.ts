@@ -11,7 +11,20 @@ export async function getSupportBookings() {
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { name: true, email: true, username: true } },
-      trip: true,
+      // Only the trip fields the booking list renders; `trip: true` pulled
+      // every scalar column (including large description/images arrays).
+      trip: {
+        select: {
+          slug: true,
+          title: true,
+          location: true,
+          durationDays: true,
+          description: true,
+          categories: true,
+          images: true,
+          type: true,
+        },
+      },
       slot: { select: { date: true } },
       cancelledBy: { select: { name: true } },
     },

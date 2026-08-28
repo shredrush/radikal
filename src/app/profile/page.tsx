@@ -50,7 +50,6 @@ import { formatTripDateRange, isTripCompleted } from "@/lib/trip-dates";
 import {
   formatCancelledBy,
   toSupportMessageViews,
-  countUnreadSupportMessages,
   type SupportMessageView,
 } from "@/lib/support";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
@@ -131,14 +130,9 @@ export default async function ProfilePage({
   }
 
   const user = session.user;
-  const currentUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
-  });
   const name = user.name ?? user.email ?? "User";
   const firstName = name.split(" ")[0];
   const profileInitials = getProfileInitials(name);
-  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
 
   const { tab, status, section } = await searchParams;
   const statusFilter =
@@ -150,12 +144,6 @@ export default async function ProfilePage({
       : null;
   const activeSection = section === "username" ? "username" : "password";
   const isGuide = user.role === "GUIDE";
-  const guide = isGuide
-    ? await prisma.guide.findUnique({
-        where: { userId: user.id },
-        select: { id: true, slug: true },
-      })
-    : null;
   const activeTab =
     tab === "settings"
       ? "settings"
@@ -175,65 +163,124 @@ export default async function ProfilePage({
   const canConfirmBookings = hasPermission(user.role, "bookings.confirm");
   const canCancelBookings = hasPermission(user.role, "bookings.cancel");
 
-  const bookings = await prisma.booking.findMany({
-    where: { userId: user.id },
-    include: { trip: true, slot: true },
-    orderBy: { createdAt: "desc" },
-  });
+  // Fetch only the queries the active tab needs, all in parallel. The page
+  // previously ran every query (including the platform-wide "all bookings"
+  // list and the full support thread) on every render regardless of tab.
+  const [
+    currentUser,
+    guide,
+    bookings,
+    wishlistItems,
+    customTripRequests,
+    allBookings,
+    guideBookings,
+    notifications,
+    userReviews,
+    supportChat,
+    supportUnread,
+  ] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
+    }),
+    isGuide
+      ? prisma.guide.findUnique({
+          where: { userId: user.id },
+          select: { id: true, slug: true },
+        })
+      : Promise.resolve(null),
+    prisma.booking.findMany({
+      where: { userId: user.id },
+      include: { trip: true, slot: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    activeTab === "wishlist"
+      ? prisma.wishlistItem.findMany({
+          where: { userId: user.id },
+          include: { trip: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    activeTab === "bookings" && !canReadAllBookings
+      ? prisma.customTripRequest.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { id: true, name: true, email: true, username: true } },
+            chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+          },
+        })
+      : Promise.resolve([]),
+    canReadAllBookings && activeTab === "bookings"
+      ? prisma.booking.findMany({
+          orderBy: { createdAt: "desc" },
+          include: {
+            trip: true,
+            slot: true,
+            user: { select: { id: true, name: true, username: true, email: true } },
+            cancelledBy: { select: { name: true } },
+          },
+        })
+      : Promise.resolve([]),
+    isGuide && activeTab === "booked-trips"
+      ? prisma.booking.findMany({
+          where: { trip: { guide: { userId: user.id } } },
+          include: {
+            trip: true,
+            slot: true,
+            user: { select: { id: true, name: true, username: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    activeTab === "bookings"
+      ? prisma.review.findMany({
+          where: { userId: user.id },
+          select: { id: true, tripId: true, rating: true, comment: true },
+        })
+      : Promise.resolve([]),
+    !canAccessSupportDesk && activeTab === "support"
+      ? prisma.supportChat.findUnique({
+          where: { userId: user.id },
+          include: { messages: { orderBy: { createdAt: "asc" } } },
+        })
+      : Promise.resolve(null),
+    !canAccessSupportDesk
+      ? (async () => {
+          const chat = await prisma.supportChat.findUnique({
+            where: { userId: user.id },
+            select: { id: true, status: true, createdAt: true, customerLastReadAt: true },
+          });
+          if (!chat) {
+            return { status: "OPEN" as const, unreadCount: 0 };
+          }
+          const unreadCount = await prisma.supportMessage.count({
+            where: {
+              chatId: chat.id,
+              senderId: { not: user.id },
+              createdAt: { gt: chat.customerLastReadAt ?? chat.createdAt },
+            },
+          });
+          return { status: chat.status, unreadCount };
+        })()
+      : Promise.resolve(null),
+  ]);
 
-  const wishlistItems = await prisma.wishlistItem.findMany({
-    where: { userId: user.id },
-    include: { trip: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const customTripRequests = await prisma.customTripRequest.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true, email: true, username: true } },
-      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-    },
-  });
-
-  const allBookings = canReadAllBookings
-    ? await prisma.booking.findMany({
-        orderBy: { createdAt: "desc" },
-        include: {
-          trip: true,
-          slot: true,
-          user: { select: { id: true, name: true, username: true, email: true } },
-          cancelledBy: { select: { name: true } },
-        },
-      })
-    : [];
-
-  const guideBookings = isGuide
-    ? await prisma.booking.findMany({
-        where: { trip: { guide: { userId: user.id } } },
-        include: {
-          trip: true,
-          slot: true,
-          user: { select: { id: true, name: true, username: true, email: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
 
   const visibleGuideBookings = statusFilter
     ? guideBookings.filter((b) => b.status === statusFilter)
     : guideBookings;
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
   const unreadNotificationsCount = notifications.filter((n) => !n.readAt).length;
 
   const now = new Date();
-  const confirmed = bookings.filter((b) => b.status === "CONFIRMED");
-  const upcoming = confirmed.filter((b) => new Date(b.slot.date) >= now).length;
+  const upcoming = bookings.filter((b) => b.status === "CONFIRMED").length;
 
   // A booking is treated as completed when its trip dates have fully passed
   // (or it was explicitly marked COMPLETED). Used to badge past trips and to
@@ -257,21 +304,28 @@ export default async function ProfilePage({
     (booking) => bookingDisplayStatus(booking) === "COMPLETED",
   );
 
+  // Completed trips get their own section, so keep them out of the main
+  // "Your bookings" list to avoid showing each finished trip twice.
+  const activeBookings = bookings.filter(
+    (booking) => bookingDisplayStatus(booking) !== "COMPLETED",
+  );
+
+  // The user's existing reviews, keyed by trip so the completed-trips list can
+  // offer "Leave a review" for unreviewed trips and "Edit review" for reviewed
+  // ones (with the previous rating/comment pre-filled).
+  const reviewsByTripId = new Map(
+    userReviews
+      .filter((review): review is typeof review & { tripId: string } =>
+        Boolean(review.tripId),
+      )
+      .map((review) => [review.tripId, review] as const),
+  );
+
   let supportMessages: SupportMessageView[] = [];
-  let supportChatStatus: "OPEN" | "CLOSED" = "OPEN";
-  let supportUnreadCount = 0;
-  if (!canAccessSupportDesk) {
-    const supportChat = await prisma.supportChat.findUnique({
-      where: { userId: user.id },
-      include: { messages: { orderBy: { createdAt: "asc" } } },
-    });
-    if (supportChat) {
-      supportChatStatus = supportChat.status;
-      supportUnreadCount = countUnreadSupportMessages(supportChat, user.id);
-      if (activeTab === "support") {
-        supportMessages = toSupportMessageViews(supportChat.messages, user.id);
-      }
-    }
+  const supportChatStatus: "OPEN" | "CLOSED" = supportUnread?.status ?? "OPEN";
+  const supportUnreadCount = supportUnread?.unreadCount ?? 0;
+  if (!canAccessSupportDesk && supportChat) {
+    supportMessages = toSupportMessageViews(supportChat.messages, user.id);
   }
 
   const completedTripsSection = (
@@ -314,6 +368,8 @@ export default async function ProfilePage({
                     paymentTransactionId: booking.paymentTransactionId,
                     bookedAt: booking.createdAt.toISOString(),
                     cancellationReason: booking.cancellationReason,
+                    showReview: true,
+                    review: reviewsByTripId.get(booking.tripId) ?? null,
                   }}
                 />
               </li>
@@ -904,19 +960,20 @@ export default async function ProfilePage({
               <div className="flex flex-col gap-6">
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                   <CardHeader>
-                    <CardTitle>Your bookings</CardTitle>
-                    <CardDescription>
-                      Every trip you&apos;ve reserved with Radikal, past and upcoming.
-                    </CardDescription>
+                    <CardTitle>Upcoming trips</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {bookings.length === 0 ? (
+                    {activeBookings.length === 0 ? (
                       <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
                         <Ticket className="h-8 w-8 text-muted-foreground/50" />
                         <div>
-                          <p className="font-medium text-foreground">No bookings yet</p>
+                          <p className="font-medium text-foreground">
+                            {bookings.length === 0 ? "No bookings yet" : "No active bookings"}
+                          </p>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Once you book a trip, it will show up here with its status.
+                            {bookings.length === 0
+                              ? "Once you book a trip, it will show up here with its status."
+                              : "Your finished trips are listed in the Completed trips section."}
                           </p>
                         </div>
                         <Button
@@ -930,7 +987,7 @@ export default async function ProfilePage({
                       </div>
                     ) : (
                       <ul className="flex flex-col gap-3">
-                        {bookings.map((booking) => (
+                        {activeBookings.map((booking) => (
                           <li key={booking.id}>
                             <BookingCard
                               booking={{

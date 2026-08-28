@@ -8,17 +8,28 @@ import { countUnreadSupportMessages } from "@/lib/support";
 export const dynamic = "force-dynamic";
 
 /**
- * Lightweight endpoint for the floating support widget to poll. Returns the
- * number of unread support-agent replies for the signed-in customer so the
- * launcher can show a notification badge without loading the full thread.
+ * Lightweight endpoint for the floating support widget. Returns the number of
+ * unread support-agent replies for the signed-in customer so the launcher can
+ * show a notification badge without loading the full thread. Also reports the
+ * auth role and whether the customer has an existing thread, so the widget can
+ * determine its state entirely client-side (no server DB round-trip per page).
  */
 export async function GET() {
   const session = await auth();
 
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   // Users with support access don't have their own customer thread, so there
   // is nothing to surface as "unread" for them.
-  if (!session?.user || hasPermission(session.user.role, "support.manage")) {
-    return NextResponse.json({ unreadCount: 0, status: "OPEN" });
+  if (hasPermission(session.user.role, "support.manage")) {
+    return NextResponse.json({
+      unreadCount: 0,
+      status: "OPEN",
+      isSupportAgent: true,
+      hasActiveChat: false,
+    });
   }
 
   try {
@@ -28,12 +39,19 @@ export async function GET() {
     });
 
     if (!chat) {
-      return NextResponse.json({ unreadCount: 0, status: "OPEN" });
+      return NextResponse.json({
+        unreadCount: 0,
+        status: "OPEN",
+        isSupportAgent: false,
+        hasActiveChat: false,
+      });
     }
 
     return NextResponse.json({
       unreadCount: countUnreadSupportMessages(chat, session.user.id),
       status: chat.status,
+      isSupportAgent: false,
+      hasActiveChat: true,
     });
   } catch (error) {
     console.error("[api/support/unread] failed to load notifications", error);

@@ -60,32 +60,42 @@ const getHomeGuides = unstable_cache(
 // the reviews travellers leave on completed trips (seeded via the demo data).
 const getHomeReviews = unstable_cache(
   async () => {
-    const reviews = await prisma.review.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        tripId: true,
-        comment: true,
-        user: { select: { name: true } },
-        trip: { select: { title: true } },
-      },
+    // Latest review per trip, capped to the 4 most-recently-reviewed trips.
+    // The previous implementation loaded every review (with user + trip joins)
+    // into memory just to keep four testimonials.
+    const latestPerTrip = await prisma.review.groupBy({
+      by: ["tripId"],
+      where: { tripId: { not: null } },
+      _max: { createdAt: true },
+      orderBy: { _max: { createdAt: "desc" } },
+      take: 4,
     });
 
-    // Surface one review per trip so the home page shows a diverse set of
-    // experiences instead of several comments from the same trip.
-    const seenTrips = new Set<string>();
-    const distinctReviews: typeof reviews = [];
+    const reviews = await Promise.all(
+      latestPerTrip
+        .filter(
+          (entry): entry is typeof entry & { _max: { createdAt: Date } } =>
+            entry._max.createdAt !== null,
+        )
+        .map((entry) =>
+          prisma.review.findFirst({
+            where: { tripId: entry.tripId, createdAt: entry._max.createdAt },
+            select: {
+              tripId: true,
+              comment: true,
+              user: { select: { name: true } },
+              trip: { select: { title: true, slug: true } },
+            },
+          }),
+        ),
+    );
 
-    for (const review of reviews) {
-      if (review.tripId && seenTrips.has(review.tripId)) continue;
-      if (review.tripId) seenTrips.add(review.tripId);
-      distinctReviews.push(review);
-      if (distinctReviews.length >= 4) break;
-    }
-
-    return distinctReviews;
+    return reviews.filter(
+      (review): review is NonNullable<typeof review> => review !== null,
+    );
   },
   ["home-reviews"],
-  { revalidate: 300 },
+  { tags: ["reviews"], revalidate: 300 },
 );
 
 export default async function Home() {
@@ -122,6 +132,7 @@ export default async function Home() {
         testimonials={reviews.map((review) => ({
           name: review.user.name,
           trip: review.trip?.title ?? "Radikal experience",
+          slug: review.trip?.slug,
           quote: review.comment,
         }))}
       />

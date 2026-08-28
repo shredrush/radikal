@@ -36,7 +36,9 @@ export type ActivityAction =
   | "TRIP_CHANGE_APPROVED"
   | "TRIP_CHANGE_REJECTED"
   | "USER_PROFILE_UPDATED"
-  | "USER_ROLE_CHANGED";
+  | "USER_ROLE_CHANGED"
+  | "REVIEW_SUBMITTED"
+  | "REVIEW_UPDATED";
 
 export type ActivityLogInput = {
   userId: string | null | undefined;

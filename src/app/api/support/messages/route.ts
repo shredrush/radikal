@@ -7,6 +7,11 @@ import { countUnreadSupportMessages, toSupportMessageViews } from "@/lib/support
 
 export const dynamic = "force-dynamic";
 
+// Cap the number of messages loaded per request so long-running threads don't
+// grow the response (and the 3s poll) without bound. The newest messages are
+// fetched and re-sorted to chronological order for display.
+const MAX_MESSAGES = 100;
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -22,7 +27,7 @@ export async function GET(request: Request) {
     if (hasPermission(session.user.role, "support.manage") && chatId) {
       const chat = await prisma.supportChat.findUnique({
         where: { id: chatId },
-        include: { messages: { orderBy: { createdAt: "asc" } } },
+        include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
       });
 
       if (!chat) {
@@ -31,13 +36,13 @@ export async function GET(request: Request) {
 
       return NextResponse.json({
         status: chat.status,
-        messages: toSupportMessageViews(chat.messages, session.user.id),
+        messages: toSupportMessageViews(chat.messages.slice().reverse(), session.user.id),
       });
     }
 
     const chat = await prisma.supportChat.findUnique({
       where: { userId: session.user.id },
-      include: { messages: { orderBy: { createdAt: "asc" } } },
+      include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
     });
 
     // Viewing the thread marks any pending agent replies as read for the
@@ -51,7 +56,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: chat?.status ?? "OPEN",
-      messages: chat ? toSupportMessageViews(chat.messages, session.user.id) : [],
+      messages: chat ? toSupportMessageViews(chat.messages.slice().reverse(), session.user.id) : [],
     });
   } catch (error) {
     console.error("[api/support/messages] failed to load messages", error);

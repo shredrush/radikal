@@ -25,10 +25,25 @@ const getGuideDetail = unstable_cache(
         },
         trips: {
           orderBy: { createdAt: "asc" },
+          // Only the fields rendered on the trip cards; the previous `include`
+          // pulled every scalar column (including the full description).
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            location: true,
+            categories: true,
+            durationDays: true,
+            priceInRupees: true,
+            images: true,
+          },
         },
         reviews: {
           orderBy: { createdAt: "desc" },
-          include: {
+          select: {
+            id: true,
+            comment: true,
             user: { select: { name: true } },
             trip: { select: { slug: true, title: true } },
           },
@@ -66,7 +81,7 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
 
   return {
     title: `${guide.name} | Radikal Guide`,
-    description: `${guide.name} is a vetted local guide based in ${guide.location}.`,
+    description: `${guide.name} is a vetted guide based in ${guide.location}.`,
   };
 }
 

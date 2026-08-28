@@ -18,7 +18,7 @@ const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" 
 export const metadata: Metadata = {
   title: "Radikal",
   description:
-    "Small-group skiing, snowboarding, cycling and trekking trips across Manali, Ladakh, Kashmir and Lahaul-Spiti, led by certified local guides.",
+    "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
   icons: {
     icon: "/logo.svg",
     shortcut: "/logo.svg",

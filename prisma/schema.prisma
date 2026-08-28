@@ -164,8 +164,6 @@ model PasswordResetOtp {
   @@map("password_reset_otps")
 }
 
-// A certified local guide. Optionally linked to a User account so a guide
-// can log in and manage their own page in the future.
 model Guide {
   id              String   @id @default(cuid())
   userId          String?  @unique
@@ -284,6 +282,7 @@ model Trip {
   tripChanges  TripChangeRequest[]
 
   @@index([type])
+  @@index([guideId])
   @@map("trips")
 }
 
@@ -373,6 +372,7 @@ model Booking {
   @@index([userId])
   @@index([slotId])
   @@index([status])
+  @@index([tripId])
   @@map("bookings")
 }
 
@@ -406,6 +406,9 @@ model Review {
   trip  Trip?     @relation(fields: [tripId], references: [id])
   guide Guide?    @relation(fields: [guideId], references: [id])
 
+  @@index([userId])
+  @@index([tripId])
+  @@index([guideId])
   @@map("reviews")
 }
 
@@ -424,6 +427,7 @@ model SupportChat {
   messages SupportMessage[]
 
   @@index([status])
+  @@index([updatedAt])
   @@map("support_chats")
 }
 
@@ -465,6 +469,7 @@ model CustomTripRequest {
 
   @@index([userId])
   @@index([status])
+  @@index([updatedAt])
   @@map("custom_trip_requests")
 }
 

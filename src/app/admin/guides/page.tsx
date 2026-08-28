@@ -25,7 +25,7 @@ export default async function AdminGuidesPage() {
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="Manage Guides"
-          description="Add, edit, and remove the vetted local guides shown across the community and trip pages."
+          description="Add, edit, and remove the vetted guides"
           active="guides"
           role={session.user.role}
         />

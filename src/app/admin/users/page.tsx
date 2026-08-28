@@ -35,19 +35,29 @@ function roleBadgeClass(role: string) {
   return ROLE_BADGE_CLASSES[role] ?? ROLE_BADGE_CLASSES.USER;
 }
 
+const PAGE_SIZE = 20;
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] | undefined; role?: string | string[] | undefined }>;
+  searchParams: Promise<{
+    q?: string | string[] | undefined;
+    role?: string | string[] | undefined;
+    page?: string | string[] | undefined;
+  }>;
 }) {
   const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
-  const { q, role } = await searchParams;
+  const { q, role, page: pageParam } = await searchParams;
 
   const search = typeof q === "string" ? q.trim().slice(0, 100) : "";
   const roleFilter: "" | (typeof ROLE_OPTIONS)[number] =
     typeof role === "string" && (ROLE_OPTIONS as readonly string[]).includes(role)
       ? (role as (typeof ROLE_OPTIONS)[number])
       : "";
+  const page = Math.max(
+    1,
+    Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
+  );
 
   const where = {
     ...(roleFilter ? { role: roleFilter } : {}),
@@ -62,10 +72,12 @@ export default async function AdminUsersPage({
       : {}),
   };
 
-  const [users, roleCounts] = await Promise.all([
+  const [users, roleCounts, totalMatches] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       select: {
         id: true,
         name: true,
@@ -77,9 +89,18 @@ export default async function AdminUsersPage({
       },
     }),
     prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+    prisma.user.count({ where }),
   ]);
 
+  const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE));
   const totalUsers = roleCounts.reduce((sum, group) => sum + group._count._all, 0);
+
+  const paginationHref = (targetPage: number) =>
+    `/admin/users?${new URLSearchParams({
+      ...(roleFilter ? { role: roleFilter } : {}),
+      ...(search ? { q: search } : {}),
+      page: String(targetPage),
+    }).toString()}`;
   const countForRole = (value: string) =>
     roleCounts.find((group) => group.role === value)?._count._all ?? 0;
 
@@ -204,8 +225,36 @@ export default async function AdminUsersPage({
 
         <p className="text-center text-xs text-muted-foreground">
           <UsersIcon className="mr-1 inline h-3.5 w-3.5" />
-          Showing {users.length} of {totalUsers} account{totalUsers === 1 ? "" : "s"}
+          Showing {users.length} of {totalMatches} account{totalMatches === 1 ? "" : "s"}
         </p>
+
+        {totalPages > 1 ? (
+          <nav className="flex items-center justify-center gap-4">
+            {page > 1 ? (
+              <Link
+                href={paginationHref(page - 1)}
+                className="rounded-full border border-border/70 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-foreground transition hover:bg-muted"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span className="text-xs text-muted-foreground">Previous</span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={paginationHref(page + 1)}
+                className="rounded-full border border-border/70 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-foreground transition hover:bg-muted"
+              >
+                Next
+              </Link>
+            ) : (
+              <span className="text-xs text-muted-foreground">Next</span>
+            )}
+          </nav>
+        ) : null}
       </div>
     </div>
   );

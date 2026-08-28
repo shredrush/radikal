@@ -14,49 +14,67 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
-import type { SupportMessageView } from "@/lib/support";
 
-export function SupportWidgetClient({
-  isAuthenticated,
-  isSupportAgent = false,
-  hasActiveChat = false,
-  messages,
-  status,
-  unreadCount: initialUnreadCount = 0,
-}: {
-  isAuthenticated: boolean;
-  isSupportAgent?: boolean;
-  hasActiveChat?: boolean;
-  messages: SupportMessageView[];
-  status: "OPEN" | "CLOSED";
-  unreadCount?: number;
-}) {
-  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+type WidgetState =
+  | { kind: "checking" }
+  | { kind: "anonymous" }
+  | { kind: "agent" }
+  | { kind: "customer"; status: "OPEN" | "CLOSED"; unreadCount: number; hasActiveChat: boolean };
+
+export function SupportWidgetClient() {
+  const [state, setState] = useState<WidgetState>({ kind: "checking" });
 
   const loadUnread = useCallback(async () => {
     try {
       const response = await fetch("/api/support/unread", { cache: "no-store" });
+
+      if (response.status === 401) {
+        setState({ kind: "anonymous" });
+        return;
+      }
+
       if (!response.ok) return;
 
-      const data = await response.json();
-      if (typeof data.unreadCount === "number") {
-        setUnreadCount(data.unreadCount);
+      const data = (await response.json()) as {
+        unreadCount?: number;
+        status?: "OPEN" | "CLOSED";
+        isSupportAgent?: boolean;
+        hasActiveChat?: boolean;
+      };
+
+      if (data.isSupportAgent) {
+        setState({ kind: "agent" });
+        return;
       }
+
+      setState({
+        kind: "customer",
+        status: data.status === "CLOSED" ? "CLOSED" : "OPEN",
+        unreadCount: typeof data.unreadCount === "number" ? data.unreadCount : 0,
+        hasActiveChat: Boolean(data.hasActiveChat),
+      });
     } catch {
       // Ignore transient network errors; the next poll will retry.
     }
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      void loadUnread();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [loadUnread]);
+
+  useEffect(() => {
     // Only poll when the customer has an existing support thread; there is
-    // nothing to surface as unread otherwise. The server already provides the
-    // initial unread count, so we only need to refresh it periodically (and on
-    // dialog close) — no need for a synchronous fetch on mount.
-    if (!isAuthenticated || isSupportAgent || !hasActiveChat) return;
+    // nothing to surface as unread otherwise.
+    if (state.kind !== "customer" || !state.hasActiveChat) return;
 
     const interval = setInterval(loadUnread, 30000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, isSupportAgent, hasActiveChat, loadUnread]);
+  }, [state, loadUnread]);
+
+  const unreadCount = state.kind === "customer" ? state.unreadCount : 0;
 
   return (
     <Dialog onOpenChange={(open) => {
@@ -82,7 +100,7 @@ export function SupportWidgetClient({
           </DialogDescription>
         </DialogHeader>
 
-        {isSupportAgent ? (
+        {state.kind === "agent" ? (
           <div className="mt-5 flex flex-col items-start gap-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
               You&apos;re signed in as a support agent. Open the dashboard to
@@ -98,11 +116,11 @@ export function SupportWidgetClient({
               Open support dashboard
             </Button>
           </div>
-        ) : isAuthenticated ? (
+        ) : state.kind === "customer" ? (
           <div className="mt-5">
-            <SupportChatPanel messages={messages} status={status} />
+            <SupportChatPanel messages={[]} status={state.status} />
           </div>
-        ) : (
+        ) : state.kind === "anonymous" ? (
           <div className="mt-5 flex flex-col items-start gap-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
               Log in to start a conversation with our support team.
@@ -116,7 +134,7 @@ export function SupportWidgetClient({
               Log in to chat
             </Button>
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );

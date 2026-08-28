@@ -53,6 +53,7 @@ type GuideProfile = {
 type Testimonial = {
   name: string;
   trip: string;
+  slug?: string;
   quote: string;
 };
 
@@ -162,7 +163,7 @@ export function SearchableTrips({
         <div className="mt-1 mx-auto flex w-full max-w-xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <form
             onSubmit={handleSearchSubmit}
-            className="relative flex items-center gap-2 rounded-full border border-orange-100 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition focus-within:border-emerald-200 focus-within:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:pl-5"
+            className="relative flex items-center gap-2 rounded-full border border-black/15 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] transition focus-within:border-black/60 focus-within:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.3)] dark:border-white/15 dark:focus-within:border-white/60 sm:pl-5"
           >
             <Search className="size-4 shrink-0 text-muted-foreground sm:size-5" />
             <input
@@ -201,7 +202,7 @@ export function SearchableTrips({
               <span>Search</span>
             </button>
             {isFocused && query.trim() ? (
-              <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] backdrop-blur">
+              <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-black/15 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur dark:border-white/15">
                 {suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">
                     {suggestions.map((trip, index) => (
@@ -330,7 +331,7 @@ export function SearchableTrips({
                 className="object-cover"
                 style={{ objectPosition: item.position }}
                 sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 50vw, 25vw"
-                loading="eager"
+                loading="lazy"
               />
               <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
               <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
@@ -411,7 +412,7 @@ export function SearchableTrips({
                Featured Trips
              </p>
              <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-              Curated, small group, sustainable adventures with certified local guides
+              Curated, small group, sustainable adventures with certified expert guides
              </h4>
            </div>
            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-3">
@@ -421,10 +422,9 @@ export function SearchableTrips({
                </p>
              ) : null}
              {visibleTrips.map((trip) => (
+              <Link key={trip.id} href={`/trips/${trip.slug}`} className="block h-full">
               <Card
-                key={trip.id}
-                className="flex h-[360px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:h-[400px]"
-                onClick={() => window.location.href = `/trips/${trip.slug}`}
+                className="flex h-[360px] min-w-0 flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:h-[400px]"
               >
                 <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[200px]">
                   <Image
@@ -433,6 +433,7 @@ export function SearchableTrips({
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
                 </div>
@@ -458,10 +459,11 @@ export function SearchableTrips({
                     <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
                       {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
                     </span>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              </Link>
+              ))}
             </div>
           </div>
          
@@ -546,31 +548,49 @@ export function SearchableTrips({
           <div className="mx-auto w-full max-w-8xl">
             <div className="max-w-4xl">
               <h4 className="mt-2 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-                Travellers love the Radikal Experiences
+                Outdoor lovers share their Radikal experiences
               </h4>
               <p className="mt-3 text-base text-muted-foreground">
-                Stories from people who chose small-group sustainable adventures
+                Real stories from small-group, sustainable adventures
               </p>
             </div>
 
             <div className="mt-8 !grid !w-full !grid-cols-2 !gap-2 lg:!grid-cols-4">
-              {testimonials.map((testimonial, index) => (
-                <Card key={`${testimonial.name}-${testimonial.trip}-${index}`} className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
-                  <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
-                    <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
-                      “{testimonial.quote}”
-                    </p>
-                    <div className="ml-auto mt-2 flex flex-col items-end text-right">
-                      <p className="text-[clamp(0.78rem,0.9vw,0.95rem)] font-semibold text-foreground">
-                        {testimonial.name}
+              {testimonials.map((testimonial, index) => {
+                const key = `${testimonial.name}-${testimonial.trip}-${index}`;
+                const card = (
+                  <Card className="flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] border border-orange-100 bg-card/95 p-2.5 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.22)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.28)] dark:border-orange-500/15 dark:hover:border-emerald-500/30 sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4">
+                    <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
+                      <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
+                        “{testimonial.quote}”
                       </p>
-                      <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
-                        {testimonial.trip}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="ml-auto mt-2 flex flex-col items-end text-right">
+                        <p className="text-[clamp(0.78rem,0.9vw,0.95rem)] font-semibold text-foreground">
+                          {testimonial.name}
+                        </p>
+                        <p className="text-[clamp(0.68rem,0.8vw,0.8rem)] text-muted-foreground">
+                          {testimonial.trip}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+
+                if (!testimonial.slug) {
+                  return <div key={key} className="h-full">{card}</div>;
+                }
+
+                return (
+                  <Link
+                    key={key}
+                    href={`/trips/${testimonial.slug}`}
+                    aria-label={`Read reviews for ${testimonial.trip}`}
+                    className="block"
+                  >
+                    {card}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

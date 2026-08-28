@@ -7,6 +7,11 @@ import { toCustomTripMessageViews } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
 
+// Cap the number of messages loaded per request so long-running threads don't
+// grow the response without bound. Newest messages are fetched and re-sorted
+// to chronological order for display.
+const MAX_MESSAGES = 100;
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -28,7 +33,9 @@ export async function GET(request: Request) {
     const customTrip = await prisma.customTripRequest.findFirst({
       where,
       include: {
-        chat: { include: { messages: { orderBy: { createdAt: "asc" } } } },
+        chat: {
+          include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
+        },
       },
     });
 
@@ -38,7 +45,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: customTrip.status,
-      messages: toCustomTripMessageViews(customTrip.chat.messages, session.user.id),
+      messages: toCustomTripMessageViews(
+        customTrip.chat.messages.slice().reverse(),
+        session.user.id,
+      ),
     });
   } catch (error) {
     console.error("[api/custom-trips/messages] failed to load messages", error);

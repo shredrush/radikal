@@ -66,20 +66,37 @@ function toSlotItem(slot: {
   };
 }
 
+const PAGE_SIZE = 10;
+
 export default async function AdminTripsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string | string[] | undefined }>;
+  searchParams: Promise<{
+    type?: string | string[] | undefined;
+    page?: string | string[] | undefined;
+  }>;
 }) {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
-  const { type } = await searchParams;
-  const selectedType = typeof type === "string" ? type : "";
+  const { type, page: pageParam } = await searchParams;
+  const selectedType =
+    ACTIVITY_TYPE_OPTIONS.find(
+      (option) => typeof type === "string" && option.value === type,
+    )?.value ?? "";
+  const page = Math.max(
+    1,
+    Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
+  );
 
-  const [trips, guides] = await Promise.all([
+  const where = selectedType ? { type: selectedType } : {};
+
+  const [trips, guides, totalTrips, totalTripsAll, totalSlots] = await Promise.all([
     prisma.trip.findMany({
+      where,
       orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: {
-        guide: true,
+        guide: { select: { name: true } },
         slots: { orderBy: { date: "asc" } },
         tripLocation: true,
         inclusions: { orderBy: { order: "asc" } },
@@ -90,13 +107,20 @@ export default async function AdminTripsPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    prisma.trip.count({ where }),
+    prisma.trip.count(),
+    prisma.slot.count(),
   ]);
 
-  const totalUpcomingSlots = trips.reduce((count, trip) => count + trip.slots.length, 0);
+  const totalPages = Math.max(1, Math.ceil(totalTrips / PAGE_SIZE));
 
-  const visibleActivities = selectedType
-    ? trips.filter((trip) => trip.type === selectedType)
-    : trips;
+  const paginationHref = (targetPage: number) =>
+    `/admin/trips?${new URLSearchParams({
+      ...(selectedType ? { type: selectedType } : {}),
+      page: String(targetPage),
+    }).toString()}`;
+
+  const visibleActivities = trips;
 
   return (
     <div className="min-h-screen">
@@ -112,7 +136,7 @@ export default async function AdminTripsPage({
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Trips live</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{trips.length}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalTripsAll}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Guides linked</p>
@@ -120,7 +144,7 @@ export default async function AdminTripsPage({
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Upcoming slots</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalUpcomingSlots}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalSlots}</p>
             </div>
           </div>
         </section>
@@ -209,6 +233,40 @@ export default async function AdminTripsPage({
           ))}
         </div>
         )}
+
+        {totalPages > 1 ? (
+          <nav className="flex items-center justify-center gap-4">
+            {page > 1 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                nativeButton={false}
+                render={<Link href={paginationHref(page - 1)} />}
+              >
+                Previous
+              </Button>
+            ) : (
+              <span className="text-sm text-muted-foreground">Previous</span>
+            )}
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                nativeButton={false}
+                render={<Link href={paginationHref(page + 1)} />}
+              >
+                Next
+              </Button>
+            ) : (
+              <span className="text-sm text-muted-foreground">Next</span>
+            )}
+          </nav>
+        ) : null}
       </div>
     </div>
   );

@@ -21,10 +21,11 @@ import type { LucideIcon } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Community | Radikal",
-  description: "Radikal connects vetted local guides with travellers seeking small-group, sustainable adventures in nature.",
+  description: "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
 };
 
 // Guide roster changes rarely; avoid a DB round-trip on every request.
@@ -61,7 +62,7 @@ const pillars: {
     title: "Small-group travel",
     tagline: "Fewer people, more meaning",
     description:
-      "We keep groups intentionally small so every journey feels personal — more freedom, more connection, and far less crowding on the trails.",
+      "We keep groups intentionally small so every journey feels personal — more freedom, more connection, and far less crowding on the trails. This enables one to actually learn from the guides",
     icon: Users,
     tone: "orange",
     points: [
@@ -79,7 +80,7 @@ const pillars: {
     icon: Leaf,
     tone: "green",
     points: [
-      { icon: HandCoins, text: "Local guides and fair wages" },
+      { icon: HandCoins, text: "Certified local guides" },
       { icon: Home, text: "Homestays and local businesses" },
       { icon: Sprout, text: "Leave-no-trace principles" },
       { icon: Mountain, text: "Protecting fragile landscapes" },
@@ -118,6 +119,8 @@ const pillarToneStyles: Record<
 
 export default async function CommunityPage() {
   const guides = await getCommunityGuides();
+  const session = await auth();
+  const joinCommunityHref = session?.user ? "/trips" : "/login";
   return (
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
@@ -147,7 +150,7 @@ export default async function CommunityPage() {
                   <ArrowRight size={16} />
                 </Link>
                 <Link
-                  href="/login"
+                  href={joinCommunityHref}
                   className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-500/40 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-500/10"
                 >
                   Join the community
