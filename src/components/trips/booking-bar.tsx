@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Price } from "@/components/currency/price";
 
 export function BookingBar({
-  activityId,
+  tripId,
   pricePerPerson,
   durationDays,
   maxGroupSize,
 }: {
-  activityId: string;
+  tripId: string;
   pricePerPerson: number;
   durationDays: number;
   maxGroupSize: number;
@@ -62,7 +62,7 @@ export function BookingBar({
             nativeButton={false}
             render={
               <Link
-                href={`/booking/${activityId}/checkout?participants=${people}`}
+                href={`/booking/${tripId}/checkout?participants=${people}`}
               />
             }
           >

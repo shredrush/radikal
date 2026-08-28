@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createBookingSchema = z.object({
-  activityId: z.string().min(1, "Activity is required"),
+  tripId: z.string().min(1, "Trip is required"),
   slotId: z.string().min(1, "Slot is required"),
   participantCount: z.coerce.number().int().min(1).max(20).default(1),
 });

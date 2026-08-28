@@ -11,7 +11,7 @@ export async function getSupportBookings() {
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { name: true, email: true, username: true } },
-      activity: true,
+      trip: true,
       slot: { select: { date: true } },
       cancelledBy: { select: { name: true } },
     },

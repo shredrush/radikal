@@ -12,10 +12,10 @@ import {
 } from "@/lib/actions/trip-changes";
 
 export function GuideTripSlotsToggle({
-  activityId,
+  tripId,
   slots,
 }: {
-  activityId: string;
+  tripId: string;
   slots: SlotItem[];
 }) {
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ export function GuideTripSlotsToggle({
       {open ? (
         <div className="w-full min-w-0 border-t border-border/70 pt-3">
           <SlotsManager
-            activityId={activityId}
+            tripId={tripId}
             slots={slots}
             actions={{
               create: createGuideSlotAction,

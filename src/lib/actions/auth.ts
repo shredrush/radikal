@@ -14,6 +14,7 @@ import {
   welcomeEmail,
 } from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
+import { generateUsername } from "@/lib/username-generator";
 import { logActivity } from "@/lib/activity-log";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
@@ -132,6 +133,17 @@ export type SignupActionState = {
   };
 };
 
+async function generateAvailableUsername(): Promise<string> {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const candidate = generateUsername();
+    const existing = await prisma.user.findUnique({
+      where: { username: candidate },
+    });
+    if (!existing) return candidate;
+  }
+  return `traveler-${crypto.randomInt(0, 1_000_000)}`;
+}
+
 export async function signupAction(
   _prevState: SignupActionState,
   formData: FormData
@@ -176,9 +188,13 @@ export async function signupAction(
     return { error: "An account with this email already exists.", values };
   }
 
-  const existingUsername = await prisma.user.findUnique({ where: { username } });
-  if (existingUsername) {
-    return { fieldErrors: { username: "This username is already taken." }, values };
+  const resolvedUsername = username ?? (await generateAvailableUsername());
+
+  if (username) {
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return { fieldErrors: { username: "This username is already taken." }, values };
+    }
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -186,7 +202,7 @@ export async function signupAction(
   let newUserId = "";
   try {
     const createdUser = await prisma.user.create({
-      data: { name, email, username, passwordHash },
+      data: { name, email, username: resolvedUsername, passwordHash },
     });
     newUserId = createdUser.id;
   } catch (error) {

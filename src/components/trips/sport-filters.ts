@@ -1,4 +1,4 @@
-export type ActivityCardItem = {
+export type TripCardItem = {
   id: string;
   slug: string;
   title: string;
@@ -61,7 +61,7 @@ export function normalizeTravelStyleFilter(value: string | string[] | null | und
   return normalizedValues;
 }
 
-export function matchesSportFilter(activity: ActivityCardItem, sports: string[]) {
+export function matchesSportFilter(trip: TripCardItem, sports: string[]) {
   if (sports.length === 0) {
     return true;
   }
@@ -69,24 +69,24 @@ export function matchesSportFilter(activity: ActivityCardItem, sports: string[])
   return sports.some((sport) => {
     switch (sport) {
       case "winter":
-        return activity.type === "SKI" || activity.type === "SNOWBOARD";
+        return trip.type === "SKI" || trip.type === "SNOWBOARD";
       case "bike":
-        return activity.type === "BIKE";
+        return trip.type === "BIKE";
       case "trek":
-        return activity.type === "TREK";
+        return trip.type === "TREK";
       case "expedition":
-        return activity.type === "EXPEDITION";
+        return trip.type === "EXPEDITION";
       case "rockclimb":
-        return activity.type === "ROCKCLIMB";
+        return trip.type === "ROCKCLIMB";
       case "yoga":
-        return activity.type === "YOGA";
+        return trip.type === "YOGA";
       default:
         return false;
     }
   });
 }
 
-export function matchesTravelStyleFilter(activity: ActivityCardItem, travelStyles: string[]) {
+export function matchesTravelStyleFilter(trip: TripCardItem, travelStyles: string[]) {
   if (travelStyles.length === 0) {
     return true;
   }
@@ -94,24 +94,24 @@ export function matchesTravelStyleFilter(activity: ActivityCardItem, travelStyle
   return travelStyles.some((travelStyle) => {
     switch (travelStyle) {
       case "beginner-friendly":
-        return activity.categories.includes("BEGINNER_FRIENDLY");
+        return trip.categories.includes("BEGINNER_FRIENDLY");
       case "women-only":
-        return activity.categories.includes("WOMEN_ONLY");
+        return trip.categories.includes("WOMEN_ONLY");
       case "family":
-        return activity.categories.includes("FAMILY");
+        return trip.categories.includes("FAMILY");
       case "adventure-enthusiast":
-        return activity.categories.includes("ADVENTURE_ENTHUSIAST");
+        return trip.categories.includes("ADVENTURE_ENTHUSIAST");
       case "course":
-        return activity.categories.includes("COURSE");
+        return trip.categories.includes("COURSE");
       case "self-guided":
-        return activity.categories.includes("SELF_GUIDED");
+        return trip.categories.includes("SELF_GUIDED");
       default:
         return false;
     }
   });
 }
 
-// Maps each activity `type` to human-readable keywords so a single free-text
+// Maps each trip `type` to human-readable keywords so a single free-text
 // search can match sport names (e.g. "trekking", "cycling", "snowboard").
 const SPORT_TYPE_KEYWORDS: Record<string, string> = {
   TREK: "trek trekking hiking hike hiking and trekking",
@@ -134,7 +134,7 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
   BEGINNER_FRIENDLY: "beginner friendly beginner",
 };
 
-export type SearchableActivity = {
+export type SearchableTrip = {
   title: string;
   description?: string | null;
   location: string;
@@ -143,24 +143,24 @@ export type SearchableActivity = {
   guide?: { name: string } | null;
 };
 
-export function buildActivitySearchText(activity: SearchableActivity) {
-  const categoryKeywords = (activity.categories ?? []).map(
+export function buildTripSearchText(trip: SearchableTrip) {
+  const categoryKeywords = (trip.categories ?? []).map(
     (category) => CATEGORY_KEYWORDS[category] ?? category.toLowerCase().replace(/_/g, " "),
   );
 
   const parts = [
-    activity.title,
-    activity.description ?? "",
-    activity.location,
-    activity.type ? (SPORT_TYPE_KEYWORDS[activity.type] ?? activity.type.toLowerCase()) : "",
+    trip.title,
+    trip.description ?? "",
+    trip.location,
+    trip.type ? (SPORT_TYPE_KEYWORDS[trip.type] ?? trip.type.toLowerCase()) : "",
     ...categoryKeywords,
-    activity.guide?.name ?? "",
+    trip.guide?.name ?? "",
   ];
 
   return parts.filter(Boolean).join(" ").toLowerCase();
 }
 
-export function matchesSearchQuery(activity: SearchableActivity, query: string) {
+export function matchesSearchQuery(trip: SearchableTrip, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
@@ -168,7 +168,7 @@ export function matchesSearchQuery(activity: SearchableActivity, query: string) 
   }
 
   const terms = normalizedQuery.split(/\s+/).filter(Boolean);
-  const searchText = buildActivitySearchText(activity);
+  const searchText = buildTripSearchText(trip);
 
   return terms.every((term) => searchText.includes(term));
 }

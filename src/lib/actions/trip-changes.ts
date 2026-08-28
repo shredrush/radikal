@@ -176,13 +176,13 @@ async function requireGuide() {
 }
 
 /** Produce a unique, valid slug from a trip title. */
-async function uniqueActivitySlug(title: string): Promise<string> {
+async function uniqueTripSlug(title: string): Promise<string> {
   const base = slugifyTripTitle(title) || "trip";
   let slug = isValidSlug(base) ? base : "trip";
   let attempts = 0;
 
   while (attempts < 25) {
-    const taken = await prisma.activity.findUnique({ where: { slug }, select: { id: true } });
+    const taken = await prisma.trip.findUnique({ where: { slug }, select: { id: true } });
     if (!taken) return slug;
     slug = `${base.slice(0, 50)}-${Math.random().toString(36).slice(2, 6)}`;
     attempts += 1;
@@ -219,7 +219,7 @@ function isUniqueConstraint(error: unknown) {
 export async function submitTripCreateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
   const fields = validateTripFields(readTripFields(formData));
-  const slug = await uniqueActivitySlug(fields.title);
+  const slug = await uniqueTripSlug(fields.title);
 
   const proposal: TripProposal = { slug, ...fields };
 
@@ -240,14 +240,14 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
 
 export async function submitTripUpdateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
-  const activityId = asString(formData.get("activityId"));
+  const tripId = asString(formData.get("tripId"));
 
-  if (!activityId) {
+  if (!tripId) {
     throw new Error("Missing trip id.");
   }
 
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
     include: {
       tripLocation: true,
       inclusions: { orderBy: { order: "asc" } },
@@ -255,41 +255,41 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     },
   });
 
-  if (!activity) {
+  if (!trip) {
     throw new Error("Trip not found.");
   }
 
-  if (activity.guideId !== guide.id) {
+  if (trip.guideId !== guide.id) {
     throw new Error("You can only edit your own trips.");
   }
 
   const fields = validateTripFields(readTripFields(formData));
 
   const original: TripProposal = {
-    slug: activity.slug,
-    title: activity.title,
-    type: activity.type,
-    location: activity.location,
-    description: activity.description,
-    priceInRupees: activity.priceInRupees,
-    durationDays: activity.durationDays,
-    maxGroupSize: activity.maxGroupSize,
-    categories: activity.categories,
-    images: activity.images,
-    pickup: activity.tripLocation?.pickup ?? "",
-    drop: activity.tripLocation?.drop ?? "",
-    inclusions: activity.inclusions.filter((i) => i.included).map((i) => i.item),
-    exclusions: activity.inclusions.filter((i) => !i.included).map((i) => i.item),
-    highlights: activity.highlights.map((h) => h.text),
+    slug: trip.slug,
+    title: trip.title,
+    type: trip.type,
+    location: trip.location,
+    description: trip.description,
+    priceInRupees: trip.priceInRupees,
+    durationDays: trip.durationDays,
+    maxGroupSize: trip.maxGroupSize,
+    categories: trip.categories,
+    images: trip.images,
+    pickup: trip.tripLocation?.pickup ?? "",
+    drop: trip.tripLocation?.drop ?? "",
+    inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
+    exclusions: trip.inclusions.filter((i) => !i.included).map((i) => i.item),
+    highlights: trip.highlights.map((h) => h.text),
   };
 
-  const proposal: TripProposal = { ...fields, slug: activity.slug };
+  const proposal: TripProposal = { ...fields, slug: trip.slug };
 
   await prisma.tripChangeRequest.create({
     data: {
       type: "UPDATE",
       guideId: guide.id,
-      activityId,
+      tripId,
       proposed: proposal as unknown as Prisma.InputJsonValue,
       original: original as unknown as Prisma.InputJsonValue,
       submittedById: userId,
@@ -302,18 +302,18 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   revalidatePath("/admin/trip-changes");
 }
 
-async function requireGuideActivity(activityId: string) {
+async function requireGuideTrip(tripId: string) {
   const { guide } = await requireGuide();
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
     select: { id: true, slug: true, guideId: true },
   });
 
-  if (!activity || activity.guideId !== guide.id) {
+  if (!trip || trip.guideId !== guide.id) {
     throw new Error("You can only manage dates for your own trips.");
   }
 
-  return activity;
+  return trip;
 }
 
 function revalidateGuideSlotPages(slug: string) {
@@ -324,12 +324,12 @@ function revalidateGuideSlotPages(slug: string) {
 }
 
 export async function createGuideSlotAction(formData: FormData): Promise<void> {
-  const activityId = asString(formData.get("activityId"));
+  const tripId = asString(formData.get("tripId"));
   const dateValue = asString(formData.get("date"));
   const capacity = parseSlotInteger(asString(formData.get("capacity")));
   const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
 
-  if (!activityId) throw new Error("Missing activity id.");
+  if (!tripId) throw new Error("Missing trip id.");
   if (!dateValue) throw new Error("Please choose a date.");
   if (capacity === null || capacity < 1 || capacity > MAX_SLOT_CAPACITY) {
     throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
@@ -344,9 +344,9 @@ export async function createGuideSlotAction(formData: FormData): Promise<void> {
   const date = parseSlotDate(dateValue);
   if (!date) throw new Error("Please enter a valid date.");
 
-  const activity = await requireGuideActivity(activityId);
-  await prisma.slot.create({ data: { activityId: activity.id, date, capacity, reserved } });
-  revalidateGuideSlotPages(activity.slug);
+  const trip = await requireGuideTrip(tripId);
+  await prisma.slot.create({ data: { tripId: trip.id, date, capacity, reserved } });
+  revalidateGuideSlotPages(trip.slug);
 }
 
 export async function updateGuideSlotAction(formData: FormData): Promise<void> {
@@ -370,10 +370,10 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
   const { guide } = await requireGuide();
   const slot = await prisma.slot.findUnique({
     where: { id: slotId },
-    include: { activity: { select: { guideId: true, slug: true } } },
+    include: { trip: { select: { guideId: true, slug: true } } },
   });
 
-  if (!slot || slot.activity.guideId !== guide.id) {
+  if (!slot || slot.trip.guideId !== guide.id) {
     throw new Error("You can only manage dates for your own trips.");
   }
   if (reserved > capacity - slot.booked) {
@@ -381,7 +381,7 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
   }
 
   await prisma.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
-  revalidateGuideSlotPages(slot.activity.slug);
+  revalidateGuideSlotPages(slot.trip.slug);
 }
 
 export async function deleteGuideSlotAction(slotId: string): Promise<void> {
@@ -390,10 +390,10 @@ export async function deleteGuideSlotAction(slotId: string): Promise<void> {
   const { guide } = await requireGuide();
   const slot = await prisma.slot.findUnique({
     where: { id: slotId },
-    include: { activity: { select: { guideId: true, slug: true } }, _count: { select: { bookings: true } } },
+    include: { trip: { select: { guideId: true, slug: true } }, _count: { select: { bookings: true } } },
   });
 
-  if (!slot || slot.activity.guideId !== guide.id) {
+  if (!slot || slot.trip.guideId !== guide.id) {
     throw new Error("You can only manage dates for your own trips.");
   }
   if (slot._count.bookings > 0) {
@@ -401,39 +401,39 @@ export async function deleteGuideSlotAction(slotId: string): Promise<void> {
   }
 
   await prisma.slot.delete({ where: { id: slotId } });
-  revalidateGuideSlotPages(slot.activity.slug);
+  revalidateGuideSlotPages(slot.trip.slug);
 }
 
 /** Apply the supplemental (location/inclusions/highlights) side tables. */
 async function applySupplemental(
   tx: Prisma.TransactionClient,
-  activityId: string,
+  tripId: string,
   proposal: TripProposal,
 ) {
   if (proposal.pickup || proposal.drop) {
     await tx.tripLocation.upsert({
-      where: { activityId },
+      where: { tripId },
       update: { pickup: proposal.pickup, drop: proposal.drop },
-      create: { activityId, pickup: proposal.pickup, drop: proposal.drop },
+      create: { tripId, pickup: proposal.pickup, drop: proposal.drop },
     });
   } else {
-    await tx.tripLocation.deleteMany({ where: { activityId } });
+    await tx.tripLocation.deleteMany({ where: { tripId } });
   }
 
-  await tx.tripInclusion.deleteMany({ where: { activityId } });
+  await tx.tripInclusion.deleteMany({ where: { tripId } });
   if (proposal.inclusions.length > 0 || proposal.exclusions.length > 0) {
     await tx.tripInclusion.createMany({
       data: [
-        ...proposal.inclusions.map((item, order) => ({ activityId, item, included: true, order })),
-        ...proposal.exclusions.map((item, order) => ({ activityId, item, included: false, order })),
+        ...proposal.inclusions.map((item, order) => ({ tripId, item, included: true, order })),
+        ...proposal.exclusions.map((item, order) => ({ tripId, item, included: false, order })),
       ],
     });
   }
 
-  await tx.tripHighlight.deleteMany({ where: { activityId } });
+  await tx.tripHighlight.deleteMany({ where: { tripId } });
   if (proposal.highlights.length > 0) {
     await tx.tripHighlight.createMany({
-      data: proposal.highlights.map((text, order) => ({ activityId, text, order })),
+      data: proposal.highlights.map((text, order) => ({ tripId, text, order })),
     });
   }
 }
@@ -472,7 +472,7 @@ export async function approveTripChangeAction(changeId: string) {
   try {
     await prisma.$transaction(async (tx) => {
       if (change.type === "CREATE") {
-        const activity = await tx.activity.create({
+        const trip = await tx.trip.create({
           data: {
             slug: proposal.slug,
             title: proposal.title,
@@ -488,14 +488,14 @@ export async function approveTripChangeAction(changeId: string) {
           },
         });
 
-        await applySupplemental(tx, activity.id, proposal);
+        await applySupplemental(tx, trip.id, proposal);
       } else {
-        if (!change.activityId) {
+        if (!change.tripId) {
           throw new Error("Missing trip id for this change.");
         }
 
-        const existing = await tx.activity.findUnique({
-          where: { id: change.activityId },
+        const existing = await tx.trip.findUnique({
+          where: { id: change.tripId },
           select: { id: true, guideId: true },
         });
 
@@ -507,8 +507,8 @@ export async function approveTripChangeAction(changeId: string) {
           throw new Error("This trip is no longer linked to this guide.");
         }
 
-        await tx.activity.update({
-          where: { id: change.activityId },
+        await tx.trip.update({
+          where: { id: change.tripId },
           data: {
             title: proposal.title,
             type: proposal.type as (typeof validTypes)[number],
@@ -522,7 +522,7 @@ export async function approveTripChangeAction(changeId: string) {
           },
         });
 
-        await applySupplemental(tx, change.activityId, proposal);
+        await applySupplemental(tx, change.tripId, proposal);
       }
 
       await tx.tripChangeRequest.update({
@@ -548,12 +548,12 @@ export async function approveTripChangeAction(changeId: string) {
   updateTag("trips");
   updateTag("guides");
 
-  if (change.type === "UPDATE" && change.activityId) {
-    const activity = await prisma.activity.findUnique({
-      where: { id: change.activityId },
+  if (change.type === "UPDATE" && change.tripId) {
+    const trip = await prisma.trip.findUnique({
+      where: { id: change.tripId },
       select: { slug: true },
     });
-    if (activity) revalidatePath(`/trips/${activity.slug}`);
+    if (trip) revalidatePath(`/trips/${trip.slug}`);
   } else {
     revalidatePath(`/trips/${proposal.slug}`);
   }

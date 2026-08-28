@@ -26,7 +26,7 @@ enum UserRole {
   CONTENT
 }
 
-enum ActivityType {
+enum TripType {
   TREK
   BIKE
   SNOWBOARD
@@ -182,7 +182,7 @@ model Guide {
 
   user           User?               @relation(fields: [userId], references: [id])
   certifications Certification[]
-  activities     Activity[]
+  trips          Trip[]
   reviews        Review[]
   tripChanges    TripChangeRequest[]
 
@@ -253,11 +253,11 @@ model GuideApplicationCertification {
   @@map("guide_application_certifications")
 }
 
-model Activity {
+model Trip {
   id            String         @id @default(cuid())
   slug          String         @unique
   title         String
-  type          ActivityType
+  type          TripType
   categories    TripCategory[]
   location      String
   description   String
@@ -279,55 +279,55 @@ model Activity {
   tripChanges  TripChangeRequest[]
 
   @@index([type])
-  @@map("activities")
+  @@map("trips")
 }
 
 model TripLocation {
-  id         String   @id @default(cuid())
-  activityId String   @unique
-  pickup     String
-  drop       String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tripId    String   @unique
+  pickup    String
+  drop      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@map("trip_locations")
 }
 
 model TripInclusion {
-  id         String   @id @default(cuid())
-  activityId String
-  item       String
-  included   Boolean  @default(true)
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  tripId    String
+  item      String
+  included  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
-  @@index([activityId])
+  @@index([tripId])
   @@map("trip_inclusions")
 }
 
 model TripHighlight {
-  id         String   @id @default(cuid())
-  activityId String
-  text       String
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  tripId    String
+  text      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
-  @@index([activityId])
+  @@index([tripId])
   @@map("trip_highlights")
 }
 
-// A bookable date instance of an activity. Never let `booked` exceed
+// A bookable date instance of a trip. Never let `booked` exceed
 // `capacity` — always check availability inside a transaction before
 // confirming a booking.
 model Slot {
   id         String   @id @default(cuid())
-  activityId String
+  tripId     String
   date       DateTime
   capacity   Int
   booked     Int      @default(0)
@@ -335,10 +335,10 @@ model Slot {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  activity Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   bookings Booking[]
 
-  @@index([activityId])
+  @@index([tripId])
   @@index([date])
   @@map("slots")
 }
@@ -346,7 +346,7 @@ model Slot {
 model Booking {
   id                   String        @id @default(cuid())
   userId               String
-  activityId           String
+  tripId               String
   slotId               String
   status               BookingStatus @default(PENDING)
   paymentTransactionId String?
@@ -361,7 +361,7 @@ model Booking {
   updatedAt            DateTime      @updatedAt
 
   user        User     @relation(fields: [userId], references: [id])
-  activity    Activity @relation(fields: [activityId], references: [id])
+  trip        Trip     @relation(fields: [tripId], references: [id])
   slot        Slot     @relation(fields: [slotId], references: [id])
   cancelledBy User?    @relation("BookingCancelledBy", fields: [cancelledById], references: [id])
 
@@ -374,15 +374,15 @@ model Booking {
 model Review {
   id         String   @id @default(cuid())
   userId     String
-  activityId String?
+  tripId     String?
   guideId    String?
   rating     Int
   comment    String
   createdAt  DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id])
-  activity Activity? @relation(fields: [activityId], references: [id])
-  guide    Guide?    @relation(fields: [guideId], references: [id])
+  user  User      @relation(fields: [userId], references: [id])
+  trip  Trip?     @relation(fields: [tripId], references: [id])
+  guide Guide?    @relation(fields: [guideId], references: [id])
 
   @@map("reviews")
 }
@@ -501,7 +501,7 @@ model TripChangeRequest {
   id            String           @id @default(cuid())
   type          TripChangeType
   guideId       String
-  activityId    String?
+  tripId        String?
   proposed      Json
   original      Json?
   status        TripChangeStatus @default(PENDING)
@@ -512,13 +512,13 @@ model TripChangeRequest {
   updatedAt     DateTime         @updatedAt
 
   guide       Guide?    @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  activity    Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  trip        Trip?     @relation(fields: [tripId], references: [id], onDelete: SetNull)
   submittedBy User      @relation("TripChangeSubmittedBy", fields: [submittedById], references: [id])
   reviewedBy  User?     @relation("TripChangeReviewedBy", fields: [reviewedById], references: [id])
 
   @@index([status])
   @@index([guideId])
-  @@index([activityId])
+  @@index([tripId])
   @@map("trip_change_requests")
 }
 

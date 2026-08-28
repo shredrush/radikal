@@ -23,11 +23,11 @@ const getGuideDetail = unstable_cache(
         certifications: {
           orderBy: { yearIssued: "desc" },
         },
-        activities: {
+        trips: {
           orderBy: { createdAt: "asc" },
         },
         _count: {
-          select: { activities: true },
+          select: { trips: true },
         },
       },
     });
@@ -155,19 +155,19 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
             </h2>
           </div>
 
-          {guide.activities.length === 0 ? (
+          {guide.trips.length === 0 ? (
             <div className="rounded-[1.25rem] border border-dashed border-border/80 bg-background/80 p-6 text-sm text-muted-foreground">
               No trips have been organised by {guide.name} yet.
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {guide.activities.map((activity) => (
-                <Link key={activity.id} href={`/trips/${activity.slug}`} className="block">
+              {guide.trips.map((trip) => (
+                <Link key={trip.id} href={`/trips/${trip.slug}`} className="block">
                   <Card className="flex h-full min-h-[360px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
                     <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
                       <Image
-                        src={getTripCardImage(activity)}
-                        alt={activity.title}
+                        src={getTripCardImage(trip)}
+                        alt={trip.title}
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 33vw"
@@ -177,12 +177,12 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
 
                     <div className="flex flex-1 flex-col justify-between gap-2 p-4">
                       <div className="space-y-1.5">
-                        <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-                        <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
+                        <h3 className="text-base font-semibold tracking-tight text-foreground">{trip.title}</h3>
+                        <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{trip.location}</p>
                       </div>
 
                       <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                        {activity.categories.map((category) => (
+                        {trip.categories.map((category) => (
                           <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
                             {CATEGORY_LABELS[category] ?? category}
                           </Badge>
@@ -191,11 +191,11 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
 
                       <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
                         <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
-                          {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+                          {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
                         </span>
                         <Price
                           className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                          amount={activity.priceInRupees}
+                          amount={trip.priceInRupees}
                         />
                       </div>
                     </div>

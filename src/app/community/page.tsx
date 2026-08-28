@@ -38,7 +38,7 @@ const getCommunityGuides = unstable_cache(
           take: 3,
         },
         _count: {
-          select: { activities: true },
+          select: { trips: true },
         },
       },
     });

@@ -67,31 +67,31 @@ export type GuideTripData = {
 
 export function GuideTripForm({
   guideId,
-  activity,
+  trip,
 }: {
   guideId: string;
-  activity?: GuideTripData | null;
+  trip?: GuideTripData | null;
 }) {
   const router = useRouter();
-  const isEditing = Boolean(activity);
-  const key = activity?.id ?? "new";
+  const isEditing = Boolean(trip);
+  const key = trip?.id ?? "new";
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const title = activity?.title ?? "";
-  const type = activity?.type ?? "TREK";
-  const location = activity?.location ?? "";
-  const description = activity?.description ?? "";
-  const priceInRupees = activity?.priceInRupees ?? 0;
-  const durationDays = activity?.durationDays ?? 1;
-  const maxGroupSize = activity?.maxGroupSize ?? 8;
-  const categories = activity?.categories ?? [];
-  const images = activity?.images ?? [];
-  const pickup = activity?.pickup ?? "";
-  const drop = activity?.drop ?? "";
-  const inclusions = activity?.inclusions ?? [];
-  const exclusions = activity?.exclusions ?? [];
-  const highlights = activity?.highlights ?? [];
+  const title = trip?.title ?? "";
+  const type = trip?.type ?? "TREK";
+  const location = trip?.location ?? "";
+  const description = trip?.description ?? "";
+  const priceInRupees = trip?.priceInRupees ?? 0;
+  const durationDays = trip?.durationDays ?? 1;
+  const maxGroupSize = trip?.maxGroupSize ?? 8;
+  const categories = trip?.categories ?? [];
+  const images = trip?.images ?? [];
+  const pickup = trip?.pickup ?? "";
+  const drop = trip?.drop ?? "";
+  const inclusions = trip?.inclusions ?? [];
+  const exclusions = trip?.exclusions ?? [];
+  const highlights = trip?.highlights ?? [];
 
   if (!open) {
     return (
@@ -156,7 +156,7 @@ export function GuideTripForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {isEditing ? <input type="hidden" name="activityId" value={activity?.id} /> : null}
+        {isEditing ? <input type="hidden" name="tripId" value={trip?.id} /> : null}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">

@@ -23,10 +23,10 @@ import { SportIcon } from "@/components/trips/sport-icon";
 // so every filter combination reuses this single cached query instead of
 // hitting Postgres on each click. `select` also trims the payload to only the
 // fields this page actually renders/filters on (the previous `include` pulled
-// every scalar column plus every slot row for every activity).
-const getTripsPageActivities = unstable_cache(
+// every scalar column plus every slot row for every trip).
+const getTripsPageTrips = unstable_cache(
   async () => {
-    return prisma.activity.findMany({
+    return prisma.trip.findMany({
       select: {
         id: true,
         slug: true,
@@ -44,7 +44,7 @@ const getTripsPageActivities = unstable_cache(
       orderBy: { createdAt: "asc" },
     });
   },
-  ["trips-page-activities"],
+  ["trips-page-trips"],
   // Admin create/update actions already call revalidatePath("/trips"), which
   // invalidates this cache on-demand; `revalidate` is just a safety net.
   { tags: ["trips"], revalidate: 300 },
@@ -101,16 +101,16 @@ const GROUP_GRID_CLASSES: Record<number, string> = {
   4: "md:grid-cols-4",
 };
 
-type TripCardActivity = Awaited<ReturnType<typeof getTripsPageActivities>>[number];
+type TripCardTrip = Awaited<ReturnType<typeof getTripsPageTrips>>[number];
 
-function TripCard({ activity }: { activity: TripCardActivity }) {
+function TripCard({ trip }: { trip: TripCardTrip }) {
   return (
-    <Link href={`/trips/${activity.slug}`} className="block">
+    <Link href={`/trips/${trip.slug}`} className="block">
       <Card className="flex h-full min-h-[320px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:min-h-[420px]">
         <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
           <Image
-            src={getTripCardImage(activity)}
-            alt={activity.title}
+            src={getTripCardImage(trip)}
+            alt={trip.title}
             fill
             className="object-cover"
             sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
@@ -119,11 +119,11 @@ function TripCard({ activity }: { activity: TripCardActivity }) {
         </div>
         <div className="flex flex-1 flex-col justify-between gap-2 p-4">
           <div className="space-y-1.5">
-            <h3 className="text-base font-semibold tracking-tight text-foreground">{activity.title}</h3>
-            <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{activity.location}</p>
+            <h3 className="text-base font-semibold tracking-tight text-foreground">{trip.title}</h3>
+            <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{trip.location}</p>
           </div>
           <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-            {activity.categories.map((category) => (
+            {trip.categories.map((category) => (
               <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]">
                 {CATEGORY_LABELS[category] ?? category}
               </Badge>
@@ -131,12 +131,12 @@ function TripCard({ activity }: { activity: TripCardActivity }) {
           </div>
           <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2">
             <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-emerald-700 sm:text-sm">
-              {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+              {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
             </span>
             <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
               <Price
                 className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                amount={activity.priceInRupees}
+                amount={trip.priceInRupees}
               />
             </div>
           </div>
@@ -164,41 +164,41 @@ export default async function TripsPage({
   const selectedTravelStyle = normalizeTravelStyleFilter(travelStyle);
   const selectedLocation = normalizeLocationFilter(location);
 
-  const activities = await getTripsPageActivities();
+  const trips = await getTripsPageTrips();
 
-  const filteredActivities = activities.filter((activity) => {
-    const queryMatch = searchQuery ? matchesSearchQuery(activity, searchQuery) : true;
+  const filteredActivities = trips.filter((trip) => {
+    const queryMatch = searchQuery ? matchesSearchQuery(trip, searchQuery) : true;
 
     const locationMatch =
-      selectedLocation.length === 0 || selectedLocation.some((locationValue) => activity.location.toLowerCase().includes(locationValue.toLowerCase()));
+      selectedLocation.length === 0 || selectedLocation.some((locationValue) => trip.location.toLowerCase().includes(locationValue.toLowerCase()));
 
     const dateMatch =
       !startDate && !endDate
         ? true
-        : activity.slots.some((slot) => isDateWithinRange(slot.date, startDate ?? null, endDate ?? null));
+        : trip.slots.some((slot) => isDateWithinRange(slot.date, startDate ?? null, endDate ?? null));
 
-    return queryMatch && locationMatch && dateMatch && matchesSportFilter(activity, selectedSport) && matchesTravelStyleFilter(activity, selectedTravelStyle);
+    return queryMatch && locationMatch && dateMatch && matchesSportFilter(trip, selectedSport) && matchesTravelStyleFilter(trip, selectedTravelStyle);
   });
 
   const hasActiveFilters = selectedSport.length > 0 || selectedTravelStyle.length > 0 || selectedLocation.length > 0 || Boolean(searchQuery) || Boolean(startDate) || Boolean(endDate);
 
   const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
     ...sport,
-    activities: filteredActivities.filter((activity) => {
+    trips: filteredActivities.filter((trip) => {
       const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
-      return matchesSportFilter(activity, [normalizedSportId]);
+      return matchesSportFilter(trip, [normalizedSportId]);
     }),
   }));
 
   const otherActivities = hasActiveFilters
-    ? activities.filter((activity) => !filteredActivities.some((item) => item.id === activity.id))
+    ? trips.filter((trip) => !filteredActivities.some((item) => item.id === trip.id))
     : [];
 
   const groupedOtherActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
     ...sport,
-    activities: otherActivities.filter((activity) => {
+    trips: otherActivities.filter((trip) => {
       const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
-      return matchesSportFilter(activity, [normalizedSportId]);
+      return matchesSportFilter(trip, [normalizedSportId]);
     }),
   }));
 
@@ -227,11 +227,11 @@ export default async function TripsPage({
           <div className="flex flex-col gap-8">
             <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
               {groupedActivities.map((group) => {
-                if (group.activities.length === 0) {
+                if (group.trips.length === 0) {
                   return null;
                 }
 
-                const columnCount = Math.min(group.activities.length, 4);
+                const columnCount = Math.min(group.trips.length, 4);
 
                 return (
                   <section key={group.id} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
@@ -241,12 +241,12 @@ export default async function TripsPage({
                           <SportIcon sport={group.id} className="size-5" />
                           {group.label}
                         </h2>
-                        <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
+                        <p className="text-sm text-muted-foreground">{group.trips.length} trip{group.trips.length === 1 ? "" : "s"}</p>
                       </div>
                     </div>
                     <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                      {group.activities.map((activity) => (
-                        <TripCard key={activity.id} activity={activity} />
+                      {group.trips.map((trip) => (
+                        <TripCard key={trip.id} trip={trip} />
                       ))}
                     </div>
                   </section>
@@ -263,11 +263,11 @@ export default async function TripsPage({
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
                   {groupedOtherActivities.map((group) => {
-                    if (group.activities.length === 0) {
+                    if (group.trips.length === 0) {
                       return null;
                     }
 
-                    const columnCount = Math.min(group.activities.length, 4);
+                    const columnCount = Math.min(group.trips.length, 4);
 
                     return (
                       <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
@@ -277,12 +277,12 @@ export default async function TripsPage({
                               <SportIcon sport={group.id} className="size-5" />
                               {group.label}
                             </h3>
-                            <p className="text-sm text-muted-foreground">{group.activities.length} trip{group.activities.length === 1 ? "" : "s"}</p>
+                            <p className="text-sm text-muted-foreground">{group.trips.length} trip{group.trips.length === 1 ? "" : "s"}</p>
                           </div>
                         </div>
                         <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                          {group.activities.map((activity) => (
-                            <TripCard key={activity.id} activity={activity} />
+                          {group.trips.map((trip) => (
+                            <TripCard key={trip.id} trip={trip} />
                           ))}
                         </div>
                       </section>

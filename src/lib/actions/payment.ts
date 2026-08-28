@@ -79,7 +79,7 @@ export async function submitTransactionId(
       where: { id: bookingId },
       include: {
         user: { select: { email: true, name: true } },
-        activity: { select: { title: true, location: true } },
+        trip: { select: { title: true, location: true } },
         slot: { select: { date: true } },
       },
     });
@@ -108,8 +108,8 @@ export async function submitTransactionId(
       paymentReferenceReceivedEmail({
         to: booking.user.email,
         name: booking.user.name,
-        tripTitle: booking.activity.title,
-        location: booking.activity.location,
+        tripTitle: booking.trip.title,
+        location: booking.trip.location,
         date: booking.slot.date,
         participantCount: booking.participantCount,
         totalPriceRupees: booking.totalPriceRupees,
@@ -159,7 +159,7 @@ export async function confirmBookingPayment(
         where: { id: bookingId },
         include: {
           user: { select: { email: true, name: true } },
-          activity: { select: { title: true, location: true } },
+          trip: { select: { title: true, location: true } },
           slot: { select: { date: true } },
         },
       });
@@ -225,8 +225,8 @@ export async function confirmBookingPayment(
       confirmationEmail = {
         to: booking.user.email,
         name: booking.user.name,
-        tripTitle: booking.activity.title,
-        location: booking.activity.location,
+        tripTitle: booking.trip.title,
+        location: booking.trip.location,
         date: booking.slot.date,
         participantCount: booking.participantCount,
         totalPriceRupees: booking.totalPriceRupees,
@@ -288,7 +288,7 @@ export async function cancelBooking(
         include: {
           slot: true,
           user: { select: { email: true, name: true } },
-          activity: { select: { title: true } },
+          trip: { select: { title: true } },
         },
       });
 
@@ -325,7 +325,7 @@ export async function cancelBooking(
       cancellationEmail = {
         to: booking.user.email,
         name: booking.user.name,
-        tripTitle: booking.activity.title,
+        tripTitle: booking.trip.title,
         date: booking.slot.date,
         cancelledByUser: false,
       };
@@ -388,11 +388,11 @@ export async function cancelBookingAsGuide(
         include: {
           slot: true,
           user: { select: { email: true, name: true } },
-          activity: { include: { guide: true } },
+          trip: { include: { guide: true } },
         },
       });
 
-      if (!booking || booking.activity.guide?.userId !== userId) {
+      if (!booking || booking.trip.guide?.userId !== userId) {
         throw new Error("Booking not found.");
       }
 
@@ -425,7 +425,7 @@ export async function cancelBookingAsGuide(
       cancellationEmail = {
         to: booking.user.email,
         name: booking.user.name,
-        tripTitle: booking.activity.title,
+        tripTitle: booking.trip.title,
         date: booking.slot.date,
         cancelledByUser: false,
       };
@@ -485,7 +485,7 @@ export async function cancelBookingAsUser(
         include: {
           slot: true,
           user: { select: { email: true, name: true } },
-          activity: { select: { title: true } },
+          trip: { select: { title: true } },
         },
       });
 
@@ -521,7 +521,7 @@ export async function cancelBookingAsUser(
       cancellationEmail = {
         to: booking.user.email,
         name: booking.user.name,
-        tripTitle: booking.activity.title,
+        tripTitle: booking.trip.title,
         date: booking.slot.date,
         cancelledByUser: true,
       };

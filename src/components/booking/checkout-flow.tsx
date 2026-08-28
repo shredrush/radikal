@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/currency/price";
 
-type Activity = {
+type Trip = {
   id: string;
   title: string;
   location: string;
@@ -37,12 +37,12 @@ const DEMO_PAYMENT_DETAILS = [
 type Step = "select" | "review" | "submitted";
 
 export function CheckoutFlow({
-  activity,
+  trip,
   availableSlots,
   initialSlotId,
   initialParticipantCount,
 }: {
-  activity: Activity;
+  trip: Trip;
   availableSlots: SlotOption[];
   initialSlotId: string;
   initialParticipantCount: number;
@@ -61,13 +61,13 @@ export function CheckoutFlow({
     [availableSlots, slotId]
   );
 
-  const totalPrice = activity.priceInRupees * participantCount;
+  const totalPrice = trip.priceInRupees * participantCount;
 
   function handleReserve() {
     setError(null);
     startTransition(async () => {
       const result = await createBooking({
-        activityId: activity.id,
+        tripId: trip.id,
         slotId,
         participantCount,
       });
@@ -121,11 +121,11 @@ export function CheckoutFlow({
           Booking summary
         </p>
         <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground">
-          {activity.title}
+          {trip.title}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {activity.location} · {activity.durationDays}{" "}
-          {activity.durationDays === 1 ? "day" : "days"}
+          {trip.location} · {trip.durationDays}{" "}
+          {trip.durationDays === 1 ? "day" : "days"}
         </p>
       </div>
 
@@ -190,7 +190,7 @@ export function CheckoutFlow({
         <div className="space-y-2 border-t border-border/70 pt-4 text-sm">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>
-              <Price amount={activity.priceInRupees} /> × {participantCount}{" "}
+              <Price amount={trip.priceInRupees} /> × {participantCount}{" "}
               {participantCount === 1 ? "person" : "people"}
             </span>
             <span className="text-foreground">

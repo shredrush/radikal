@@ -58,7 +58,7 @@ function parseList(value: string) {
   );
 }
 
-type ActivityFields = {
+type TripFields = {
   title: string;
   slug: string;
   location: string;
@@ -77,7 +77,7 @@ type ActivityFields = {
   highlights: string[];
 };
 
-function readActivityFields(formData: FormData): ActivityFields {
+function readTripFields(formData: FormData): TripFields {
   return {
     title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
     slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
@@ -101,7 +101,7 @@ function readActivityFields(formData: FormData): ActivityFields {
   };
 }
 
-function validateActivityFields(fields: ActivityFields): ActivityFields {
+function validateTripFields(fields: TripFields): TripFields {
   if (!fields.title || !fields.slug || !fields.location || !fields.description) {
     throw new Error("Title, slug, location, and description are required.");
   }
@@ -111,7 +111,7 @@ function validateActivityFields(fields: ActivityFields): ActivityFields {
   }
 
   if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {
-    throw new Error("Invalid activity type.");
+    throw new Error("Invalid trip type.");
   }
 
   if (
@@ -129,7 +129,7 @@ function validateActivityFields(fields: ActivityFields): ActivityFields {
   return fields;
 }
 
-function revalidateActivityPages(slug: string) {
+function revalidateTripPages(slug: string) {
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
@@ -141,10 +141,10 @@ function isUniqueConstraint(error: unknown) {
   return error instanceof Error && error.message.includes("Unique constraint failed");
 }
 
-export async function createActivityAction(formData: FormData) {
+export async function createTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
-  const fields = validateActivityFields(readActivityFields(formData));
+  const fields = validateTripFields(readTripFields(formData));
   const {
     title,
     slug,
@@ -166,7 +166,7 @@ export async function createActivityAction(formData: FormData) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      const activity = await tx.activity.create({
+      const trip = await tx.trip.create({
         data: {
           title,
           slug,
@@ -184,22 +184,22 @@ export async function createActivityAction(formData: FormData) {
 
       if (pickup || drop) {
         await tx.tripLocation.create({
-          data: { activityId: activity.id, pickup, drop },
+          data: { tripId: trip.id, pickup, drop },
         });
       }
 
       if (inclusions.length > 0 || exclusions.length > 0) {
         await tx.tripInclusion.createMany({
           data: [
-            ...inclusions.map((item, order) => ({ activityId: activity.id, item, included: true, order })),
-            ...exclusions.map((item, order) => ({ activityId: activity.id, item, included: false, order })),
+            ...inclusions.map((item, order) => ({ tripId: trip.id, item, included: true, order })),
+            ...exclusions.map((item, order) => ({ tripId: trip.id, item, included: false, order })),
           ],
         });
       }
 
       if (highlights.length > 0) {
         await tx.tripHighlight.createMany({
-          data: highlights.map((text, order) => ({ activityId: activity.id, text, order })),
+          data: highlights.map((text, order) => ({ tripId: trip.id, text, order })),
         });
       }
     });
@@ -211,14 +211,14 @@ export async function createActivityAction(formData: FormData) {
     throw error;
   }
 
-  revalidateActivityPages(slug);
+  revalidateTripPages(slug);
 }
 
-export async function updateActivityAction(formData: FormData) {
+export async function updateTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
-  const activityId = asString(formData.get("activityId"));
-  const fields = validateActivityFields(readActivityFields(formData));
+  const tripId = asString(formData.get("tripId"));
+  const fields = validateTripFields(readTripFields(formData));
   const {
     title,
     slug,
@@ -238,27 +238,27 @@ export async function updateActivityAction(formData: FormData) {
     highlights,
   } = fields;
 
-  if (!activityId) {
-    throw new Error("Missing activity id.");
+  if (!tripId) {
+    throw new Error("Missing trip id.");
   }
 
   let previousSlug = "";
 
   try {
     await prisma.$transaction(async (tx) => {
-      const currentActivity = await tx.activity.findUnique({
-        where: { id: activityId },
+      const currentTrip = await tx.trip.findUnique({
+        where: { id: tripId },
         select: { slug: true },
       });
 
-      if (!currentActivity) {
-        throw new Error("Activity not found.");
+      if (!currentTrip) {
+        throw new Error("Trip not found.");
       }
 
-      previousSlug = currentActivity.slug;
+      previousSlug = currentTrip.slug;
 
-      await tx.activity.update({
-        where: { id: activityId },
+      await tx.trip.update({
+        where: { id: tripId },
         data: {
           title,
           slug,
@@ -277,28 +277,28 @@ export async function updateActivityAction(formData: FormData) {
       // If both are blank, remove any existing location row to avoid stale values.
       if (pickup || drop) {
         await tx.tripLocation.upsert({
-          where: { activityId },
+          where: { tripId },
           update: { pickup, drop },
-          create: { activityId, pickup, drop },
+          create: { tripId, pickup, drop },
         });
       } else {
-        await tx.tripLocation.deleteMany({ where: { activityId } });
+        await tx.tripLocation.deleteMany({ where: { tripId } });
       }
 
-      await tx.tripInclusion.deleteMany({ where: { activityId } });
+      await tx.tripInclusion.deleteMany({ where: { tripId } });
       if (inclusions.length > 0 || exclusions.length > 0) {
         await tx.tripInclusion.createMany({
           data: [
-            ...inclusions.map((item, order) => ({ activityId, item, included: true, order })),
-            ...exclusions.map((item, order) => ({ activityId, item, included: false, order })),
+            ...inclusions.map((item, order) => ({ tripId, item, included: true, order })),
+            ...exclusions.map((item, order) => ({ tripId, item, included: false, order })),
           ],
         });
       }
 
-      await tx.tripHighlight.deleteMany({ where: { activityId } });
+      await tx.tripHighlight.deleteMany({ where: { tripId } });
       if (highlights.length > 0) {
         await tx.tripHighlight.createMany({
-          data: highlights.map((text, order) => ({ activityId, text, order })),
+          data: highlights.map((text, order) => ({ tripId, text, order })),
         });
       }
     });
@@ -310,36 +310,36 @@ export async function updateActivityAction(formData: FormData) {
     throw error;
   }
 
-  revalidateActivityPages(previousSlug);
+  revalidateTripPages(previousSlug);
 
   if (slug !== previousSlug) {
     revalidatePath(`/trips/${slug}`);
   }
 }
 
-export async function deleteActivityAction(activityId: string) {
+export async function deleteTripAction(tripId: string) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
-  if (!activityId) {
-    throw new Error("Missing activity id.");
+  if (!tripId) {
+    throw new Error("Missing trip id.");
   }
 
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
     select: { slug: true },
   });
 
-  if (!activity) {
-    throw new Error("Activity not found.");
+  if (!trip) {
+    throw new Error("Trip not found.");
   }
 
-  await prisma.activity.delete({ where: { id: activityId } });
+  await prisma.trip.delete({ where: { id: tripId } });
 
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");
-  revalidatePath(`/trips/${activity.slug}`);
+  revalidatePath(`/trips/${trip.slug}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -389,13 +389,13 @@ function revalidateSlotPages(slug: string) {
 export async function createSlotAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
-  const activityId = asString(formData.get("activityId"));
+  const tripId = asString(formData.get("tripId"));
   const dateValue = asString(formData.get("date"));
   const capacity = parseSlotInteger(asString(formData.get("capacity")));
   const reserved = parseSlotInteger(asString(formData.get("reserved")), 0);
 
-  if (!activityId) {
-    throw new Error("Missing activity id.");
+  if (!tripId) {
+    throw new Error("Missing trip id.");
   }
 
   if (!dateValue) {
@@ -419,19 +419,19 @@ export async function createSlotAction(formData: FormData) {
 
   let slug = "";
   await prisma.$transaction(async (tx) => {
-    const activity = await tx.activity.findUnique({
-      where: { id: activityId },
+    const trip = await tx.trip.findUnique({
+      where: { id: tripId },
       select: { slug: true },
     });
 
-    if (!activity) {
-      throw new Error("Activity not found.");
+    if (!trip) {
+      throw new Error("Trip not found.");
     }
 
-    slug = activity.slug;
+    slug = trip.slug;
 
     await tx.slot.create({
-      data: { activityId, date, capacity, reserved },
+      data: { tripId, date, capacity, reserved },
     });
   });
 
@@ -470,14 +470,14 @@ export async function updateSlotAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const slot = await tx.slot.findUnique({
       where: { id: slotId },
-      include: { activity: { select: { slug: true } } },
+      include: { trip: { select: { slug: true } } },
     });
 
     if (!slot) {
       throw new Error("Slot not found.");
     }
 
-    slug = slot.activity.slug;
+    slug = slot.trip.slug;
 
     // Never shrink capacity below the number of already-booked spots.
     if (reserved > capacity - slot.booked) {
@@ -507,7 +507,7 @@ export async function deleteSlotAction(slotId: string) {
     const slot = await tx.slot.findUnique({
       where: { id: slotId },
       include: {
-        activity: { select: { slug: true } },
+        trip: { select: { slug: true } },
         _count: { select: { bookings: true } },
       },
     });
@@ -516,7 +516,7 @@ export async function deleteSlotAction(slotId: string) {
       throw new Error("Slot not found.");
     }
 
-    slug = slot.activity.slug;
+    slug = slot.trip.slug;
 
     // `Booking.slot` has no cascade, so deleting a slot with bookings would
     // violate the foreign key. Cancel the bookings first instead.

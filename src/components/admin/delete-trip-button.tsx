@@ -4,29 +4,29 @@ import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { deleteActivityAction } from "@/lib/actions/admin";
+import { deleteTripAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
 
 export function DeleteTripButton({
-  activityId,
-  activityTitle,
+  tripId,
+  tripTitle,
 }: {
-  activityId: string;
-  activityTitle: string;
+  tripId: string;
+  tripTitle: string;
 }) {
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${activityTitle}"? This action cannot be undone.`
+      `Are you sure you want to delete "${tripTitle}"? This action cannot be undone.`
     );
 
     if (!confirmed) return;
 
     startTransition(async () => {
       try {
-        await deleteActivityAction(activityId);
-        toast.success(`"${activityTitle}" has been deleted.`);
+        await deleteTripAction(tripId);
+        toast.success(`"${tripTitle}" has been deleted.`);
       } catch {
         toast.error("Failed to delete trip. Please try again.");
       }

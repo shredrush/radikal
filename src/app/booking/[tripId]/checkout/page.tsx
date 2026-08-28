@@ -65,10 +65,10 @@ export default async function CheckoutPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ activityId: string }>;
+  params: Promise<{ tripId: string }>;
   searchParams: Promise<{ slot?: string; participants?: string }>;
 }) {
-  const { activityId } = await params;
+  const { tripId } = await params;
   const {
     slot: slotIdParam,
     participants: participantCountParam,
@@ -84,13 +84,13 @@ export default async function CheckoutPage({
     const callbackParams = new URLSearchParams();
     if (slotIdParam) callbackParams.set("slot", slotIdParam);
     callbackParams.set("participants", String(Math.max(1, requestedParticipantCount)));
-    const callbackUrl = `/booking/${activityId}/checkout?${callbackParams.toString()}`;
+    const callbackUrl = `/booking/${tripId}/checkout?${callbackParams.toString()}`;
 
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
     include: {
       guide: true,
       slots: {
@@ -100,26 +100,26 @@ export default async function CheckoutPage({
     },
   });
 
-  if (!activity) {
+  if (!trip) {
     notFound();
   }
 
   const selectedSlot = slotIdParam
-    ? activity.slots.find((slot) => slot.id === slotIdParam)
-    : activity.slots[0];
+    ? trip.slots.find((slot) => slot.id === slotIdParam)
+    : trip.slots[0];
 
   const initialParticipantCount = Math.min(
     Math.max(1, requestedParticipantCount),
-    activity.maxGroupSize,
+    trip.maxGroupSize,
   );
 
-  const normalizedImages = activity.images
-    .map((image) => normalizeTripImagePath(image, activity.slug))
+  const normalizedImages = trip.images
+    .map((image) => normalizeTripImagePath(image, trip.slug))
     .filter(Boolean);
   const galleryImages =
     normalizedImages.length > 0
       ? normalizedImages
-      : [`/activities/${activity.slug}/cover.jpg`];
+      : [`/activities/${trip.slug}/cover.jpg`];
   const gallerySlots = Array.from(
     { length: 4 },
     (_, i) => galleryImages[i % galleryImages.length],
@@ -129,7 +129,7 @@ export default async function CheckoutPage({
     <div className="flex flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-10 lg:py-16">
         <Link
-          href={`/trips/${activity.slug}`}
+          href={`/trips/${trip.slug}`}
           className="inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background/90 px-3 py-2 text-sm font-medium text-foreground transition hover:border-black/20 hover:bg-background"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -141,16 +141,16 @@ export default async function CheckoutPage({
           <div className="h-full overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <div className="grid h-full min-h-[300px] grid-cols-4 grid-rows-2 gap-0.5 sm:min-h-[420px]">
               <div className="relative col-span-2 row-span-2 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[0]} alt={`${activity.title} photo`} fill className="object-cover" sizes="50vw" priority />
+                <Image src={gallerySlots[0]} alt={`${trip.title} photo`} fill className="object-cover" sizes="50vw" priority />
               </div>
               <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[1]} alt={`${activity.title} photo`} fill className="object-cover" sizes="25vw" />
+                <Image src={gallerySlots[1]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
               </div>
               <div className="relative col-span-1 row-span-2 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[3]} alt={`${activity.title} photo`} fill className="object-cover" sizes="25vw" />
+                <Image src={gallerySlots[3]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
               </div>
               <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[2]} alt={`${activity.title} photo`} fill className="object-cover" sizes="25vw" />
+                <Image src={gallerySlots[2]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
               </div>
             </div>
           </div>
@@ -170,18 +170,18 @@ export default async function CheckoutPage({
             </Card>
           ) : (
             <CheckoutFlow
-              activity={{
-                id: activity.id,
-                title: activity.title,
-                location: activity.location,
-                priceInRupees: activity.priceInRupees,
-                durationDays: activity.durationDays,
-                maxGroupSize: activity.maxGroupSize,
+              trip={{
+                id: trip.id,
+                title: trip.title,
+                location: trip.location,
+                priceInRupees: trip.priceInRupees,
+                durationDays: trip.durationDays,
+                maxGroupSize: trip.maxGroupSize,
               }}
-              availableSlots={activity.slots.map((slot) => ({
+              availableSlots={trip.slots.map((slot) => ({
                 id: slot.id,
                 date: slot.date.toISOString(),
-                dateRange: formatTripDateRange(slot.date, activity.durationDays),
+                dateRange: formatTripDateRange(slot.date, trip.durationDays),
                 spotsLeft: slot.capacity - slot.booked - slot.reserved,
               }))}
               initialSlotId={selectedSlot.id}

@@ -43,7 +43,7 @@ export function toSupportBookingListItem(booking: {
   createdAt: Date;
   cancelledByRole: string | null;
   cancellationReason: string | null;
-  activity: {
+  trip: {
     slug: string;
     title: string;
     location: string;
@@ -60,11 +60,11 @@ export function toSupportBookingListItem(booking: {
   return {
     id: booking.id,
     status: booking.status,
-    tripSlug: booking.activity.slug,
-    title: booking.activity.title,
-    location: booking.activity.location,
-    image: getTripCardImage(booking.activity),
-    dateRange: formatTripDateRange(booking.slot.date, booking.activity.durationDays),
+    tripSlug: booking.trip.slug,
+    title: booking.trip.title,
+    location: booking.trip.location,
+    image: getTripCardImage(booking.trip),
+    dateRange: formatTripDateRange(booking.slot.date, booking.trip.durationDays),
     participantCount: booking.participantCount,
     totalPriceRupees: booking.totalPriceRupees,
     paymentTransactionId: booking.paymentTransactionId,

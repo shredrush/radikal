@@ -25,7 +25,10 @@ export const signupSchema = z.object({
     .transform((value) => sanitizeText(value, { maxLength: 100 }))
     .refine((value) => value.length >= 2, "Name must be at least 2 characters"),
   email: z.string().trim().toLowerCase().max(254).email("Enter a valid email address"),
-  username: usernameSchema,
+  username: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    usernameSchema.optional()
+  ),
   password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password must be 72 characters or fewer"),
 });
 

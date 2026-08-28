@@ -33,7 +33,7 @@ const TRIP_CATEGORY_LABELS: Record<string, string> = {
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
-function getActivityTypeLabel(value: string) {
+function getTripTypeLabel(value: string) {
   return ACTIVITY_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
@@ -75,8 +75,8 @@ export default async function AdminTripsPage({
   const { type } = await searchParams;
   const selectedType = typeof type === "string" ? type : "";
 
-  const [activities, guides] = await Promise.all([
-    prisma.activity.findMany({
+  const [trips, guides] = await Promise.all([
+    prisma.trip.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         guide: true,
@@ -92,11 +92,11 @@ export default async function AdminTripsPage({
     }),
   ]);
 
-  const totalUpcomingSlots = activities.reduce((count, activity) => count + activity.slots.length, 0);
+  const totalUpcomingSlots = trips.reduce((count, trip) => count + trip.slots.length, 0);
 
   const visibleActivities = selectedType
-    ? activities.filter((activity) => activity.type === selectedType)
-    : activities;
+    ? trips.filter((trip) => trip.type === selectedType)
+    : trips;
 
   return (
     <div className="min-h-screen">
@@ -112,7 +112,7 @@ export default async function AdminTripsPage({
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Trips live</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{activities.length}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{trips.length}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Guides linked</p>
@@ -159,31 +159,31 @@ export default async function AdminTripsPage({
           </div>
         ) : (
         <div className="flex flex-col gap-6">
-          {visibleActivities.map((activity) => (
-            <Card key={activity.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+          {visibleActivities.map((trip) => (
+            <Card key={trip.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
               <CardHeader className="border-b border-border/70 bg-muted/20">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
-                        {getActivityTypeLabel(activity.type)}
+                        {getTripTypeLabel(trip.type)}
                       </Badge>
                       <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {activity.location}
+                        {trip.location}
                       </Badge>
                       <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {activity.durationDays} day{activity.durationDays === 1 ? "" : "s"}
+                        {trip.durationDays} day{trip.durationDays === 1 ? "" : "s"}
                       </Badge>
                     </div>
                     <div>
-                      <CardTitle className="text-xl">{activity.title}</CardTitle>
+                      <CardTitle className="text-xl">{trip.title}</CardTitle>
                       <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                        {activity.guide ? `Guide: ${activity.guide.name}` : "No guide linked yet"}
+                        {trip.guide ? `Guide: ${trip.guide.name}` : "No guide linked yet"}
                       </CardDescription>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {activity.categories.slice(0, 3).map((category) => (
+                    {trip.categories.slice(0, 3).map((category) => (
                       <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
                         {TRIP_CATEGORY_LABELS[category] ?? category}
                       </Badge>
@@ -193,15 +193,15 @@ export default async function AdminTripsPage({
               </CardHeader>
               <CardContent className="pt-6">
                 <AdminTripForm
-                  activity={activity}
+                  trip={trip}
                   guides={guides}
-                  slots={activity.slots.map(toSlotItem)}
+                  slots={trip.slots.map(toSlotItem)}
                   supplemental={{
-                    pickup: activity.tripLocation?.pickup ?? "",
-                    drop: activity.tripLocation?.drop ?? "",
-                    inclusions: activity.inclusions.filter(i => i.included).map(i => i.item),
-                    exclusions: activity.inclusions.filter(i => !i.included).map(i => i.item),
-                    highlights: activity.highlights.map(h => h.text),
+                    pickup: trip.tripLocation?.pickup ?? "",
+                    drop: trip.tripLocation?.drop ?? "",
+                    inclusions: trip.inclusions.filter(i => i.included).map(i => i.item),
+                    exclusions: trip.inclusions.filter(i => !i.included).map(i => i.item),
+                    highlights: trip.highlights.map(h => h.text),
                   }}
                 />
               </CardContent>

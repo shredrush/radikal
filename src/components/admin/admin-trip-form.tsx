@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { createActivityAction, updateActivityAction } from "@/lib/actions/admin";
+import { createTripAction, updateTripAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
@@ -45,12 +45,12 @@ const inputClassName =
   "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
 
 export function AdminTripForm({
-  activity,
+  trip,
   guides,
   supplemental,
   slots = [],
 }: {
-  activity?: {
+  trip?: {
     id: string;
     title: string;
     slug: string;
@@ -74,23 +74,23 @@ export function AdminTripForm({
   };
   slots?: SlotItem[];
 }) {
-  const isEditing = Boolean(activity);
-  const key = activity?.id ?? "new";
+  const isEditing = Boolean(trip);
+  const key = trip?.id ?? "new";
   const [isPending, startTransition] = useTransition();
 
-  // Materialise every field so create mode (no `activity`) renders blank/empty
+  // Materialise every field so create mode (no `trip`) renders blank/empty
   // controls instead of undefined defaults.
-  const title = activity?.title ?? "";
-  const slug = activity?.slug ?? "";
-  const type = activity?.type ?? "TREK";
-  const location = activity?.location ?? "";
-  const description = activity?.description ?? "";
-  const priceInRupees = activity?.priceInRupees ?? 0;
-  const durationDays = activity?.durationDays ?? 1;
-  const maxGroupSize = activity?.maxGroupSize ?? 8;
-  const categories = activity?.categories ?? [];
-  const images = activity?.images ?? [];
-  const guideId = activity?.guideId ?? "";
+  const title = trip?.title ?? "";
+  const slug = trip?.slug ?? "";
+  const type = trip?.type ?? "TREK";
+  const location = trip?.location ?? "";
+  const description = trip?.description ?? "";
+  const priceInRupees = trip?.priceInRupees ?? 0;
+  const durationDays = trip?.durationDays ?? 1;
+  const maxGroupSize = trip?.maxGroupSize ?? 8;
+  const categories = trip?.categories ?? [];
+  const images = trip?.images ?? [];
+  const guideId = trip?.guideId ?? "";
 
   const pickup = supplemental?.pickup ?? "";
   const drop = supplemental?.drop ?? "";
@@ -106,10 +106,10 @@ export function AdminTripForm({
     startTransition(async () => {
       try {
         if (isEditing) {
-          await updateActivityAction(formData);
+          await updateTripAction(formData);
           toast.success(`${title} updated.`);
         } else {
-          await createActivityAction(formData);
+          await createTripAction(formData);
           toast.success("Trip created.");
           form.reset();
         }
@@ -124,7 +124,7 @@ export function AdminTripForm({
   return (
     <>
     <form id={`trip-form-${key}`} onSubmit={handleSubmit} className="space-y-6">
-      {isEditing ? <input type="hidden" name="activityId" value={activity?.id} /> : null}
+      {isEditing ? <input type="hidden" name="tripId" value={trip?.id} /> : null}
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -233,7 +233,7 @@ export function AdminTripForm({
 
     {isEditing ? (
       <div className="mt-6 border-t border-border/70 pt-6">
-        <SlotsManager activityId={activity?.id ?? ""} slots={slots} />
+        <SlotsManager tripId={trip?.id ?? ""} slots={slots} />
       </div>
     ) : null}
 
@@ -245,7 +245,7 @@ export function AdminTripForm({
       </p>
       <div className="flex items-center gap-3">
         {isEditing ? (
-          <DeleteTripButton activityId={activity?.id ?? ""} activityTitle={title} />
+          <DeleteTripButton tripId={trip?.id ?? ""} tripTitle={title} />
         ) : null}
         <Button type="submit" form={`trip-form-${key}`} className="rounded-full" disabled={isPending}>
           {isPending ? (isEditing ? "Saving…" : "Creating…") : isEditing ? "Save changes" : "Create trip"}

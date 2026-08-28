@@ -43,7 +43,7 @@ function readSlotNumber(formData: FormData, field: string) {
 }
 
 export function SlotsManager({
-  activityId,
+  tripId,
   slots,
   actions = {
     create: createSlotAction,
@@ -51,7 +51,7 @@ export function SlotsManager({
     remove: deleteSlotAction,
   },
 }: {
-  activityId: string;
+  tripId: string;
   slots: SlotItem[];
   actions?: SlotActions;
 }) {
@@ -64,7 +64,7 @@ export function SlotsManager({
         </span>
       </div>
 
-      <AddSlotForm activityId={activityId} createAction={actions.create} />
+      <AddSlotForm tripId={tripId} createAction={actions.create} />
 
       {slots.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
@@ -87,10 +87,10 @@ export function SlotsManager({
 }
 
 function AddSlotForm({
-  activityId,
+  tripId,
   createAction,
 }: {
-  activityId: string;
+  tripId: string;
   createAction: SlotActions["create"];
 }) {
   const [isPending, startTransition] = useTransition();
@@ -98,7 +98,7 @@ function AddSlotForm({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    formData.set("activityId", activityId);
+    formData.set("tripId", tripId);
 
     if (!String(formData.get("date") ?? "")) {
       toast.error("Please choose a date.");

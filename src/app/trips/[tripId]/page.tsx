@@ -24,7 +24,7 @@ import { getGuideImage } from "@/lib/guide-images";
 // the common case.
 const getTripDetail = unstable_cache(
   async (slug: string) => {
-    return prisma.activity.findUnique({
+    return prisma.trip.findUnique({
       where: { slug },
       include: {
         guide: {
@@ -88,13 +88,13 @@ export default async function TripDetailPage({
 }) {
   const { tripId } = await params;
 
-  const activity = await getTripDetail(tripId);
+  const trip = await getTripDetail(tripId);
 
-  if (!activity) {
+  if (!trip) {
     notFound();
   }
 
-  const guide = activity.guide;
+  const guide = trip.guide;
   const guideProfileImage = guide ? getGuideImage(guide) : "/avatars/fox.svg";
 
   return (
@@ -104,22 +104,22 @@ export default async function TripDetailPage({
           <div className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="relative overflow-hidden bg-muted/60">
               <TripGallery
-                images={activity.images.map((image) => normalizeTripImagePath(image, activity.slug)).filter(Boolean)}
-                fallbackImage={`/activities/${activity.slug}/cover.png`}
-                alt={activity.title}
+                images={trip.images.map((image) => normalizeTripImagePath(image, trip.slug)).filter(Boolean)}
+                fallbackImage={`/activities/${trip.slug}/cover.png`}
+                alt={trip.title}
                 compact
               />
             </div>
             <div className="flex flex-col justify-between gap-6 px-8 py-8 sm:px-10 sm:py-10 lg:px-0 lg:pt-4 lg:pb-8 lg:pr-10">
               <div className="space-y-4">
                 <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
-                  {activity.title}
+                  {trip.title}
                 </h1>
                 <p className="line-clamp-6 text-base leading-8 text-muted-foreground">
-                  {activity.description}
+                  {trip.description}
                 </p>
                 <div className="flex flex-wrap items-start gap-2">
-                  {activity.categories.map((category) => (
+                  {trip.categories.map((category) => (
                     <span key={category} className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                       {CATEGORY_LABELS[category] ?? category}
                     </span>
@@ -127,10 +127,10 @@ export default async function TripDetailPage({
                 </div>
               </div>
               <BookingBar
-                activityId={activity.id}
-                pricePerPerson={activity.priceInRupees}
-                durationDays={activity.durationDays}
-                maxGroupSize={activity.maxGroupSize}
+                tripId={trip.id}
+                pricePerPerson={trip.priceInRupees}
+                durationDays={trip.durationDays}
+                maxGroupSize={trip.maxGroupSize}
               />
             </div>
           </div>
@@ -143,32 +143,32 @@ export default async function TripDetailPage({
               <CardDescription>Everything you need to know before you go.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
-              <p className="text-foreground">{activity.description}</p>
+              <p className="text-foreground">{trip.description}</p>
               <div className="grid gap-3 grid-cols-2">
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pickup</p>
-                  <p className="mt-1 text-sm font-medium text-foreground">{activity.tripLocation?.pickup ?? activity.location}</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{trip.tripLocation?.pickup ?? trip.location}</p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Drop</p>
-                  <p className="mt-1 text-sm font-medium text-foreground">{activity.tripLocation?.drop ?? activity.location}</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{trip.tripLocation?.drop ?? trip.location}</p>
                 </div>
               </div>
               <div className="grid gap-3 grid-cols-2">
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Duration</p>
-                  <p className="mt-1 text-sm font-medium text-foreground">{activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}</p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Group size</p>
-                  <p className="mt-1 text-sm font-medium text-foreground">Up to {activity.maxGroupSize} travellers</p>
+                  <p className="mt-1 text-sm font-medium text-foreground">Up to {trip.maxGroupSize} travellers</p>
                 </div>
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>
-                {activity.highlights.length > 0 ? (
+                {trip.highlights.length > 0 ? (
                   <ul className="mt-3 space-y-2">
-                    {activity.highlights.map((h) => (
+                    {trip.highlights.map((h) => (
                       <li key={h.id} className="flex items-start gap-2">
                         <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-black" />
                         <span>{h.text}</span>
@@ -176,7 +176,7 @@ export default async function TripDetailPage({
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2">{activity.description}</p>
+                  <p className="mt-2">{trip.description}</p>
                 )}
               </div>
             </CardContent>
@@ -188,12 +188,12 @@ export default async function TripDetailPage({
                 <CardTitle className="text-xl">Available dates</CardTitle>
               </CardHeader>
               <CardContent>
-                {activity.slots.length > 0 ? (
+                {trip.slots.length > 0 ? (
                   <ul className="space-y-2">
-                    {activity.slots.map((slot) => (
+                    {trip.slots.map((slot) => (
                       <li key={slot.id}>
                         <Link
-                          href={`/booking/${activity.id}/checkout?slot=${slot.id}`}
+                          href={`/booking/${trip.id}/checkout?slot=${slot.id}`}
                           className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
                         >
                           <span
@@ -202,7 +202,7 @@ export default async function TripDetailPage({
                             aria-hidden="true"
                           />
                           <span className="relative z-10 font-medium transition-colors">
-                            {formatTripDateRange(slot.date, activity.durationDays)}
+                            {formatTripDateRange(slot.date, trip.durationDays)}
                           </span>
                           <span className="relative z-10 opacity-90 transition-colors">
                             {getSlotOccupancyPercent(slot) >= 100 ? "Sold out" : `${Math.max(slot.capacity - slot.booked - slot.reserved, 0)} spots left`}
@@ -229,7 +229,7 @@ export default async function TripDetailPage({
                 <div className="space-y-4">
                   <div className="space-y-2.5">
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400">Included</p>
-                    {activity.inclusions.filter(i => i.included).map((i) => (
+                    {trip.inclusions.filter(i => i.included).map((i) => (
                       <div key={i.id} className="flex items-start gap-2.5">
                         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
@@ -242,7 +242,7 @@ export default async function TripDetailPage({
                   </div>
                   <div className="border-t border-border/60 pt-4 space-y-2.5">
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-rose-500 dark:text-rose-400">Not included</p>
-                    {activity.inclusions.filter(i => !i.included).map((i) => (
+                    {trip.inclusions.filter(i => !i.included).map((i) => (
                       <div key={i.id} className="flex items-start gap-2.5">
                         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-500 dark:bg-rose-950/50 dark:text-rose-400">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
@@ -337,13 +337,13 @@ export default async function TripDetailPage({
                 <div className="lg:border-l lg:border-border/60 lg:pl-6">
                   <p className="text-sm font-semibold text-foreground">
                     Traveller reviews
-                    {activity.reviews.length > 0 && (
-                      <span className="ml-2 font-normal text-muted-foreground">({activity.reviews.length})</span>
+                    {trip.reviews.length > 0 && (
+                      <span className="ml-2 font-normal text-muted-foreground">({trip.reviews.length})</span>
                     )}
                   </p>
-                  {activity.reviews.length > 0 ? (
+                  {trip.reviews.length > 0 ? (
                     <ul className="mt-3 space-y-4">
-                      {activity.reviews.map((review) => (
+                      {trip.reviews.map((review) => (
                         <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-4">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-foreground">{review.user.name}</span>

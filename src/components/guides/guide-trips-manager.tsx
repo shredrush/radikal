@@ -6,7 +6,7 @@ import { GuideTripForm, type GuideTripData } from "@/components/guides/guide-tri
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
 import type { SlotItem } from "@/components/admin/admin-trip-slots";
 
-function toGuideTripData(activity: {
+function toGuideTripData(trip: {
   id: string;
   title: string;
   type: string;
@@ -22,21 +22,21 @@ function toGuideTripData(activity: {
   highlights: Array<{ text: string }>;
 }): GuideTripData {
   return {
-    id: activity.id,
-    title: activity.title,
-    type: activity.type,
-    location: activity.location,
-    description: activity.description,
-    priceInRupees: activity.priceInRupees,
-    durationDays: activity.durationDays,
-    maxGroupSize: activity.maxGroupSize,
-    categories: activity.categories,
-    images: activity.images,
-    pickup: activity.tripLocation?.pickup ?? "",
-    drop: activity.tripLocation?.drop ?? "",
-    inclusions: activity.inclusions.filter((i) => i.included).map((i) => i.item),
-    exclusions: activity.inclusions.filter((i) => !i.included).map((i) => i.item),
-    highlights: activity.highlights.map((h) => h.text),
+    id: trip.id,
+    title: trip.title,
+    type: trip.type,
+    location: trip.location,
+    description: trip.description,
+    priceInRupees: trip.priceInRupees,
+    durationDays: trip.durationDays,
+    maxGroupSize: trip.maxGroupSize,
+    categories: trip.categories,
+    images: trip.images,
+    pickup: trip.tripLocation?.pickup ?? "",
+    drop: trip.tripLocation?.drop ?? "",
+    inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
+    exclusions: trip.inclusions.filter((i) => !i.included).map((i) => i.item),
+    highlights: trip.highlights.map((h) => h.text),
   };
 }
 
@@ -56,8 +56,8 @@ function toSlotItem(slot: { id: string; date: Date; capacity: number; booked: nu
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [activities, pendingChanges] = await Promise.all([
-    prisma.activity.findMany({
+  const [trips, pendingChanges] = await Promise.all([
+    prisma.trip.findMany({
       where: { guideId },
       orderBy: { createdAt: "asc" },
       include: {
@@ -90,7 +90,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
           <GuideTripForm guideId={guideId} />
         </div>
 
-        {activities.length === 0 ? (
+        {trips.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
             <Compass className="h-8 w-8 text-muted-foreground/50" />
             <div>
@@ -102,21 +102,21 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
           </div>
         ) : (
           <ul className="flex flex-col gap-4">
-            {activities.map((activity) => {
-              const data = toGuideTripData(activity);
+            {trips.map((trip) => {
+              const data = toGuideTripData(trip);
               return (
-                <li key={activity.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
+                <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-foreground">{activity.title}</p>
+                    <p className="truncate font-semibold text-foreground">{trip.title}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {activity.location} · {activity.durationDays} day{activity.durationDays === 1 ? "" : "s"}
+                      {trip.location} · {trip.durationDays} day{trip.durationDays === 1 ? "" : "s"}
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col items-end gap-3">
-                    <GuideTripForm guideId={guideId} activity={data} />
+                    <GuideTripForm guideId={guideId} trip={data} />
                     <GuideTripSlotsToggle
-                      activityId={activity.id}
-                      slots={activity.slots.map(toSlotItem)}
+                      tripId={trip.id}
+                      slots={trip.slots.map(toSlotItem)}
                     />
                   </div>
                 </li>

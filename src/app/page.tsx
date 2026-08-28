@@ -15,9 +15,9 @@ const FEATURED_TRIP_SLUGS = [
 // visited route, so hitting Postgres on every request was the single
 // biggest contributor to slow production loads. Admin mutations already
 // call updateTag("trips"), which invalidates this on-demand.
-const getHomeActivities = unstable_cache(
+const getHomeTrips = unstable_cache(
   async () => {
-    return prisma.activity.findMany({
+    return prisma.trip.findMany({
       select: {
         id: true,
         slug: true,
@@ -34,7 +34,7 @@ const getHomeActivities = unstable_cache(
       orderBy: { createdAt: "asc" },
     });
   },
-  ["home-page-activities"],
+  ["home-page-trips"],
   { tags: ["trips"], revalidate: 300 },
 );
 
@@ -57,24 +57,24 @@ const getHomeGuides = unstable_cache(
 );
 
 export default async function Home() {
-  const [activities, guides] = await Promise.all([getHomeActivities(), getHomeGuides()]);
+  const [trips, guides] = await Promise.all([getHomeTrips(), getHomeGuides()]);
 
   return (
     <div className="flex flex-1 flex-col">
       <SearchableTrips
         featuredTripSlugs={FEATURED_TRIP_SLUGS}
-        activities={activities.map((activity) => ({
-          id: activity.id,
-          slug: activity.slug,
-          title: activity.title,
-          description: activity.description,
-          location: activity.location,
-          priceInRupees: activity.priceInRupees,
-          durationDays: activity.durationDays,
-          categories: activity.categories,
-          type: activity.type,
-          images: activity.images,
-          guide: activity.guide ? { name: activity.guide.name } : null,
+        trips={trips.map((trip) => ({
+          id: trip.id,
+          slug: trip.slug,
+          title: trip.title,
+          description: trip.description,
+          location: trip.location,
+          priceInRupees: trip.priceInRupees,
+          durationDays: trip.durationDays,
+          categories: trip.categories,
+          type: trip.type,
+          images: trip.images,
+          guide: trip.guide ? { name: trip.guide.name } : null,
         }))}
         guides={guides.map((guide) => ({
           slug: guide.slug,

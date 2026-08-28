@@ -1,4 +1,4 @@
-export interface TripCardImageActivity {
+export interface TripCardImageTrip {
   title: string;
   description: string;
   categories: string[];
@@ -51,24 +51,24 @@ export function normalizeTripImagePath(image: string, slug?: string) {
   return `/activities/${slug}/${withoutLeadingSlash || "cover.jpg"}`;
 }
 
-export function getTripCardImage(activity: TripCardImageActivity) {
-  const primaryImage = activity.images
-    ?.map((image) => normalizeTripImagePath(image, activity.slug))
+export function getTripCardImage(trip: TripCardImageTrip) {
+  const primaryImage = trip.images
+    ?.map((image) => normalizeTripImagePath(image, trip.slug))
     .find((image) => Boolean(image?.trim()));
 
   if (primaryImage) {
     return primaryImage;
   }
 
-  if (activity.slug) {
-    return `/activities/${activity.slug}/cover.jpg`;
+  if (trip.slug) {
+    return `/activities/${trip.slug}/cover.jpg`;
   }
 
   return "";
 }
 
-export function getTripCardImagePosition(activity: TripCardImageActivity) {
-  if (activity.slug === "lahaul-spiti-cycle") {
+export function getTripCardImagePosition(trip: TripCardImageTrip) {
+  if (trip.slug === "lahaul-spiti-cycle") {
     return "center 35%";
   }
 

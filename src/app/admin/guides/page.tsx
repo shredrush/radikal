@@ -14,11 +14,11 @@ export default async function AdminGuidesPage() {
     orderBy: { name: "asc" },
     include: {
       certifications: { orderBy: { yearIssued: "desc" } },
-      _count: { select: { activities: true } },
+      _count: { select: { trips: true } },
     },
   });
 
-  const totalLinkedTrips = guides.reduce((sum, guide) => sum + guide._count.activities, 0);
+  const totalLinkedTrips = guides.reduce((sum, guide) => sum + guide._count.trips, 0);
 
   return (
     <div className="min-h-screen">
@@ -73,7 +73,7 @@ export default async function AdminGuidesPage() {
                     <div>
                       <CardTitle className="text-xl">{guide.name}</CardTitle>
                       <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                        {guide._count.activities} trip{guide._count.activities === 1 ? "" : "s"} linked ·{" "}
+                        {guide._count.trips} trip{guide._count.trips === 1 ? "" : "s"} linked ·{" "}
                         {guide.certifications.length} certification{guide.certifications.length === 1 ? "" : "s"}
                       </CardDescription>
                     </div>

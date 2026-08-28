@@ -244,7 +244,7 @@ export async function deleteGuideAction(guideId: string) {
   await prisma.$transaction(async (tx) => {
     // Unlink this guide from its trips and reviews before removing the row,
     // since those relations do not cascade on delete.
-    await tx.activity.updateMany({ where: { guideId }, data: { guideId: null } });
+    await tx.trip.updateMany({ where: { guideId }, data: { guideId: null } });
     await tx.review.updateMany({ where: { guideId }, data: { guideId: null } });
     await tx.guide.delete({ where: { id: guideId } });
   });

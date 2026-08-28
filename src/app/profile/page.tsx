@@ -168,7 +168,7 @@ export default async function ProfilePage({
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
-    include: { activity: true, slot: true },
+    include: { trip: true, slot: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -185,7 +185,7 @@ export default async function ProfilePage({
     ? await prisma.booking.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          activity: true,
+          trip: true,
           slot: true,
           user: { select: { id: true, name: true, username: true, email: true } },
           cancelledBy: { select: { name: true } },
@@ -195,9 +195,9 @@ export default async function ProfilePage({
 
   const guideBookings = isGuide
     ? await prisma.booking.findMany({
-        where: { activity: { guide: { userId: user.id } } },
+        where: { trip: { guide: { userId: user.id } } },
         include: {
-          activity: true,
+          trip: true,
           slot: true,
           user: { select: { id: true, name: true, username: true, email: true } },
         },
@@ -670,13 +670,13 @@ export default async function ProfilePage({
                               <BookingCard
                                 booking={{
                                   id: booking.id,
-                                  tripSlug: booking.activity.slug,
-                                  title: booking.activity.title,
-                                  location: booking.activity.location,
-                                  image: getTripCardImage(booking.activity),
+                                  tripSlug: booking.trip.slug,
+                                  title: booking.trip.title,
+                                  location: booking.trip.location,
+                                  image: getTripCardImage(booking.trip),
                                   dateRange: formatTripDateRange(
                                     booking.slot.date,
-                                    booking.activity.durationDays
+                                    booking.trip.durationDays
                                   ),
                                   participantCount: booking.participantCount,
                                   totalPriceRupees: booking.totalPriceRupees,
@@ -726,13 +726,13 @@ export default async function ProfilePage({
                           <BookingCard
                             booking={{
                               id: booking.id,
-                              tripSlug: booking.activity.slug,
-                              title: booking.activity.title,
-                              location: booking.activity.location,
-                              image: getTripCardImage(booking.activity),
+                              tripSlug: booking.trip.slug,
+                              title: booking.trip.title,
+                              location: booking.trip.location,
+                              image: getTripCardImage(booking.trip),
                               dateRange: formatTripDateRange(
                                 booking.slot.date,
-                                booking.activity.durationDays
+                                booking.trip.durationDays
                               ),
                               participantCount: booking.participantCount,
                               totalPriceRupees: booking.totalPriceRupees,
@@ -794,13 +794,13 @@ export default async function ProfilePage({
                             <BookingCard
                               booking={{
                                 id: booking.id,
-                                tripSlug: booking.activity.slug,
-                                title: booking.activity.title,
-                                location: booking.activity.location,
-                                image: getTripCardImage(booking.activity),
+                                tripSlug: booking.trip.slug,
+                                title: booking.trip.title,
+                                location: booking.trip.location,
+                                image: getTripCardImage(booking.trip),
                                 dateRange: formatTripDateRange(
                                   booking.slot.date,
-                                  booking.activity.durationDays
+                                  booking.trip.durationDays
                                 ),
                                 participantCount: booking.participantCount,
                                 totalPriceRupees: booking.totalPriceRupees,

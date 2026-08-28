@@ -28,7 +28,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
-type ActivityCardItem = {
+type TripCardItem = {
   id: string;
   slug: string;
   title: string;
@@ -50,14 +50,14 @@ type GuideProfile = {
   certifications: string[];
 };
 
-function prioritizeFeaturedActivities(activities: ActivityCardItem[], featuredTripSlugs: readonly string[]) {
+function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: readonly string[]) {
   const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
 
-  return activities
-    .map((activity, index) => ({ activity, index }))
+  return trips
+    .map((trip, index) => ({ trip, index }))
     .sort((left, right) => {
-      const leftRank = featuredRank.get(left.activity.slug);
-      const rightRank = featuredRank.get(right.activity.slug);
+      const leftRank = featuredRank.get(left.trip.slug);
+      const rightRank = featuredRank.get(right.trip.slug);
 
       if (leftRank === undefined && rightRank === undefined) {
         return left.index - right.index;
@@ -73,15 +73,15 @@ function prioritizeFeaturedActivities(activities: ActivityCardItem[], featuredTr
 
       return leftRank - rightRank;
     })
-    .map(({ activity }) => activity);
+    .map(({ trip }) => trip);
 }
 
 export function SearchableTrips({
-  activities,
+  trips,
   featuredTripSlugs = [],
   guides = [],
 }: {
-  activities: ActivityCardItem[];
+  trips: TripCardItem[];
   featuredTripSlugs?: readonly string[];
   guides?: GuideProfile[];
 }) {
@@ -90,17 +90,17 @@ export function SearchableTrips({
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
-  const rankedActivities = useMemo(() => prioritizeFeaturedActivities(activities, featuredTripSlugs), [activities, featuredTripSlugs]);
+  const rankedTrips = useMemo(() => prioritizeFeaturedTrips(trips, featuredTripSlugs), [trips, featuredTripSlugs]);
 
-  const filteredActivities = useMemo(() => {
+  const filteredTrips = useMemo(() => {
     const normalizedQuery = query.trim();
 
     if (!normalizedQuery) {
-      return rankedActivities.slice(0, 4);
+      return rankedTrips.slice(0, 4);
     }
 
-    return rankedActivities.filter((activity) => matchesSearchQuery(activity, normalizedQuery)).slice(0, 4);
-  }, [query, rankedActivities]);
+    return rankedTrips.filter((trip) => matchesSearchQuery(trip, normalizedQuery)).slice(0, 4);
+  }, [query, rankedTrips]);
 
   const suggestions = useMemo(() => {
     const normalizedQuery = query.trim();
@@ -109,12 +109,12 @@ export function SearchableTrips({
       return [];
     }
 
-    return rankedActivities
-      .filter((activity) => matchesSearchQuery(activity, normalizedQuery))
+    return rankedTrips
+      .filter((trip) => matchesSearchQuery(trip, normalizedQuery))
       .slice(0, 6);
-  }, [query, rankedActivities]);
+  }, [query, rankedTrips]);
 
-  const visibleActivities = filteredActivities;
+  const visibleTrips = filteredTrips;
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -231,11 +231,11 @@ export function SearchableTrips({
               <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] backdrop-blur">
                 {suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">
-                    {suggestions.map((activity, index) => (
-                      <li key={activity.id}>
+                    {suggestions.map((trip, index) => (
+                      <li key={trip.id}>
                         <button
                           type="button"
-                          onMouseDown={() => router.push(`/trips/${activity.slug}`)}
+                          onMouseDown={() => router.push(`/trips/${trip.slug}`)}
                           onMouseEnter={() => setActiveIndex(index)}
                           className={`flex w-full items-center gap-3 px-3 py-2 text-left transition ${
                             index === activeIndex
@@ -245,7 +245,7 @@ export function SearchableTrips({
                         >
                           <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
                             <Image
-                              src={getTripCardImage(activity)}
+                              src={getTripCardImage(trip)}
                               alt=""
                               fill
                               className="object-cover"
@@ -254,10 +254,10 @@ export function SearchableTrips({
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium text-foreground">
-                              {activity.title}
+                              {trip.title}
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
-                              {activity.location}
+                              {trip.location}
                             </span>
                           </span>
                           <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
@@ -442,21 +442,21 @@ export function SearchableTrips({
              </h4>
            </div>
            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-3">
-             {visibleActivities.length === 0 ? (
+             {visibleTrips.length === 0 ? (
                <p className="col-span-full rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
-                 No trips match your search yet. Try a broader destination or activity name.
+                 No trips match your search yet. Try a broader destination or trip name.
                </p>
              ) : null}
-             {visibleActivities.map((activity) => (
+             {visibleTrips.map((trip) => (
               <Card
-                key={activity.id}
+                key={trip.id}
                 className="flex h-[420px] min-w-0 cursor-pointer flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.25)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] sm:h-[480px]"
-                onClick={() => window.location.href = `/trips/${activity.slug}`}
+                onClick={() => window.location.href = `/trips/${trip.slug}`}
               >
                 <div className="relative -m-[1px] flex-[0_0_48%] min-h-[220px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[250px]">
                   <Image
-                    src={getTripCardImage(activity)}
-                    alt={activity.title}
+                    src={getTripCardImage(trip)}
+                    alt={trip.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
@@ -466,11 +466,11 @@ export function SearchableTrips({
                 <div className="flex flex-1 flex-col justify-between gap-1 p-2.5 sm:p-3">
                   <div className="space-y-1.5">
                     <div className="space-y-1">
-                      <h2 className="text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground">{activity.title}</h2>
-                      <p className="text-sm text-muted-foreground">{activity.location}</p>
+                      <h2 className="text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground">{trip.title}</h2>
+                      <p className="text-sm text-muted-foreground">{trip.location}</p>
                     </div>
                     <div className="flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                      {activity.categories.map((category) => (
+                      {trip.categories.map((category) => (
                         <Badge
                           key={category}
                           variant="secondary"
@@ -483,7 +483,7 @@ export function SearchableTrips({
                   </div>
                   <div className="mt-auto flex justify-end">
                     <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
-                      {activity.durationDays} {activity.durationDays === 1 ? "day" : "days"}
+                      {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
                     </span>
                   </div>
                 </div>

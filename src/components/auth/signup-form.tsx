@@ -71,14 +71,14 @@ export function SignupForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username">Username (optional)</Label>
           <div className="relative">
             <Input
               id="username"
               name="username"
               type="text"
               autoComplete="username"
-              placeholder="something_cool"
+              placeholder="something.cool"
               minLength={3}
               maxLength={30}
               pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
@@ -87,7 +87,6 @@ export function SignupForm() {
               className="pr-8"
               aria-invalid={usernameStatus ? usernameStatus.status !== "available" : undefined}
               onChange={(event) => checkUsername(event.target.value)}
-              required
             />
             {isCheckingUsername ? (
               <Loader2 className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />

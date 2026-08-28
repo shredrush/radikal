@@ -45,7 +45,7 @@ export default async function AdminTripChangesPage() {
       guide: { select: { name: true, slug: true } },
       submittedBy: { select: { name: true, username: true, email: true } },
       reviewedBy: { select: { name: true } },
-      activity: { select: { title: true, slug: true } },
+      trip: { select: { title: true, slug: true } },
     },
   });
 
@@ -120,8 +120,8 @@ export default async function AdminTripChangesPage() {
                           <CardDescription className="mt-1 text-sm leading-6 text-muted-foreground">
                             {change.guide ? `Guide: ${change.guide.name}` : "Guide removed"}
                             {change.submittedBy?.username ? ` · @${change.submittedBy.username}` : ""}
-                            {change.type === "UPDATE" && change.activity
-                              ? ` · Editing “${change.activity.title}”`
+                            {change.type === "UPDATE" && change.trip
+                              ? ` · Editing “${change.trip.title}”`
                               : ""}
                           </CardDescription>
                           <CardDescription className="mt-1 text-xs text-muted-foreground">

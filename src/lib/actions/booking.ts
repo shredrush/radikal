@@ -13,7 +13,7 @@ export type CreateBookingResult =
 
 /**
  * Creates a PENDING booking for the logged-in user against a specific
- * activity + slot. The booking only becomes CONFIRMED once payment succeeds
+ * trip + slot. The booking only becomes CONFIRMED once payment succeeds
  * (see lib/actions/payment.ts) — never on the client alone.
  */
 export async function createBooking(
@@ -48,16 +48,16 @@ export async function createBooking(
     return { success: false, error: rateLimitError(bookingLimit) };
   }
 
-  const { activityId, slotId, participantCount } = parsed.data;
+  const { tripId, slotId, participantCount } = parsed.data;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
       const slot = await tx.slot.findUnique({
         where: { id: slotId },
-        include: { activity: true },
+        include: { trip: true },
       });
 
-      if (!slot || slot.activityId !== activityId) {
+      if (!slot || slot.tripId !== tripId) {
         return { status: "unavailable" as const };
       }
 
@@ -90,10 +90,10 @@ export async function createBooking(
       const booking = await tx.booking.create({
         data: {
           userId,
-          activityId,
+          tripId,
           slotId,
           participantCount,
-          totalPriceRupees: slot.activity.priceInRupees * participantCount,
+          totalPriceRupees: slot.trip.priceInRupees * participantCount,
           status: "PENDING",
         },
       });
@@ -115,7 +115,7 @@ export async function createBooking(
       label: "Created a booking",
       metadata: {
         bookingId: result.booking.id,
-        activityId,
+        tripId,
         slotId,
         participantCount,
       },
