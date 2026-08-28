@@ -278,6 +278,7 @@ model Activity {
   highlights   TripHighlight[]
   tripChanges  TripChangeRequest[]
 
+  @@index([type])
   @@map("activities")
 }
 
@@ -338,6 +339,7 @@ model Slot {
   bookings Booking[]
 
   @@index([activityId])
+  @@index([date])
   @@map("slots")
 }
 
@@ -365,6 +367,7 @@ model Booking {
 
   @@index([userId])
   @@index([slotId])
+  @@index([status])
   @@map("bookings")
 }
 

@@ -23,6 +23,14 @@ type CancellationEmail = {
   cancelledByUser: boolean;
 };
 
+/** Columns read back from the `slots` table when taking a row lock. */
+type SlotRow = {
+  id: string;
+  booked: number;
+  reserved: number;
+  capacity: number;
+};
+
 function safePaymentError(
   error: unknown,
   fallback: string,
@@ -150,9 +158,9 @@ export async function confirmBookingPayment(
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {
-          slot: true,
           user: { select: { email: true, name: true } },
           activity: { select: { title: true, location: true } },
+          slot: { select: { date: true } },
         },
       });
 
@@ -169,7 +177,37 @@ export async function confirmBookingPayment(
         throw new Error("Only pending bookings can be confirmed.");
       }
 
-      if (booking.slot.booked + booking.slot.reserved + booking.participantCount > booking.slot.capacity) {
+      // Lock the slot row for the duration of the transaction so concurrent
+      // confirmations serialize on the same row: the capacity check below and
+      // the increment can't interleave and oversell the slot.
+      const [lockedSlot] = await tx.$queryRaw<SlotRow[]>`
+        SELECT id, booked, reserved, capacity
+        FROM slots
+        WHERE id = ${booking.slotId}
+        FOR UPDATE
+      `;
+
+      if (!lockedSlot) {
+        throw new Error("Booking not found.");
+      }
+
+      // A concurrent confirmation may have committed between our initial read
+      // and acquiring the lock — re-check the status against fresh data.
+      const current = await tx.booking.findUnique({
+        where: { id: bookingId },
+        select: { status: true },
+      });
+      if (!current) {
+        throw new Error("Booking not found.");
+      }
+      if (current.status === "CONFIRMED") {
+        return;
+      }
+      if (current.status !== "PENDING") {
+        throw new Error("Only pending bookings can be confirmed.");
+      }
+
+      if (lockedSlot.booked + lockedSlot.reserved + booking.participantCount > lockedSlot.capacity) {
         throw new Error("This slot filled up before the payment could be confirmed.");
       }
 

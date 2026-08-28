@@ -61,6 +61,21 @@ export async function createBooking(
         return { status: "unavailable" as const };
       }
 
+      // Lock the slot row so concurrent checkouts serialize on the same row
+      // (the payment confirmation path locks it too). This keeps the pending
+      // count read below from racing a concurrent checkout and overselling a
+      // slot before payment is captured.
+      const [lockedSlot] = await tx.$queryRaw<Array<{ id: string; booked: number; reserved: number; capacity: number }>>`
+        SELECT id, booked, reserved, capacity
+        FROM slots
+        WHERE id = ${slotId}
+        FOR UPDATE
+      `;
+
+      if (!lockedSlot) {
+        return { status: "unavailable" as const };
+      }
+
       // `slot.booked` only counts CONFIRMED bookings (incremented when payment
       // is confirmed). Count PENDING bookings too so a burst of concurrent
       // checkouts cannot oversell a slot before payment is captured.
@@ -68,7 +83,7 @@ export async function createBooking(
         where: { slotId, status: "PENDING" },
       });
 
-      if (slot.booked + slot.reserved + pendingCount + participantCount > slot.capacity) {
+      if (lockedSlot.booked + lockedSlot.reserved + pendingCount + participantCount > lockedSlot.capacity) {
         return { status: "full" as const };
       }
 

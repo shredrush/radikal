@@ -4,13 +4,19 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
 
-import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/currency";
+import {
+  DEFAULT_CURRENCY,
+  currencyForCountry,
+  isCurrencyCode,
+  type CurrencyCode,
+} from "@/lib/currency";
 
 const STORAGE_KEY = "radikal-currency";
 
@@ -42,10 +48,11 @@ export function CurrencyProvider({
   children: ReactNode;
   initialCurrency?: CurrencyCode;
 }) {
-  // Start on the server-supplied default (usually INR, or the geo-detected
-  // currency on Vercel) so server and first client render always match. The
-  // persisted preference is read through useSyncExternalStore. The geo default
-  // is never written to storage — only an explicit user selection is.
+  // The server always renders with the default currency so the root layout can
+  // stay static; the visitor's country is looked up client-side (below) and the
+  // persisted preference is read through useSyncExternalStore. Neither the geo
+  // default nor the server default is written to storage — only an explicit
+  // user selection is.
   //
   // Defensive: validate the prop against the currency allowlist before using
   // it, so a bad value can never reach the render tree.
@@ -55,7 +62,38 @@ export function CurrencyProvider({
     () => null,
   );
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode | null>(null);
-  const currency = selectedCurrency ?? storedCurrency ?? (isCurrencyCode(initialCurrency) ? initialCurrency : DEFAULT_CURRENCY);
+
+  // The server always renders with the default currency (INR) so the root
+  // layout stays static. The visitor's country is looked up client-side from a
+  // lightweight API route, then used as the default — but only when the user
+  // hasn't already picked a currency. The geo-derived default is never written
+  // to storage.
+  const [geoCurrency, setGeoCurrency] = useState<CurrencyCode>(() =>
+    isCurrencyCode(initialCurrency) ? initialCurrency : DEFAULT_CURRENCY,
+  );
+
+  useEffect(() => {
+    if (selectedCurrency || storedCurrency) return;
+
+    let cancelled = false;
+    fetch("/api/geo", { headers: { accept: "application/json" } })
+      .then((res) => (res.ok ? (res.json() as Promise<{ country?: string | null }>) : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const code = currencyForCountry(data.country);
+        if (code) setGeoCurrency(code);
+      })
+      .catch(() => {
+        // Ignore — geo lookup is best-effort and never blocks rendering.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCurrency, storedCurrency]);
+
+  const currency =
+    selectedCurrency ?? storedCurrency ?? geoCurrency;
 
   const setCurrency = useCallback((code: CurrencyCode) => {
     setSelectedCurrency(code);

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Role → permission authorization model.
@@ -93,8 +94,28 @@ export async function requirePermission(
   redirectTo = "/login",
 ) {
   const session = await auth();
-  if (!session?.user || !hasPermission(session.user.role, permission)) {
+  if (!session?.user?.id) {
     redirect(redirectTo);
   }
-  return session;
+
+  // Re-read the role from the database on every privileged action so a role
+  // change (e.g. an admin being demoted) takes effect immediately. The JWT only
+  // caches the role from sign-in and is not invalidated when the DB changes, so
+  // trusting the token alone would leave a demoted account privileged until the
+  // session expires.
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  // Fail closed when the account no longer exists or no longer holds the role.
+  const role = user?.role;
+  if (!role || !hasPermission(role, permission)) {
+    redirect(redirectTo);
+  }
+
+  return {
+    ...session,
+    user: { ...session.user, role },
+  };
 }
