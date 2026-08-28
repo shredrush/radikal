@@ -41,6 +41,7 @@ const getGuideDetail = unstable_cache(
         },
         reviews: {
           orderBy: { createdAt: "desc" },
+          take: 3,
           select: {
             id: true,
             comment: true,
@@ -49,7 +50,7 @@ const getGuideDetail = unstable_cache(
           },
         },
         _count: {
-          select: { trips: true },
+          select: { trips: true, reviews: true },
         },
       },
     });
@@ -228,15 +229,26 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
         </section>
 
         <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
-          <div className="mb-6 flex flex-col gap-2">
-            <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Traveller reviews
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {guide.reviews.length === 0
-                ? "No reviews yet."
-                : `${guide.reviews.length} ${guide.reviews.length === 1 ? "review" : "reviews"} from trips led by ${guide.name}`}
-            </p>
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                Traveller reviews
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {guide._count.reviews === 0
+                  ? "No reviews yet."
+                  : `${guide._count.reviews} ${guide._count.reviews === 1 ? "review" : "reviews"} from trips led by ${guide.name}`}
+              </p>
+            </div>
+
+            {guide._count.reviews > 0 && (
+              <Link
+                href={`/${guideId}/reviews`}
+                className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+              >
+                View all reviews
+              </Link>
+            )}
           </div>
 
           {guide.reviews.length === 0 ? (
@@ -244,7 +256,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               Travellers haven&apos;t left reviews for {guide.name} yet.
             </div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid gap-4 sm:grid-cols-3">
               {guide.reviews.map((review) => (
                 <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
                   <p className="font-medium text-foreground">{review.user.name}</p>

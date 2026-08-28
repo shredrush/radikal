@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -11,11 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Price } from "@/components/currency/price";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { BookingBar } from "@/components/trips/booking-bar";
 import { prisma } from "@/lib/prisma";
+import type { TripCategory } from "@/generated/prisma/client";
 import { formatTripDateRange, isSlotCompleted } from "@/lib/trip-dates";
-import { normalizeTripImagePath } from "@/lib/trip-card-image";
+import { getTripCardImage, normalizeTripImagePath } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
@@ -64,6 +67,54 @@ const getTripDetail = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
+// Four trips to show below the FAQ. Prefer trips sharing a category with the
+// current trip, then backfill with any remaining trips so the row stays full.
+const SIMILAR_TRIPS_COUNT = 4;
+
+const getSimilarTrips = unstable_cache(
+  async (categories: TripCategory[], excludeId: string) => {
+    const select = {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      location: true,
+      categories: true,
+      durationDays: true,
+      priceInRupees: true,
+      images: true,
+    } as const;
+
+    const similar = await prisma.trip.findMany({
+      where: {
+        id: { not: excludeId },
+        categories: { hasSome: categories },
+      },
+      select,
+      orderBy: { createdAt: "asc" },
+      take: SIMILAR_TRIPS_COUNT,
+    });
+
+    if (similar.length >= SIMILAR_TRIPS_COUNT) {
+      return similar;
+    }
+
+    const existingIds = similar.map((trip) => trip.id);
+    const filler = await prisma.trip.findMany({
+      where: {
+        id: { notIn: [excludeId, ...existingIds] },
+      },
+      select,
+      orderBy: { createdAt: "asc" },
+      take: SIMILAR_TRIPS_COUNT - similar.length,
+    });
+
+    return [...similar, ...filler];
+  },
+  ["trip-similar-trips"],
+  { tags: ["trips"], revalidate: 300 },
+);
+
 const CATEGORY_LABELS: Record<string, string> = {
   ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
   WOMEN_ONLY: "Women Only",
@@ -109,6 +160,8 @@ export default async function TripDetailPage({
 
   const guide = trip.guide;
   const guideProfileImage = guide ? getGuideImage(guide) : "/avatars/fox.svg";
+
+  const similarTrips = await getSimilarTrips(trip.categories, trip.id);
 
   const now = new Date();
   const upcomingSlots = trip.slots.filter((slot) => !isSlotCompleted(slot.date, now));
@@ -336,9 +389,20 @@ export default async function TripDetailPage({
                 <div className="flex flex-col justify-start">
                   <div className="space-y-3">
                     <div>
-                      <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                        {guide.name}
-                      </h3>
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                          {guide.name}
+                        </h3>
+                        <Link
+                          href={`/${guide.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+                        >
+                          View public profile
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
                       <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">
                         {guide.location}
                       </p>
@@ -422,6 +486,67 @@ export default async function TripDetailPage({
         </Card>
 
         <FaqSection />
+
+        <section>
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="space-y-1">
+
+              <p className="text-sm text-muted-foreground">other adventures you might like</p>
+            </div>
+            <Link
+              href="/trips"
+              className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+            >
+              Explore all
+            </Link>
+          </div>
+
+          {similarTrips.length === 0 ? null : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {similarTrips.map((trip) => (
+                <Link key={trip.id} href={`/trips/${trip.slug}`} className="block">
+                  <Card className="flex h-full min-h-[360px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
+                    <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
+                      <Image
+                        src={getTripCardImage(trip)}
+                        alt={trip.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
+                    </div>
+
+                    <div className="flex flex-1 flex-col justify-between gap-2 p-4">
+                      <div className="space-y-1.5">
+                        <h3 className="text-base font-semibold tracking-tight text-foreground">{trip.title}</h3>
+                        <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{trip.location}</p>
+                      </div>
+
+                      <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
+                        {trip.categories.map((category) => (
+                          <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
+                            {CATEGORY_LABELS[category] ?? category}
+                          </Badge>
+                        ))}
+                      </div>
+
+                      <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
+                        <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
+                          {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
+                        </span>
+                        <Price
+                          className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                          amount={trip.priceInRupees}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
     </div>
   );
