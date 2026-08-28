@@ -333,7 +333,14 @@ export async function deleteTripAction(tripId: string) {
     throw new Error("Trip not found.");
   }
 
-  await prisma.trip.delete({ where: { id: tripId } });
+  await prisma.$transaction(async (tx) => {
+    // `Booking.trip` has no cascade, so bookings must be removed first or the
+    // delete violates the foreign key. Slots, wishlist items, locations,
+    // inclusions and highlights cascade from the trip; reviews and trip-change
+    // requests unlink via `SetNull`.
+    await tx.booking.deleteMany({ where: { tripId } });
+    await tx.trip.delete({ where: { id: tripId } });
+  });
 
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
