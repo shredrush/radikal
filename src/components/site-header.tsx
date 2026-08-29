@@ -50,8 +50,8 @@ export async function SiteHeader() {
     {
       heading: "Winter Sports",
       items: [
-        { label: "Snowboarding", href: "/trips?sport=winter", sport: "winter" },
-        { label: "Skiing", href: "/trips?sport=winter", sport: "winter" },
+        { label: "Snowboarding", href: "/trips?sport=winter", sport: "snowboard" },
+        { label: "Skiing", href: "/trips?sport=winter", sport: "ski" },
       ],
     },
   ];
@@ -121,7 +121,7 @@ export async function SiteHeader() {
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
                             <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                              <SportIcon sport={item.sport} className="size-4" />
+                              <SportIcon sport={item.sport} className="size-8" />
                               {item.label}
                             </Link>
                           ))}
@@ -149,7 +149,7 @@ export async function SiteHeader() {
                         <div className="flex flex-col gap-1.5">
                           {group.items.map((item) => (
                             <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                              <SportIcon sport={item.sport} className="size-4" />
+                              <SportIcon sport={item.sport} className="size-8" />
                               {item.label}
                             </Link>
                           ))}
@@ -246,7 +246,7 @@ export async function SiteHeader() {
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
                           <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-4" />
+                            <SportIcon sport={item.sport} className="size-8" />
                             {item.label}
                           </Link>
                         ))}
@@ -274,7 +274,7 @@ export async function SiteHeader() {
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
                           <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-4" />
+                            <SportIcon sport={item.sport} className="size-8" />
                             {item.label}
                           </Link>
                         ))}
@@ -338,7 +338,7 @@ export async function SiteHeader() {
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
                           <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-4" />
+                            <SportIcon sport={item.sport} className="size-8" />
                             {item.label}
                           </Link>
                         ))}
@@ -366,7 +366,7 @@ export async function SiteHeader() {
                       <div className="flex flex-col gap-1.5">
                         {group.items.map((item) => (
                           <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-4" />
+                            <SportIcon sport={item.sport} className="size-8" />
                             {item.label}
                           </Link>
                         ))}

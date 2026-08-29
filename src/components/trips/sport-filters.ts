@@ -13,12 +13,18 @@ export type TripCardItem = {
   guide: { name: string } | null;
 };
 
+// Granular winter variants ("ski" / "snowboard") only exist for display
+// (dropdown, headings) — trip filtering stays on the combined "winter" id.
+const DISPLAY_ONLY_SPORTS: readonly SportId[] = ["ski", "snowboard"];
+
 export const SPORT_FILTERS: Array<{ id: "all" | SportId; label: string }> = [
   { id: "all", label: "All" },
-  ...(Object.keys(SPORT_META) as SportId[]).map((id) => ({
-    id,
-    label: SPORT_META[id].label,
-  })),
+  ...(Object.keys(SPORT_META) as SportId[])
+    .filter((id) => !DISPLAY_ONLY_SPORTS.includes(id))
+    .map((id) => ({
+      id,
+      label: SPORT_META[id].label,
+    })),
 ];
 
 export const TRAVEL_STYLE_FILTERS = [

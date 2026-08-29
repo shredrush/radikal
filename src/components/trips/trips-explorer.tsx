@@ -71,6 +71,22 @@ const GROUP_GRID_CLASSES: Record<number, string> = {
   4: "md:grid-cols-4",
 };
 
+// The combined "Winter" group gets both sport icons flanking the heading:
+// snowboard on the left, ski on the right.
+function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
+  return (
+    <>
+      {sport === "winter" ? (
+        <SportIcon sport="snowboard" className="size-10" />
+      ) : (
+        <SportIcon sport={sport} className="size-10" />
+      )}
+      {label}
+      {sport === "winter" ? <SportIcon sport="ski" className="size-10" /> : null}
+    </>
+  );
+}
+
 export function TripsExplorer({
   trips,
   initialQuery,
@@ -199,8 +215,7 @@ export function TripsExplorer({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h2 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
-                        <SportIcon sport={group.id} className="size-5" />
-                        {group.label}
+                        <SportGroupHeading sport={group.id} label={group.label} />
                       </h2>
                       <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                     </div>
@@ -235,8 +250,7 @@ export function TripsExplorer({
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
-                            <SportIcon sport={group.id} className="size-5" />
-                            {group.label}
+                            <SportGroupHeading sport={group.id} label={group.label} />
                           </h3>
                           <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                         </div>

@@ -76,7 +76,7 @@ export function TripsFilterBar({
                         : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 hover:border-orange-300 hover:bg-orange-100/60 hover:text-orange-800 dark:hover:border-orange-400/40 dark:hover:bg-orange-400/10 dark:hover:text-orange-300"
                     }
                   >
-                    {filter.id !== "all" ? <SportIcon sport={filter.id} className="size-3.5" /> : null}
+                    {filter.id !== "all" ? <SportIcon sport={filter.id} className="size-7" /> : null}
                     <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
                   </Button>
                 );
