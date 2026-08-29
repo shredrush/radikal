@@ -23,7 +23,21 @@ export default async function BecomeAGuidePage() {
   }
 
   const user = session.user;
-  const isAlreadyGuide = user.role === "GUIDE";
+
+  // Read the account's role and guide linkage from the database (not the
+  // possibly-stale JWT) so a demotion or guide removal takes effect
+  // immediately instead of leaving the "already a guide" wall up.
+  const account = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true, username: true, guide: { select: { id: true } } },
+  });
+  if (!account) {
+    redirect("/login?callbackUrl=/become-a-guide");
+  }
+
+  // The linked guide profile is the ground truth — a GUIDE role without one is
+  // an orphan that must be allowed to re-apply.
+  const isAlreadyGuide = !!account.guide;
 
   const application = isAlreadyGuide
     ? null
@@ -34,8 +48,7 @@ export default async function BecomeAGuidePage() {
 
   const pendingApplication =
     application?.status === "PENDING" ? application : null;
-  const approvedApplication =
-    application?.status === "APPROVED" ? application : null;
+  const lastApplicationStatus = application?.status;
 
   return (
     <div className="min-h-screen">
@@ -82,34 +95,22 @@ export default async function BecomeAGuidePage() {
               </div>
             </CardContent>
           </Card>
-        ) : approvedApplication ? (
-          <Card className="border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-            <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
-              <CheckCircle2 className="size-10 text-primary" />
-              <div className="space-y-2">
-                <h2 className="font-heading text-2xl font-semibold tracking-wide">Application approved</h2>
-                <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                  Great news — your application has been approved. Sign out and back in if your guide
-                  profile isn&apos;t showing yet.
-                </p>
-              </div>
-              <Button className="rounded-full" nativeButton={false} render={<Link href="/community" />}>
-                View community
-              </Button>
-            </CardContent>
-          </Card>
         ) : (
           <Card className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
             <CardHeader className="border-b border-border/70 bg-muted/20">
               <CardTitle className="text-xl">Your application</CardTitle>
               <CardDescription>
-                {application?.status === "REJECTED"
-                  ? "Your previous application was not approved. You can apply again below."
-                  : "Fill in the details below. Fields marked as optional can be skipped."}
+                {lastApplicationStatus === "REJECTED" ? (
+                  "Your previous application was not approved. You can apply again below."
+                ) : lastApplicationStatus === "APPROVED" ? (
+                  "Your previous guide profile is no longer active. Submit a new application below."
+                ) : (
+                  "Fill in the details below. Fields marked as optional can be skipped."
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <GuideApplicationForm fullName={user.name} username={user.username} />
+              <GuideApplicationForm fullName={user.name} username={account.username} />
             </CardContent>
           </Card>
         )}

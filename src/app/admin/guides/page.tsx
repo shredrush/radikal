@@ -8,10 +8,17 @@ export const dynamic = "force-dynamic";
 export default async function AdminGuidesPage() {
   const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
-  const [guidesLive, totalLinkedTrips] = await Promise.all([
-    prisma.guide.count(),
-    prisma.trip.count({ where: { guideId: { not: null } } }),
-  ]);
+  const [guidesLive, totalLinkedTrips, roleGuideWithoutProfile, guidesWithNonGuideUser] =
+    await Promise.all([
+      prisma.guide.count(),
+      prisma.trip.count({ where: { guideId: { not: null } } }),
+      // Orphan check 1: a GUIDE role must always have a linked guide profile.
+      prisma.user.count({ where: { role: "GUIDE", guide: { is: null } } }),
+      // Orphan check 2: a guide profile's linked user must hold the GUIDE role.
+      prisma.guide.count({ where: { user: { role: { not: "GUIDE" } } } }),
+    ]);
+
+  const orphanCount = roleGuideWithoutProfile + guidesWithNonGuideUser;
 
   return (
     <div className="min-h-screen">
@@ -22,6 +29,23 @@ export default async function AdminGuidesPage() {
           active="guides"
           role={session.user.role}
         />
+
+        {orphanCount > 0 ? (
+          <section className="rounded-[1.25rem] border border-amber-500/40 bg-amber-500/10 p-5 text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-heading font-semibold">
+              {orphanCount} {orphanCount === 1 ? "account" : "accounts"} in an inconsistent guide state
+            </p>
+            <p className="mt-1 max-w-3xl leading-6 text-amber-700 dark:text-amber-300">
+              {roleGuideWithoutProfile > 0 && (
+                <>Users with the GUIDE role but no guide profile: {roleGuideWithoutProfile}. </> 
+              )}
+              {guidesWithNonGuideUser > 0 && (
+                <>Guide profiles whose linked account is not a GUIDE: {guidesWithNonGuideUser}. </> 
+              )}
+              Fix these via Admin → Users (set the role correctly) or Admin → Guides (delete the orphan profile).
+            </p>
+          </section>
+        ) : null}
 
         <section className="min-w-0">
           <div className="grid gap-3 md:grid-cols-2">

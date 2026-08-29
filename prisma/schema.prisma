@@ -144,6 +144,9 @@ model User {
   tripChangesReviewed       TripChangeRequest[] @relation("TripChangeReviewedBy")
   usernameAliases           UsernameAlias[]
 
+  // Role-based lookups: admin user filtering and the guide-orphan checks
+  // (users with the GUIDE role but no linked guide profile).
+  @@index([role])
   @@map("users")
 }
 

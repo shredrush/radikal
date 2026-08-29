@@ -3,8 +3,8 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
-import { auth } from "@/lib/auth";
 import { requirePermission } from "@/lib/authz";
+import { requireGuideAction } from "@/lib/guide-board";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
@@ -154,26 +154,10 @@ function validateTripFields(fields: TripFields): TripFields {
   return fields;
 }
 
-/** Resolve the signed-in user's linked guide record, or throw. */
+/** Resolve the signed-in user's linked guide record, or throw. Role is
+ * re-read from the database so a demotion is enforced immediately. */
 async function requireGuide() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("You must be logged in to manage trips.");
-  }
-  if (session.user.role !== "GUIDE") {
-    throw new Error("Only guides can manage trips.");
-  }
-
-  const guide = await prisma.guide.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true, name: true },
-  });
-
-  if (!guide) {
-    throw new Error("No guide profile is linked to this account.");
-  }
-
-  return { guide, userId: session.user.id };
+  return requireGuideAction();
 }
 
 /** Produce a unique, valid slug from a trip title. */

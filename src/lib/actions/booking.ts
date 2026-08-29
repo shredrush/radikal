@@ -68,6 +68,17 @@ export async function createBooking(
         return { status: "unavailable" as const };
       }
 
+      // Lock the trip row too, so a concurrent trip deletion (which locks the
+      // same row, then refuses to delete while bookings exist) serializes
+      // against this checkout instead of deleting a booking created after its
+      // guard passed.
+      const [lockedTrip] = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM trips WHERE id = ${tripId} FOR UPDATE
+      `;
+      if (!lockedTrip) {
+        return { status: "unavailable" as const };
+      }
+
       // Lock the slot row so concurrent checkouts serialize on the same row
       // (the payment confirmation path locks it too). This keeps the pending
       // count read below from racing a concurrent checkout and overselling a

@@ -4,6 +4,8 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { logActivity } from "@/lib/activity-log";
+import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isValidUsername, isSafeHttpUrl, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 
@@ -254,7 +256,7 @@ export async function deleteGuideAction(guideId: string) {
 
   const guide = await prisma.guide.findUnique({
     where: { id: guideId },
-    select: { user: { select: { username: true } } },
+    select: { id: true, userId: true, user: { select: { username: true, role: true } } },
   });
 
   if (!guide) {
@@ -263,13 +265,45 @@ export async function deleteGuideAction(guideId: string) {
 
   const username = guide.user.username ?? "";
 
+  // The teardown unlinks the guide's trips but leaves them live and bookable,
+  // so refuse to remove the guide while any of their trips has an active
+  // booking — the admin must cancel the bookings or reassign the trips first.
+  const activeBookings = await prisma.booking.count({
+    where: {
+      trip: { guideId: guide.id },
+      status: { in: ["PENDING", "CONFIRMED"] },
+    },
+  });
+  if (activeBookings > 0) {
+    throw new Error(
+      "This guide's trips have active bookings. Cancel the bookings or reassign the trips before removing the guide.",
+    );
+  }
+
   await prisma.$transaction(async (tx) => {
     // Unlink this guide from its trips and reviews before removing the row,
     // since those relations do not cascade on delete.
-    await tx.trip.updateMany({ where: { guideId }, data: { guideId: null } });
-    await tx.review.updateMany({ where: { guideId }, data: { guideId: null } });
-    await tx.guide.delete({ where: { id: guideId } });
+    await unlinkAndDeleteGuide(tx, guide.id);
+
+    // A user cannot hold the GUIDE role without a linked guide profile — that
+    // state redirects them from the guide board while blocking re-application.
+    // Reset the role so the account returns to a usable traveller account.
+    if (guide.user.role === "GUIDE") {
+      await tx.user.update({
+        where: { id: guide.userId },
+        data: { role: "USER" },
+      });
+    }
+  });
+
+  await logActivity({
+    userId: guide.userId,
+    action: "GUIDE_PROFILE_REMOVED",
+    label: "Guide profile removed by an admin",
+    metadata: { guideId: guide.id, roleReset: guide.user.role === "GUIDE" },
   });
 
   revalidateGuidePages(username);
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${guide.userId}`);
 }

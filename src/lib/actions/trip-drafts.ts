@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireGuideAction } from "@/lib/guide-board";
 import { isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 
 const validTypes = [
@@ -130,20 +130,7 @@ function countDraftFilledFields(fields: DraftFields) {
 }
 
 async function requireGuide() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("You must be logged in to save drafts.");
-  }
-  if (session.user.role !== "GUIDE") {
-    throw new Error("Only guides can save drafts.");
-  }
-  const guide = await prisma.guide.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true },
-  });
-  if (!guide) {
-    throw new Error("No guide profile is linked to this account.");
-  }
+  const { guide } = await requireGuideAction();
   return guide;
 }
 

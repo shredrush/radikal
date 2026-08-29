@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
+import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
 import { updateUserSchema } from "@/lib/validations/users";
 
 function asString(value: FormDataEntryValue | null) {
@@ -46,6 +47,37 @@ export async function updateUserAction(formData: FormData) {
     throw new Error("You cannot change your own role.");
   }
 
+  // A user can only be a GUIDE when a guide profile is actually linked — the
+  // guide's dashboard, trips, and public profile all depend on that row. Set
+  // the role first via Admin → Guides instead of orphaning the account.
+  if (data.role === "GUIDE" && !target.guide) {
+    throw new Error(
+      "This account has no guide profile. Create one under Admin → Guides before assigning the GUIDE role.",
+    );
+  }
+
+  // Moving a user away from the GUIDE role removes their guide profile too.
+  // Leaving the Guide row behind would keep a "vetted guide" public page and
+  // bookable trips alive that nobody can manage.
+  const demotingGuide = target.role === "GUIDE" && data.role !== "GUIDE" && !!target.guide;
+
+  // The teardown unlinks the guide's trips but leaves them live and bookable,
+  // so refuse to demote while any of their trips has an active booking — the
+  // admin must cancel the bookings or reassign the trips first.
+  if (demotingGuide && target.guide) {
+    const activeBookings = await prisma.booking.count({
+      where: {
+        trip: { guideId: target.guide.id },
+        status: { in: ["PENDING", "CONFIRMED"] },
+      },
+    });
+    if (activeBookings > 0) {
+      throw new Error(
+        "This guide's trips have active bookings. Cancel the bookings or reassign the trips before changing their role.",
+      );
+    }
+  }
+
   const emailTaken = await prisma.user.findUnique({ where: { email: data.email } });
   if (emailTaken && emailTaken.id !== data.userId) {
     throw new Error("An account with this email already exists.");
@@ -56,7 +88,7 @@ export async function updateUserAction(formData: FormData) {
     if (usernameTaken && usernameTaken.id !== data.userId) {
       throw new Error("This username is already taken.");
     }
-  } else if (target.guide) {
+  } else if (data.role === "GUIDE") {
     // A guide's username is its public URL — it can never be cleared.
     throw new Error("A guide account must have a username. Enter one instead of clearing it.");
   }
@@ -81,8 +113,15 @@ export async function updateUserAction(formData: FormData) {
         },
       });
 
-      // Keep the old handle resolving to this user's guide page.
-      if (usernameChanged && previousUsername && target.guide) {
+      // Demoting a guide tears down the guide linkage in the same transaction
+      // so the role change can never leave an orphaned, unmanaged guide live.
+      if (demotingGuide && target.guide) {
+        await unlinkAndDeleteGuide(tx, target.guide.id);
+      }
+
+      // Keep the old handle resolving to this user's guide page — only when
+      // they remain a guide (a demoted user has no guide page to resolve to).
+      if (usernameChanged && previousUsername && target.guide && data.role === "GUIDE") {
         await tx.usernameAlias.create({
           data: { username: previousUsername, userId: data.userId },
         });
@@ -116,14 +155,32 @@ export async function updateUserAction(formData: FormData) {
     });
   }
 
+  if (demotingGuide) {
+    await logActivity({
+      userId: data.userId,
+      action: "GUIDE_PROFILE_REMOVED",
+      label: "Guide profile removed because the role was changed away from GUIDE",
+      metadata: { guideId: target.guide?.id },
+    });
+  }
+
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${data.userId}`);
 
   // For guide accounts the username is the public URL, so a rename must
   // invalidate both the old and the new guide pages.
-  if (target.guide && usernameChanged) {
+  if (target.guide && data.role === "GUIDE" && usernameChanged) {
     if (previousUsername) revalidatePath(`/${previousUsername}`);
     if (data.username) revalidatePath(`/${data.username}`);
+    revalidatePath("/");
+    revalidatePath("/community");
+    updateTag("guides");
+  }
+
+  // Removing a guide invalidates every surface that renders them.
+  if (demotingGuide && previousUsername) {
+    revalidatePath("/admin/guides");
+    revalidatePath(`/${previousUsername}`);
     revalidatePath("/");
     revalidatePath("/community");
     updateTag("guides");

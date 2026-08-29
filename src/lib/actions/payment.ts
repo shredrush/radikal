@@ -33,6 +33,23 @@ type SlotRow = {
   capacity: number;
 };
 
+/**
+ * Require a signed-in guide whose role is read from the database (not the
+ * possibly-stale JWT), so a demotion takes effect immediately. Returns the
+ * session's user id and the current role, or null when not authorized.
+ */
+async function requireGuideSession() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!user || user.role !== "GUIDE") return null;
+  return { userId, role: user.role };
+}
+
 function safePaymentError(
   error: unknown,
   fallback: string,
@@ -365,11 +382,11 @@ export async function cancelBookingAsGuide(
   bookingId: string,
   reason: string
 ): Promise<ProcessPaymentResult> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId || session.user.role !== "GUIDE") {
+  const actor = await requireGuideSession();
+  if (!actor) {
     return { success: false, error: "Not authorized." };
   }
+  const { userId, role } = actor;
 
   if (!bookingId) {
     return { success: false, error: "Missing booking id." };
@@ -418,7 +435,7 @@ export async function cancelBookingAsGuide(
         data: {
           status: "CANCELLED",
           cancelledById: userId,
-          cancelledByRole: session.user.role,
+          cancelledByRole: role,
           cancellationReason: cleanReason,
         },
       });
@@ -465,11 +482,11 @@ export async function cancelSlotBookingsAsGuide(
   slotId: string,
   reason: string
 ): Promise<ProcessPaymentResult> {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId || session.user.role !== "GUIDE") {
+  const actor = await requireGuideSession();
+  if (!actor) {
     return { success: false, error: "Not authorized." };
   }
+  const { userId, role } = actor;
 
   if (!slotId) {
     return { success: false, error: "Missing slot id." };
@@ -527,7 +544,7 @@ export async function cancelSlotBookingsAsGuide(
         data: {
           status: "CANCELLED",
           cancelledById: userId,
-          cancelledByRole: session.user.role,
+          cancelledByRole: role,
           cancellationReason: cleanReason,
         },
       });

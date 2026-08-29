@@ -4,6 +4,9 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { logActivity } from "@/lib/activity-log";
+import { notifyUser } from "@/lib/notifications";
+import { sendEmailAfter, tripChangeDecisionEmail } from "@/lib/email";
 import {
   validTypes,
   asString,
@@ -201,7 +204,7 @@ export async function updateTripAction(formData: FormData) {
 }
 
 export async function deleteTripAction(tripId: string) {
-  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   if (!tripId) {
     throw new Error("Missing trip id.");
@@ -209,20 +212,96 @@ export async function deleteTripAction(tripId: string) {
 
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
-    select: { slug: true },
+    select: { slug: true, title: true },
   });
 
   if (!trip) {
     throw new Error("Trip not found.");
   }
 
+  let rejectedChanges: { id: string; submittedById: string }[] = [];
+
   await prisma.$transaction(async (tx) => {
-    // `Booking.trip` has no cascade, so bookings must be removed first or the
-    // delete violates the foreign key. Slots, wishlist items, locations,
-    // inclusions and highlights cascade from the trip; reviews and trip-change
-    // requests unlink via `SetNull`.
-    await tx.booking.deleteMany({ where: { tripId } });
+    // Lock the trip row so a concurrently-created booking serializes against
+    // this delete (createBooking locks the same trip row), then re-check. This
+    // makes the "has bookings?" guard atomic with the delete.
+    const [lockedTrip] = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM trips WHERE id = ${tripId} FOR UPDATE
+    `;
+    if (!lockedTrip) {
+      throw new Error("Trip not found.");
+    }
+
+    // Any booking — including paid COMPLETED history — is financial/audit data.
+    // Mirror the slot-deletion contract and refuse to delete a trip that has
+    // any bookings; the check runs inside the transaction, so a booking created
+    // concurrently cannot be silently destroyed (no check-then-delete race).
+    const bookingCount = await tx.booking.count({ where: { tripId } });
+    if (bookingCount > 0) {
+      throw new Error(
+        "This trip has bookings and cannot be deleted. Cancel the bookings first.",
+      );
+    }
+
+    // Resolve pending UPDATE changes through the normal review lifecycle
+    // instead of deleting them: reject them, notify the submitting guide, and
+    // keep an audit trail.
+    rejectedChanges = await tx.tripChangeRequest.findMany({
+      where: { tripId, type: "UPDATE", status: "PENDING" },
+      select: { id: true, submittedById: true },
+    });
+    if (rejectedChanges.length > 0) {
+      await tx.tripChangeRequest.updateMany({
+        where: { id: { in: rejectedChanges.map((change) => change.id) } },
+        data: {
+          status: "REJECTED",
+          reviewedById: session.user.id,
+          reviewedAt: new Date(),
+        },
+      });
+    }
+
     await tx.trip.delete({ where: { id: tripId } });
+  });
+
+  if (rejectedChanges.length > 0) {
+    const submitters = await prisma.user.findMany({
+      where: {
+        id: { in: [...new Set(rejectedChanges.map((change) => change.submittedById))] },
+      },
+      select: { id: true, email: true, name: true },
+    });
+
+    for (const user of submitters) {
+      await notifyUser(user.id, {
+        type: "TRIP_CHANGE_REJECTED",
+        title: "Trip change rejected",
+        body: `Your pending trip change for “${trip.title}” was rejected because the trip was deleted.`,
+        href: "/guide-board/trips#review-history",
+      });
+      sendEmailAfter(
+        tripChangeDecisionEmail({
+          to: user.email,
+          name: user.name ?? "",
+          approved: false,
+          tripTitle: trip.title,
+        }),
+      );
+    }
+
+    await logActivity({
+      userId: session.user.id,
+      action: "TRIP_CHANGE_REJECTED",
+      label: `Rejected ${rejectedChanges.length} pending trip change(s) for deleted trip “${trip.title}”`,
+      metadata: { tripId, changeIds: rejectedChanges.map((change) => change.id) },
+    });
+  }
+
+  await logActivity({
+    userId: session.user.id,
+    action: "TRIP_DELETED",
+    label: "Deleted a trip",
+    metadata: { tripId, title: trip.title },
   });
 
   revalidatePath("/admin/trips");
