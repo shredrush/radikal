@@ -21,7 +21,7 @@ import { CustomTripsView } from "@/components/custom-trips/custom-trips-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export type SupportDashboardSelectedChat = {
+export type SupportBoardSelectedChat = {
   id: string;
   status: "OPEN" | "CLOSED";
   customerName: string;
@@ -44,7 +44,7 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
-export function SupportDashboard({
+export function SupportBoard({
   initialChats,
   initialBookings,
   initialCustomRequests,
@@ -61,7 +61,7 @@ export function SupportDashboard({
   initialCustomRequests: CustomTripRequestListItem[];
   chatId?: string;
   tab: "conversations" | "bookings" | "custom";
-  selectedChat: SupportDashboardSelectedChat | null;
+  selectedChat: SupportBoardSelectedChat | null;
   selectedCustomRequestId?: string;
   selectedCustomRequest: CustomTripRequestDetail | null;
   canConfirmBookings?: boolean;
@@ -158,7 +158,7 @@ export function SupportDashboard({
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
               <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-                Support dashboard
+                Support board
               </h1>
             </div>
             <div className="flex flex-wrap items-center gap-2">

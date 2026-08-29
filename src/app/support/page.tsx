@@ -11,13 +11,13 @@ import {
   type CustomTripRequestDetail,
 } from "@/lib/custom-trips";
 import {
-  SupportDashboard,
-  type SupportDashboardSelectedChat,
-} from "@/components/support/support-dashboard";
+  SupportBoard,
+  type SupportBoardSelectedChat,
+} from "@/components/support/support-board";
 
 export const dynamic = "force-dynamic";
 
-export default async function SupportDashboardPage({
+export default async function SupportBoardPage({
   searchParams,
 }: {
   searchParams: Promise<{ chat?: string; tab?: string; request?: string }>;
@@ -54,7 +54,7 @@ export default async function SupportDashboardPage({
       })
     : null;
 
-  const selectedChatData: SupportDashboardSelectedChat | null = selectedChat
+  const selectedChatData: SupportBoardSelectedChat | null = selectedChat
     ? {
         id: selectedChat.id,
         status: selectedChat.status,
@@ -84,7 +84,7 @@ export default async function SupportDashboardPage({
     : null;
 
   return (
-    <SupportDashboard
+    <SupportBoard
       initialChats={chats.map(toSupportChatListItem)}
       initialBookings={bookings}
       initialCustomRequests={customRequests.map(toCustomTripRequestListItem)}

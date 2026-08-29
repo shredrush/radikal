@@ -193,12 +193,12 @@ async function uniqueTripSlug(title: string): Promise<string> {
 }
 
 /** Notify trip-review staff (in-app + email) and write an audit entry. */
-async function notifySubmitted(guideName: string, proposal: TripProposal) {
+async function notifySubmitted(changeId: string, guideName: string, proposal: TripProposal) {
   const staff = await notifyTripReviewStaff({
     type: "TRIP_CHANGE_SUBMITTED",
     title: "Trip change needs review",
     body: `${guideName} submitted a change for “${proposal.title}” that needs your review.`,
-    href: "/admin/trip-changes",
+    href: `/admin/trip-changes#change-${changeId}`,
   });
 
   for (const user of staff) {
@@ -208,6 +208,7 @@ async function notifySubmitted(guideName: string, proposal: TripProposal) {
         name: user.name ?? "",
         guideName,
         tripTitle: proposal.title,
+        changeId,
       }),
     );
   }
@@ -224,7 +225,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
 
   const proposal: TripProposal = { slug, ...fields };
 
-  await prisma.tripChangeRequest.create({
+  const change = await prisma.tripChangeRequest.create({
     data: {
       type: "CREATE",
       guideId: guide.id,
@@ -233,7 +234,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
     },
   });
 
-  await notifySubmitted(guide.name, proposal);
+  await notifySubmitted(change.id, guide.name, proposal);
 
   revalidatePath("/profile");
   revalidatePath("/admin/trip-changes");
@@ -286,7 +287,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   const proposal: TripProposal = { ...fields, slug: trip.slug };
 
-  await prisma.tripChangeRequest.create({
+  const change = await prisma.tripChangeRequest.create({
     data: {
       type: "UPDATE",
       guideId: guide.id,
@@ -297,7 +298,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     },
   });
 
-  await notifySubmitted(guide.name, proposal);
+  await notifySubmitted(change.id, guide.name, proposal);
 
   revalidatePath("/profile");
   revalidatePath("/admin/trip-changes");
@@ -652,4 +653,45 @@ export async function rejectTripChangeAction(changeId: string) {
     label: "Guide trip change rejected",
     metadata: { changeId, title: proposal.title },
   });
+}
+
+/**
+ * Fetch the full proposed/original snapshot for one trip change. Used by the
+ * guide's review history to load the diff lazily only when a row is expanded.
+ * The signed-in guide can only view their own changes.
+ */
+export async function getTripChangeDetailsAction(changeId: string): Promise<{
+  type: "CREATE" | "UPDATE";
+  proposed: TripProposal;
+  original: TripProposal | null;
+}> {
+  const { guide } = await requireGuide();
+
+  if (!changeId) {
+    throw new Error("Missing change id.");
+  }
+
+  const change = await prisma.tripChangeRequest.findUnique({
+    where: { id: changeId },
+    select: {
+      type: true,
+      guideId: true,
+      proposed: true,
+      original: true,
+    },
+  });
+
+  if (!change) {
+    throw new Error("Change request not found.");
+  }
+
+  if (change.guideId !== guide.id) {
+    throw new Error("You can only view your own trip changes.");
+  }
+
+  return {
+    type: change.type,
+    proposed: change.proposed as unknown as TripProposal,
+    original: change.original as unknown as TripProposal | null,
+  };
 }

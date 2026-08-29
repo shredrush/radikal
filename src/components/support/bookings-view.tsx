@@ -23,7 +23,7 @@ function statusCount(bookings: SupportBookingListItem[], value: BookingStatusFil
 }
 
 /**
- * Shared bookings view used by both the support dashboard and the admin
+ * Shared bookings view used by both the support board and the admin
  * booking-management page. Keeping this as a single component means any
  * future design change is automatically reflected in both places.
  *

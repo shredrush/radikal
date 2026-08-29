@@ -472,11 +472,13 @@ export function tripChangeSubmittedAdminEmail({
   name,
   guideName,
   tripTitle,
+  changeId,
 }: {
   to: string;
   name: string;
   guideName: string;
   tripTitle: string;
+  changeId: string;
 }): EmailInput {
   return {
     to,
@@ -487,7 +489,7 @@ export function tripChangeSubmittedAdminEmail({
         paragraph(
           `Hi ${escapeHtml(name || "there")}, ${escapeHtml(guideName)} submitted a change for “${escapeHtml(tripTitle)}” that needs your review before it goes live.`,
         ) +
-        button(siteUrl("/admin/trip-changes"), "Review changes"),
+        button(siteUrl(`/admin/trip-changes#change-${changeId}`), "Review changes"),
     ),
   };
 }

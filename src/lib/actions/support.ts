@@ -37,7 +37,7 @@ export async function sendSupportMessageAction(formData: FormData) {
 
   await prisma.$transaction(async (tx) => {
     // One thread per customer. If it was closed, the customer's message
-    // reopens it so it reappears in the support dashboard.
+    // reopens it so it reappears in the support board.
     const chat = await tx.supportChat.upsert({
       where: { userId },
       update: { status: "OPEN" },
@@ -93,7 +93,7 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
       data: { chatId, senderId: session.user!.id, body },
     });
 
-    // Bump updatedAt so the conversation re-sorts to the top of the dashboard.
+    // Bump updatedAt so the conversation re-sorts to the top of the board.
     await tx.supportChat.update({
       where: { id: chatId },
       data: { status: chat.status },

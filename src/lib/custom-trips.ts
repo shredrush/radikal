@@ -89,7 +89,7 @@ export function toCustomTripMessageViews(
 
 /**
  * Convert a Prisma CustomTripRequest (with its customer + latest message) into
- * a serializable shape for the support dashboard and profile lists.
+ * a serializable shape for the support board and profile lists.
  */
 export function toCustomTripRequestListItem(request: {
   id: string;

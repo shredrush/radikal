@@ -61,7 +61,7 @@ enum BookingStatus {
   COMPLETED
 }
 
-// A support conversation is either open (visible in the support dashboard)
+// A support conversation is either open (visible in the support board)
 // or closed (resolved). A customer's next message reopens it automatically.
 enum SupportChatStatus {
   OPEN
@@ -359,7 +359,7 @@ model Booking {
   participantCount     Int           @default(1)
   totalPriceRupees     Int
   // Audit trail for cancellations: who cancelled and in which role, so the
-  // support dashboard can show exactly who cancelled a booking.
+  // support board can show exactly who cancelled a booking.
   cancelledById        String?
   cancelledByRole      UserRole?
   cancellationReason   String?
@@ -415,7 +415,7 @@ model Review {
 }
 
 // A single support thread per customer. Support agents see every OPEN thread
-// in the dashboard and reply from there. Closing a chat marks it resolved;
+// in the board and reply from there. Closing a chat marks it resolved;
 // the next customer message reopens it.
 model SupportChat {
   id                 String            @id @default(cuid())

@@ -103,7 +103,7 @@ export function SupportWidgetClient() {
         {state.kind === "agent" ? (
           <div className="mt-5 flex flex-col items-start gap-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              You&apos;re signed in as a support agent. Open the dashboard to
+              You&apos;re signed in as a support agent. Open the board to
               review and reply to customer conversations.
             </p>
             <Button
@@ -113,7 +113,7 @@ export function SupportWidgetClient() {
               render={<Link href="/support" />}
             >
               <Headset className="size-4" />
-              Open support dashboard
+              Open support board
             </Button>
           </div>
         ) : state.kind === "customer" ? (

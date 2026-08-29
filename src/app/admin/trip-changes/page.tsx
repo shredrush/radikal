@@ -106,7 +106,11 @@ export default async function AdminTripChangesPage() {
               const isPending = change.status === "PENDING";
 
               return (
-                <Card key={change.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+                <Card
+                  key={change.id}
+                  id={`change-${change.id}`}
+                  className="scroll-mt-6 overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
+                >
                   <CardHeader className="border-b border-border/70 bg-muted/20">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-3">

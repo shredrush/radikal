@@ -44,7 +44,7 @@ export async function AdminPageHeader({
             render={<Link href="/support" />}
           >
             <Headset className="h-3.5 w-3.5" />
-            Support dashboard
+            Support board
           </Button>
         ) : null}
       </div>

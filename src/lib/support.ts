@@ -32,7 +32,7 @@ export type SupportBookingListItem = {
 
 /**
  * Convert a Prisma booking (with its traveller, trip, slot and canceller) into
- * a serializable shape for the support dashboard's bookings view.
+ * a serializable shape for the support board's bookings view.
  */
 export function toSupportBookingListItem(booking: {
   id: string;
@@ -141,7 +141,7 @@ export type SupportChatListItem = {
 
 /**
  * Convert a Prisma SupportChat (with its user + latest message) into a
- * serializable shape for the support dashboard. Dates are serialized to ISO
+ * serializable shape for the support board. Dates are serialized to ISO
  * strings because they don't survive the RSC boundary.
  */
 export function toSupportChatListItem(chat: {

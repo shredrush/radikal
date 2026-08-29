@@ -8,25 +8,20 @@ import {
   Camera,
   CalendarDays,
   CheckCircle2,
-  ClipboardList,
-  Compass,
   ExternalLink,
   Headset,
   Heart,
   KeyRound,
   LayoutDashboard,
-  ListChecks,
   MessageSquare,
   Settings2,
   Ticket,
-  UserCog,
-  Users,
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasPermission, type Role } from "@/lib/authz";
-import { ADMIN_SECTIONS, type AdminSection } from "@/lib/admin-sections";
+import { hasPermission } from "@/lib/authz";
+import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -61,48 +56,6 @@ import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
 import { NotificationItem } from "@/components/profile/notification-item";
 import { completePastBookings } from "@/lib/booking-completion";
 import { cn } from "@/lib/utils";
-
-/** Icons for the admin sections on the profile page (the admin board header
- *  renders the same sections without icons). */
-const STAFF_SECTION_ICONS: Record<AdminSection, React.ReactNode> = {
-  "trip-changes": <ListChecks className="h-3.5 w-3.5" />,
-  trips: <Compass className="h-3.5 w-3.5" />,
-  bookings: <Ticket className="h-3.5 w-3.5" />,
-  guides: <Users className="h-3.5 w-3.5" />,
-  applications: <ClipboardList className="h-3.5 w-3.5" />,
-  users: <UserCog className="h-3.5 w-3.5" />,
-};
-
-/**
- * Staff shortcuts shown on the profile page. The section list (order, labels,
- * hrefs, and permission gating) is shared with the admin board header via
- * `ADMIN_SECTIONS` so both stay in sync from a single source. The support
- * dashboard shortcut is rendered separately (top-right of the hero), mirroring
- * the admin board header layout.
- *
- * Buttons are grouped into columns so related sub-sections sit directly below
- * their parent: "Trip changes" under "Manage trips" and "Guide Applications"
- * under "Manage guides".
- */
-const STAFF_BUTTON_GROUPS: { parent: AdminSection; children?: AdminSection[] }[] = [
-  { parent: "trips", children: ["trip-changes"] },
-  { parent: "bookings" },
-  { parent: "guides", children: ["applications"] },
-  { parent: "users" },
-];
-
-function staffButton(role: Role | undefined, key: AdminSection) {
-  const section = ADMIN_SECTIONS.find((s) => s.key === key);
-  if (!section || !hasPermission(role, section.permission)) {
-    return null;
-  }
-  return {
-    key: section.key,
-    href: section.href,
-    label: section.label,
-    icon: STAFF_SECTION_ICONS[section.key],
-  };
-}
 
 export const metadata: Metadata = {
   title: "Profile — Radikal",
@@ -141,6 +94,10 @@ export default async function ProfilePage({
   const canAccessSupportDesk = hasPermission(user.role, "support.manage");
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
   const isStaffView = canReadAllBookings;
+  const adminSections = ADMIN_SECTIONS.filter((section) =>
+    hasPermission(user.role, section.permission),
+  );
+  const adminBoardHref = adminSections[0]?.href;
 
   // Persist past CONFIRMED bookings as COMPLETED so the sections below render
   // the true state (no background scheduler exists in this app).
@@ -414,54 +371,28 @@ export default async function ProfilePage({
                   Guide board
                 </Button>
               ) : null}
+              {adminBoardHref ? (
+                <Button
+                  size="sm"
+                  className="w-full justify-start rounded-full sm:w-auto"
+                  nativeButton={false}
+                  render={<Link href={adminBoardHref} />}
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  Admin board
+                </Button>
+              ) : null}
               {canAccessSupportDesk ? (
                 <Button
-                  variant="outline"
                   size="sm"
                   className="w-full justify-start rounded-full sm:w-auto"
                   nativeButton={false}
                   render={<Link href="/support" />}
                 >
                   <Headset className="h-3.5 w-3.5" />
-                  Support dashboard
+                  Support board
                 </Button>
               ) : null}
-              <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
-                {STAFF_BUTTON_GROUPS.map((group) => {
-                  const parent = staffButton(user.role, group.parent);
-                  if (!parent) return null;
-                  const children = (group.children ?? [])
-                    .map((key) => staffButton(user.role, key))
-                    .filter((b): b is NonNullable<ReturnType<typeof staffButton>> => b !== null);
-                  return (
-                    <div key={group.parent} className="flex flex-col gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full"
-                        nativeButton={false}
-                        render={<Link href={parent.href} />}
-                      >
-                        {parent.icon}
-                        {parent.label}
-                      </Button>
-                      {children.map((child) => (
-                        <Button
-                          key={child.key}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full"
-                          nativeButton={false}
-                          render={<Link href={child.href} />}
-                        >
-                          {child.icon}
-                          {child.label}
-                        </Button>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
@@ -689,7 +620,7 @@ export default async function ProfilePage({
               canAccessSupportDesk ? (
                 <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                   <CardHeader>
-                    <CardTitle>Support dashboard</CardTitle>
+                    <CardTitle>Support board</CardTitle>
                     <CardDescription>
                       Review and reply to customer conversations from the support desk.
                     </CardDescription>
@@ -698,7 +629,7 @@ export default async function ProfilePage({
                     <div className="flex flex-col items-start gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 p-6">
                       <Headset className="h-8 w-8 text-muted-foreground/50" />
                       <p className="text-sm leading-relaxed text-muted-foreground">
-                        Open the support dashboard to see open chats and reply to customers.
+                        Open the support board to see open chats and reply to customers.
                       </p>
                       <Button
                         size="sm"
@@ -707,7 +638,7 @@ export default async function ProfilePage({
                         render={<Link href="/support" />}
                       >
                         <Headset className="h-3.5 w-3.5" />
-                        Open support dashboard
+                        Open support board
                       </Button>
                     </div>
                   </CardContent>

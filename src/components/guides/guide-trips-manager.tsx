@@ -1,12 +1,14 @@
-import { CheckCircle2, Clock3, Compass, XCircle } from "lucide-react";
+import { Clock3, Compass } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
+import { GuideReviewHistory } from "@/components/guides/guide-review-history";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
+import { type TripChangeSummary } from "@/lib/trip-changes";
 
 function toGuideTripData(trip: {
   id: string;
@@ -43,7 +45,7 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, pendingChanges, draftRows] = await Promise.all([
+  const [trips, changeSummaries, draftRows] = await Promise.all([
     prisma.trip.findMany({
       where: { guideId },
       orderBy: { createdAt: "asc" },
@@ -54,17 +56,20 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
         slots: { orderBy: { date: "asc" } },
       },
     }),
-    prisma.tripChangeRequest.findMany({
-      where: { guideId },
-      orderBy: { createdAt: "desc" },
-    }),
+    prisma.$queryRaw<TripChangeSummary[]>`
+      SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
+      FROM "trip_change_requests"
+      WHERE "guideId" = ${guideId}
+      ORDER BY "createdAt" DESC
+    `,
     prisma.tripDraft.findMany({
       where: { guideId },
       orderBy: { updatedAt: "desc" },
     }),
   ]);
 
-  const pending = pendingChanges.filter((change) => change.status === "PENDING");
+  const pending = changeSummaries.filter((change) => change.status === "PENDING");
+  const reviewed = changeSummaries.filter((change) => change.status !== "PENDING");
 
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({
     draftId: draft.id,
@@ -147,87 +152,32 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {pending.map((change) => {
-              const proposed = change.proposed as { title?: string };
-              return (
-                <li
-                  key={change.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-amber-500/30 bg-amber-500/5 px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Clock3 className="h-4 w-4 text-amber-600" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {proposed?.title ?? "Untitled trip"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {change.type === "CREATE" ? "New trip" : "Trip edit"} awaiting approval
-                      </p>
-                    </div>
+            {pending.map((change) => (
+              <li
+                key={change.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-amber-500/30 bg-amber-500/5 px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Clock3 className="h-4 w-4 text-amber-600" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {change.title ?? "Untitled trip"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {change.type === "CREATE" ? "New trip" : "Trip edit"} awaiting approval
+                    </p>
                   </div>
-                  <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-                    Pending
-                  </Badge>
-                </li>
-              );
-            })}
+                </div>
+                <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
+                  Pending
+                </Badge>
+              </li>
+            ))}
           </ul>
         )}
       </section>
 
-      <section id="review-history" className="scroll-mt-28 space-y-4">
-        <h3 className="font-heading text-lg font-semibold tracking-wide text-foreground">
-          Review history
-        </h3>
-
-        {pendingChanges.filter((change) => change.status !== "PENDING").length === 0 ? (
-          <p className="rounded-[1.25rem] border border-dashed border-border/80 bg-muted/20 px-6 py-8 text-center text-sm text-muted-foreground">
-            No reviewed changes yet.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {pendingChanges
-              .filter((change) => change.status !== "PENDING")
-              .map((change) => {
-                const proposed = change.proposed as { title?: string };
-                const approved = change.status === "APPROVED";
-                return (
-                  <li
-                    key={change.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-border/70 bg-background/95 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      {approved ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {proposed?.title ?? "Untitled trip"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {change.type === "CREATE" ? "New trip" : "Trip edit"} ·{" "}
-                          {approved ? "Approved" : "Rejected"}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        approved
-                          ? "rounded-full border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-600"
-                          : "rounded-full border-destructive/40 bg-destructive/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-destructive"
-                      }
-                    >
-                      {approved ? "Approved" : "Rejected"}
-                    </Badge>
-                  </li>
-                );
-              })}
-          </ul>
-        )}
-      </section>
+      <GuideReviewHistory items={reviewed} />
     </div>
   );
 }

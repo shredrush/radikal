@@ -269,7 +269,7 @@ export default async function TripDetailPage({
                           className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
                         >
                           <span
-                            className="absolute inset-y-0 left-0 bg-emerald-100/90 transition-[width] duration-300"
+                            className="absolute inset-y-0 left-0 bg-emerald-100/90 dark:bg-emerald-900/90 transition-[width] duration-300"
                             style={{ width: `${getSlotOccupancyPercent(slot)}%` }}
                             aria-hidden="true"
                           />

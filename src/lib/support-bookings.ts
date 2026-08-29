@@ -3,7 +3,7 @@ import { toSupportBookingListItem } from "@/lib/support";
 import { completePastBookings } from "@/lib/booking-completion";
 
 /**
- * Shared data source for the support dashboard and the admin booking
+ * Shared data source for the support board and the admin booking
  * management view. Both pages read from this single function so they always
  * show the same bookings in the same shape.
  */

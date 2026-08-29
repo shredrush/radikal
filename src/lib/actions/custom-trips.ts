@@ -138,7 +138,7 @@ export async function sendCustomTripMessageAction(requestId: string, formData: F
       data: { chatId: request.chat.id, senderId: userId, body },
     });
 
-    // Bump the request so it re-sorts to the top of the support dashboard.
+    // Bump the request so it re-sorts to the top of the support board.
     await tx.customTripRequest.update({
       where: { id: requestId },
       data: { status: request.status },
