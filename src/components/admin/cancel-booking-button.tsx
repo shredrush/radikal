@@ -12,6 +12,7 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
       confirmLabel="Confirm cancel"
       successMessage="Booking cancelled."
       alignActions="start"
+      size="xs"
     />
   );
 }

@@ -1,86 +1,9 @@
-import { formatTripDateRange } from "@/lib/trip-dates";
-import { getTripCardImage } from "@/lib/trip-card-image";
-
 export type SupportMessageView = {
   id: string;
   body: string;
   isMine: boolean;
   createdAt: string;
 };
-
-export type SupportBookingListItem = {
-  id: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-  tripSlug: string;
-  title: string;
-  location: string;
-  image: string;
-  dateRange: string;
-  participantCount: number;
-  totalPriceRupees: number;
-  paymentTransactionId: string | null;
-  bookedAt: string;
-  cancelledByName: string | null;
-  cancelledByRole: string | null;
-  cancellationReason: string | null;
-  customer: {
-    name: string;
-    username: string | null;
-    email: string;
-  };
-};
-
-/**
- * Convert a Prisma booking (with its traveller, trip, slot and canceller) into
- * a serializable shape for the support board's bookings view.
- */
-export function toSupportBookingListItem(booking: {
-  id: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-  totalPriceRupees: number;
-  participantCount: number;
-  paymentTransactionId: string | null;
-  createdAt: Date;
-  cancelledByRole: string | null;
-  cancellationReason: string | null;
-  trip: {
-    slug: string;
-    title: string;
-    location: string;
-    durationDays: number;
-    description: string;
-    categories: string[];
-    images?: string[];
-    type?: string;
-  };
-  slot: { date: Date };
-  user: { name: string | null; email: string; username: string | null };
-  cancelledBy: { name: string | null } | null;
-}): SupportBookingListItem {
-  // The status is read straight from the DB: past CONFIRMED bookings are
-  // persisted as COMPLETED by lib/booking-completion.ts before the list is read.
-  return {
-    id: booking.id,
-    status: booking.status,
-    tripSlug: booking.trip.slug,
-    title: booking.trip.title,
-    location: booking.trip.location,
-    image: getTripCardImage(booking.trip),
-    dateRange: formatTripDateRange(booking.slot.date, booking.trip.durationDays),
-    participantCount: booking.participantCount,
-    totalPriceRupees: booking.totalPriceRupees,
-    paymentTransactionId: booking.paymentTransactionId,
-    bookedAt: booking.createdAt.toISOString(),
-    cancelledByName: booking.cancelledBy?.name ?? null,
-    cancelledByRole: booking.cancelledByRole ?? null,
-    cancellationReason: booking.cancellationReason ?? null,
-    customer: {
-      name: booking.user.name || booking.user.email,
-      username: booking.user.username,
-      email: booking.user.email,
-    },
-  };
-}
 
 function roleLabel(role: string | null) {
   switch (role) {

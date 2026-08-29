@@ -19,6 +19,7 @@ export function CancelBookingFlow({
   successMessage,
   placeholder = "Add a note or reason for the cancellation…",
   alignActions = "end",
+  size = "sm",
 }: {
   bookingId: string;
   action: CancelAction;
@@ -27,6 +28,7 @@ export function CancelBookingFlow({
   successMessage: string;
   placeholder?: string;
   alignActions?: "start" | "end";
+  size?: "xs" | "sm";
 }) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -53,12 +55,12 @@ export function CancelBookingFlow({
     return (
       <Button
         type="button"
-        size="sm"
+        size={size}
         variant="destructive"
         className="rounded-full"
         onClick={() => setOpen(true)}
       >
-        <Ban className="h-3.5 w-3.5" />
+        <Ban className={size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5"} />
         {triggerLabel}
       </Button>
     );

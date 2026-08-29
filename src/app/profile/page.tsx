@@ -21,7 +21,7 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
-import { ADMIN_SECTIONS } from "@/lib/admin-sections";
+import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -94,10 +94,7 @@ export default async function ProfilePage({
   const canAccessSupportDesk = hasPermission(user.role, "support.manage");
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
   const isStaffView = canReadAllBookings;
-  const adminSections = ADMIN_SECTIONS.filter((section) =>
-    hasPermission(user.role, section.permission),
-  );
-  const adminBoardHref = adminSections[0]?.href;
+  const adminBoardHref = getAdminBoardHref(user.role);
 
   // Persist past CONFIRMED bookings as COMPLETED so the sections below render
   // the true state (no background scheduler exists in this app).

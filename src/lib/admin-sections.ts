@@ -1,4 +1,4 @@
-import type { Permission } from "@/lib/authz";
+import { hasPermission, type Permission, type Role } from "@/lib/authz";
 
 /**
  * Single source of truth for the admin board's section navigation. The admin
@@ -20,3 +20,15 @@ export const ADMIN_SECTIONS = [
 }>;
 
 export type AdminSection = (typeof ADMIN_SECTIONS)[number]["key"];
+
+/**
+ * Default landing page for the admin board. Bookings is the day-to-day board,
+ * so it wins whenever the role can read bookings; otherwise fall back to the
+ * first accessible section. Returns undefined when the role has no sections.
+ */
+export function getAdminBoardHref(role: Role | undefined): string | undefined {
+  const sections = ADMIN_SECTIONS.filter((section) =>
+    hasPermission(role, section.permission),
+  );
+  return sections.find((section) => section.key === "bookings")?.href ?? sections[0]?.href;
+}

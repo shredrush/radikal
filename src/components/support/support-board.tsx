@@ -2,22 +2,19 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Compass, MessageSquare, Ticket, User } from "lucide-react";
+import { ArrowLeft, Compass, MessageSquare, Ticket, User, type LucideIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import {
-  type SupportBookingListItem,
-  type SupportChatListItem,
-  type SupportMessageView,
-} from "@/lib/support";
+import { type SupportChatListItem, type SupportMessageView } from "@/lib/support";
 import { formatMessageTime } from "@/lib/format";
 import type {
   CustomTripRequestDetail,
   CustomTripRequestListItem,
 } from "@/lib/custom-trips";
+import type { BookingBoardItem } from "@/lib/bookings";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
-import { SupportBookingsView } from "@/components/support/bookings-view";
 import { CustomTripsView } from "@/components/custom-trips/custom-trips-view";
+import { BookingsBoard } from "@/components/bookings/bookings-board";
+import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +24,29 @@ export type SupportBoardSelectedChat = {
   customerName: string;
   customerEmail: string;
   messages: SupportMessageView[];
+};
+
+export type SupportBoardTab = "conversations" | "bookings" | "custom";
+
+const TABS: { key: SupportBoardTab; href: string; label: string; icon: LucideIcon }[] = [
+  { key: "conversations", href: "/support", label: "Conversations", icon: MessageSquare },
+  { key: "bookings", href: "/support?tab=bookings", label: "Bookings", icon: Ticket },
+  { key: "custom", href: "/support?tab=custom", label: "Custom trips", icon: Compass },
+];
+
+const TAB_META: Record<SupportBoardTab, { title: string; description: string }> = {
+  conversations: {
+    title: "Conversations",
+    description: "Read and reply to traveller support conversations.",
+  },
+  bookings: {
+    title: "Manage Bookings",
+    description: "A live view of every booking on the platform.",
+  },
+  custom: {
+    title: "Custom Trips",
+    description: "Review custom trip requests and chat with travellers.",
+  },
 };
 
 function preview(body: string | null) {
@@ -44,6 +64,15 @@ function chatListSignature(chats: SupportChatListItem[]) {
     .join("|");
 }
 
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
 export function SupportBoard({
   initialChats,
   initialBookings,
@@ -53,19 +82,15 @@ export function SupportBoard({
   selectedChat,
   selectedCustomRequestId,
   selectedCustomRequest,
-  canConfirmBookings = false,
-  canCancelBookings = false,
 }: {
   initialChats: SupportChatListItem[];
-  initialBookings: SupportBookingListItem[];
+  initialBookings: BookingBoardItem[];
   initialCustomRequests: CustomTripRequestListItem[];
   chatId?: string;
-  tab: "conversations" | "bookings" | "custom";
+  tab: SupportBoardTab;
   selectedChat: SupportBoardSelectedChat | null;
   selectedCustomRequestId?: string;
   selectedCustomRequest: CustomTripRequestDetail | null;
-  canConfirmBookings?: boolean;
-  canCancelBookings?: boolean;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
 
@@ -100,6 +125,12 @@ export function SupportBoard({
     (request) => request.status === "NEW",
   ).length;
   const newConversationsCount = awaitingReplyCount;
+
+  const tabCounts: Record<SupportBoardTab, number> = {
+    conversations: newConversationsCount,
+    bookings: newBookingsCount,
+    custom: newCustomRequestsCount,
+  };
 
   function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
     const awaitingReply =
@@ -142,6 +173,8 @@ export function SupportBoard({
     );
   }
 
+  const meta = TAB_META[tab];
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
@@ -157,158 +190,120 @@ export function SupportBoard({
           </div>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl space-y-3">
-              <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
                 Support board
+              </p>
+              <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
+                {meta.title}
               </h1>
+              <p className="text-sm leading-7 text-muted-foreground">{meta.description}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn(
-                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
-                  tab === "bookings" && "bg-orange-500/10",
-                )}
-                nativeButton={false}
-                render={<Link href="/support?tab=bookings" />}
-              >
-                <Ticket className="h-3.5 w-3.5" />
-                Bookings
-                {newBookingsCount > 0 ? (
-                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
-                    {newBookingsCount}
-                  </span>
-                ) : null}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn(
-                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
-                  tab === "custom" && "bg-orange-500/10",
-                )}
-                nativeButton={false}
-                render={<Link href="/support?tab=custom" />}
-              >
-                <Compass className="h-3.5 w-3.5" />
-                Custom
-                {newCustomRequestsCount > 0 ? (
-                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
-                    {newCustomRequestsCount}
-                  </span>
-                ) : null}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn(
-                  "rounded-full border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-500/10",
-                  tab === "conversations" && "bg-orange-500/10",
-                )}
-                nativeButton={false}
-                render={<Link href="/support" />}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Conversations
-                {newConversationsCount > 0 ? (
-                  <span className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.6rem] font-semibold leading-4 text-white">
-                    {newConversationsCount}
-                  </span>
-                ) : null}
-              </Button>
+            <div className="flex flex-wrap gap-3">
+              {TABS.map((item) => (
+                <Button
+                  key={item.key}
+                  variant={tab === item.key ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-full"
+                  nativeButton={false}
+                  render={<Link href={item.href} />}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                  {tabCounts[item.key] > 0 ? (
+                    <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[0.65rem] font-bold leading-none text-white">
+                      {tabCounts[item.key] > 9 ? "9+" : tabCounts[item.key]}
+                    </span>
+                  ) : null}
+                </Button>
+              ))}
             </div>
           </div>
-
-          {tab === "conversations" ? (
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Open chats</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {openChats.length}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Resolved</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {closedChats.length}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">Awaiting reply</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">
-                  {awaitingReplyCount}
-                </p>
-              </div>
-            </div>
-          ) : null}
         </header>
 
-        {tab === "bookings" ? (
-          <SupportBookingsView
-            bookings={initialBookings}
-            canConfirm={canConfirmBookings}
-            canCancel={canCancelBookings}
-          />
-        ) : tab === "custom" ? (
-          <CustomTripsView
-            initialRequests={initialCustomRequests}
-            selectedRequestId={selectedCustomRequestId}
-            selectedRequest={selectedCustomRequest}
-          />
-        ) : (
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* Conversation list */}
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-            <div className="space-y-2">
-              <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                Open
-              </h2>
-              {openChats.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
-                  No open conversations.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {openChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
-                </div>
-              )}
-            </div>
-
-            {closedChats.length > 0 ? (
-              <div className="space-y-2">
-                <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Resolved
-                </h2>
-                <div className="flex flex-col gap-2">
-                  {closedChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
-                </div>
-              </div>
-            ) : null}
-          </aside>
-
-          {/* Conversation detail */}
-          <section className="min-w-0">
-            {selectedChat ? (
-              <SupportReplyPanel
-                chatId={selectedChat.id}
-                status={selectedChat.status}
-                customerName={selectedChat.customerName}
-                customerEmail={selectedChat.customerEmail}
-                messages={selectedChat.messages}
-              />
-            ) : (
-              <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
-                <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                <div>
-                  <p className="font-medium text-foreground">Select a conversation</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Choose an open chat from the list to read the thread and reply.
-                  </p>
-                </div>
-              </div>
-            )}
+        {tab === "conversations" ? (
+          <section className="grid gap-3 md:grid-cols-3">
+            <StatCard label="Open chats" value={openChats.length} />
+            <StatCard label="Resolved" value={closedChats.length} />
+            <StatCard label="Awaiting reply" value={awaitingReplyCount} />
           </section>
-        </div>
+        ) : tab === "bookings" ? (
+          <BookingsStats items={initialBookings} />
+        ) : (
+          <section className="grid gap-3 md:grid-cols-2">
+            <StatCard label="Total requests" value={initialCustomRequests.length} />
+            <StatCard label="New" value={newCustomRequestsCount} />
+          </section>
+        )}
+
+        {tab === "bookings" ? (
+          <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <BookingsBoard items={initialBookings} />
+          </section>
+        ) : tab === "custom" ? (
+          <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <CustomTripsView
+              initialRequests={initialCustomRequests}
+              selectedRequestId={selectedCustomRequestId}
+              selectedRequest={selectedCustomRequest}
+            />
+          </section>
+        ) : (
+          <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+              {/* Conversation list */}
+              <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+                <div className="space-y-2">
+                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Open
+                  </h2>
+                  {openChats.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+                      No open conversations.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {openChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
+                    </div>
+                  )}
+                </div>
+
+                {closedChats.length > 0 ? (
+                  <div className="space-y-2">
+                    <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                      Resolved
+                    </h2>
+                    <div className="flex flex-col gap-2">
+                      {closedChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
+                    </div>
+                  </div>
+                ) : null}
+              </aside>
+
+              {/* Conversation detail */}
+              <section className="min-w-0">
+                {selectedChat ? (
+                  <SupportReplyPanel
+                    chatId={selectedChat.id}
+                    status={selectedChat.status}
+                    customerName={selectedChat.customerName}
+                    customerEmail={selectedChat.customerEmail}
+                    messages={selectedChat.messages}
+                  />
+                ) : (
+                  <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
+                    <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
+                    <div>
+                      <p className="font-medium text-foreground">Select a conversation</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Choose an open chat from the list to read the thread and reply.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+          </section>
         )}
       </div>
     </div>

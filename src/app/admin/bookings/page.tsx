@@ -1,6 +1,7 @@
 import { hasPermission, requirePermission } from "@/lib/authz";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
+import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,8 @@ export default async function AdminBookingsPage() {
           active="bookings"
           role={session.user.role}
         />
+
+        <BookingsStats items={items} />
 
         <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <BookingsBoard

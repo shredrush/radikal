@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { hasPermission, requirePermission } from "@/lib/authz";
-import { getSupportBookings } from "@/lib/support-bookings";
+import { requirePermission } from "@/lib/authz";
+import { fetchBookingsWithDetails } from "@/lib/bookings";
 import {
   toSupportChatListItem,
   toSupportMessageViews,
@@ -34,7 +34,10 @@ export default async function SupportBoardPage({
     },
   });
 
-  const bookings = await getSupportBookings();
+  const bookings = await fetchBookingsWithDetails(
+    {},
+    { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+  );
 
   const customRequests = await prisma.customTripRequest.findMany({
     orderBy: { updatedAt: "desc" },
@@ -95,8 +98,6 @@ export default async function SupportBoardPage({
       selectedChat={selectedChatData}
       selectedCustomRequestId={requestId}
       selectedCustomRequest={selectedCustomRequestData}
-      canConfirmBookings={hasPermission(session.user.role, "bookings.confirm")}
-      canCancelBookings={hasPermission(session.user.role, "bookings.cancel")}
     />
   );
 }
