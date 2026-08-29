@@ -11,38 +11,7 @@ import {
 } from "@/lib/actions/trip-changes";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
-const ACTIVITY_TYPE_OPTIONS = [
-  { value: "TREK", label: "Hiking & Trekking" },
-  { value: "BIKE", label: "Cycling" },
-  { value: "SNOWBOARD", label: "Snowboarding" },
-  { value: "SKI", label: "Skiing" },
-  { value: "ROCKCLIMB", label: "Rock Climbing" },
-  { value: "EXPEDITION", label: "Summit Expedition" },
-  { value: "YOGA", label: "Yoga & Meditation" },
-] as const;
-
-const TRIP_CATEGORY_OPTIONS = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
-] as const;
-
-const TRIP_CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
+import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 
 const inputClassName =
   "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
@@ -218,7 +187,7 @@ export function GuideTripForm({
         <div className="space-y-2">
           <Label>Trip categories</Label>
           <div className="grid gap-2 sm:grid-cols-2">
-            {TRIP_CATEGORY_OPTIONS.map((category) => {
+            {TRIP_CATEGORIES.map((category) => {
               const isChecked = categories.includes(category);
               return (
                 <label key={category} className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm text-foreground">

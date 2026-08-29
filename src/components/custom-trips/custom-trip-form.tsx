@@ -14,10 +14,9 @@ import {
 } from "lucide-react";
 
 import { createCustomTripRequestAction } from "@/lib/actions/custom-trips";
-import {
-  CUSTOM_TRIP_GROUP_LABELS,
-  CUSTOM_TRIP_SPORTS,
-} from "@/lib/custom-trips";
+import { CUSTOM_TRIP_GROUP_LABELS } from "@/lib/custom-trips";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
+import { pluralize, toDateInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,14 +34,6 @@ function RequiredAsterisk() {
       *
     </span>
   );
-}
-
-function today() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 export function CustomTripForm() {
@@ -198,7 +189,7 @@ export function CustomTripForm() {
               errorField === "sports" && "border-destructive/50 bg-destructive/5",
             )}
           >
-            {CUSTOM_TRIP_SPORTS.map((sport) => {
+            {ACTIVITY_TYPE_OPTIONS.map((sport) => {
               const selected = sports.includes(sport.value);
               return (
                 <button
@@ -232,7 +223,7 @@ export function CustomTripForm() {
               id="start-date"
               ref={startDateRef}
               type="date"
-              min={today()}
+              min={toDateInput(new Date())}
               value={startDate}
               onChange={(event) => {
                 setStartDate(event.target.value);
@@ -250,7 +241,7 @@ export function CustomTripForm() {
               id="end-date"
               ref={endDateRef}
               type="date"
-              min={startDate || today()}
+              min={startDate || toDateInput(new Date())}
               value={endDate}
               onChange={(event) => {
                 setEndDate(event.target.value);
@@ -342,7 +333,7 @@ export function CustomTripForm() {
             </Badge>
             {sports.length > 0 ? (
               <Badge variant="secondary" className="rounded-full px-3 py-1">
-                {sports.length} sport{sports.length === 1 ? "" : "s"} selected
+                {pluralize(sports.length, "sport")} selected
               </Badge>
             ) : null}
           </div>

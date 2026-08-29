@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { toSupportBookingListItem } from "@/lib/support";
+import { completePastBookings } from "@/lib/booking-completion";
 
 /**
  * Shared data source for the support dashboard and the admin booking
@@ -7,6 +8,10 @@ import { toSupportBookingListItem } from "@/lib/support";
  * show the same bookings in the same shape.
  */
 export async function getSupportBookings() {
+  // Persist past CONFIRMED bookings as COMPLETED before reading, so the status
+  // filters and counts reflect the true state.
+  await completePastBookings();
+
   const bookings = await prisma.booking.findMany({
     orderBy: { createdAt: "desc" },
     include: {

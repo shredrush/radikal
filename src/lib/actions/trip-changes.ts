@@ -9,7 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 import { notifyTripReviewStaff, notifyUser } from "@/lib/notifications";
-import { slugifyTripTitle, type TripProposal } from "@/lib/trip-changes";
+import { type TripProposal } from "@/lib/trip-changes";
+import { slugify } from "@/lib/format";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import {
   sendEmailAfter,
@@ -177,7 +178,7 @@ async function requireGuide() {
 
 /** Produce a unique, valid slug from a trip title. */
 async function uniqueTripSlug(title: string): Promise<string> {
-  const base = slugifyTripTitle(title) || "trip";
+  const base = slugify(title, 60) || "trip";
   let slug = isValidSlug(base) ? base : "trip";
   let attempts = 0;
 

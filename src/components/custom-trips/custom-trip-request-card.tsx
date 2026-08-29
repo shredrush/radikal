@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Compass, MessageSquare, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { pluralize } from "@/lib/format";
 import {
   CUSTOM_TRIP_GROUP_LABELS,
   CUSTOM_TRIP_STATUS_LABELS,
@@ -46,7 +47,7 @@ export function CustomTripRequestCard({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
-            {request.participantCount} traveller{request.participantCount === 1 ? "" : "s"}
+            {pluralize(request.participantCount, "traveller")}
           </span>
           {request.budgetRupees != null ? (
             <span className="inline-flex items-center gap-1.5">

@@ -1,3 +1,5 @@
+import { SPORT_META, type SportId } from "./sport-icon";
+
 export type TripCardItem = {
   id: string;
   slug: string;
@@ -11,15 +13,13 @@ export type TripCardItem = {
   guide: { name: string } | null;
 };
 
-export const SPORT_FILTERS = [
+export const SPORT_FILTERS: Array<{ id: "all" | SportId; label: string }> = [
   { id: "all", label: "All" },
-  { id: "bike", label: "Cycling" },
-  { id: "rockclimb", label: "Rock Climbing" },
-  { id: "winter", label: "Snowboard and Ski" },
-  { id: "trek", label: "Hiking and Trekking" },
-  { id: "yoga", label: "Yoga and Meditation" },
-  { id: "expedition", label: "Summit Expedition" },
-] as const;
+  ...(Object.keys(SPORT_META) as SportId[]).map((id) => ({
+    id,
+    label: SPORT_META[id].label,
+  })),
+];
 
 export const TRAVEL_STYLE_FILTERS = [
   { id: "all", label: "All" },

@@ -49,13 +49,15 @@ import {
   CustomTripRequestEmpty,
 } from "@/components/custom-trips/custom-trip-request-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
-import { formatTripDateRange, isTripCompleted } from "@/lib/trip-dates";
+import { formatTripDateRange } from "@/lib/trip-dates";
 import {
   toSupportMessageViews,
   type SupportMessageView,
 } from "@/lib/support";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
+import { formatDateTime } from "@/lib/format";
 import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
+import { completePastBookings } from "@/lib/booking-completion";
 import { GuideTripsManager } from "@/components/guides/guide-trips-manager";
 import { cn } from "@/lib/utils";
 
@@ -157,6 +159,10 @@ export default async function ProfilePage({
   const canAccessSupportDesk = hasPermission(user.role, "support.manage");
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
   const isStaffView = canReadAllBookings;
+
+  // Persist past CONFIRMED bookings as COMPLETED so the sections below render
+  // the true state (no background scheduler exists in this app).
+  await completePastBookings();
 
   // Fetch only the queries the active tab needs, all in parallel. The page
   // previously ran every query (including the platform-wide "all bookings"
@@ -277,38 +283,18 @@ export default async function ProfilePage({
 
   const unreadNotificationsCount = notifications.filter((n) => !n.readAt).length;
 
-  const now = new Date();
   const upcoming = bookings.filter((b) => b.status === "CONFIRMED").length;
   const heroBookingCount = isStaffView ? (personalBookingCounts?.total ?? 0) : bookings.length;
   const heroUpcomingCount = isStaffView ? (personalBookingCounts?.upcoming ?? 0) : upcoming;
 
-  // A booking is treated as completed when its trip dates have fully passed
-  // (or it was explicitly marked COMPLETED). Used to badge past trips and to
-  // populate the "Completed trips" section.
-  type BookingStatusValue = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-  function bookingDisplayStatus(booking: {
-    status: string;
-    slot: { date: Date };
-    trip: { durationDays: number };
-  }): BookingStatusValue {
-    if (booking.status === "COMPLETED") return "COMPLETED";
-    if (
-      booking.status === "CONFIRMED" &&
-      isTripCompleted(booking.slot.date, booking.trip.durationDays, now)
-    ) {
-      return "COMPLETED";
-    }
-    return booking.status as BookingStatusValue;
-  }
-  const completedBookings = bookings.filter(
-    (booking) => bookingDisplayStatus(booking) === "COMPLETED",
-  );
+  // Completion is persisted (lib/booking-completion.ts runs before the reads
+  // above), so the DB status is the single source of truth for completed vs
+  // active.
+  const completedBookings = bookings.filter((booking) => booking.status === "COMPLETED");
 
   // Completed trips get their own section, so keep them out of the main
   // "Your bookings" list to avoid showing each finished trip twice.
-  const activeBookings = bookings.filter(
-    (booking) => bookingDisplayStatus(booking) !== "COMPLETED",
-  );
+  const activeBookings = bookings.filter((booking) => booking.status !== "COMPLETED");
 
   // The user's existing reviews, keyed by trip so the completed-trips list can
   // offer "Leave a review" for unreviewed trips and "Edit review" for reviewed
@@ -766,13 +752,7 @@ export default async function ProfilePage({
                               <p className="text-sm font-semibold text-foreground">{notification.title}</p>
                               <p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.body}</p>
                               <p className="mt-2 text-xs text-muted-foreground/70">
-                                {notification.createdAt.toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {formatDateTime(notification.createdAt)}
                               </p>
                             </div>
                             {!notification.readAt ? (
@@ -908,7 +888,7 @@ export default async function ProfilePage({
                                   ),
                                   participantCount: booking.participantCount,
                                   totalPriceRupees: booking.totalPriceRupees,
-                                  status: bookingDisplayStatus(booking),
+                                  status: booking.status,
                                   paymentTransactionId: booking.paymentTransactionId,
                                   bookedAt: booking.createdAt.toISOString(),
                                   customer: {
@@ -993,7 +973,7 @@ export default async function ProfilePage({
                                 ),
                                 participantCount: booking.participantCount,
                                 totalPriceRupees: booking.totalPriceRupees,
-                                status: bookingDisplayStatus(booking),
+                                status: booking.status,
                                 paymentTransactionId: booking.paymentTransactionId,
                                 bookedAt: booking.createdAt.toISOString(),
                                 cancellationReason: booking.cancellationReason,

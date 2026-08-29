@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData } from "@/components/guides/guide-trip-form";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
-import type { SlotItem } from "@/components/admin/admin-trip-slots";
+import { toSlotItem } from "@/lib/slot-item";
+import { formatDurationDays } from "@/lib/trip-dates";
 
 function toGuideTripData(trip: {
   id: string;
@@ -37,21 +38,6 @@ function toGuideTripData(trip: {
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
     exclusions: trip.inclusions.filter((i) => !i.included).map((i) => i.item),
     highlights: trip.highlights.map((h) => h.text),
-  };
-}
-
-function toSlotItem(slot: { id: string; date: Date; capacity: number; booked: number; reserved: number }): SlotItem {
-  const date = new Date(slot.date);
-  const pad = (value: number) => String(value).padStart(2, "0");
-
-  return {
-    id: slot.id,
-    dateInput: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    dateLabel: date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
-    capacity: slot.capacity,
-    booked: slot.booked,
-    reserved: slot.reserved,
-    spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
   };
 }
 
@@ -109,7 +95,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-foreground">{trip.title}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {trip.location} · {trip.durationDays} day{trip.durationDays === 1 ? "" : "s"}
+                      {trip.location} · {formatDurationDays(trip.durationDays)}
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col items-end gap-3">

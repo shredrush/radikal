@@ -11,6 +11,7 @@ import {
   RejectTripChangeButton,
 } from "@/components/admin/review-trip-change-buttons";
 import { type TripProposal } from "@/lib/trip-changes";
+import { formatLongDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -125,9 +126,9 @@ export default async function AdminTripChangesPage() {
                               : ""}
                           </CardDescription>
                           <CardDescription className="mt-1 text-xs text-muted-foreground">
-                            Submitted {change.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                            Submitted {formatLongDate(change.createdAt)}
                             {!isPending && change.reviewedAt
-                              ? ` · Reviewed ${change.reviewedAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}${change.reviewedBy?.name ? ` by ${change.reviewedBy.name}` : ""}`
+                              ? ` · Reviewed ${formatLongDate(change.reviewedAt)}${change.reviewedBy?.name ? ` by ${change.reviewedBy.name}` : ""}`
                               : ""}
                           </CardDescription>
                         </div>

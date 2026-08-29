@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
+import { pluralize } from "@/lib/format";
 
 interface TripGalleryProps {
   images: string[];
@@ -117,7 +118,7 @@ export function TripGallery({ images, fallbackImage, alt, compact = false }: Tri
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="font-heading text-xl font-semibold text-white sm:text-2xl">{alt}</h2>
-                <p className="mt-1 text-sm text-white/60">{galleryImages.length} photo{galleryImages.length === 1 ? "" : "s"}</p>
+                <p className="mt-1 text-sm text-white/60">{pluralize(galleryImages.length, "photo")}</p>
               </div>
               <button
                 type="button"

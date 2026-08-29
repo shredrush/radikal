@@ -6,11 +6,11 @@ import { ArrowLeft, Compass, MessageSquare, Ticket, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
-  formatSupportMessageTime,
   type SupportBookingListItem,
   type SupportChatListItem,
   type SupportMessageView,
 } from "@/lib/support";
+import { formatMessageTime } from "@/lib/format";
 import type {
   CustomTripRequestDetail,
   CustomTripRequestListItem,
@@ -125,7 +125,7 @@ export function SupportDashboard({
             </span>
           </div>
           <span className="shrink-0 text-[0.65rem] text-muted-foreground">
-            {formatSupportMessageTime(chat.updatedAt)}
+            {formatMessageTime(chat.updatedAt)}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2">

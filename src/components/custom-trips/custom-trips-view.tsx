@@ -10,10 +10,10 @@ import {
   CUSTOM_TRIP_STATUS_LABELS,
   CUSTOM_TRIP_STATUS_STYLES,
   formatCustomTripDateRange,
-  formatCustomTripMessageTime,
   type CustomTripRequestDetail,
   type CustomTripRequestListItem,
 } from "@/lib/custom-trips";
+import { formatMessageTime } from "@/lib/format";
 import { CustomTripRequestDetailPanel } from "@/components/custom-trips/custom-trip-request-detail";
 import { Badge } from "@/components/ui/badge";
 
@@ -134,7 +134,7 @@ export function CustomTripsView({
                       {preview(request.lastMessageBody)}
                     </p>
                     <p className="text-[0.65rem] text-muted-foreground/70">
-                      {formatCustomTripMessageTime(request.updatedAt)}
+                      {formatMessageTime(request.updatedAt)}
                     </p>
                   </Link>
                 );

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GuideApplicationForm } from "@/components/guides/guide-application-form";
+import { formatLongDate } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Become a Guide — Radikal",
@@ -75,11 +76,7 @@ export default async function BecomeAGuidePage() {
                 <h2 className="font-heading text-2xl font-semibold tracking-wide">Application under review</h2>
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
                   Your application was submitted on{" "}
-                  {pendingApplication.submittedAt.toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {formatLongDate(pendingApplication.submittedAt)}
                   . Our team will review it shortly.
                 </p>
               </div>

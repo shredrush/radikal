@@ -6,7 +6,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
-import { isTripCompleted } from "@/lib/trip-dates";
 import { reviewSchema } from "@/lib/validations/reviews";
 
 export type ReviewActionState = {
@@ -85,9 +84,8 @@ async function validateReviewSubmission(
       userId: true,
       status: true,
       tripId: true,
-      slot: { select: { date: true } },
       trip: {
-        select: { id: true, slug: true, durationDays: true, guideId: true },
+        select: { slug: true, guideId: true },
       },
     },
   });
@@ -100,10 +98,9 @@ async function validateReviewSubmission(
     return { ok: false, state: { error: "Cancelled trips cannot be reviewed." } };
   }
 
-  const completed =
-    booking.status === "COMPLETED" ||
-    (booking.status === "CONFIRMED" &&
-      isTripCompleted(booking.slot.date, booking.trip.durationDays));
+  // Completion is persisted before the completed-trips list is rendered, so
+  // the booking's stored status is the single source of truth here.
+  const completed = booking.status === "COMPLETED";
 
   if (!completed) {
     return {

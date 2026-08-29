@@ -4,6 +4,8 @@
  * interpret the JSON snapshots without importing "use server" code.
  */
 
+import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+
 export type TripProposal = {
   slug: string;
   title: string;
@@ -20,27 +22,6 @@ export type TripProposal = {
   inclusions: string[];
   exclusions: string[];
   highlights: string[];
-};
-
-export const ACTIVITY_TYPE_LABELS: Record<string, string> = {
-  TREK: "Hiking & Trekking",
-  BIKE: "Cycling",
-  SNOWBOARD: "Snowboarding",
-  SKI: "Skiing",
-  ROCKCLIMB: "Rock Climbing",
-  EXPEDITION: "Summit Expedition",
-  YOGA: "Yoga & Meditation",
-};
-
-export const TRIP_CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -76,17 +57,6 @@ const FIELD_ORDER = [
   "exclusions",
   "highlights",
 ] as const;
-
-/** Turn a trip title into a URL-safe slug (mirrors the admin slug rules). */
-export function slugifyTripTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .replace(/^-+|-+$/g, "");
-}
 
 function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";

@@ -6,6 +6,7 @@ import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Price } from "@/components/currency/price";
+import { formatDurationDays } from "@/lib/trip-dates";
 
 export function BookingBar({
   tripId,
@@ -29,7 +30,7 @@ export function BookingBar({
           <Price amount={total} />
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {durationDays} {durationDays === 1 ? "day" : "days"}
+          {formatDurationDays(durationDays)}
         </p>
       </div>
 

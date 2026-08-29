@@ -1,5 +1,5 @@
 import type { BookingCardData } from "@/components/profile/booking-card";
-import { formatTripDateRange, isTripCompleted } from "@/lib/trip-dates";
+import { formatTripDateRange } from "@/lib/trip-dates";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatCancelledBy } from "@/lib/support";
 
@@ -32,24 +32,10 @@ export type BookingForCard = {
 };
 
 /**
- * A booking is displayed as "completed" once its final day has passed (or it
- * was explicitly marked COMPLETED). Shared by the eager profile view and the
- * lazy-loaded booking sections so both render the same status.
+ * A booking is displayed as completed only once its status has been persisted
+ * as COMPLETED (lib/booking-completion.ts flips it before any booking list is
+ * read). The DB is the single source of truth.
  */
-export function toBookingDisplayStatus(
-  booking: { status: string; slot: { date: Date }; trip: { durationDays: number } },
-  now = new Date(),
-): BookingStatusValue {
-  if (booking.status === "COMPLETED") return "COMPLETED";
-  if (
-    booking.status === "CONFIRMED" &&
-    isTripCompleted(booking.slot.date, booking.trip.durationDays, now)
-  ) {
-    return "COMPLETED";
-  }
-  return booking.status as BookingStatusValue;
-}
-
 export function toBookingCardData(
   booking: BookingForCard,
   options: {
@@ -69,7 +55,7 @@ export function toBookingCardData(
     dateRange: formatTripDateRange(booking.slot.date, booking.trip.durationDays),
     participantCount: booking.participantCount,
     totalPriceRupees: booking.totalPriceRupees,
-    status: toBookingDisplayStatus(booking),
+    status: booking.status as BookingStatusValue,
     paymentTransactionId: booking.paymentTransactionId,
     bookedAt: booking.createdAt.toISOString(),
     customer: booking.user

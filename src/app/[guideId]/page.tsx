@@ -10,6 +10,8 @@ import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { prisma } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
+import { ACCENT_PILL } from "@/lib/card-styles";
+import { formatMonthYear } from "@/lib/format";
 
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).
@@ -43,6 +45,7 @@ const getGuideDetail = unstable_cache(
           select: {
             id: true,
             comment: true,
+            createdAt: true,
             user: { select: { name: true } },
             trip: { select: { slug: true, title: true } },
           },
@@ -131,7 +134,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     {guide.certifications.map((certification) => (
                       <span
                         key={certification.id}
-                        className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300"
+                        className={`rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}
                       >
                         {certification.title}
                       </span>
@@ -208,6 +211,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     trip: review.trip?.title ?? "Radikal experience",
                     slug: review.trip?.slug,
                     quote: review.comment,
+                    date: formatMonthYear(review.createdAt),
                   }}
                 />
               ))}

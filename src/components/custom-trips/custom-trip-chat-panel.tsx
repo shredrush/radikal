@@ -9,9 +9,9 @@ import {
   sendCustomTripMessageAction,
 } from "@/lib/actions/custom-trips";
 import {
-  formatCustomTripMessageTime,
   type CustomTripMessageView,
 } from "@/lib/custom-trips";
+import { formatMessageTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 const composerClassName =
@@ -119,7 +119,7 @@ export function CustomTripChatPanel({
                       message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"
                     }`}
                   >
-                    {formatCustomTripMessageTime(message.createdAt)}
+                    {formatMessageTime(message.createdAt)}
                   </p>
                 </div>
               </div>

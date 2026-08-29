@@ -4,66 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardDescription, CardTitle } from "@/components/ui/card";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { AddTripForm } from "@/components/admin/add-trip-form";
-import { type SlotItem } from "@/components/admin/admin-trip-slots";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminAccordion } from "@/components/admin/admin-accordion";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
+import { toSlotItem } from "@/lib/slot-item";
+import { formatDurationDays } from "@/lib/trip-dates";
 
 export const dynamic = "force-dynamic";
 
-const ACTIVITY_TYPE_OPTIONS = [
-  { value: "TREK", label: "Hiking & Trekking" },
-  { value: "BIKE", label: "Cycling" },
-  { value: "SNOWBOARD", label: "Snowboarding" },
-  { value: "SKI", label: "Skiing" },
-  { value: "ROCKCLIMB", label: "Rock Climbing" },
-  { value: "EXPEDITION", label: "Summit Expedition" },
-  { value: "YOGA", label: "Yoga & Meditation" },
-] as const;
-
-const TRIP_CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
-
 function getTripTypeLabel(value: string) {
   return ACTIVITY_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
-
-// Format the stored slot date in the server's local timezone, matching how the
-// public trip pages render the same dates (see lib/trip-dates.ts).
-function toSlotItem(slot: {
-  id: string;
-  date: Date;
-  capacity: number;
-  booked: number;
-  reserved: number;
-}): SlotItem {
-  const date = new Date(slot.date);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  const dateInput = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const dateLabel = date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  return {
-    id: slot.id,
-    dateInput,
-    dateLabel,
-    capacity: slot.capacity,
-    booked: slot.booked,
-    reserved: slot.reserved,
-    spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
-  };
 }
 
 const PAGE_SIZE = 10;
@@ -182,56 +135,48 @@ export default async function AdminTripsPage({
             No trips match this sport type. Try another filter.
           </div>
         ) : (
-        <div className="flex flex-col gap-6">
-          {visibleActivities.map((trip) => (
-            <Card key={trip.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-              <CardHeader className="border-b border-border/70 bg-muted/20">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
-                        {getTripTypeLabel(trip.type)}
-                      </Badge>
-                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {trip.location}
-                      </Badge>
-                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {trip.durationDays} day{trip.durationDays === 1 ? "" : "s"}
-                      </Badge>
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{trip.title}</CardTitle>
-                      <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                        {trip.guide ? `Guide: ${trip.guide.name}` : "No guide linked yet"}
-                      </CardDescription>
-                    </div>
+        <AdminAccordion
+          items={visibleActivities.map((trip) => ({
+            key: trip.id,
+            header: (
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
+                      {getTripTypeLabel(trip.type)}
+                    </Badge>
+                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                      {trip.location}
+                    </Badge>
+                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                      {formatDurationDays(trip.durationDays)}
+                    </Badge>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {trip.categories.slice(0, 3).map((category) => (
-                      <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
-                        {TRIP_CATEGORY_LABELS[category] ?? category}
-                      </Badge>
-                    ))}
+                  <div>
+                    <CardTitle className="text-xl">{trip.title}</CardTitle>
+                    <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      {trip.guide ? `Guide: ${trip.guide.name}` : "No guide linked yet"}
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <AdminTripForm
-                  trip={trip}
-                  guides={guides}
-                  slots={trip.slots.map(toSlotItem)}
-                  supplemental={{
-                    pickup: trip.tripLocation?.pickup ?? "",
-                    drop: trip.tripLocation?.drop ?? "",
-                    inclusions: trip.inclusions.filter(i => i.included).map(i => i.item),
-                    exclusions: trip.inclusions.filter(i => !i.included).map(i => i.item),
-                    highlights: trip.highlights.map(h => h.text),
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            ),
+            children: (
+              <AdminTripForm
+                trip={trip}
+                guides={guides}
+                slots={trip.slots.map(toSlotItem)}
+                supplemental={{
+                  pickup: trip.tripLocation?.pickup ?? "",
+                  drop: trip.tripLocation?.drop ?? "",
+                  inclusions: trip.inclusions.filter(i => i.included).map(i => i.item),
+                  exclusions: trip.inclusions.filter(i => !i.included).map(i => i.item),
+                  highlights: trip.highlights.map(h => h.text),
+                }}
+              />
+            ),
+          }))}
+        />
         )}
 
         {totalPages > 1 ? (

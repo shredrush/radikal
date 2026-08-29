@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { toBookingCardData, toBookingDisplayStatus } from "@/lib/booking-card";
+import { toBookingCardData } from "@/lib/booking-card";
+import { completePastBookings } from "@/lib/booking-completion";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
 
   try {
     const now = new Date();
+    await completePastBookings(now);
     const [bookings, reviews] = await Promise.all([
       prisma.booking.findMany({
         where: { userId: session.user.id },
@@ -63,7 +65,7 @@ export async function GET(request: Request) {
 
     const items = bookings
       .filter((booking) => {
-        const completed = toBookingDisplayStatus(booking, now) === "COMPLETED";
+        const completed = booking.status === "COMPLETED";
         return kind === "completed" ? completed : !completed;
       })
       .map((booking) =>

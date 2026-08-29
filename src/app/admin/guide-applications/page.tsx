@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApproveGuideButton, RejectGuideButton } from "@/components/admin/review-guide-application-buttons";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { formatLongDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,7 @@ export default async function AdminGuideApplicationsPage() {
                     ) : (
                       <CardDescription className="text-sm text-muted-foreground">
                         {application.reviewedAt
-                          ? `Reviewed ${application.reviewedAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
+                          ? `Reviewed ${formatLongDate(application.reviewedAt)}`
                           : ""}
                         {application.reviewedBy?.name ? ` by ${application.reviewedBy.name}` : ""}
                       </CardDescription>

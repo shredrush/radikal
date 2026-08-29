@@ -57,6 +57,8 @@ export function toSupportBookingListItem(booking: {
   user: { name: string | null; email: string; username: string | null };
   cancelledBy: { name: string | null } | null;
 }): SupportBookingListItem {
+  // The status is read straight from the DB: past CONFIRMED bookings are
+  // persisted as COMPLETED by lib/booking-completion.ts before the list is read.
   return {
     id: booking.id,
     status: booking.status,
@@ -124,18 +126,6 @@ export function toSupportMessageViews(
     isMine: message.senderId === currentUserId,
     createdAt: message.createdAt.toISOString(),
   }));
-}
-
-const messageTimeFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-export function formatSupportMessageTime(iso: string) {
-  const date = new Date(iso);
-  return messageTimeFormatter.format(date);
 }
 
 export type SupportChatListItem = {

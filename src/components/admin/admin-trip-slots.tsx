@@ -14,18 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { parseSlotInteger } from "@/lib/validations/slots";
+import type { SlotItem } from "@/lib/slot-item";
+import { pluralize } from "@/lib/format";
 
-export type SlotItem = {
-  id: string;
-  /** YYYY-MM-DD, used as the value of `<input type="date">`. */
-  dateInput: string;
-  /** Pre-formatted, timezone-stable label shown to the admin. */
-  dateLabel: string;
-  capacity: number;
-  booked: number;
-  reserved: number;
-  spotsLeft: number;
-};
+export type { SlotItem };
 
 const inputClassName =
   "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
@@ -60,7 +52,7 @@ export function SlotsManager({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Dates &amp; availability</h3>
         <span className="text-xs text-muted-foreground">
-          {slots.length} date{slots.length === 1 ? "" : "s"}
+          {pluralize(slots.length, "date")}
         </span>
       </div>
 
@@ -280,7 +272,7 @@ function SlotRow({
         >
           {slot.spotsLeft === 0
             ? "Full"
-            : `${slot.spotsLeft} spot${slot.spotsLeft === 1 ? "" : "s"} left`}
+            : `${pluralize(slot.spotsLeft, "spot")} left`}
         </Badge>
         <span className="text-xs text-muted-foreground">
           {slot.booked} booked{slot.reserved > 0 ? ` · ${slot.reserved} reserved` : ""} / {slot.capacity}

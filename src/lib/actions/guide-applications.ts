@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isSafeHttpUrl, isValidUsername, sanitizeText } from "@/lib/sanitize";
+import { slugify } from "@/lib/format";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -169,24 +170,8 @@ export async function submitGuideApplicationAction(
   return { success: true };
 }
 
-/** Turn a guide's display name into a URL-safe, valid guide slug. */
-function slugifyGuideName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 30)
-    .replace(/^-+|-+$/g, "");
-}
-
-/**
- * Produce a guide slug that is unique and passes the same rules the admin guide
- * form enforces. Falls back to a random suffix when the base is invalid, taken,
- * or reserved.
- */
 async function uniqueGuideSlug(name: string): Promise<string> {
-  const base = slugifyGuideName(name) || "guide";
+  const base = slugify(name, 30) || "guide";
   let slug = isValidUsername(base) ? base : `${base.slice(0, 24)}-${Math.random().toString(36).slice(2, 6)}`;
   let attempts = 0;
 

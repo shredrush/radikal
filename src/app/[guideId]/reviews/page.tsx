@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { getDisplayName } from "@/lib/profile-initials";
+import { formatMonthYear } from "@/lib/format";
 
 const getGuideReviews = unstable_cache(
   async (slug: string) => {
@@ -19,6 +20,7 @@ const getGuideReviews = unstable_cache(
           select: {
             id: true,
             comment: true,
+            createdAt: true,
             user: { select: { name: true } },
             trip: { select: { slug: true, title: true } },
           },
@@ -87,14 +89,19 @@ export default async function GuideReviewsPage({ params }: { params: Promise<{ g
                 <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
                   <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
                   <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
-                  {review.trip ? (
-                    <Link
-                      href={`/trips/${review.trip.slug}`}
-                      className="mt-2 inline-block text-xs font-medium text-muted-foreground underline underline-offset-2 transition hover:text-foreground"
-                    >
-                      {review.trip.title}
-                    </Link>
-                  ) : null}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    {review.trip ? (
+                      <Link
+                        href={`/trips/${review.trip.slug}`}
+                        className="font-medium underline underline-offset-2 transition hover:text-foreground"
+                      >
+                        {review.trip.title}
+                      </Link>
+                    ) : null}
+                    <span>
+                      {formatMonthYear(review.createdAt)}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>

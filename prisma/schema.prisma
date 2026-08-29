@@ -48,11 +48,12 @@ enum TripCategory {
   BEGINNER_FRIENDLY
 }
 
-// Booking status flow is strictly PENDING -> CONFIRMED -> CANCELLED.
+// Booking status flow is PENDING -> CONFIRMED -> CANCELLED.
 // A booking becomes CONFIRMED only after payment is confirmed
 // (Razorpay webhook in production; a dummy payment action for this MVP).
-// A CONFIRMED booking whose trip dates have fully passed is treated as
-// COMPLETED (derived from the slot date, not written back to the DB).
+// A CONFIRMED booking whose trip dates have fully passed is persisted as
+// COMPLETED (lib/booking-completion.ts flips it lazily when a booking list is
+// read, since there is no background scheduler in this app).
 enum BookingStatus {
   PENDING
   CONFIRMED

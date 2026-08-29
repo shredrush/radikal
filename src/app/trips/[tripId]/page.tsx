@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -12,18 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Price } from "@/components/currency/price";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { BookingBar } from "@/components/trips/booking-bar";
 import { prisma } from "@/lib/prisma";
 import type { TripCategory } from "@/generated/prisma/client";
-import { formatTripDateRange, isSlotCompleted } from "@/lib/trip-dates";
-import { getTripCardImage, normalizeTripImagePath } from "@/lib/trip-card-image";
+import { formatTripDateRange, formatDurationDays, isSlotCompleted } from "@/lib/trip-dates";
+import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
 import { auth } from "@/lib/auth";
 import { getDisplayName } from "@/lib/profile-initials";
+import { TripCard } from "@/components/trips/trip-card";
+import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { formatMonthYear } from "@/lib/format";
 
 // Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
@@ -116,17 +117,6 @@ const getSimilarTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
-
 function getSlotOccupancyPercent(slot: { capacity: number; booked: number; reserved: number }) {
   if (slot.capacity <= 0) {
     return 100;
@@ -203,7 +193,7 @@ export default async function TripDetailPage({
                 <div className="flex flex-wrap items-start gap-2">
                   {trip.categories.map((category) => (
                     <span key={category} className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                      {CATEGORY_LABELS[category] ?? category}
+                      {TRIP_CATEGORY_LABELS[category] ?? category}
                     </span>
                   ))}
                 </div>
@@ -239,7 +229,7 @@ export default async function TripDetailPage({
               <div className="grid gap-3 grid-cols-2">
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Duration</p>
-                  <p className="mt-1 text-sm font-medium text-foreground">{trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}</p>
+                   <p className="mt-1 text-sm font-medium text-foreground">{formatDurationDays(trip.durationDays)}</p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Group size</p>
@@ -467,6 +457,9 @@ export default async function TripDetailPage({
                         <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
                           <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
                           <p className="mt-2 text-muted-foreground">{review.comment}</p>
+                          <p className="mt-2 text-xs text-muted-foreground/80">
+                            {formatMonthYear(review.createdAt)}
+                          </p>
                         </li>
                       ) : (
                         <li
@@ -505,45 +498,7 @@ export default async function TripDetailPage({
           {similarTrips.length === 0 ? null : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {similarTrips.map((trip) => (
-                <Link key={trip.id} href={`/trips/${trip.slug}`} className="block">
-                  <Card className="flex h-full min-h-[360px] flex-col gap-0 overflow-hidden rounded-[1.1rem] border-0 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 sm:min-h-[420px]">
-                    <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[220px]">
-                      <Image
-                        src={getTripCardImage(trip)}
-                        alt={trip.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
-                    </div>
-
-                    <div className="flex flex-1 flex-col justify-between gap-2 p-4">
-                      <div className="space-y-1.5">
-                        <h3 className="text-base font-semibold tracking-tight text-foreground">{trip.title}</h3>
-                        <p className="truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5">{trip.location}</p>
-                      </div>
-
-                      <div className="mt-1 flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                        {trip.categories.map((category) => (
-                          <Badge key={category} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-1 py-0.15 text-[0.42rem] font-medium leading-3 text-foreground/80 sm:text-[0.5rem]">
-                            {CATEGORY_LABELS[category] ?? category}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-                        <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
-                          {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
-                        </span>
-                        <Price
-                          className="ml-auto shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                          amount={trip.priceInRupees}
-                        />
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
+                <TripCard key={trip.id} trip={trip} />
               ))}
             </div>
           )}

@@ -5,6 +5,7 @@ import { MapPin } from "lucide-react";
 import { Price } from "@/components/currency/price";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getTripCardImage, type TripCardImageTrip } from "@/lib/trip-card-image";
+import { formatDurationDays } from "@/lib/trip-dates";
 
 export type WishlistTrip = TripCardImageTrip & {
   id: string;
@@ -48,7 +49,7 @@ export function WishlistCard({ trip }: { trip: WishlistTrip }) {
           </div>
           <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-2">
             <span className="text-xs text-muted-foreground">
-              {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
+              {formatDurationDays(trip.durationDays)}
             </span>
             <Price
               className="font-heading text-base font-semibold text-foreground"

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
+import { formatMonthYear } from "@/lib/format";
 
 const FEATURED_TRIP_SLUGS = [
   "miyar-valley-trek",
@@ -84,6 +85,7 @@ const getHomeReviews = unstable_cache(
             select: {
               tripId: true,
               comment: true,
+              createdAt: true,
               user: { select: { name: true } },
               trip: { select: { title: true, slug: true } },
             },
@@ -135,6 +137,7 @@ export default async function Home() {
           trip: review.trip?.title ?? "Radikal experience",
           slug: review.trip?.slug,
           quote: review.comment,
+          date: formatMonthYear(review.createdAt),
         }))}
       />
     </div>

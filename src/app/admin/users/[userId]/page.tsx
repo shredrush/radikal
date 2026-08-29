@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminUserForm } from "@/components/admin/admin-user-form";
+import { formatLongDate, pluralize } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -148,10 +149,10 @@ export default async function AdminUserDetailPage({
               <CardDescription className="space-y-1">
                 <span className="block">{user.username ? `@${user.username} · ` : ""}{user.email}</span>
                 <span className="block">
-                  Joined {user.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                  {" · "}{user._count.bookings} booking{user._count.bookings === 1 ? "" : "s"}
-                  {" · "}{user._count.reviews} review{user._count.reviews === 1 ? "" : "s"}
-                  {" · "}{user._count.guideApplications} application{user._count.guideApplications === 1 ? "" : "s"}
+                  Joined {formatLongDate(user.createdAt)}
+                  {" · "}{pluralize(user._count.bookings, "booking")}
+                  {" · "}{pluralize(user._count.reviews, "review")}
+                  {" · "}{pluralize(user._count.guideApplications, "application")}
                 </span>
                 {user.guide ? (
                   <span className="block">
@@ -183,7 +184,7 @@ export default async function AdminUserDetailPage({
               <CardDescription>
                 {activityLogs.length === 200
                   ? "Latest 200 events, newest first."
-                  : `${activityLogs.length} event${activityLogs.length === 1 ? "" : "s"}, newest first.`}
+                  : `${pluralize(activityLogs.length, "event")}, newest first.`}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">

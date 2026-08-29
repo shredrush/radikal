@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import {
@@ -12,9 +11,7 @@ import {
   Home,
   Leaf,
   Lightbulb,
-  MapPin,
   Mountain,
-  ShieldCheck,
   Sparkles,
   Sprout,
   Users,
@@ -22,8 +19,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { getGuideImage } from "@/lib/guide-images";
 import { auth } from "@/lib/auth";
+import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
+import { GuideCard } from "@/components/guides/guide-card";
 
 export const metadata: Metadata = {
   title: "Community | Radikal",
@@ -151,7 +149,7 @@ export default async function CommunityPage() {
         <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="p-6 sm:p-8 lg:p-10">
             <div className="flex w-full flex-col items-center gap-4 text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300">
+              <div className={`inline-flex items-center gap-2 rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>
                 <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
               </div>
@@ -251,7 +249,7 @@ export default async function CommunityPage() {
           <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
           <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col gap-4 pb-6 sm:pb-8">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <div className={`inline-flex w-fit items-center gap-2 rounded-full border ${ACCENT_PILL_EMERALD} px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em]`}>
               <Leaf className="h-3.5 w-3.5" />
               Meet the guides
             </div>
@@ -267,71 +265,20 @@ export default async function CommunityPage() {
 
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {guides.map((guide) => (
-              <Link key={guide.id} href={`/${guide.slug}`} className="group block">
-                <article className="flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-orange-100 bg-card/95 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.25)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.3)] dark:border-orange-500/15 dark:hover:border-emerald-500/30">
-                  <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
-                    <Image
-                      src={getGuideImage(guide)}
-                      alt={guide.name}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 20vw"
-                    />
-                  </div>
-
-                  <div className="space-y-4 p-4">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-heading text-xl font-semibold text-foreground">{guide.name}</h3>
-                        <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[0.6rem] font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-                          <ShieldCheck className="h-3 w-3" />
-                          Vetted
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span>{guide.location}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      {guide.bio.length > 120 ? `${guide.bio.slice(0, 120)}...` : guide.bio}
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      {guide.certifications.slice(0, 2).map((certification) => (
-                        <span
-                          key={certification.id}
-                          className="rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[0.65rem] font-medium text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300"
-                        >
-                          {certification.title}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="border-t border-emerald-100 pt-3 dark:border-emerald-500/15">
-                      <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
-                        Languages
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {guide.languages.map((language) => (
-                          <span
-                            key={`${guide.id}-${language}`}
-                            className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                          >
-                            {language}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
-                    View public profile
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </div>
-                </article>
-              </Link>
+              <GuideCard
+                key={guide.id}
+                variant="community"
+                guide={{
+                  slug: guide.slug,
+                  name: guide.name,
+                  location: guide.location,
+                  photo: guide.photo,
+                  photos: guide.photos,
+                  bio: guide.bio,
+                  certifications: guide.certifications.map((certification) => certification.title),
+                  languages: guide.languages,
+                }}
+              />
             ))}
           </div>
 

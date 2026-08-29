@@ -13,6 +13,7 @@ import {
 } from "@/components/trips/sport-filters";
 import { FaqSection } from "@/components/trips/faq-section";
 import { SportIcon } from "@/components/trips/sport-icon";
+import { pluralize } from "@/lib/format";
 
 // The filter UI (sport/travel style/location/date) is applied in memory below,
 // so every filter combination reuses this single cached query instead of
@@ -180,7 +181,7 @@ export default async function TripsPage({
                           <SportIcon sport={group.id} className="size-5" />
                           {group.label}
                         </h2>
-                        <p className="text-sm text-muted-foreground">{group.trips.length} trip{group.trips.length === 1 ? "" : "s"}</p>
+                        <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                       </div>
                     </div>
                     <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
@@ -216,7 +217,7 @@ export default async function TripsPage({
                               <SportIcon sport={group.id} className="size-5" />
                               {group.label}
                             </h3>
-                            <p className="text-sm text-muted-foreground">{group.trips.length} trip{group.trips.length === 1 ? "" : "s"}</p>
+                            <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                           </div>
                         </div>
                         <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>

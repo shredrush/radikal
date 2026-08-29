@@ -1,11 +1,4 @@
-// `Intl.DateTimeFormat` construction is comparatively expensive; reuse a single
-// module-level formatter instead of allocating one per call (these helpers are
-// called once per trip in list views).
-const dateFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
+import { formatShortDate } from "@/lib/format";
 
 export function getTripDateRange(startDate: Date | string, durationDays: number) {
   const start = new Date(startDate);
@@ -19,10 +12,10 @@ export function formatTripDateRange(startDate: Date | string, durationDays: numb
   const { startDate: start, endDate: end } = getTripDateRange(startDate, durationDays);
 
   if (durationDays <= 1) {
-    return dateFormatter.format(start);
+    return formatShortDate(start);
   }
 
-  return `${dateFormatter.format(start)} – ${dateFormatter.format(end)}`;
+  return `${formatShortDate(start)} – ${formatShortDate(end)}`;
 }
 
 /**
@@ -32,6 +25,10 @@ export function formatTripDateRange(startDate: Date | string, durationDays: numb
  */
 export function isSlotCompleted(slotDate: Date | string, now = new Date()): boolean {
   return new Date(slotDate) < now;
+}
+
+export function formatDurationDays(durationDays: number) {
+  return `${durationDays} ${durationDays === 1 ? "day" : "days"}`;
 }
 
 /**

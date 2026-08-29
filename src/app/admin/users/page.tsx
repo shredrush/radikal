@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { formatLongDate, pluralize } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -203,9 +204,9 @@ export default async function AdminUsersPage({
                       {user.username ? `@${user.username} · ` : ""}{user.email}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Joined {user.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                      {" · "}{user._count.bookings} booking{user._count.bookings === 1 ? "" : "s"}
-                      {" · "}{user._count.activityLogs} activity event{user._count.activityLogs === 1 ? "" : "s"}
+                      Joined {formatLongDate(user.createdAt)}
+                      {" · "}{pluralize(user._count.bookings, "booking")}
+                      {" · "}{pluralize(user._count.activityLogs, "activity event")}
                     </p>
                   </div>
 
@@ -225,7 +226,7 @@ export default async function AdminUsersPage({
 
         <p className="text-center text-xs text-muted-foreground">
           <UsersIcon className="mr-1 inline h-3.5 w-3.5" />
-          Showing {users.length} of {totalMatches} account{totalMatches === 1 ? "" : "s"}
+          Showing {users.length} of {totalMatches} {pluralize(totalMatches, "account")}
         </p>
 
         {totalPages > 1 ? (

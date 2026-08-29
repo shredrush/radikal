@@ -1,4 +1,5 @@
-import { formatSupportMessageTime, type SupportMessageView } from "@/lib/support";
+import { type SupportMessageView } from "@/lib/support";
+import { formatMessageTime } from "@/lib/format";
 
 export function SupportMessageList({ messages }: { messages: SupportMessageView[] }) {
   return (
@@ -21,7 +22,7 @@ export function SupportMessageList({ messages }: { messages: SupportMessageView[
                 message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"
               }`}
             >
-              {formatSupportMessageTime(message.createdAt)}
+              {formatMessageTime(message.createdAt)}
             </p>
           </div>
         </div>

@@ -1,19 +1,8 @@
-export const CUSTOM_TRIP_SPORTS: { value: string; label: string }[] = [
-  { value: "TREK", label: "Hiking & Trekking" },
-  { value: "BIKE", label: "Cycling" },
-  { value: "SNOWBOARD", label: "Snowboarding" },
-  { value: "SKI", label: "Skiing" },
-  { value: "ROCKCLIMB", label: "Rock Climbing" },
-  { value: "EXPEDITION", label: "Summit Expedition" },
-  { value: "YOGA", label: "Yoga & Meditation" },
-];
-
-const SPORT_LABELS: Record<string, string> = Object.fromEntries(
-  CUSTOM_TRIP_SPORTS.map((sport) => [sport.value, sport.label]),
-);
+import { ACTIVITY_TYPE_LABELS } from "@/lib/trip-metadata";
+import { formatShortDate } from "@/lib/format";
 
 export function sportLabel(value: string) {
-  return SPORT_LABELS[value] ?? value;
+  return ACTIVITY_TYPE_LABELS[value] ?? value;
 }
 
 export const CUSTOM_TRIP_GROUP_LABELS: Record<string, string> = {
@@ -70,32 +59,15 @@ export type CustomTripRequestDetail = CustomTripRequestListItem & {
   messages: CustomTripMessageView[];
 };
 
-const dateFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
 export function formatCustomTripDateRange(startDate: string | Date, endDate: string | Date) {
-  const start = dateFormatter.format(new Date(startDate));
-  const end = dateFormatter.format(new Date(endDate));
+  const start = formatShortDate(startDate);
+  const end = formatShortDate(endDate);
 
   if (start === end) {
     return start;
   }
 
   return `${start} – ${end}`;
-}
-
-const messageTimeFormatter = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-export function formatCustomTripMessageTime(iso: string) {
-  return messageTimeFormatter.format(new Date(iso));
 }
 
 /**

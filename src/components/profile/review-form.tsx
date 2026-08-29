@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Star } from "lucide-react";
+import { pluralize } from "@/lib/format";
 
 import {
   createReviewAction,
@@ -81,7 +82,7 @@ export function ReviewForm({
                   key={value}
                   type="button"
                   onClick={() => setRating(value)}
-                  aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                  aria-label={`${value} ${pluralize(value, "star")}`}
                   aria-pressed={rating === value}
                   className="text-muted-foreground transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                 >

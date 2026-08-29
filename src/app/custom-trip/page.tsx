@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
+import { ACCENT_PILL } from "@/lib/card-styles";
 import { CustomTripForm } from "@/components/custom-trips/custom-trip-form";
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default async function CustomTripPage() {
         {/* Hero */}
         <div className="rounded-[1.5rem] border border-border/80 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-8">
           <div className="flex flex-col gap-3">
-            <p className="inline-flex w-fit items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300">
+            <p className={`inline-flex w-fit items-center gap-1.5 rounded-full border ${ACCENT_PILL} px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.24em]`}>
               <Sparkles className="h-3.5 w-3.5" />
               Bespoke trips
             </p>

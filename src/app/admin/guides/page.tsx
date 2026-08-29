@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminGuideForm } from "@/components/admin/admin-guide-form";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminAccordion } from "@/components/admin/admin-accordion";
+import { pluralize } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -53,64 +55,63 @@ export default async function AdminGuidesPage() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
-          {guides.map((guide) => (
-            <Card key={guide.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-              <CardHeader className="border-b border-border/70 bg-muted/20">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
-                        {guide.experienceYears} yrs
-                      </Badge>
-                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        {guide.location}
-                      </Badge>
-                      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                        /{guide.slug}
-                      </Badge>
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{guide.name}</CardTitle>
-                      <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                        {guide._count.trips} trip{guide._count.trips === 1 ? "" : "s"} linked ·{" "}
-                        {guide.certifications.length} certification{guide.certifications.length === 1 ? "" : "s"}
-                      </CardDescription>
-                    </div>
+        <AdminAccordion
+          items={guides.map((guide) => ({
+            key: guide.id,
+            header: (
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground">
+                      {guide.experienceYears} yrs
+                    </Badge>
+                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                      {guide.location}
+                    </Badge>
+                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                      /{guide.slug}
+                    </Badge>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {guide.languages.slice(0, 4).map((language) => (
-                      <Badge key={language} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
-                        {language}
-                      </Badge>
-                    ))}
+                  <div>
+                    <CardTitle className="text-xl">{guide.name}</CardTitle>
+                    <CardDescription className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      {pluralize(guide._count.trips, "trip")} linked ·{" "}
+                      {pluralize(guide.certifications.length, "certification")}
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <AdminGuideForm
-                  guide={{
-                    id: guide.id,
-                    name: guide.name,
-                    slug: guide.slug,
-                    bio: guide.bio,
-                    photo: guide.photo,
-                    photos: guide.photos,
-                    location: guide.location,
-                    experienceYears: guide.experienceYears,
-                    languages: guide.languages,
-                    certifications: guide.certifications.map((cert) => ({
-                      title: cert.title,
-                      issuingBody: cert.issuingBody,
-                      yearIssued: cert.yearIssued,
-                      credentialUrl: cert.credentialUrl,
-                    })),
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <div className="flex flex-wrap gap-2">
+                  {guide.languages.slice(0, 4).map((language) => (
+                    <Badge key={language} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
+                      {language}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ),
+            children: (
+              <AdminGuideForm
+                guide={{
+                  id: guide.id,
+                  name: guide.name,
+                  slug: guide.slug,
+                  bio: guide.bio,
+                  photo: guide.photo,
+                  photos: guide.photos,
+                  location: guide.location,
+                  experienceYears: guide.experienceYears,
+                  languages: guide.languages,
+                  certifications: guide.certifications.map((cert) => ({
+                    title: cert.title,
+                    issuingBody: cert.issuingBody,
+                    yearIssued: cert.yearIssued,
+                    credentialUrl: cert.credentialUrl,
+                  })),
+                }}
+              />
+            ),
+          }))}
+        />
       </div>
     </div>
   );

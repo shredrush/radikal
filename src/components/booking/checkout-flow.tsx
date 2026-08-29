@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/currency/price";
+import { formatDurationDays } from "@/lib/trip-dates";
 
 type Trip = {
   id: string;
@@ -131,8 +132,7 @@ export function CheckoutFlow({
           {trip.title}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {trip.location} · {trip.durationDays}{" "}
-          {trip.durationDays === 1 ? "day" : "days"}
+          {trip.location} · {formatDurationDays(trip.durationDays)}
         </p>
       </div>
 

@@ -11,23 +11,13 @@ import {
   type KeyboardEvent,
 } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
+import { CTA_PILL } from "@/lib/card-styles";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
+import { TripCard } from "@/components/trips/trip-card";
+import { GuideCard } from "@/components/guides/guide-card";
 
 type TripCardItem = {
   id: string;
@@ -56,6 +46,7 @@ type Testimonial = {
   trip: string;
   slug?: string;
   quote: string;
+  date?: string;
 };
 
 function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: readonly string[]) {
@@ -422,48 +413,8 @@ export function SearchableTrips({
                  No trips match your search yet. Try a broader destination or trip name.
                </p>
              ) : null}
-             {visibleTrips.map((trip) => (
-              <Link key={trip.id} href={`/trips/${trip.slug}`} className="block h-full">
-              <Card
-                className="flex h-[360px] min-w-0 flex-col gap-0 overflow-hidden rounded-[1rem] border border-orange-100/50 bg-background/95 py-0 shadow-[0_20px_60px_-35px_rgba(249,115,22,0.125)] transition-transform duration-200 hover:-translate-y-1 hover:border-emerald-200/50 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.15)] dark:border-orange-500/10 dark:hover:border-emerald-500/15 sm:h-[400px]"
-              >
-                <div className="relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] sm:min-h-[200px]">
-                  <Image
-                    src={getTripCardImage(trip)}
-                    alt={trip.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-black/24 to-black/24" />
-                </div>
-                <div className="flex flex-1 flex-col justify-between gap-1 p-2.5 sm:p-3">
-                  <div className="space-y-1.5">
-                    <div className="space-y-1">
-                      <h2 className="text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground">{trip.title}</h2>
-                      <p className="text-sm text-muted-foreground">{trip.location}</p>
-                    </div>
-                    <div className="flex min-h-[1.35rem] flex-wrap content-start gap-1">
-                      {trip.categories.map((category) => (
-                        <Badge
-                          key={category}
-                          variant="secondary"
-                          className="!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-center text-[0.72rem] leading-4 font-medium text-foreground/80 sm:text-[0.8rem]"
-                        >
-                          {CATEGORY_LABELS[category] ?? category}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-auto flex justify-end">
-                    <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
-                      {trip.durationDays} {trip.durationDays === 1 ? "day" : "days"}
-                    </span>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+              {visibleTrips.map((trip) => (
+                <TripCard key={trip.id} size="compact" trip={trip} />
               ))}
             </div>
           </div>
@@ -471,7 +422,7 @@ export function SearchableTrips({
          <div className="mt-6 flex justify-center">
             <Button
               size="sm"
-              className="rounded-full bg-black px-4 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
+              className={`${CTA_PILL} px-4`}
               nativeButton={false}
               render={<Link href="/trips" />}
             >
@@ -496,43 +447,14 @@ export function SearchableTrips({
 
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guides.map((guide) => (
-                <Link key={guide.slug} href={`/${guide.slug}`} className="block">
-                   <Card className="flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border border-orange-100/50 bg-card/95 py-0 shadow-[0_16px_45px_-28px_rgba(249,115,22,0.125)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200/50 hover:shadow-[0_30px_55px_-25px_rgba(16,185,129,0.15)] dark:border-orange-500/10 dark:hover:border-emerald-500/15">
-                    <CardHeader className="gap-0 p-0 pb-0 px-0">
-                      <div className="flex flex-col items-center text-center">
-                        <Image
-                          src={guide.photo}
-                          alt={guide.name}
-                          width={400}
-                          height={320}
-                          className="h-32 w-full rounded-b-[0.7rem] rounded-t-[0.85rem] object-cover shadow-sm sm:h-36 lg:h-40"
-                        />
-                        <div className="w-full px-2 pb-3 pt-2">
-                          <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                          <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.location}</p>
-                          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                            {guide.certifications.map((certification) => (
-                              <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.62vw,0.72rem)] font-small text-foreground/90">
-                                {certification}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2 text-[0.68rem] font-semibold text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground sm:text-xs">
-                      View public profile
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </div>
-                  </Card>
-                </Link>
+                <GuideCard key={guide.slug} guide={guide} />
               ))}
             </div>
 
             <div className="mt-6 flex justify-center">
               <Button
                 size="sm"
-                className="rounded-full bg-black px-5 text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                className={`${CTA_PILL} px-5`}
                 nativeButton={false}
                 render={<Link href="/become-a-guide" />}
               >
