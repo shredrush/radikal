@@ -4,6 +4,7 @@
 // server" file because it contains plain (non-action) functions that would
 // otherwise be rejected by Next.js as non-async server actions.
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
+import { MEDIA_LIMITS } from "@/lib/media-constants";
 
 export const validTypes = [
   "TREK",
@@ -29,18 +30,25 @@ export function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
 }
 
-function parseImages(value: string) {
+/**
+ * Parse a media list that may arrive as a legacy newline-separated textarea
+ * value or as multiple hidden inputs from the MediaUploader. Entries are
+ * sanitized and deduped but NOT capped here — over-limit submissions must be
+ * rejected by `validateTripFields` so existing media is never silently
+ * truncated on re-save.
+ */
+export function parseMediaList(values: FormDataEntryValue[]) {
   return Array.from(
     new Set(
-      value
-        .split(/\r?\n/)
+      values
+        .flatMap((value) => value.toString().split(/\r?\n/))
         .map((item) => sanitizeText(item, { maxLength: 2048 }))
         .filter((item) => isSafeImageSource(item)),
     ),
   );
 }
 
-function parseCategories(values: FormDataEntryValue[]) {
+export function parseCategories(values: FormDataEntryValue[]) {
   return Array.from(
     new Set(
       values
@@ -53,7 +61,7 @@ function parseCategories(values: FormDataEntryValue[]) {
   );
 }
 
-function parseList(value: string) {
+export function parseList(value: string) {
   return Array.from(
     new Set(
       value
@@ -75,6 +83,7 @@ export type TripFields = {
   maxGroupSize: number;
   guideId: string;
   images: string[];
+  videos: string[];
   categories: (typeof validCategories)[number][];
   pickup: string;
   drop: string;
@@ -97,7 +106,8 @@ export function readTripFields(formData: FormData): TripFields {
     durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
     maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
     guideId: asString(formData.get("guideId")),
-    images: parseImages(asString(formData.get("images"))),
+    images: parseMediaList(formData.getAll("images")),
+    videos: parseMediaList(formData.getAll("videos")),
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
@@ -130,6 +140,15 @@ export function validateTripFields(fields: TripFields): TripFields {
 
   if (fields.priceInRupees < 0 || fields.durationDays < 1 || fields.maxGroupSize < 1) {
     throw new Error("Price must be >= 0 and duration/group size must be at least 1.");
+  }
+
+  if (
+    fields.images.length > MEDIA_LIMITS.trip.images ||
+    fields.videos.length > MEDIA_LIMITS.trip.videos
+  ) {
+    throw new Error(
+      `Trips can have at most ${MEDIA_LIMITS.trip.images} photos and ${MEDIA_LIMITS.trip.videos} videos.`,
+    );
   }
 
   return fields;

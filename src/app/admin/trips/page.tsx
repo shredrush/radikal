@@ -63,6 +63,7 @@ export default async function AdminTripsPage({
     maxGroupSize: draft.maxGroupSize,
     categories: draft.categories,
     images: draft.images,
+    videos: draft.videos,
     pickup: draft.pickup,
     drop: draft.drop,
     inclusions: draft.inclusions,

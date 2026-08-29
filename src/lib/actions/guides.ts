@@ -7,7 +7,13 @@ import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
 import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
-import { isValidUsername, isSafeHttpUrl, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import { MEDIA_LIMITS } from "@/lib/media-constants";
+import {
+  assertValidStoredMedia,
+  parseGuideMediaUrls,
+  removeStoredMedia,
+} from "@/lib/media";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -64,12 +70,8 @@ function parseCertifications(value: string): CertificationInput[] {
 }
 
 function readGuideFields(formData: FormData) {
-  const photos = ["photo1", "photo2", "photo3"]
-    .map((key) => {
-      const raw = asString(formData.get(key));
-      return raw && isSafeHttpUrl(raw) ? raw : null;
-    })
-    .filter((value): value is string => value !== null);
+  const photos = parseGuideMediaUrls(formData, "images");
+  const videos = parseGuideMediaUrls(formData, "videos");
   // Keep `photo` as the primary image for backwards-compatible consumers
   // (e.g. the community roster) while `photos` powers the public profile.
   const photo = photos[0] ?? null;
@@ -79,11 +81,20 @@ function readGuideFields(formData: FormData) {
     bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
     photo,
     photos,
+    videos,
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
     languages: parseLanguages(asString(formData.get("languages"))),
     certifications: parseCertifications(asString(formData.get("certifications"))),
   };
+}
+
+/** Authoritative, parallel size/type/duration validation of guide media. */
+async function assertValidGuideMedia(photos: string[], videos: string[]) {
+  await Promise.all([
+    assertValidStoredMedia("images", photos),
+    assertValidStoredMedia("videos", videos),
+  ]);
 }
 
 function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
@@ -93,6 +104,15 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
 
   if (fields.experienceYears < 0) {
     throw new Error("Experience years cannot be negative.");
+  }
+
+  if (
+    fields.photos.length > MEDIA_LIMITS.guide.images ||
+    fields.videos.length > MEDIA_LIMITS.guide.videos
+  ) {
+    throw new Error(
+      `Guides can have at most ${MEDIA_LIMITS.guide.images} photos and ${MEDIA_LIMITS.guide.videos} videos.`,
+    );
   }
 
   return fields;
@@ -120,6 +140,7 @@ export async function createGuideAction(formData: FormData) {
 
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
+  await assertValidGuideMedia(fields.photos, fields.videos);
 
   // Guides are accounts, so creating a guide requires linking an existing
   // Radikal account and giving it a unique public username (its URL handle).
@@ -204,6 +225,7 @@ export async function updateGuideAction(formData: FormData) {
   const guideId = asString(formData.get("guideId"));
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
+  await assertValidGuideMedia(fields.photos, fields.videos);
 
   if (!guideId) {
     throw new Error("Missing guide id.");
@@ -256,7 +278,13 @@ export async function deleteGuideAction(guideId: string) {
 
   const guide = await prisma.guide.findUnique({
     where: { id: guideId },
-    select: { id: true, userId: true, user: { select: { username: true, role: true } } },
+    select: {
+      id: true,
+      userId: true,
+      photos: true,
+      videos: true,
+      user: { select: { username: true, role: true } },
+    },
   });
 
   if (!guide) {
@@ -302,6 +330,10 @@ export async function deleteGuideAction(guideId: string) {
     label: "Guide profile removed by an admin",
     metadata: { guideId: guide.id, roleReset: guide.user.role === "GUIDE" },
   });
+
+  // Storage objects are not cascaded by the DB delete — remove the guide's
+  // media best-effort after the transaction commits.
+  await removeStoredMedia([...(guide.photos ?? []), ...(guide.videos ?? [])]);
 
   revalidateGuidePages(username);
   revalidatePath("/admin/users");

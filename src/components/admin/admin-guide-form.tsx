@@ -8,6 +8,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DeleteGuideButton } from "@/components/admin/delete-guide-button";
+import { MediaUploader } from "@/components/media/media-uploader";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -24,11 +25,13 @@ export type GuideCertification = {
 
 export type GuideFormData = {
   id: string;
+  userId: string | null;
   name: string;
   username: string | null;
   bio: string;
   photo: string | null;
   photos: string[];
+  videos: string[];
   location: string;
   experienceYears: number;
   languages: string[];
@@ -152,33 +155,18 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
           </div>
         )}
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor={isEditing ? `photo1-${guide?.id}` : "new-guide-photo1"}>Photo 1 URL</Label>
-          <input
-            id={isEditing ? `photo1-${guide?.id}` : "new-guide-photo1"}
-            name="photo1"
-            defaultValue={guide?.photos[0] ?? guide?.photo ?? ""}
-            placeholder="https://… or /path/to/image.jpg"
-            className={inputClassName}
-          />
+          <p className="text-sm font-medium">Profile media</p>
+          <p className="text-xs text-muted-foreground">
+            Up to 5 photos and 5 short videos (15s max each). The first photo becomes the profile cover.
+          </p>
         </div>
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor={isEditing ? `photo2-${guide?.id}` : "new-guide-photo2"}>Photo 2 URL</Label>
-          <input
-            id={isEditing ? `photo2-${guide?.id}` : "new-guide-photo2"}
-            name="photo2"
-            defaultValue={guide?.photos[1] ?? ""}
-            placeholder="https://… or /path/to/image.jpg (optional)"
-            className={inputClassName}
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor={isEditing ? `photo3-${guide?.id}` : "new-guide-photo3"}>Photo 3 URL</Label>
-          <input
-            id={isEditing ? `photo3-${guide?.id}` : "new-guide-photo3"}
-            name="photo3"
-            defaultValue={guide?.photos[2] ?? ""}
-            placeholder="https://… or /path/to/image.jpg (optional)"
-            className={inputClassName}
+          <MediaUploader
+            entity="guide"
+            folderKey={guide?.userId ?? "new-guide"}
+            initialImages={guide?.photos.length ? guide.photos : guide?.photo ? [guide.photo] : []}
+            initialVideos={guide?.videos}
+            imagesFieldName="photos"
           />
         </div>
         <div className="space-y-2 md:col-span-2">

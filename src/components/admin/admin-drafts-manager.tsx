@@ -19,6 +19,7 @@ export type AdminDraftData = {
   maxGroupSize: number;
   categories: string[];
   images: string[];
+  videos: string[];
   pickup: string | null;
   drop: string | null;
   inclusions: string[];
@@ -55,6 +56,7 @@ function DraftReadOnly({ draft }: { draft: AdminDraftData }) {
     });
   }
   if (draft.images.length > 0) rows.push({ label: "Images", value: draft.images.join(", ") });
+  if (draft.videos.length > 0) rows.push({ label: "Videos", value: draft.videos.join(", ") });
   if (draft.pickup) rows.push({ label: "Pickup", value: draft.pickup });
   if (draft.drop) rows.push({ label: "Drop", value: draft.drop });
   if (draft.inclusions.length > 0) rows.push({ label: "Included", value: draft.inclusions.join(", ") });

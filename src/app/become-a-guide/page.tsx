@@ -110,7 +110,11 @@ export default async function BecomeAGuidePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <GuideApplicationForm fullName={user.name} username={account.username} />
+              <GuideApplicationForm
+                fullName={user.name}
+                username={account.username}
+                userId={user.id}
+              />
             </CardContent>
           </Card>
         )}

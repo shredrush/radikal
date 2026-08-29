@@ -14,7 +14,6 @@ import {
   normalizeTravelStyleFilter,
 } from "@/components/trips/sport-filters";
 import { SportIcon } from "@/components/trips/sport-icon";
-import { pluralize } from "@/lib/format";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 
 export type TripsExplorerTrip = {
@@ -77,12 +76,12 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
   return (
     <>
       {sport === "winter" ? (
-        <SportIcon sport="snowboard" className="size-10" />
+        <SportIcon sport="snowboard" className="size-8" />
       ) : (
-        <SportIcon sport={sport} className="size-10" />
+        <SportIcon sport={sport} className="size-8" />
       )}
       {label}
-      {sport === "winter" ? <SportIcon sport="ski" className="size-10" /> : null}
+      {sport === "winter" ? <SportIcon sport="ski" className="size-8" /> : null}
     </>
   );
 }
@@ -214,10 +213,9 @@ export function TripsExplorer({
                 <section key={group.id} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h2 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
+                      <h2 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
                         <SportGroupHeading sport={group.id} label={group.label} />
                       </h2>
-                      <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                     </div>
                   </div>
                   <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
@@ -249,10 +247,9 @@ export function TripsExplorer({
                     <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="flex items-center gap-2 font-heading text-lg font-semibold uppercase tracking-[0.1em] text-foreground">
+                          <h3 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
                             <SportGroupHeading sport={group.id} label={group.label} />
                           </h3>
-                          <p className="text-sm text-muted-foreground">{pluralize(group.trips.length, "trip")}</p>
                         </div>
                       </div>
                       <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>

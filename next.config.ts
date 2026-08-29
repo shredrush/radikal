@@ -11,9 +11,10 @@ const contentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://ui-avatars.com;
+  img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://ui-avatars.com https://*.supabase.co;
   font-src 'self' data:;
-  connect-src 'self';
+  connect-src 'self' https://*.supabase.co;
+  media-src 'self' blob: data: https://*.supabase.co;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -24,6 +25,9 @@ const contentSecurityPolicy = `
   .trim();
 
 const nextConfig: NextConfig = {
+  // Native/CLI dependencies that must run at runtime, not be bundled. The
+  // ffprobe binary is required by get-video-duration for duration probing.
+  serverExternalPackages: ["get-video-duration", "@ffprobe-installer/ffprobe"],
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
   },
@@ -36,6 +40,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "plus.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
       },
     ],
     // Reduce memory usage and improve cache hit rate with aggressive formats

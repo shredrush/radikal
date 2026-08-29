@@ -16,6 +16,7 @@ import {
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { MediaUploader } from "@/components/media/media-uploader";
 import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 
 const inputClassName =
@@ -32,6 +33,7 @@ export type GuideTripData = {
   maxGroupSize: number;
   categories: string[];
   images: string[];
+  videos: string[];
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -52,6 +54,7 @@ function countFilledFromValues(values: GuideTripFields | null | undefined) {
   if (values?.drop?.trim()) count += 1;
   if (values?.categories?.length) count += 1;
   if (values?.images?.length) count += 1;
+  if (values?.videos?.length) count += 1;
   if (values?.inclusions?.length) count += 1;
   if (values?.exclusions?.length) count += 1;
   if (values?.highlights?.length) count += 1;
@@ -71,6 +74,7 @@ function countFilledFromForm(form: HTMLFormElement) {
   if (has("drop")) count += 1;
   if (formData.getAll("categories").length > 0) count += 1;
   if (has("images")) count += 1;
+  if (has("videos")) count += 1;
   if (has("inclusions")) count += 1;
   if (has("exclusions")) count += 1;
   if (has("highlights")) count += 1;
@@ -107,6 +111,7 @@ export function GuideTripForm({
   const maxGroupSize = fields?.maxGroupSize ?? 8;
   const categories = fields?.categories ?? [];
   const images = fields?.images ?? [];
+  const videos = fields?.videos ?? [];
   const pickup = fields?.pickup ?? "";
   const drop = fields?.drop ?? "";
   const inclusions = fields?.inclusions ?? [];
@@ -285,9 +290,12 @@ export function GuideTripForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`images-${key}`}>Images</Label>
-          <textarea id={`images-${key}`} name="images" defaultValue={images.join("\n")} rows={4} className={`min-h-28 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
-          <p className="text-xs text-muted-foreground">Enter one image path or URL per line (for example: /activities/your-trip-slug/cover.jpg).</p>
+          <MediaUploader
+            entity="trip"
+            folderKey={trip?.id ?? guideId}
+            initialImages={images}
+            initialVideos={videos}
+          />
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border/70 pt-4">

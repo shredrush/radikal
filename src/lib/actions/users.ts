@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
 import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
+import { removeStoredMedia } from "@/lib/media";
 import { updateUserSchema } from "@/lib/validations/users";
 
 function asString(value: FormDataEntryValue | null) {
@@ -35,7 +36,7 @@ export async function updateUserAction(formData: FormData) {
 
   const target = await prisma.user.findUnique({
     where: { id: data.userId },
-    include: { guide: { select: { id: true } } },
+    include: { guide: { select: { id: true, photos: true, videos: true } } },
   });
   if (!target) {
     throw new Error("User not found.");
@@ -132,6 +133,11 @@ export async function updateUserAction(formData: FormData) {
       throw new Error("This email or username is already taken.");
     }
     throw error;
+  }
+
+  // The guide row is gone; reclaim its storage objects best-effort.
+  if (demotingGuide && target.guide) {
+    await removeStoredMedia([...(target.guide.photos ?? []), ...(target.guide.videos ?? [])]);
   }
 
   await logActivity({

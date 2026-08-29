@@ -12,6 +12,11 @@ import {
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import { MEDIA_LIMITS } from "@/lib/media-constants";
+import {
+  assertValidStoredMedia,
+  parseGuideMediaUrls,
+} from "@/lib/media";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -75,12 +80,8 @@ function parseCertifications(value: string): CertificationInput[] {
 }
 
 function readApplicationFields(formData: FormData) {
-  const photos = ["photo1", "photo2", "photo3"]
-    .map((key) => {
-      const raw = asString(formData.get(key));
-      return raw && isSafeHttpUrl(raw) ? raw : null;
-    })
-    .filter((value): value is string => value !== null);
+  const photos = parseGuideMediaUrls(formData, "images");
+  const videos = parseGuideMediaUrls(formData, "videos");
 
   return {
     name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
@@ -92,6 +93,7 @@ function readApplicationFields(formData: FormData) {
     certifications: parseCertifications(asString(formData.get("certifications"))),
     photo: photos[0] ?? null,
     photos,
+    videos,
     instagramUrl: parseSocialUrl(asString(formData.get("instagramUrl"))),
     facebookUrl: parseSocialUrl(asString(formData.get("facebookUrl"))),
     youtubeUrl: parseSocialUrl(asString(formData.get("youtubeUrl"))),
@@ -129,6 +131,24 @@ export async function submitGuideApplicationAction(
 
   if (fields.experienceYears < 0) {
     return { error: "Experience years cannot be negative." };
+  }
+
+  if (
+    fields.photos.length > MEDIA_LIMITS.guide.images ||
+    fields.videos.length > MEDIA_LIMITS.guide.videos
+  ) {
+    return {
+      error: `Applications can include at most ${MEDIA_LIMITS.guide.images} photos and ${MEDIA_LIMITS.guide.videos} videos.`,
+    };
+  }
+
+  try {
+    await Promise.all([
+      assertValidStoredMedia("images", fields.photos),
+      assertValidStoredMedia("videos", fields.videos),
+    ]);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Media could not be validated." };
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -251,6 +271,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
           bio: application.bio,
           photo: application.photo,
           photos: application.photos,
+          videos: application.videos,
           location: application.location,
           experienceYears: application.experienceYears,
           languages: application.languages,

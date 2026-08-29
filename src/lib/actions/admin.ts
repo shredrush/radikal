@@ -14,6 +14,7 @@ import {
   validateTripFields,
 } from "@/lib/trip-fields";
 import { parseSlotInteger } from "@/lib/validations/slots";
+import { assertValidStoredMedia, removeStoredMedia } from "@/lib/media";
 
 function revalidateTripPages(slug: string) {
   revalidatePath("/admin/trips");
@@ -27,10 +28,19 @@ function isUniqueConstraint(error: unknown) {
   return error instanceof Error && error.message.includes("Unique constraint failed");
 }
 
+/** Authoritative, parallel size/type/duration validation of submitted media. */
+async function assertValidTripMedia(images: string[], videos: string[]) {
+  await Promise.all([
+    assertValidStoredMedia("images", images),
+    assertValidStoredMedia("videos", videos),
+  ]);
+}
+
 export async function createTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   const fields = validateTripFields(readTripFields(formData));
+  await assertValidTripMedia(fields.images, fields.videos);
   const {
     title,
     slug,
@@ -42,6 +52,7 @@ export async function createTripAction(formData: FormData) {
     maxGroupSize,
     guideId,
     images,
+    videos,
     categories,
     pickup,
     drop,
@@ -64,6 +75,7 @@ export async function createTripAction(formData: FormData) {
           maxGroupSize,
           categories,
           images,
+          videos,
           guideId: guideId || null,
         },
       });
@@ -105,6 +117,7 @@ export async function updateTripAction(formData: FormData) {
 
   const tripId = asString(formData.get("tripId"));
   const fields = validateTripFields(readTripFields(formData));
+  await assertValidTripMedia(fields.images, fields.videos);
   const {
     title,
     slug,
@@ -116,6 +129,7 @@ export async function updateTripAction(formData: FormData) {
     maxGroupSize,
     guideId,
     images,
+    videos,
     categories,
     pickup,
     drop,
@@ -156,6 +170,7 @@ export async function updateTripAction(formData: FormData) {
           maxGroupSize,
           categories,
           images,
+          videos,
           guideId: guideId || null,
         },
       });
@@ -212,7 +227,7 @@ export async function deleteTripAction(tripId: string) {
 
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
-    select: { slug: true, title: true },
+    select: { slug: true, title: true, images: true, videos: true },
   });
 
   if (!trip) {
@@ -263,6 +278,10 @@ export async function deleteTripAction(tripId: string) {
 
     await tx.trip.delete({ where: { id: tripId } });
   });
+
+  // Storage objects are not cascaded by the DB delete — reclaim them
+  // best-effort after the transaction commits.
+  await removeStoredMedia([...(trip.images ?? []), ...(trip.videos ?? [])]);
 
   if (rejectedChanges.length > 0) {
     const submitters = await prisma.user.findMany({

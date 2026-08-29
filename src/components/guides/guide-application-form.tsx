@@ -7,6 +7,7 @@ import { submitGuideApplicationAction, type GuideApplicationState } from "@/lib/
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { MediaUploader } from "@/components/media/media-uploader";
 
 const initialState: GuideApplicationState = {};
 
@@ -16,7 +17,15 @@ const inputClassName =
 const textareaClassName =
   `min-h-24 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
-export function GuideApplicationForm({ fullName, username }: { fullName?: string | null; username?: string | null }) {
+export function GuideApplicationForm({
+  fullName,
+  username,
+  userId,
+}: {
+  fullName?: string | null;
+  username?: string | null;
+  userId?: string | null;
+}) {
   const [state, formAction, isPending] = useActionState(submitGuideApplicationAction, initialState);
 
   if (state.success) {
@@ -133,36 +142,16 @@ export function GuideApplicationForm({ fullName, username }: { fullName?: string
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <p className="text-sm font-medium">Photos (optional)</p>
+          <p className="text-sm font-medium">Profile media (optional)</p>
           <p className="text-xs text-muted-foreground">
-            Add image URLs for your profile and portfolio. We will use the first one as your primary photo.
+            Up to 5 photos and 5 short videos (15s max each). The first photo becomes your profile picture.
           </p>
         </div>
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="application-photo1">Photo 1 URL</Label>
-          <input
-            id="application-photo1"
-            name="photo1"
-            placeholder="https://… or /path/to/image.jpg"
-            className={inputClassName}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="application-photo2">Photo 2 URL</Label>
-          <input
-            id="application-photo2"
-            name="photo2"
-            placeholder="https://… (optional)"
-            className={inputClassName}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="application-photo3">Photo 3 URL</Label>
-          <input
-            id="application-photo3"
-            name="photo3"
-            placeholder="https://… (optional)"
-            className={inputClassName}
+          <MediaUploader
+            entity="guide"
+            folderKey={userId ?? "pending"}
+            imagesFieldName="photos"
           />
         </div>
 

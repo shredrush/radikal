@@ -21,6 +21,7 @@ type AdminTripCardProps = {
     maxGroupSize: number;
     categories: string[];
     images: string[];
+    videos: string[];
     guideId: string | null;
     guide: { id: string; name: string } | null;
     tripLocation: { pickup: string; drop: string } | null;

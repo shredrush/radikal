@@ -7,12 +7,13 @@ import { pluralize } from "@/lib/format";
 
 interface TripGalleryProps {
   images: string[];
+  videos?: string[];
   fallbackImage: string;
   alt: string;
   compact?: boolean;
 }
 
-export function TripGallery({ images, fallbackImage, alt, compact = false }: TripGalleryProps) {
+export function TripGallery({ images, videos = [], fallbackImage, alt, compact = false }: TripGalleryProps) {
   const uniqueImages = Array.from(new Set(images.filter(Boolean)));
   const galleryImages = uniqueImages.length > 0 ? uniqueImages : [fallbackImage];
   // The hero grid always shows 4 tiles, cycling through available images.
@@ -63,7 +64,8 @@ export function TripGallery({ images, fallbackImage, alt, compact = false }: Tri
 
   return (
     <>
-      <div className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
+      <div className="relative">
+        <div className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
         {[
           { slot: 0, layout: "col-span-2 row-span-2" },
           { slot: 1, layout: "col-span-1 row-span-1" },
@@ -102,6 +104,7 @@ export function TripGallery({ images, fallbackImage, alt, compact = false }: Tri
         <Images className="h-3.5 w-3.5" />
         View all photos
       </button>
+      </div>
 
       {isGridOpen && (
         <div
@@ -214,6 +217,30 @@ export function TripGallery({ images, fallbackImage, alt, compact = false }: Tri
           </button>
         </div>
       )}
-    </>
+
+    {/* Videos never preload data — `preload="none"` means a page with videos
+        transfers zero video bytes until the visitor presses play. */}
+    {videos.length > 0 ? (
+      <div className="mt-4">
+        <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Videos ({videos.length})
+        </h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {videos.map((src, index) => (
+            <video
+              key={src}
+              src={src}
+              preload="none"
+              controls
+              playsInline
+              muted
+              aria-label={`${alt} video ${index + 1}`}
+              className="aspect-video w-full rounded-xl bg-black object-cover"
+            />
+          ))}
+        </div>
+      </div>
+    ) : null}
+  </>
   );
 }

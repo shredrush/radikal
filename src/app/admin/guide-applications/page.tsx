@@ -204,6 +204,19 @@ export default async function AdminGuideApplicationsPage() {
                       </div>
                     </div>
                   ) : null}
+
+                  {application.videos.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Videos</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {application.videos.map((video, index) => (
+                          <a key={video} href={video} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline underline-offset-4">
+                            Video {index + 1}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             ))}

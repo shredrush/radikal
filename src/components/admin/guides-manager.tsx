@@ -10,11 +10,13 @@ export async function GuidesManager({ where }: { where?: Prisma.GuideWhereInput 
 
   const items: GuideCardData[] = guides.map((guide) => ({
     id: guide.id,
+    userId: guide.user?.id ?? null,
     name: guide.name,
     username: guide.user?.username ?? null,
     bio: guide.bio,
     photo: guide.photo,
     photos: guide.photos,
+    videos: guide.videos,
     location: guide.location,
     experienceYears: guide.experienceYears,
     languages: guide.languages,

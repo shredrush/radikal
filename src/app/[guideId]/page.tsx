@@ -115,6 +115,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
               <TripGallery
                 images={guidePhotoSources}
+                videos={guide.videos}
                 fallbackImage={fallbackImage}
                 alt={guide.name}
                 compact

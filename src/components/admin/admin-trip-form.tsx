@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
+import { MediaUploader } from "@/components/media/media-uploader";
 import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { pluralize } from "@/lib/format";
 
@@ -35,6 +36,7 @@ export function AdminTripForm({
     maxGroupSize: number;
     categories: string[];
     images: string[];
+    videos: string[];
     guideId: string | null;
   };
   guides: Array<{ id: string; name: string }>;
@@ -65,6 +67,7 @@ export function AdminTripForm({
   const maxGroupSize = trip?.maxGroupSize ?? 8;
   const categories = trip?.categories ?? [];
   const images = trip?.images ?? [];
+  const videos = trip?.videos ?? [];
   const guideId = trip?.guideId ?? "";
 
   const pickup = supplemental?.pickup ?? "";
@@ -208,14 +211,16 @@ export function AdminTripForm({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`images-${key}`}>Images</Label>
-            <textarea id={`images-${key}`} name="images" defaultValue={images.join("\n")} rows={5} className={`min-h-32 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
-            <p className="text-xs text-muted-foreground">Enter one image path or URL per line, exactly as it should be stored (for example: /activities/your-trip-slug/cover.jpg).</p>
+          <div className="space-y-2 md:col-span-2">
+            <MediaUploader
+              entity="trip"
+              folderKey={trip?.id ?? "pending"}
+              initialImages={images}
+              initialVideos={videos}
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-            <span>{pluralize(images.length, "image")}</span>
             <span>{pluralize(categories.length, "category tag")}</span>
           </div>
         </div>

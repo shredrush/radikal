@@ -4,32 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireGuideAction } from "@/lib/guide-board";
-import { isSafeImageSource, sanitizeText } from "@/lib/sanitize";
-
-const validTypes = [
-  "TREK",
-  "BIKE",
-  "SNOWBOARD",
-  "SKI",
-  "ROCKCLIMB",
-  "EXPEDITION",
-  "YOGA",
-] as const;
-
-const validCategories = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
-] as const;
-
-function asString(value: FormDataEntryValue | null) {
-  return value?.toString().trim() ?? "";
-}
+import { sanitizeText } from "@/lib/sanitize";
+import {
+  asString,
+  parseCategories,
+  parseList,
+  parseMediaList,
+  validCategories,
+  validTypes,
+} from "@/lib/trip-fields";
 
 function optionalText(value: string, maxLength: number, allowNewlines = false) {
   const cleaned = sanitizeText(value, { maxLength, allowNewlines });
@@ -39,40 +22,6 @@ function optionalText(value: string, maxLength: number, allowNewlines = false) {
 function parseIntValue(value: string, fallback: number) {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? fallback : parsed;
-}
-
-function parseList(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((entry) => sanitizeText(entry, { maxLength: 500 }))
-        .filter(Boolean),
-    ),
-  );
-}
-
-function parseImages(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((entry) => sanitizeText(entry, { maxLength: 2048 }))
-        .filter((entry) => isSafeImageSource(entry)),
-    ),
-  );
-}
-
-function parseCategories(values: FormDataEntryValue[]) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => value.toString())
-        .filter((value): value is (typeof validCategories)[number] =>
-          validCategories.includes(value as (typeof validCategories)[number]),
-        ),
-    ),
-  );
 }
 
 type DraftFields = {
@@ -85,6 +34,7 @@ type DraftFields = {
   maxGroupSize: number;
   categories: (typeof validCategories)[number][];
   images: string[];
+  videos: string[];
   pickup: string | null;
   drop: string | null;
   inclusions: string[];
@@ -105,7 +55,8 @@ function readDraftFields(formData: FormData): DraftFields {
     durationDays: parseIntValue(asString(formData.get("durationDays")), 1),
     maxGroupSize: parseIntValue(asString(formData.get("maxGroupSize")), 8),
     categories: parseCategories(formData.getAll("categories")),
-    images: parseImages(asString(formData.get("images"))),
+    images: parseMediaList(formData.getAll("images")),
+    videos: parseMediaList(formData.getAll("videos")),
     pickup: optionalText(asString(formData.get("pickup")), 200),
     drop: optionalText(asString(formData.get("drop")), 200),
     inclusions: parseList(asString(formData.get("inclusions"))),
@@ -123,6 +74,7 @@ function countDraftFilledFields(fields: DraftFields) {
   if (fields.drop) count += 1;
   if (fields.categories.length > 0) count += 1;
   if (fields.images.length > 0) count += 1;
+  if (fields.videos.length > 0) count += 1;
   if (fields.inclusions.length > 0) count += 1;
   if (fields.exclusions.length > 0) count += 1;
   if (fields.highlights.length > 0) count += 1;

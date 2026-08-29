@@ -7,8 +7,18 @@ import { requirePermission } from "@/lib/authz";
 import { requireGuideAction } from "@/lib/guide-board";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
-import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
+import { isValidSlug, sanitizeText } from "@/lib/sanitize";
 import { notifyTripReviewStaff, notifyUser } from "@/lib/notifications";
+import { MEDIA_LIMITS } from "@/lib/media-constants";
+import { assertValidStoredMedia } from "@/lib/media";
+import {
+  asString,
+  parseCategories,
+  parseList,
+  parseMediaList,
+  validCategories,
+  validTypes,
+} from "@/lib/trip-fields";
 import { type TripProposal } from "@/lib/trip-changes";
 import { slugify } from "@/lib/format";
 import { parseSlotInteger } from "@/lib/validations/slots";
@@ -17,22 +27,6 @@ import {
   tripChangeDecisionEmail,
   tripChangeSubmittedAdminEmail,
 } from "@/lib/email";
-
-const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
-const validCategories = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
-] as const;
-
-function asString(value: FormDataEntryValue | null) {
-  return value?.toString().trim() ?? "";
-}
 
 const MAX_SLOT_CAPACITY = 100;
 
@@ -56,41 +50,6 @@ function parseSlotDate(value: string): Date | null {
   return date;
 }
 
-function parseImages(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((item) => sanitizeText(item, { maxLength: 2048 }))
-        .filter((item) => isSafeImageSource(item)),
-    ),
-  );
-}
-
-function parseCategories(values: FormDataEntryValue[]) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => value.toString())
-        .filter(
-          (value): value is (typeof validCategories)[number] =>
-            validCategories.includes(value as (typeof validCategories)[number]),
-        ),
-    ),
-  );
-}
-
-function parseList(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((entry) => sanitizeText(entry, { maxLength: 500 }))
-        .filter(Boolean),
-    ),
-  );
-}
-
 type TripFields = {
   title: string;
   type: string;
@@ -101,6 +60,7 @@ type TripFields = {
   maxGroupSize: number;
   categories: (typeof validCategories)[number][];
   images: string[];
+  videos: string[];
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -120,7 +80,8 @@ function readTripFields(formData: FormData): TripFields {
     priceInRupees: Number.parseInt(asString(formData.get("priceInRupees")), 10),
     durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
     maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
-    images: parseImages(asString(formData.get("images"))),
+    images: parseMediaList(formData.getAll("images")),
+    videos: parseMediaList(formData.getAll("videos")),
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
@@ -151,7 +112,24 @@ function validateTripFields(fields: TripFields): TripFields {
     throw new Error("Price must be >= 0 and duration/group size must be at least 1.");
   }
 
+  if (
+    fields.images.length > MEDIA_LIMITS.trip.images ||
+    fields.videos.length > MEDIA_LIMITS.trip.videos
+  ) {
+    throw new Error(
+      `Trips can have at most ${MEDIA_LIMITS.trip.images} photos and ${MEDIA_LIMITS.trip.videos} videos.`,
+    );
+  }
+
   return fields;
+}
+
+/** Authoritative, parallel size/type/duration validation of submitted media. */
+async function assertValidTripMedia(fields: TripFields) {
+  await Promise.all([
+    assertValidStoredMedia("images", fields.images),
+    assertValidStoredMedia("videos", fields.videos),
+  ]);
 }
 
 /** Resolve the signed-in user's linked guide record, or throw. Role is
@@ -205,6 +183,7 @@ function isUniqueConstraint(error: unknown) {
 export async function submitTripCreateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
   const fields = validateTripFields(readTripFields(formData));
+  await assertValidTripMedia(fields);
   const slug = await uniqueTripSlug(fields.title);
 
   const proposal: TripProposal = { slug, ...fields };
@@ -250,6 +229,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   }
 
   const fields = validateTripFields(readTripFields(formData));
+  await assertValidTripMedia(fields);
 
   const original: TripProposal = {
     slug: trip.slug,
@@ -262,6 +242,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     maxGroupSize: trip.maxGroupSize,
     categories: trip.categories,
     images: trip.images,
+    videos: trip.videos,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -469,6 +450,7 @@ export async function approveTripChangeAction(changeId: string) {
             maxGroupSize: proposal.maxGroupSize,
             categories: proposal.categories as (typeof validCategories)[number][],
             images: proposal.images,
+            videos: proposal.videos,
             guideId: change.guideId,
           },
         });
@@ -504,6 +486,7 @@ export async function approveTripChangeAction(changeId: string) {
             maxGroupSize: proposal.maxGroupSize,
             categories: proposal.categories as (typeof validCategories)[number][],
             images: proposal.images,
+            videos: proposal.videos,
           },
         });
 

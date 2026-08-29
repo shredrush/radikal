@@ -57,6 +57,7 @@ export default async function TripPreviewPage({
   const images = (Array.isArray(p.images) ? p.images : [])
     .map((image) => normalizeTripImagePath(image, p.slug))
     .filter(Boolean);
+  const videos = Array.isArray(p.videos) ? p.videos : [];
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
@@ -73,6 +74,7 @@ export default async function TripPreviewPage({
           <div className="relative overflow-hidden bg-muted/60">
             <TripGallery
               images={images}
+              videos={videos}
               fallbackImage={`/activities/${p.slug ?? "cover"}/cover.png`}
               alt={p.title}
               compact

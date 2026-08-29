@@ -177,6 +177,7 @@ export default async function TripDetailPage({
             <div className="relative overflow-hidden bg-muted/60">
               <TripGallery
                 images={trip.images.map((image) => normalizeTripImagePath(image, trip.slug)).filter(Boolean)}
+                videos={trip.videos}
                 fallbackImage={`/activities/${trip.slug}/cover.png`}
                 alt={trip.title}
                 compact

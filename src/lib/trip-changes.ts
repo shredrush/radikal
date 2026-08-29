@@ -17,6 +17,7 @@ export type TripProposal = {
   maxGroupSize: number;
   categories: string[];
   images: string[];
+  videos: string[];
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -34,6 +35,7 @@ const FIELD_LABELS: Record<string, string> = {
   maxGroupSize: "Max group size",
   categories: "Categories",
   images: "Images",
+  videos: "Videos",
   pickup: "Pickup point",
   drop: "Drop point",
   inclusions: "Included",
@@ -51,6 +53,7 @@ const FIELD_ORDER = [
   "maxGroupSize",
   "categories",
   "images",
+  "videos",
   "pickup",
   "drop",
   "inclusions",
