@@ -9,9 +9,9 @@ const GUIDE_IMAGE_MAP: Record<string, string> = {
 const DEFAULT_GUIDE_IMAGE = "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1200&q=80";
 
 export function getGuideImage(guide: {
-  slug: string;
+  username?: string | null;
   photo?: string | null;
   photos?: string[] | null;
 }) {
-  return guide.photos?.[0] ?? guide.photo ?? GUIDE_IMAGE_MAP[guide.slug] ?? DEFAULT_GUIDE_IMAGE;
+  return guide.photos?.[0] ?? guide.photo ?? (guide.username ? GUIDE_IMAGE_MAP[guide.username] : undefined) ?? DEFAULT_GUIDE_IMAGE;
 }

@@ -35,7 +35,7 @@ type TripCardItem = {
 };
 
 type GuideProfile = {
-  slug: string;
+  username: string;
   name: string;
   location: string;
   photo: string;
@@ -448,7 +448,7 @@ export function SearchableTrips({
 
             <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
               {guides.map((guide) => (
-                <GuideCard key={guide.slug} guide={guide} />
+                <GuideCard key={guide.username} guide={guide} />
               ))}
             </div>
 

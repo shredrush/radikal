@@ -25,7 +25,7 @@ export type GuideCertification = {
 export type GuideFormData = {
   id: string;
   name: string;
-  slug: string;
+  username: string | null;
   bio: string;
   photo: string | null;
   photos: string[];
@@ -84,23 +84,35 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             className={inputClassName}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor={isEditing ? `slug-${guide?.id}` : "new-guide-slug"}>Slug</Label>
-          <input
-            id={isEditing ? `slug-${guide?.id}` : "new-guide-slug"}
-            name="slug"
-            defaultValue={guide?.slug}
-            required
-            minLength={3}
-            maxLength={30}
-            pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
-            title="3–30 lowercase letters or numbers, with single -, _, or . separators"
-            className={inputClassName}
-          />
-          <p className="text-xs text-muted-foreground">
-            Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This is the guide&apos;s public URL slug.
-          </p>
-        </div>
+        {isEditing ? (
+          <div className="space-y-2">
+            <Label htmlFor={`username-${guide?.id}`}>Public URL</Label>
+            <p className="flex h-10 items-center rounded-xl border border-border/70 bg-muted/30 px-3 text-sm text-muted-foreground">
+              /{guide?.username ?? "no username set"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              The guide&apos;s URL uses the linked account&apos;s username. Change it from the account&apos;s
+              profile or the user management page.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor="new-guide-username">Username</Label>
+            <input
+              id="new-guide-username"
+              name="username"
+              required
+              minLength={3}
+              maxLength={30}
+              pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
+              title="3–30 lowercase letters or numbers, with single -, _, or . separators"
+              className={inputClassName}
+            />
+            <p className="text-xs text-muted-foreground">
+              Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This becomes the guide&apos;s public URL.
+            </p>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor={isEditing ? `location-${guide?.id}` : "new-guide-location"}>Location</Label>
           <input
@@ -124,16 +136,18 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
         </div>
         {isEditing ? null : (
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="new-guide-email">Account email (optional)</Label>
+            <Label htmlFor="new-guide-email">Account email</Label>
             <input
               id="new-guide-email"
               name="email"
               type="email"
+              required
               placeholder="Link an existing account and notify them"
               className={inputClassName}
             />
             <p className="text-xs text-muted-foreground">
-              If this guide already has a Radikal account, enter their email to link it and send them a welcome email.
+              Guides are accounts. Enter the email of the existing Radikal account this guide belongs to —
+              the account&apos;s username will become the guide&apos;s public URL.
             </p>
           </div>
         )}

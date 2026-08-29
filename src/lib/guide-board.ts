@@ -17,7 +17,7 @@ export async function requireGuide(redirectTo = "/profile") {
   }
   const guide = await prisma.guide.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, slug: true, name: true },
+    select: { id: true, name: true, user: { select: { username: true } } },
   });
   if (!guide) {
     redirect(redirectTo);

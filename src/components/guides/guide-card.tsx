@@ -8,7 +8,7 @@ import { CARD_ACCENT_BORDER, CARD_ACCENT_SHADOW, ACCENT_PILL, ACCENT_PILL_EMERAL
 import { getGuideImage } from "@/lib/guide-images";
 
 export interface GuideCardGuide {
-  slug: string;
+  username: string;
   name: string;
   location: string;
   photo?: string | null;
@@ -27,7 +27,7 @@ export function GuideCard({
 }) {
   if (variant === "home") {
     return (
-      <Link href={`/${guide.slug}`} className="block">
+      <Link href={`/${guide.username}`} className="block">
         <Card className={`flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border ${CARD_ACCENT_BORDER} bg-card/95 py-0 ${CARD_ACCENT_SHADOW} transition duration-200 hover:-translate-y-1`}>
           <CardHeader className="gap-0 p-0 pb-0 px-0">
             <div className="flex flex-col items-center text-center">
@@ -61,7 +61,7 @@ export function GuideCard({
   }
 
   return (
-    <Link href={`/${guide.slug}`} className="group block">
+    <Link href={`/${guide.username}`} className="group block">
       <article className={`flex h-full flex-col overflow-hidden rounded-[1.25rem] border ${CARD_ACCENT_BORDER} bg-card/95 ${CARD_ACCENT_SHADOW} transition duration-200 hover:-translate-y-1`}>
         <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
           <Image
@@ -108,7 +108,7 @@ export function GuideCard({
             <div className="flex flex-wrap gap-1.5">
               {guide.languages?.map((language) => (
                 <span
-                  key={`${guide.slug}-${language}`}
+                  key={`${guide.username}-${language}`}
                   className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                 >
                   {language}

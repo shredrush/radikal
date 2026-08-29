@@ -19,10 +19,17 @@ export async function SiteHeader() {
   const currentUser = session?.user?.id
     ? await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
+        select: { image: true, guide: { select: { photo: true, photos: true, user: { select: { username: true } } } } },
       })
     : null;
-  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
+  const guideForImage = currentUser?.guide
+    ? {
+        username: currentUser.guide.user?.username ?? "",
+        photo: currentUser.guide.photo,
+        photos: currentUser.guide.photos,
+      }
+    : null;
+  const profileImage = guideForImage ? getGuideImage(guideForImage) : currentUser?.image;
   const profileInitials = getProfileInitials(displayName);
 
   const sportGroups = [

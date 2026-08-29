@@ -120,12 +120,12 @@ export default async function ProfilePage({
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { image: true, guide: { select: { slug: true, photo: true, photos: true } } },
+      select: { image: true, guide: { select: { photo: true, photos: true, user: { select: { username: true } } } } },
     }),
     isGuide
       ? prisma.guide.findUnique({
           where: { userId: user.id },
-          select: { id: true, slug: true },
+          select: { id: true, user: { select: { username: true } } },
         })
       : Promise.resolve(null),
     isStaffView
@@ -199,7 +199,13 @@ export default async function ProfilePage({
       : Promise.resolve(null),
   ]);
 
-  const profileImage = currentUser?.guide ? getGuideImage(currentUser.guide) : currentUser?.image;
+  const profileImage = currentUser?.guide
+    ? getGuideImage({
+        username: currentUser.guide.user?.username ?? "",
+        photo: currentUser.guide.photo,
+        photos: currentUser.guide.photos,
+      })
+    : currentUser?.image;
 
   const unreadNotificationsCount = notifications.filter((n) => !n.readAt).length;
 
@@ -335,7 +341,7 @@ export default async function ProfilePage({
                     size="sm"
                     className="mt-4 rounded-full"
                     nativeButton={false}
-                    render={<Link href={`/${guide.slug}`} target="_blank" rel="noopener noreferrer" />}
+                    render={<Link href={`/${guide.user?.username}`} target="_blank" rel="noopener noreferrer" />}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     View public profile

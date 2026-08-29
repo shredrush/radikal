@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
@@ -393,7 +394,10 @@ export async function changeUsernameAction(
 
   const username = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { guide: { select: { id: true } } },
+  });
   if (!user) {
     return { error: "Account not found." };
   }
@@ -408,10 +412,24 @@ export async function changeUsernameAction(
     return { fieldErrors: { username: "This username is already taken." } };
   }
 
+  const previousUsername = user.username;
+
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { username },
+    await prisma.$transaction(async (tx) => {
+      // The handle is now live, so retire any alias that still points to it.
+      await tx.usernameAlias.deleteMany({ where: { username } });
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { username },
+      });
+
+      // Keep the old handle resolving to this user's guide page.
+      if (previousUsername) {
+        await tx.usernameAlias.create({
+          data: { username: previousUsername, userId },
+        });
+      }
     });
   } catch (error) {
     // The DB unique constraint is the final guard against a rename race.
@@ -427,6 +445,16 @@ export async function changeUsernameAction(
     label: "Changed username",
     metadata: { username },
   });
+
+  // For guide accounts the username is the public URL, so a rename must
+  // invalidate both the old and the new guide pages.
+  if (user.guide) {
+    if (previousUsername) revalidatePath(`/${previousUsername}`);
+    revalidatePath(`/${username}`);
+    revalidatePath("/");
+    revalidatePath("/community");
+    updateTag("guides");
+  }
 
   return { success: true };
 }

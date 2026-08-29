@@ -97,7 +97,7 @@ export default async function AdminUserDetailPage({
     prisma.user.findUnique({
       where: { id: userId },
       include: {
-        guide: { select: { slug: true, name: true } },
+        guide: { select: { name: true } },
         _count: { select: { bookings: true, reviews: true, guideApplications: true, activityLogs: true } },
       },
     }),

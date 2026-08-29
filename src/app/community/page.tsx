@@ -38,6 +38,7 @@ const getCommunityGuides = unstable_cache(
           orderBy: { yearIssued: "desc" },
           take: 3,
         },
+        user: { select: { username: true } },
         _count: {
           select: { trips: true },
         },
@@ -269,7 +270,7 @@ export default async function CommunityPage() {
                 key={guide.id}
                 variant="community"
                 guide={{
-                  slug: guide.slug,
+                  username: guide.user?.username ?? "",
                   name: guide.name,
                   location: guide.location,
                   photo: guide.photo,

@@ -5,13 +5,14 @@ import { unstable_cache } from "next/cache";
 import { ArrowLeft } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatMonthYear } from "@/lib/format";
 
 const getGuideReviews = unstable_cache(
-  async (slug: string) => {
+  async (username: string) => {
     return prisma.guide.findFirst({
-      where: { slug },
+      where: { user: { username } },
       select: {
         id: true,
         name: true,
@@ -32,9 +33,16 @@ const getGuideReviews = unstable_cache(
   { tags: ["guides", "trips", "reviews"], revalidate: 3600 },
 );
 
+async function getResolvedGuideReviews(username: string) {
+  const guide = await getGuideReviews(username);
+  if (guide) return guide;
+  await resolveGuideAlias(username);
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
   const { guideId } = await params;
-  const guide = await getGuideReviews(guideId);
+  const guide = await getResolvedGuideReviews(guideId);
 
   if (!guide) {
     return {
@@ -50,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
 
 export default async function GuideReviewsPage({ params }: { params: Promise<{ guideId: string }> }) {
   const { guideId } = await params;
-  const guide = await getGuideReviews(guideId);
+  const guide = await getResolvedGuideReviews(guideId);
 
   if (!guide) {
     notFound();

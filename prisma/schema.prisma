@@ -115,9 +115,10 @@ model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
-  // Public, lowercase-alphanumeric handle used as the user's slug. Uniqueness
-  // is enforced by a DB constraint; the app layer additionally validates the
-  // format, length and reserved-name rules (see lib/sanitize.ts).
+  // Public, lowercase-alphanumeric handle. For guide accounts it doubles as
+  // the guide's public URL segment (e.g. /tenzin). Uniqueness is enforced by a
+  // DB constraint; the app layer additionally validates the format, length and
+  // reserved-name rules (see lib/sanitize.ts).
   username     String?  @unique
   passwordHash String
   role         UserRole @default(USER)
@@ -141,8 +142,24 @@ model User {
   notifications             Notification[]
   tripChangesSubmitted      TripChangeRequest[] @relation("TripChangeSubmittedBy")
   tripChangesReviewed       TripChangeRequest[] @relation("TripChangeReviewedBy")
+  usernameAliases           UsernameAlias[]
 
   @@map("users")
+}
+
+// A retired username kept so the guide's previous public URL keeps resolving.
+// When a guide-linked user renames, the old handle is stored here and the
+// /[guideId] route redirects it to the current username.
+model UsernameAlias {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("username_aliases")
 }
 
 // A short-lived one-time password reset code. Only the bcrypt hash of the
@@ -167,9 +184,8 @@ model PasswordResetOtp {
 
 model Guide {
   id              String   @id @default(cuid())
-  userId          String?  @unique
+  userId          String   @unique
   name            String
-  slug            String   @unique
   bio             String
   photo           String?
   photos          String[] @default([])
@@ -183,7 +199,7 @@ model Guide {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user           User?               @relation(fields: [userId], references: [id])
+  user           User                @relation(fields: [userId], references: [id])
   certifications Certification[]
   trips          Trip[]
   reviews        Review[]

@@ -23,7 +23,7 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-foreground">{guide.name}</p>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {guide.location} · {guide.tripsCount} {pluralize(guide.tripsCount, "trip")} linked · /{guide.slug}
+            {guide.location} · {guide.tripsCount} {pluralize(guide.tripsCount, "trip")} linked · /{guide.username ?? "no username"}
           </p>
         </div>
         <ChevronDown

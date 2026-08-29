@@ -51,6 +51,7 @@ const getHomeGuides = unstable_cache(
           orderBy: { yearIssued: "desc" },
           take: 3,
         },
+        user: { select: { username: true } },
       },
     });
   },
@@ -126,10 +127,14 @@ export default async function Home() {
           guide: trip.guide ? { name: trip.guide.name } : null,
         }))}
         guides={guides.map((guide) => ({
-          slug: guide.slug,
+          username: guide.user?.username ?? "",
           name: guide.name,
           location: guide.location,
-          photo: getGuideImage(guide),
+          photo: getGuideImage({
+            username: guide.user?.username ?? "",
+            photo: guide.photo,
+            photos: guide.photos,
+          }),
           certifications: guide.certifications.map((certification) => certification.title),
         }))}
         testimonials={reviews.map((review) => ({

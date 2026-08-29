@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
@@ -32,7 +32,10 @@ export async function updateUserAction(formData: FormData) {
 
   const data = parsed.data;
 
-  const target = await prisma.user.findUnique({ where: { id: data.userId } });
+  const target = await prisma.user.findUnique({
+    where: { id: data.userId },
+    include: { guide: { select: { id: true } } },
+  });
   if (!target) {
     throw new Error("User not found.");
   }
@@ -53,17 +56,37 @@ export async function updateUserAction(formData: FormData) {
     if (usernameTaken && usernameTaken.id !== data.userId) {
       throw new Error("This username is already taken.");
     }
+  } else if (target.guide) {
+    // A guide's username is its public URL — it can never be cleared.
+    throw new Error("A guide account must have a username. Enter one instead of clearing it.");
   }
 
+  const previousUsername = target.username;
+  const usernameChanged = previousUsername !== data.username;
+
   try {
-    await prisma.user.update({
-      where: { id: data.userId },
-      data: {
-        name: data.name,
-        email: data.email,
-        username: data.username,
-        role: data.role,
-      },
+    await prisma.$transaction(async (tx) => {
+      if (data.username) {
+        // The handle is now live, so retire any alias that still points to it.
+        await tx.usernameAlias.deleteMany({ where: { username: data.username } });
+      }
+
+      await tx.user.update({
+        where: { id: data.userId },
+        data: {
+          name: data.name,
+          email: data.email,
+          username: data.username,
+          role: data.role,
+        },
+      });
+
+      // Keep the old handle resolving to this user's guide page.
+      if (usernameChanged && previousUsername && target.guide) {
+        await tx.usernameAlias.create({
+          data: { username: previousUsername, userId: data.userId },
+        });
+      }
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint failed")) {
@@ -95,4 +118,14 @@ export async function updateUserAction(formData: FormData) {
 
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${data.userId}`);
+
+  // For guide accounts the username is the public URL, so a rename must
+  // invalidate both the old and the new guide pages.
+  if (target.guide && usernameChanged) {
+    if (previousUsername) revalidatePath(`/${previousUsername}`);
+    if (data.username) revalidatePath(`/${data.username}`);
+    revalidatePath("/");
+    revalidatePath("/community");
+    updateTag("guides");
+  }
 }

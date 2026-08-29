@@ -454,8 +454,7 @@ export async function approveTripChangeAction(changeId: string) {
         select: {
           id: true,
           name: true,
-          slug: true,
-          user: { select: { id: true, email: true, name: true } },
+          user: { select: { id: true, email: true, name: true, username: true } },
         },
       },
     },
@@ -560,8 +559,8 @@ export async function approveTripChangeAction(changeId: string) {
     revalidatePath(`/trips/${proposal.slug}`);
   }
 
-  if (change.guide?.slug) {
-    revalidatePath(`/${change.guide.slug}`);
+  if (change.guide?.user.username) {
+    revalidatePath(`/${change.guide.user.username}`);
   }
 
   const guideUser = change.guide?.user;

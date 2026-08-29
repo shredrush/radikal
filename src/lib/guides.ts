@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 const guideDetailInclude = {
   certifications: { orderBy: { yearIssued: "desc" } },
   _count: { select: { trips: true } },
+  user: { select: { username: true } },
 } satisfies Prisma.GuideInclude;
 
 export type GuideWithDetails = Awaited<ReturnType<typeof fetchGuidesWithDetails>>[number];

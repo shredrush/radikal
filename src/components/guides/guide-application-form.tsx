@@ -56,6 +56,23 @@ export function GuideApplicationForm({ fullName, username }: { fullName?: string
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="application-username">Username</Label>
+          <input
+            id="application-username"
+            name="username"
+            defaultValue={username ?? ""}
+            required
+            minLength={3}
+            maxLength={30}
+            pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
+            title="3–30 lowercase letters or numbers, with single -, _, or . separators"
+            className={inputClassName}
+          />
+          <p className="text-xs text-muted-foreground">
+            Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This becomes your public guide URL.
+          </p>
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="application-phone">Phone</Label>
           <input
             id="application-phone"

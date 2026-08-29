@@ -11,8 +11,7 @@ import {
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
-import { isSafeHttpUrl, isValidUsername, sanitizeText } from "@/lib/sanitize";
-import { slugify } from "@/lib/format";
+import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -132,6 +131,14 @@ export async function submitGuideApplicationAction(
     return { error: "Experience years cannot be negative." };
   }
 
+  const existingUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true },
+  });
+  if (!existingUser) {
+    return { error: "Account not found." };
+  }
+
   const existing = await prisma.guideApplication.findFirst({
     where: { userId: session.user.id, status: "PENDING" },
     select: { id: true },
@@ -140,14 +147,48 @@ export async function submitGuideApplicationAction(
     return { error: "You already have an application under review." };
   }
 
+  // The username is mandatory for guides: it becomes the public guide URL
+  // (e.g. /username) once the application is approved.
+  const username = normalizeUsername(asString(formData.get("username")));
+
+  if (!username) {
+    return { error: "Username is required — it becomes your public guide URL." };
+  }
+
+  if (!isValidUsername(username)) {
+    return {
+      error: "Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.",
+    };
+  }
+
+  if (existingUser.username !== username) {
+    const usernameTaken = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    if (usernameTaken) {
+      return { error: "This username is already taken." };
+    }
+  }
+
   const { certifications, ...applicationData } = fields;
 
-  await prisma.guideApplication.create({
-    data: {
-      ...applicationData,
-      userId: session.user.id,
-      certifications: { create: certifications },
-    },
+  await prisma.$transaction(async (tx) => {
+    // The handle is now live, so retire any alias that still points to it.
+    await tx.usernameAlias.deleteMany({ where: { username } });
+
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: { username },
+    });
+
+    await tx.guideApplication.create({
+      data: {
+        ...applicationData,
+        userId: session.user.id,
+        certifications: { create: certifications },
+      },
+    });
   });
 
   await logActivity({
@@ -170,23 +211,6 @@ export async function submitGuideApplicationAction(
   return { success: true };
 }
 
-async function uniqueGuideSlug(name: string): Promise<string> {
-  const base = slugify(name, 30) || "guide";
-  let slug = isValidUsername(base) ? base : `${base.slice(0, 24)}-${Math.random().toString(36).slice(2, 6)}`;
-  let attempts = 0;
-
-  while (attempts < 25) {
-    if (isValidUsername(slug)) {
-      const taken = await prisma.guide.findUnique({ where: { slug }, select: { id: true } });
-      if (!taken) return slug;
-    }
-    slug = `${base.slice(0, 24)}-${Math.random().toString(36).slice(2, 6)}`;
-    attempts += 1;
-  }
-
-  return `${base.slice(0, 20)}-${Date.now().toString(36)}`;
-}
-
 export async function approveGuideApplicationAction(applicationId: string) {
   const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
@@ -198,7 +222,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
     where: { id: applicationId },
     include: {
       certifications: true,
-      user: { select: { email: true, name: true } },
+      user: { select: { email: true, name: true, username: true } },
     },
   });
 
@@ -210,7 +234,13 @@ export async function approveGuideApplicationAction(applicationId: string) {
     throw new Error("This application has already been reviewed.");
   }
 
-  const slug = await uniqueGuideSlug(application.name);
+  // The guide's public URL is the applicant's username, which is mandatory and
+  // locked in at submission time.
+  const username = application.user.username;
+
+  if (!username) {
+    throw new Error("This applicant has no username. Ask them to set one and resubmit.");
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -218,7 +248,6 @@ export async function approveGuideApplicationAction(applicationId: string) {
         data: {
           userId: application.userId,
           name: application.name,
-          slug,
           bio: application.bio,
           photo: application.photo,
           photos: application.photos,
@@ -265,7 +294,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
   revalidatePath("/become-a-guide");
   revalidatePath("/community");
   revalidatePath("/");
-  revalidatePath(`/${slug}`);
+  revalidatePath(`/${username}`);
   updateTag("guides");
 
   await logActivity({

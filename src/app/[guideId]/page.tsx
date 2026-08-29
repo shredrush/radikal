@@ -9,6 +9,7 @@ import { TripCard } from "@/components/trips/trip-card";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { prisma } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
+import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
 import { ACCENT_PILL } from "@/lib/card-styles";
 import { formatMonthYear } from "@/lib/format";
@@ -16,10 +17,11 @@ import { formatMonthYear } from "@/lib/format";
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).
 const getGuideDetail = unstable_cache(
-  async (slug: string) => {
+  async (username: string) => {
     return prisma.guide.findFirst({
-      where: { slug },
+      where: { user: { username } },
       include: {
+        user: { select: { username: true } },
         certifications: {
           orderBy: { yearIssued: "desc" },
         },
@@ -60,9 +62,16 @@ const getGuideDetail = unstable_cache(
   { tags: ["guides", "trips"], revalidate: 3600 },
 );
 
+async function getResolvedGuide(username: string) {
+  const guide = await getGuideDetail(username);
+  if (guide) return guide;
+  await resolveGuideAlias(username);
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {
   const { guideId } = await params;
-  const guide = await getGuideDetail(guideId);
+  const guide = await getResolvedGuide(guideId);
 
   if (!guide) {
     return {
@@ -79,13 +88,17 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
 export default async function GuideDetailPage({ params }: { params: Promise<{ guideId: string }> }) {
   const { guideId } = await params;
 
-  const guide = await getGuideDetail(guideId);
+  const guide = await getResolvedGuide(guideId);
 
   if (!guide) {
     notFound();
   }
 
-  const fallbackImage = getGuideImage(guide);
+  const fallbackImage = getGuideImage({
+    username: guide.user?.username ?? "",
+    photo: guide.photo,
+    photos: guide.photos,
+  });
   const guidePhotoSources =
     (guide.photos ?? []).length > 0
       ? guide.photos

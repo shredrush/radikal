@@ -45,6 +45,7 @@ const getTripDetail = unstable_cache(
             user: {
               select: {
                 image: true,
+                username: true,
               },
             },
           },
@@ -150,7 +151,13 @@ export default async function TripDetailPage({
     : false;
 
   const guide = trip.guide;
-  const guideProfileImage = guide ? getGuideImage(guide) : "/avatars/fox.svg";
+  const guideProfileImage = guide
+    ? getGuideImage({
+        username: guide.user?.username ?? "",
+        photo: guide.photo,
+        photos: guide.photos,
+      })
+    : "/avatars/fox.svg";
 
   const similarTrips = await getSimilarTrips(trip.categories, trip.id);
 
@@ -385,7 +392,7 @@ export default async function TripDetailPage({
                           {guide.name}
                         </h3>
                         <Link
-                          href={`/${guide.slug}`}
+                          href={`/${guide.user?.username}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"

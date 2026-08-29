@@ -5,7 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
-import { isValidUsername, isSafeHttpUrl, sanitizeText } from "@/lib/sanitize";
+import { isValidUsername, isSafeHttpUrl, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -74,7 +74,6 @@ function readGuideFields(formData: FormData) {
 
   return {
     name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
-    slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
     bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
     photo,
     photos,
@@ -86,12 +85,8 @@ function readGuideFields(formData: FormData) {
 }
 
 function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
-  if (!fields.name || !fields.slug || !fields.bio || !fields.location) {
-    throw new Error("Name, slug, bio, and location are required.");
-  }
-
-  if (!isValidUsername(fields.slug)) {
-    throw new Error("Slug must be 3–30 lowercase letters or numbers, with single -, _, or . separators.");
+  if (!fields.name || !fields.bio || !fields.location) {
+    throw new Error("Name, bio, and location are required.");
   }
 
   if (fields.experienceYears < 0) {
@@ -101,15 +96,15 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
   return fields;
 }
 
-function revalidateGuidePages(...slugs: string[]) {
+function revalidateGuidePages(...usernames: string[]) {
   revalidatePath("/admin/guides");
   revalidatePath("/community");
   revalidatePath("/");
   updateTag("guides");
 
-  for (const slug of slugs) {
-    if (slug) {
-      revalidatePath(`/${slug}`);
+  for (const username of usernames) {
+    if (username) {
+      revalidatePath(`/${username}`);
     }
   }
 }
@@ -124,56 +119,81 @@ export async function createGuideAction(formData: FormData) {
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
 
-  // Optional account link: when the admin supplies the guide's email, link the
-  // guide to that existing account and notify them by email. Guides without a
-  // Radikal account can still be created without an email.
+  // Guides are accounts, so creating a guide requires linking an existing
+  // Radikal account and giving it a unique public username (its URL handle).
   const email = asString(formData.get("email")).trim().toLowerCase();
-  let linkedUser: { id: string; email: string; name: string } | null = null;
+  const username = normalizeUsername(asString(formData.get("username")));
 
-  if (email) {
-    linkedUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, name: true },
-    });
+  if (!email) {
+    throw new Error("A guide must be linked to an account. Enter the account email.");
+  }
 
-    if (!linkedUser) {
-      throw new Error(
-        "No account found with this email. Leave it blank to create the guide without linking an account.",
-      );
-    }
+  if (!username) {
+    throw new Error("Username is required — it becomes the guide's public URL.");
+  }
 
-    const alreadyLinked = await prisma.guide.findUnique({
-      where: { userId: linkedUser.id },
+  if (!isValidUsername(username)) {
+    throw new Error("Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.");
+  }
+
+  const linkedUser = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true, username: true },
+  });
+
+  if (!linkedUser) {
+    throw new Error("No account found with this email.");
+  }
+
+  const alreadyLinked = await prisma.guide.findUnique({
+    where: { userId: linkedUser.id },
+    select: { id: true },
+  });
+  if (alreadyLinked) {
+    throw new Error("This account is already linked to a guide.");
+  }
+
+  if (linkedUser.username !== username) {
+    const usernameTaken = await prisma.user.findUnique({
+      where: { username },
       select: { id: true },
     });
-    if (alreadyLinked) {
-      throw new Error("This account is already linked to a guide.");
+    if (usernameTaken) {
+      throw new Error("This username is already taken. Please choose a different username.");
     }
   }
 
   try {
-    await prisma.guide.create({
-      data: {
-        ...guideData,
-        ...(linkedUser ? { userId: linkedUser.id } : {}),
-        certifications: { create: certifications },
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.guide.create({
+        data: {
+          ...guideData,
+          userId: linkedUser.id,
+          certifications: { create: certifications },
+        },
+      });
+
+      // The handle is now live, so retire any alias that still points to it.
+      await tx.usernameAlias.deleteMany({ where: { username } });
+
+      await tx.user.update({
+        where: { id: linkedUser.id },
+        data: { username, role: "GUIDE" },
+      });
     });
   } catch (error) {
     if (isUniqueConstraint(error)) {
-      throw new Error("A guide with this slug already exists. Please choose a different slug.");
+      throw new Error("This username is already taken. Please choose a different username.");
     }
     throw error;
   }
 
-  revalidateGuidePages(fields.slug);
+  revalidateGuidePages(username);
 
   // Notify the newly added guide in the background — never block the action.
-  if (linkedUser) {
-    sendEmailAfter(
-      guideWelcomeEmail({ to: linkedUser.email, name: linkedUser.name }),
-    );
-  }
+  sendEmailAfter(
+    guideWelcomeEmail({ to: linkedUser.email, name: linkedUser.name }),
+  );
 }
 
 export async function updateGuideAction(formData: FormData) {
@@ -187,20 +207,20 @@ export async function updateGuideAction(formData: FormData) {
     throw new Error("Missing guide id.");
   }
 
-  let previousSlug = "";
+  let username = "";
 
   try {
     await prisma.$transaction(async (tx) => {
       const currentGuide = await tx.guide.findUnique({
         where: { id: guideId },
-        select: { slug: true },
+        select: { user: { select: { username: true } } },
       });
 
       if (!currentGuide) {
         throw new Error("Guide not found.");
       }
 
-      previousSlug = currentGuide.slug;
+      username = currentGuide.user.username ?? "";
 
       await tx.guide.update({
         where: { id: guideId },
@@ -217,12 +237,12 @@ export async function updateGuideAction(formData: FormData) {
     });
   } catch (error) {
     if (isUniqueConstraint(error)) {
-      throw new Error("A guide with this slug already exists. Please choose a different slug.");
+      throw new Error("A guide with this username already exists. Please choose a different username.");
     }
     throw error;
   }
 
-  revalidateGuidePages(previousSlug, fields.slug);
+  revalidateGuidePages(username);
 }
 
 export async function deleteGuideAction(guideId: string) {
@@ -234,12 +254,14 @@ export async function deleteGuideAction(guideId: string) {
 
   const guide = await prisma.guide.findUnique({
     where: { id: guideId },
-    select: { slug: true },
+    select: { user: { select: { username: true } } },
   });
 
   if (!guide) {
     throw new Error("Guide not found.");
   }
+
+  const username = guide.user.username ?? "";
 
   await prisma.$transaction(async (tx) => {
     // Unlink this guide from its trips and reviews before removing the row,
@@ -249,5 +271,5 @@ export async function deleteGuideAction(guideId: string) {
     await tx.guide.delete({ where: { id: guideId } });
   });
 
-  revalidateGuidePages(guide.slug);
+  revalidateGuidePages(username);
 }
