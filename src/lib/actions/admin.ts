@@ -4,130 +4,13 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
+import {
+  validTypes,
+  asString,
+  readTripFields,
+  validateTripFields,
+} from "@/lib/trip-fields";
 import { parseSlotInteger } from "@/lib/validations/slots";
-
-const validTypes = ["TREK", "BIKE", "SNOWBOARD", "SKI", "ROCKCLIMB", "EXPEDITION", "YOGA"] as const;
-const validCategories = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
-] as const;
-
-function asString(value: FormDataEntryValue | null) {
-  return value?.toString().trim() ?? "";
-}
-
-function parseImages(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((item) => sanitizeText(item, { maxLength: 2048 }))
-        .filter((item) => isSafeImageSource(item)),
-    ),
-  );
-}
-
-function parseCategories(values: FormDataEntryValue[]) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => value.toString())
-        .filter(
-          (value): value is (typeof validCategories)[number] =>
-            validCategories.includes(value as (typeof validCategories)[number]),
-        ),
-    ),
-  );
-}
-
-function parseList(value: string) {
-  return Array.from(
-    new Set(
-      value
-        .split(/\r?\n/)
-        .map((entry) => sanitizeText(entry, { maxLength: 500 }))
-        .filter(Boolean),
-    ),
-  );
-}
-
-type TripFields = {
-  title: string;
-  slug: string;
-  location: string;
-  description: string;
-  type: string;
-  priceInRupees: number;
-  durationDays: number;
-  maxGroupSize: number;
-  guideId: string;
-  images: string[];
-  categories: (typeof validCategories)[number][];
-  pickup: string;
-  drop: string;
-  inclusions: string[];
-  exclusions: string[];
-  highlights: string[];
-};
-
-function readTripFields(formData: FormData): TripFields {
-  return {
-    title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
-    slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
-    location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
-    description: sanitizeText(asString(formData.get("description")), {
-      maxLength: 5000,
-      allowNewlines: true,
-    }),
-    type: asString(formData.get("type")),
-    priceInRupees: Number.parseInt(asString(formData.get("priceInRupees")), 10),
-    durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
-    maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
-    guideId: asString(formData.get("guideId")),
-    images: parseImages(asString(formData.get("images"))),
-    categories: parseCategories(formData.getAll("categories")),
-    pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
-    drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
-    inclusions: parseList(asString(formData.get("inclusions"))),
-    exclusions: parseList(asString(formData.get("exclusions"))),
-    highlights: parseList(asString(formData.get("highlights"))),
-  };
-}
-
-function validateTripFields(fields: TripFields): TripFields {
-  if (!fields.title || !fields.slug || !fields.location || !fields.description) {
-    throw new Error("Title, slug, location, and description are required.");
-  }
-
-  if (!isValidSlug(fields.slug)) {
-    throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
-  }
-
-  if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {
-    throw new Error("Invalid trip type.");
-  }
-
-  if (
-    Number.isNaN(fields.priceInRupees) ||
-    Number.isNaN(fields.durationDays) ||
-    Number.isNaN(fields.maxGroupSize)
-  ) {
-    throw new Error("One or more numeric fields are invalid.");
-  }
-
-  if (fields.priceInRupees < 0 || fields.durationDays < 1 || fields.maxGroupSize < 1) {
-    throw new Error("Price must be >= 0 and duration/group size must be at least 1.");
-  }
-
-  return fields;
-}
 
 function revalidateTripPages(slug: string) {
   revalidatePath("/admin/trips");

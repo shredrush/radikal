@@ -6,7 +6,8 @@ import { SiteFooter } from "@/components/site-footer";
 
 export function SiteFooterWrapper() {
   const pathname = usePathname();
-  const hideFooter = pathname === "/login" || pathname === "/signup";
+  const hideFooter =
+    pathname === "/login" || pathname === "/signup" || pathname.startsWith("/preview");
 
   if (hideFooter) {
     return null;

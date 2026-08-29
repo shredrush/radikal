@@ -10,6 +10,7 @@ import {
   ApproveTripChangeButton,
   RejectTripChangeButton,
 } from "@/components/admin/review-trip-change-buttons";
+import { PreviewTripChangeButton } from "@/components/admin/preview-trip-change-button";
 import { type TripProposal } from "@/lib/trip-changes";
 import { formatLongDate } from "@/lib/format";
 
@@ -139,6 +140,7 @@ export default async function AdminTripChangesPage() {
                       </div>
                       {isPending ? (
                         <div className="flex flex-wrap gap-2">
+                          <PreviewTripChangeButton changeId={change.id} />
                           <ApproveTripChangeButton changeId={change.id} />
                           <RejectTripChangeButton changeId={change.id} />
                         </div>

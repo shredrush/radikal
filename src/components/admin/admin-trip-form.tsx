@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 
 import { createTripAction, updateTripAction } from "@/lib/actions/admin";
+import { createTripPreviewAction } from "@/lib/actions/trip-previews";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Eye } from "lucide-react";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
 import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
@@ -48,6 +50,8 @@ export function AdminTripForm({
   const isEditing = Boolean(trip);
   const key = trip?.id ?? "new";
   const [isPending, startTransition] = useTransition();
+  const [isPreviewing, startPreviewing] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Materialise every field so create mode (no `trip`) renders blank/empty
   // controls instead of undefined defaults.
@@ -92,9 +96,26 @@ export function AdminTripForm({
     });
   }
 
+  function handlePreview() {
+    const form = formRef.current;
+    if (!form) return;
+    const formData = new FormData(form);
+
+    startPreviewing(async () => {
+      try {
+        const { url } = await createTripPreviewAction(formData);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not generate preview.";
+        toast.error(message);
+      }
+    });
+  }
+
   return (
     <>
-    <form id={`trip-form-${key}`} onSubmit={handleSubmit} className="space-y-6">
+    <form id={`trip-form-${key}`} ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       {isEditing ? <input type="hidden" name="tripId" value={trip?.id} /> : null}
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
@@ -215,6 +236,19 @@ export function AdminTripForm({
           : "The new trip goes live immediately after creating. Add booking dates from its card below."}
       </p>
       <div className="flex items-center gap-3">
+        {!isEditing ? (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+            disabled={isPreviewing}
+            onClick={handlePreview}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {isPreviewing ? "Preparing…" : "Preview"}
+          </Button>
+        ) : null}
         {isEditing ? (
           <DeleteTripButton tripId={trip?.id ?? ""} tripTitle={title} />
         ) : null}

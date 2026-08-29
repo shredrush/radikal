@@ -184,7 +184,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
           <div className="mb-6 flex items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground">
-                Hear It From Those Who've Been There  </p>
+                Hear It From Those Who&apos;ve Been There  </p>
             </div>
 
             {guide._count.reviews > 0 && (

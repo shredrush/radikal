@@ -580,6 +580,24 @@ model TripDraft {
   @@map("trip_drafts")
 }
 
+// A short-lived, token-protected preview of a trip being drafted or a guide
+// trip change pending review. The random 32-byte token is the bearer
+// credential; `expiresAt` bounds its lifetime to a few minutes. Expired rows
+// are deleted lazily each time a preview is created. Rendered by
+// /preview/[token] with a bare-minimum page and caching disabled, so expiry is
+// always enforced server-side.
+model TripPreview {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  proposed  Json
+  context   Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("trip_previews")
+}
+
 // In-app notification for a user (e.g. staff being told a guide trip change
 // awaits review). Read state is tracked via `readAt`.
 model Notification {

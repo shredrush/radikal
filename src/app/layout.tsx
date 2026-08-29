@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
+import { SiteHeaderWrapper } from "@/components/site-header-wrapper";
 import { SiteFooterWrapper } from "@/components/site-footer-wrapper";
 import { SupportWidget } from "@/components/support/support-widget";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,7 +52,9 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <CurrencyProvider>
-            <SiteHeader />
+            <SiteHeaderWrapper>
+              <SiteHeader />
+            </SiteHeaderWrapper>
             <main id="top" className="flex flex-1 flex-col">
               {children}
             </main>

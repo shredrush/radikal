@@ -134,6 +134,10 @@
   ::selection {
     @apply bg-black/10 text-foreground;
   }
+  .dark ::selection {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
 }
 
 @layer utilities {
