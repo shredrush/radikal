@@ -8,6 +8,7 @@ import { createBooking } from "@/lib/actions/booking";
 import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
 import { submitTransactionId } from "@/lib/actions/payment";
 import { sanitizeText } from "@/lib/sanitize";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -290,7 +291,7 @@ export function CheckoutFlow({
                   value={transactionId}
                   onChange={(event) => setTransactionId(event.target.value)}
                   placeholder="e.g. UTR / reference number"
-                  className="h-12 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10"
+                  className={`h-12 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
                 />
               </div>
             </div>

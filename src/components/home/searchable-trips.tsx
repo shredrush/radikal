@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { CTA_PILL } from "@/lib/card-styles";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { TripCard } from "@/components/trips/trip-card";
 import { GuideCard } from "@/components/guides/guide-card";
@@ -155,7 +156,7 @@ export function SearchableTrips({
         <div className="mt-1 mx-auto flex w-full max-w-xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <form
             onSubmit={handleSearchSubmit}
-            className="relative flex items-center gap-2 rounded-full border border-black/15 bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] transition focus-within:border-black/60 focus-within:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.3)] dark:border-white/15 dark:focus-within:border-white/60 sm:pl-5"
+            className={`relative flex items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.3)] sm:pl-5`}
           >
             <Search className="size-4 shrink-0 text-muted-foreground sm:size-5" />
             <input
@@ -194,7 +195,7 @@ export function SearchableTrips({
               <span>Search</span>
             </button>
             {isFocused && query.trim() ? (
-              <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-black/15 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur dark:border-white/15">
+              <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-border bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur">
                 {suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">
                     {suggestions.map((trip, index) => (

@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { CardDescription, CardTitle } from "@/components/ui/card";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { AddTripForm } from "@/components/admin/add-trip-form";
+import { AdminDraftsManager, type AdminDraftData } from "@/components/admin/admin-drafts-manager";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminAccordion } from "@/components/admin/admin-accordion";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
+import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +44,7 @@ export default async function AdminTripsPage({
 
   const where = selectedType ? { type: selectedType } : {};
 
-  const [trips, guides, totalTrips, totalTripsAll, totalSlots] = await Promise.all([
+  const [trips, guides, totalTrips, totalTripsAll, totalSlots, draftRows] = await Promise.all([
     prisma.trip.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -63,7 +65,31 @@ export default async function AdminTripsPage({
     prisma.trip.count({ where }),
     prisma.trip.count(),
     prisma.slot.count(),
+    prisma.tripDraft.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { guide: { select: { name: true } } },
+    }),
   ]);
+
+  const drafts: AdminDraftData[] = draftRows.map((draft) => ({
+    id: draft.id,
+    guideName: draft.guide.name,
+    title: draft.title,
+    type: draft.type,
+    location: draft.location,
+    description: draft.description,
+    priceInRupees: draft.priceInRupees,
+    durationDays: draft.durationDays,
+    maxGroupSize: draft.maxGroupSize,
+    categories: draft.categories,
+    images: draft.images,
+    pickup: draft.pickup,
+    drop: draft.drop,
+    inclusions: draft.inclusions,
+    exclusions: draft.exclusions,
+    highlights: draft.highlights,
+    updatedAt: formatDateTime(draft.updatedAt),
+  }));
 
   const totalPages = Math.max(1, Math.ceil(totalTrips / PAGE_SIZE));
 
@@ -102,7 +128,10 @@ export default async function AdminTripsPage({
           </div>
         </section>
 
-        <AddTripForm guides={guides} />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <AddTripForm guides={guides} />
+          <AdminDraftsManager drafts={drafts} />
+        </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-nowrap gap-1.5 overflow-x-auto">

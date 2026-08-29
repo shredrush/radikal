@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import type { SlotItem } from "@/lib/slot-item";
 import { pluralize } from "@/lib/format";
@@ -20,7 +21,7 @@ import { pluralize } from "@/lib/format";
 export type { SlotItem };
 
 const inputClassName =
-  "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 const MAX_SLOT_CAPACITY = 100;
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { createCustomTripRequestAction } from "@/lib/actions/custom-trips";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { CUSTOM_TRIP_GROUP_LABELS } from "@/lib/custom-trips";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 import { pluralize, toDateInput } from "@/lib/format";
@@ -23,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 const inputClassName =
-  "h-12 w-full rounded-xl border border-border/70 bg-background/80 px-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `h-12 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 const errorInputClassName =
   "border-destructive/60 focus:border-destructive focus-visible:ring-destructive/10";
@@ -319,7 +320,7 @@ export function CustomTripForm() {
             value={requirements}
             onChange={(event) => setRequirements(event.target.value)}
             placeholder="Accommodation preferences, fitness levels, special requests…"
-            className="w-full resize-none rounded-xl border border-border/70 bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-black focus-visible:ring-2 focus-visible:ring-black/10"
+            className={`w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
           />
         </div>
 

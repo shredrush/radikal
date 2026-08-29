@@ -14,6 +14,7 @@ import {
   REVIEW_COMMENT_MAX_CHARS,
   REVIEW_COMMENT_MAX_WORDS,
 } from "@/lib/validations/reviews";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -112,7 +113,7 @@ export function ReviewForm({
               maxLength={REVIEW_COMMENT_MAX_CHARS}
               rows={3}
               placeholder="Share what you loved about the trip…"
-              className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-ring/20"
+              className={`w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-foreground/40 focus:ring-2 focus:ring-ring/20`}
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>

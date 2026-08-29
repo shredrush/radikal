@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Ban, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 
 type CancelResult = { success: boolean; error?: string };
@@ -71,7 +72,7 @@ export function CancelBookingFlow({
         placeholder={placeholder}
         rows={2}
         autoFocus
-        className="w-full resize-none rounded-xl border border-border/70 bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-ring/30"
+        className={`w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-ring/30`}
       />
       <div
         className={`flex flex-wrap gap-2 ${alignActions === "start" ? "justify-start" : "justify-end"}`}

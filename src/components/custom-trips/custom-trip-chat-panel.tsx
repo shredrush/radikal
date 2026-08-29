@@ -12,10 +12,11 @@ import {
   type CustomTripMessageView,
 } from "@/lib/custom-trips";
 import { formatMessageTime } from "@/lib/format";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 
 const composerClassName =
-  "w-full resize-none rounded-xl border border-border/70 bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 function sameThread(a: CustomTripMessageView[], b: CustomTripMessageView[]) {
   if (a.length !== b.length) return false;

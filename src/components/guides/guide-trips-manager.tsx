@@ -2,7 +2,8 @@ import { CheckCircle2, Clock3, Compass, XCircle } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
-import { GuideTripForm, type GuideTripData } from "@/components/guides/guide-trip-form";
+import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
+import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
@@ -42,7 +43,7 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, pendingChanges] = await Promise.all([
+  const [trips, pendingChanges, draftRows] = await Promise.all([
     prisma.trip.findMany({
       where: { guideId },
       orderBy: { createdAt: "asc" },
@@ -57,15 +58,37 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
       where: { guideId },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.tripDraft.findMany({
+      where: { guideId },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
   const pending = pendingChanges.filter((change) => change.status === "PENDING");
 
+  const drafts: GuideDraftData[] = draftRows.map((draft) => ({
+    draftId: draft.id,
+    title: draft.title ?? "",
+    type: draft.type,
+    location: draft.location ?? "",
+    description: draft.description ?? "",
+    priceInRupees: draft.priceInRupees,
+    durationDays: draft.durationDays,
+    maxGroupSize: draft.maxGroupSize,
+    categories: draft.categories,
+    images: draft.images,
+    pickup: draft.pickup ?? "",
+    drop: draft.drop ?? "",
+    inclusions: draft.inclusions,
+    exclusions: draft.exclusions,
+    highlights: draft.highlights,
+  }));
+
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="mr-auto">
             <h3 className="font-heading text-lg font-semibold tracking-wide text-foreground">
               Your trips
             </h3>
@@ -73,6 +96,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Add a new trip or edit an existing one. Changes go live after staff review.
             </p>
           </div>
+          <GuideDraftsManager guideId={guideId} drafts={drafts} />
           <GuideTripForm guideId={guideId} />
         </div>
 
@@ -151,7 +175,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
         )}
       </section>
 
-      <section className="space-y-4">
+      <section id="review-history" className="scroll-mt-28 space-y-4">
         <h3 className="font-heading text-lg font-semibold tracking-wide text-foreground">
           Review history
         </h3>

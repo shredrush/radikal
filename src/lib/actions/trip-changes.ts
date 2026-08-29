@@ -569,7 +569,7 @@ export async function approveTripChangeAction(changeId: string) {
       type: "TRIP_CHANGE_APPROVED",
       title: "Trip change approved",
       body: `Your change for “${proposal.title}” was approved and is now live.`,
-      href: "/profile?tab=trips",
+      href: "/guide-board/trips#review-history",
     });
     sendEmailAfter(
       tripChangeDecisionEmail({
@@ -634,7 +634,7 @@ export async function rejectTripChangeAction(changeId: string) {
       type: "TRIP_CHANGE_REJECTED",
       title: "Trip change rejected",
       body: `Your change for “${proposal.title}” was rejected. You can revise and resubmit it.`,
-      href: "/profile?tab=trips",
+      href: "/guide-board/trips#review-history",
     });
     sendEmailAfter(
       tripChangeDecisionEmail({

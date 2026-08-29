@@ -4,16 +4,17 @@ import { useActionState } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { submitGuideApplicationAction, type GuideApplicationState } from "@/lib/actions/guide-applications";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 const initialState: GuideApplicationState = {};
 
 const inputClassName =
-  "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 const textareaClassName =
-  "min-h-24 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `min-h-24 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 export function GuideApplicationForm({ fullName, username }: { fullName?: string | null; username?: string | null }) {
   const [state, formAction, isPending] = useActionState(submitGuideApplicationAction, initialState);

@@ -188,6 +188,7 @@ model Guide {
   trips          Trip[]
   reviews        Review[]
   tripChanges    TripChangeRequest[]
+  tripDrafts     TripDraft[]
 
   @@map("guides")
 }
@@ -548,6 +549,35 @@ model TripChangeRequest {
   @@index([guideId])
   @@index([tripId])
   @@map("trip_change_requests")
+}
+
+// A guide's in-progress trip draft, saved mid-form for later completion.
+// Unlike a TripChangeRequest (a full proposal staged for review), a draft may
+// be partial — guides can save once at least 3 fields are filled.
+model TripDraft {
+  id            String        @id @default(cuid())
+  guideId       String
+  title         String?
+  type          TripType      @default(TREK)
+  location      String?
+  description   String?
+  priceInRupees Int           @default(0)
+  durationDays  Int           @default(1)
+  maxGroupSize  Int           @default(8)
+  categories    TripCategory[]
+  images        String[]
+  pickup        String?
+  drop          String?
+  inclusions    String[]
+  exclusions    String[]
+  highlights    String[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId])
+  @@map("trip_drafts")
 }
 
 // In-app notification for a user (e.g. staff being told a guide trip change

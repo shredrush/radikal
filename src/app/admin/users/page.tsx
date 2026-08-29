@@ -3,6 +3,7 @@ import { ArrowRight, Search, ShieldCheck, Users as UsersIcon } from "lucide-reac
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -167,7 +168,7 @@ export default async function AdminUsersPage({
                 name="q"
                 defaultValue={search}
                 placeholder="Search name, email, or username"
-                className="h-10 w-full rounded-xl border border-border/70 bg-background/80 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10"
+                className={`h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
               />
             </div>
             <button

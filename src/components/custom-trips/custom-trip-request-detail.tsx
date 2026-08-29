@@ -14,6 +14,7 @@ import {
   type CustomTripRequestDetail,
 } from "@/lib/custom-trips";
 import { cn } from "@/lib/utils";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Badge } from "@/components/ui/badge";
 import { CustomTripChatPanel } from "@/components/custom-trips/custom-trip-chat-panel";
 
@@ -77,7 +78,7 @@ export function CustomTripRequestDetailPanel({
             value={status}
             disabled={isPending}
             onChange={(event) => handleStatusChange(event.target.value)}
-            className="h-9 rounded-lg border border-border/70 bg-background/80 px-2 text-xs shadow-sm outline-none transition focus:border-black disabled:opacity-50"
+            className={`h-9 rounded-lg border ${FORM_FIELD_BORDER} bg-background/80 px-2 text-xs shadow-sm outline-none transition focus:border-ring disabled:opacity-50`}
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option} value={option}>

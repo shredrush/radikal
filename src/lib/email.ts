@@ -515,7 +515,7 @@ export function tripChangeDecisionEmail({
       heading(approved ? "Your change is live!" : "Update on your trip change") +
         paragraph(`Hi ${escapeHtml(name || "there")},`) +
         paragraph(body) +
-        button(siteUrl("/profile?tab=trips"), "View my trips"),
+        button(siteUrl("/guide-board/trips"), "View my trips"),
     ),
   };
 }

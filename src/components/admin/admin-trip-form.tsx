@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { createTripAction, updateTripAction } from "@/lib/actions/admin";
+import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
@@ -12,7 +13,7 @@ import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/
 import { pluralize } from "@/lib/format";
 
 const inputClassName =
-  "flex h-10 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10";
+  `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
 
 export function AdminTripForm({
   trip,
@@ -145,7 +146,7 @@ export function AdminTripForm({
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`description-${key}`}>Description</Label>
-              <textarea id={`description-${key}`} name="description" defaultValue={description} rows={5} required className="min-h-32 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
+              <textarea id={`description-${key}`} name="description" defaultValue={description} rows={5} required className={`min-h-32 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
             </div>
             <div className="space-y-2">
               <Label htmlFor={`pickup-${key}`}>Pickup point</Label>
@@ -157,15 +158,15 @@ export function AdminTripForm({
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`highlights-${key}`}>Why travellers love this (one per line)</Label>
-              <textarea id={`highlights-${key}`} name="highlights" defaultValue={highlights.join("\n")} rows={4} className="min-h-24 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
+              <textarea id={`highlights-${key}`} name="highlights" defaultValue={highlights.join("\n")} rows={4} className={`min-h-24 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
             </div>
             <div className="space-y-2 md:col-span-1">
               <Label htmlFor={`inclusions-${key}`}>What&apos;s included (one per line)</Label>
-              <textarea id={`inclusions-${key}`} name="inclusions" defaultValue={inclusions.join("\n")} rows={5} className="min-h-28 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
+              <textarea id={`inclusions-${key}`} name="inclusions" defaultValue={inclusions.join("\n")} rows={5} className={`min-h-28 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
             </div>
             <div className="space-y-2 md:col-span-1">
               <Label htmlFor={`exclusions-${key}`}>Not included (one per line)</Label>
-              <textarea id={`exclusions-${key}`} name="exclusions" defaultValue={exclusions.join("\n")} rows={5} className="min-h-28 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
+              <textarea id={`exclusions-${key}`} name="exclusions" defaultValue={exclusions.join("\n")} rows={5} className={`min-h-28 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
             </div>
           </div>
         </div>
@@ -178,7 +179,7 @@ export function AdminTripForm({
                 const isChecked = categories.includes(category);
                 return (
                   <label key={category} className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-foreground">
-                    <input type="checkbox" name="categories" value={category} defaultChecked={isChecked} className="h-4 w-4 rounded border-border" />
+                    <input type="checkbox" name="categories" value={category} defaultChecked={isChecked} className="h-4 w-4 rounded border-input" />
                     {TRIP_CATEGORY_LABELS[category] ?? category}
                   </label>
                 );
@@ -188,7 +189,7 @@ export function AdminTripForm({
 
           <div className="space-y-2">
             <Label htmlFor={`images-${key}`}>Images</Label>
-            <textarea id={`images-${key}`} name="images" defaultValue={images.join("\n")} rows={5} className="min-h-32 w-full rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-black focus-visible:ring-2 focus-visible:ring-black/10" />
+            <textarea id={`images-${key}`} name="images" defaultValue={images.join("\n")} rows={5} className={`min-h-32 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
             <p className="text-xs text-muted-foreground">Enter one image path or URL per line, exactly as it should be stored (for example: /activities/your-trip-slug/cover.jpg).</p>
           </div>
 
