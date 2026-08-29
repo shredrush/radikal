@@ -17,12 +17,12 @@ export function GuideSlotCancelButton({ onOpen }: { onOpen: () => void }) {
   return (
     <Button
       type="button"
-      size="sm"
+      size="xs"
       variant="destructive"
       className="rounded-full"
       onClick={onOpen}
     >
-      <Ban className="h-3.5 w-3.5" />
+      <Ban className="h-3 w-3" />
       Cancel trip
     </Button>
   );
