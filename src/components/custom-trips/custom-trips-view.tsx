@@ -6,6 +6,7 @@ import { Briefcase, Compass } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
+  CUSTOM_TRIP_DELETED_STYLE,
   CUSTOM_TRIP_GROUP_LABELS,
   CUSTOM_TRIP_STATUS_LABELS,
   CUSTOM_TRIP_STATUS_STYLES,
@@ -13,7 +14,7 @@ import {
   type CustomTripRequestDetail,
   type CustomTripRequestListItem,
 } from "@/lib/custom-trips";
-import { formatMessageTime } from "@/lib/format";
+import { formatDateTime, formatMessageTime } from "@/lib/format";
 import { CustomTripRequestDetailPanel } from "@/components/custom-trips/custom-trip-request-detail";
 import { Badge } from "@/components/ui/badge";
 
@@ -27,21 +28,25 @@ function listSignature(requests: CustomTripRequestListItem[]) {
   return requests
     .map(
       (request) =>
-        `${request.id}:${request.status}:${request.updatedAt}:${request.lastMessageSenderId ?? ""}:${request.lastMessageBody ?? ""}`,
+        `${request.id}:${request.status}:${request.deletedAt ?? ""}:${request.updatedAt}:${request.lastMessageSenderId ?? ""}:${request.lastMessageBody ?? ""}`,
     )
     .join("|");
 }
 
 export function CustomTripsView({
   initialRequests,
+  deletedRequests: initialDeletedRequests,
   selectedRequestId,
   selectedRequest,
 }: {
   initialRequests: CustomTripRequestListItem[];
+  deletedRequests: CustomTripRequestListItem[];
   selectedRequestId?: string;
   selectedRequest: CustomTripRequestDetail | null;
 }) {
   const [requests, setRequests] = useState<CustomTripRequestListItem[]>(initialRequests);
+  const [deletedRequests, setDeletedRequests] =
+    useState<CustomTripRequestListItem[]>(initialDeletedRequests);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -52,7 +57,13 @@ export function CustomTripsView({
       const next = Array.isArray(data.requests)
         ? (data.requests as CustomTripRequestListItem[])
         : [];
+      const nextDeleted = Array.isArray(data.deleted)
+        ? (data.deleted as CustomTripRequestListItem[])
+        : [];
       setRequests((previous) => (listSignature(previous) === listSignature(next) ? previous : next));
+      setDeletedRequests((previous) =>
+        listSignature(previous) === listSignature(nextDeleted) ? previous : nextDeleted,
+      );
     } catch {
       // Ignore transient network errors; the next poll will retry.
     }
@@ -142,6 +153,56 @@ export function CustomTripsView({
             </div>
           )}
         </div>
+
+        {deletedRequests.length > 0 ? (
+          <div className="space-y-2">
+            <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              Deleted
+            </h2>
+            <div className="flex flex-col gap-2">
+              {deletedRequests.map((request) => {
+                const isActive = request.id === selectedRequestId;
+
+                return (
+                  <Link
+                    key={request.id}
+                    href={`/support?tab=custom&request=${request.id}`}
+                    className={cn(
+                      "flex flex-col gap-1.5 rounded-xl border border-dashed p-3 transition-colors",
+                      isActive
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border/70 bg-background/60 opacity-80 hover:border-border hover:bg-background",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground/70">
+                          <Briefcase className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="truncate text-sm font-medium text-muted-foreground">
+                          {request.customer.name}
+                        </span>
+                      </div>
+                      <Badge className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-widest", CUSTOM_TRIP_DELETED_STYLE)}>
+                        Deleted
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {CUSTOM_TRIP_GROUP_LABELS[request.groupType] ?? request.groupType} ·{" "}
+                      {formatCustomTripDateRange(request.startDate, request.endDate)}
+                    </p>
+                    <p className="min-w-0 truncate text-xs text-muted-foreground">
+                      {preview(request.lastMessageBody)}
+                    </p>
+                    <p className="text-[0.65rem] text-muted-foreground/70">
+                      {request.deletedAt ? `Deleted ${formatDateTime(request.deletedAt)}` : "Deleted"}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </aside>
 
       {/* Request detail */}

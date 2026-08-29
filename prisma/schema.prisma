@@ -115,6 +115,9 @@ model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
+  // Full phone number in E.164 format (e.g. +917217217678), collected at
+  // signup with a per-country dial-code dropdown.
+  phone        String?
   // Public, lowercase-alphanumeric handle. For guide accounts it doubles as
   // the guide's public URL segment (e.g. /tenzin). Uniqueness is enforced by a
   // DB constraint; the app layer additionally validates the format, length and
@@ -442,6 +445,11 @@ model SupportChat {
   userId             String            @unique
   status             SupportChatStatus @default(OPEN)
   customerLastReadAt DateTime?
+  // Set when the customer soft-deletes ("marks as resolved") their own support
+  // thread. The row is kept so the support dashboard can show it under a
+  // "Resolved" section, but it is hidden from the customer until they message
+  // again, which clears it and reopens the thread.
+  deletedAt          DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
@@ -483,6 +491,10 @@ model CustomTripRequest {
   budgetRupees     Int?
   requirements     String?
   status           CustomTripStatus    @default(NEW)
+  // Set when the customer soft-deletes their request from the chat page. The
+  // row is kept so the support dashboard can show it under a "Deleted"
+  // section, but it is hidden everywhere customer-facing.
+  deletedAt        DateTime?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 

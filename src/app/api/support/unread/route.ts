@@ -34,7 +34,7 @@ export async function GET() {
 
   try {
     const chat = await prisma.supportChat.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       include: { messages: { select: { senderId: true, createdAt: true } } },
     });
 

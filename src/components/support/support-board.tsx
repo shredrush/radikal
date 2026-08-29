@@ -40,6 +40,7 @@ const CustomTripsView = dynamic(
 export type SupportBoardSelectedChat = {
   id: string;
   status: "OPEN" | "CLOSED";
+  deletedAt: string | null;
   customerName: string;
   customerEmail: string;
   messages: SupportMessageView[];
@@ -49,8 +50,8 @@ export type SupportBoardTab = "conversations" | "bookings" | "custom";
 
 const TABS: { key: SupportBoardTab; href: string; label: string; icon: LucideIcon }[] = [
   { key: "conversations", href: "/support", label: "Conversations", icon: MessageSquare },
-  { key: "bookings", href: "/support?tab=bookings", label: "Bookings", icon: Ticket },
   { key: "custom", href: "/support?tab=custom", label: "Custom trips", icon: Compass },
+  { key: "bookings", href: "/support?tab=bookings", label: "Bookings", icon: Ticket },
 ];
 
 const TAB_META: Record<SupportBoardTab, { title: string; description: string }> = {
@@ -78,7 +79,7 @@ function chatListSignature(chats: SupportChatListItem[]) {
   return chats
     .map(
       (chat) =>
-        `${chat.id}:${chat.status}:${chat.lastMessageSenderId ?? ""}:${chat.lastMessageBody ?? ""}:${chat.updatedAt}`,
+        `${chat.id}:${chat.status}:${chat.deletedAt ?? ""}:${chat.lastMessageSenderId ?? ""}:${chat.lastMessageBody ?? ""}:${chat.updatedAt}`,
     )
     .join("|");
 }
@@ -94,10 +95,12 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 export function SupportBoard({
   initialChats,
+  initialResolvedChats,
   pendingConversationsCount,
   initialBookings,
   pendingBookingsCount,
   initialCustomRequests,
+  deletedCustomRequests,
   newCustomRequestsCount,
   chatId,
   tab,
@@ -106,10 +109,12 @@ export function SupportBoard({
   selectedCustomRequest,
 }: {
   initialChats: SupportChatListItem[];
+  initialResolvedChats: SupportChatListItem[];
   pendingConversationsCount: number;
   initialBookings: BookingBoardItem[];
   pendingBookingsCount: number;
   initialCustomRequests: CustomTripRequestListItem[];
+  deletedCustomRequests: CustomTripRequestListItem[];
   newCustomRequestsCount: number;
   chatId?: string;
   tab: SupportBoardTab;
@@ -118,6 +123,8 @@ export function SupportBoard({
   selectedCustomRequest: CustomTripRequestDetail | null;
 }) {
   const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
+  const [resolvedChats, setResolvedChats] =
+    useState<SupportChatListItem[]>(initialResolvedChats);
 
   const loadChats = useCallback(async () => {
     try {
@@ -126,7 +133,13 @@ export function SupportBoard({
 
       const data = await response.json();
       const next = Array.isArray(data.chats) ? (data.chats as SupportChatListItem[]) : [];
+      const nextResolved = Array.isArray(data.resolved)
+        ? (data.resolved as SupportChatListItem[])
+        : [];
       setChats((previous) => (chatListSignature(previous) === chatListSignature(next) ? previous : next));
+      setResolvedChats((previous) =>
+        chatListSignature(previous) === chatListSignature(nextResolved) ? previous : nextResolved,
+      );
     } catch {
       // Ignore transient network errors; the next poll will retry.
     }
@@ -140,6 +153,7 @@ export function SupportBoard({
 
   const openChats = chats.filter((chat) => chat.status === "OPEN");
   const closedChats = chats.filter((chat) => chat.status === "CLOSED");
+  const resolvedByCustomer = resolvedChats.length;
 
   // On the conversations tab the count stays live with the 3s poll; on the
   // other tabs the full chat list is never loaded, so use the server-computed
@@ -155,8 +169,9 @@ export function SupportBoard({
     custom: newCustomRequestsCount,
   };
 
-  function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
+  function renderChatItem(chat: SupportChatListItem, isActive: boolean, resolvedAt?: string | null) {
     const awaitingReply = isAwaitingReply(chat);
+    const isClosed = chat.status === "CLOSED" && !resolvedAt;
 
     return (
       <Link
@@ -165,7 +180,9 @@ export function SupportBoard({
         className={`flex flex-col gap-1.5 rounded-xl border p-3 transition-colors ${
           isActive
             ? "border-primary/30 bg-primary/5"
-            : "border-border/70 bg-background/60 hover:border-border hover:bg-background"
+            : resolvedAt
+              ? "border-dashed border-border/70 bg-background/60 opacity-80 hover:border-border hover:bg-background"
+              : "border-border/70 bg-background/60 hover:border-border hover:bg-background"
         }`}
       >
         <div className="flex items-center justify-between gap-2">
@@ -173,19 +190,27 @@ export function SupportBoard({
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <User className="h-3.5 w-3.5" />
             </span>
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className={`truncate text-sm font-medium ${resolvedAt ? "text-muted-foreground" : "text-foreground"}`}>
               {chat.userName}
             </span>
           </div>
           <span className="shrink-0 text-[0.65rem] text-muted-foreground">
-            {formatMessageTime(chat.updatedAt)}
+            {resolvedAt ? `Resolved ${formatMessageTime(resolvedAt)}` : formatMessageTime(chat.updatedAt)}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 truncate text-xs text-muted-foreground">
             {preview(chat.lastMessageBody)}
           </p>
-          {awaitingReply ? (
+          {resolvedAt ? (
+            <Badge className="shrink-0 rounded-full border border-muted-foreground/40 bg-muted-foreground/10 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-muted-foreground">
+              Resolved
+            </Badge>
+          ) : isClosed ? (
+            <Badge className="shrink-0 rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-rose-600 dark:text-rose-400">
+              Closed
+            </Badge>
+          ) : awaitingReply ? (
             <Badge className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400">
               Awaiting reply
             </Badge>
@@ -244,10 +269,11 @@ export function SupportBoard({
         </header>
 
         {tab === "conversations" ? (
-          <section className="grid gap-3 md:grid-cols-3">
-            <StatCard label="Open chats" value={openChats.length} />
-            <StatCard label="Resolved" value={closedChats.length} />
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Awaiting reply" value={awaitingReplyCount} />
+            <StatCard label="Open chats" value={openChats.length} />
+            <StatCard label="Closed" value={closedChats.length} />
+            <StatCard label="Resolved" value={resolvedByCustomer} />
           </section>
         ) : tab === "bookings" ? (
           <BookingsStats items={initialBookings} />
@@ -266,6 +292,7 @@ export function SupportBoard({
           <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <CustomTripsView
               initialRequests={initialCustomRequests}
+              deletedRequests={deletedCustomRequests}
               selectedRequestId={selectedCustomRequestId}
               selectedRequest={selectedCustomRequest}
             />
@@ -290,16 +317,37 @@ export function SupportBoard({
                   )}
                 </div>
 
-                {closedChats.length > 0 ? (
-                  <div className="space-y-2">
-                    <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                      Resolved
-                    </h2>
+                <div className="space-y-2">
+                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Closed
+                  </h2>
+                  {closedChats.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+                      No closed conversations.
+                    </p>
+                  ) : (
                     <div className="flex flex-col gap-2">
                       {closedChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
                     </div>
-                  </div>
-                ) : null}
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Resolved
+                  </h2>
+                  {resolvedChats.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
+                      No resolved conversations.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {resolvedChats.map((chat) =>
+                        renderChatItem(chat, chat.id === chatId, chat.deletedAt),
+                      )}
+                    </div>
+                  )}
+                </div>
               </aside>
 
               {/* Conversation detail */}
@@ -308,6 +356,7 @@ export function SupportBoard({
                   <SupportReplyPanel
                     chatId={selectedChat.id}
                     status={selectedChat.status}
+                    resolvedAt={selectedChat.deletedAt}
                     customerName={selectedChat.customerName}
                     customerEmail={selectedChat.customerEmail}
                     messages={selectedChat.messages}

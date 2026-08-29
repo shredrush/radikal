@@ -55,6 +55,7 @@ export type SupportChatListItem = {
   id: string;
   status: "OPEN" | "CLOSED";
   updatedAt: string;
+  deletedAt: string | null;
   userId: string;
   userName: string;
   userEmail: string;
@@ -71,6 +72,7 @@ export function toSupportChatListItem(chat: {
   id: string;
   status: "OPEN" | "CLOSED";
   updatedAt: Date;
+  deletedAt: Date | null;
   user: { id: string; name: string | null; email: string };
   messages: Array<{ senderId: string; body: string }>;
 }): SupportChatListItem {
@@ -79,6 +81,7 @@ export function toSupportChatListItem(chat: {
     id: chat.id,
     status: chat.status,
     updatedAt: chat.updatedAt.toISOString(),
+    deletedAt: chat.deletedAt ? chat.deletedAt.toISOString() : null,
     userId: chat.user.id,
     userName: chat.user.name || chat.user.email,
     userEmail: chat.user.email,

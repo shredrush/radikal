@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, Ticket } from "lucide-react";
+import { Ban, CheckCircle2, ChevronDown, Loader2, Ticket } from "lucide-react";
 
 import { BookingCard, type BookingCardData } from "@/components/profile/booking-card";
 import { cn } from "@/lib/utils";
 
-type SectionKind = "upcoming" | "completed" | "all";
+type SectionKind = "upcoming" | "completed" | "cancelled" | "all";
 
 const emptyIcons = {
   upcoming: Ticket,
   completed: CheckCircle2,
+  cancelled: Ban,
   all: Ticket,
 } as const;
 

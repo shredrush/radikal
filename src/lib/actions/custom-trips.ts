@@ -12,6 +12,7 @@ import {
   createCustomTripSchema,
   customTripMessageSchema,
 } from "@/lib/validations/custom-trip";
+import { MAX_OPEN_CUSTOM_TRIP_CHATS } from "@/lib/custom-trips";
 
 export type CreateCustomTripResult =
   | { success: true; requestId: string }
@@ -46,6 +47,16 @@ export async function createCustomTripRequestAction(
   const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
   if (!requestLimit.success) {
     return { success: false, error: rateLimitError(requestLimit) };
+  }
+
+  const openRequestCount = await prisma.customTripRequest.count({
+    where: { userId, status: { notIn: ["CONFIRMED", "CANCELLED"] }, deletedAt: null },
+  });
+  if (openRequestCount >= MAX_OPEN_CUSTOM_TRIP_CHATS) {
+    return {
+      success: false,
+      error: `You can have up to ${MAX_OPEN_CUSTOM_TRIP_CHATS} open custom trip chats at a time. Close an existing request before starting a new one.`,
+    };
   }
 
   const {
@@ -187,6 +198,9 @@ export async function replyCustomTripMessageAction(requestId: string, formData: 
     if (!request?.chat) {
       throw new Error("Request not found.");
     }
+    if (request.deletedAt) {
+      throw new Error("This request was deleted by the customer.");
+    }
 
     await tx.customTripMessage.create({
       data: { chatId: request.chat.id, senderId: session.user!.id, body },
@@ -207,6 +221,53 @@ export async function replyCustomTripMessageAction(requestId: string, formData: 
 
   revalidatePath("/support");
   revalidatePath("/custom-trip");
+}
+
+/**
+ * Customer soft-deletes their own custom trip request. The row (and its chat
+ * thread) is kept so the support dashboard can show it under a "Deleted"
+ * section, but it disappears everywhere customer-facing. Confirmed requests
+ * cannot be deleted so a confirmed booking's history is never dropped.
+ */
+export async function deleteCustomTripRequestAction(requestId: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login?callbackUrl=/custom-trip");
+  }
+
+  if (!requestId) {
+    throw new Error("Missing request.");
+  }
+
+  const userId = session.user.id;
+
+  const request = await prisma.customTripRequest.findFirst({
+    where: { id: requestId, userId, deletedAt: null },
+    select: { id: true, status: true },
+  });
+  if (!request) {
+    throw new Error("Request not found.");
+  }
+
+  if (request.status === "CONFIRMED") {
+    throw new Error("A confirmed custom trip cannot be deleted. Contact support for help.");
+  }
+
+  await prisma.customTripRequest.update({
+    where: { id: requestId },
+    data: { deletedAt: new Date() },
+  });
+
+  await logActivity({
+    userId,
+    action: "CUSTOM_TRIP_REQUEST_DELETED",
+    label: "Deleted a custom trip request",
+    metadata: { requestId },
+  });
+
+  revalidatePath("/custom-trip");
+  revalidatePath("/profile");
+  revalidatePath("/support");
 }
 
 /**

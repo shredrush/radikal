@@ -26,7 +26,20 @@ export const dynamic = "force-dynamic";
 
 async function loadChats(): Promise<SupportChatListItem[]> {
   const rows = await prisma.supportChat.findMany({
+    where: { deletedAt: null },
     orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+  return rows.map(toSupportChatListItem);
+}
+
+async function loadResolvedChats(): Promise<SupportChatListItem[]> {
+  const rows = await prisma.supportChat.findMany({
+    where: { deletedAt: { not: null } },
+    orderBy: { deletedAt: "desc" },
     include: {
       user: { select: { id: true, name: true, email: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -47,6 +60,7 @@ async function countOpenChatsAwaitingReply(): Promise<number> {
     SELECT COUNT(*)::int AS "count"
     FROM support_chats sc
     WHERE sc."status" = 'OPEN'
+      AND sc."deletedAt" IS NULL
       AND (SELECT sm."senderId"
            FROM support_messages sm
            WHERE sm."chatId" = sc.id
@@ -58,7 +72,20 @@ async function countOpenChatsAwaitingReply(): Promise<number> {
 
 async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
   const rows = await prisma.customTripRequest.findMany({
+    where: { deletedAt: null },
     orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true, username: true } },
+      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    },
+  });
+  return rows.map(toCustomTripRequestListItem);
+}
+
+async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]> {
+  const rows = await prisma.customTripRequest.findMany({
+    where: { deletedAt: { not: null } },
+    orderBy: { deletedAt: "desc" },
     include: {
       user: { select: { id: true, name: true, email: true, username: true } },
       chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
@@ -83,7 +110,7 @@ export default async function SupportBoardPage({
   // query, the global past-booking completion sweep, and every custom trip
   // request on every visit. Inactive tabs now contribute a single cheap count
   // (indexed by status) for their tab badge instead.
-  const [chats, awaitingReplyCount, bookings, pendingBookingsCount, customRequests, newCustomRequestsCount, selectedChat, selectedCustomRequest] =
+  const [chats, awaitingReplyCount, resolvedChats, bookings, pendingBookingsCount, customRequests, deletedCustomRequests, newCustomRequestsCount, selectedChat, selectedCustomRequest] =
     await Promise.all([
       tab === "conversations"
         ? loadChats()
@@ -91,6 +118,9 @@ export default async function SupportBoardPage({
       tab === "conversations"
         ? Promise.resolve(0)
         : countOpenChatsAwaitingReply(),
+      tab === "conversations"
+        ? loadResolvedChats()
+        : Promise.resolve([] as SupportChatListItem[]),
       tab === "bookings"
         ? fetchBookingsWithDetails(
             {},
@@ -104,8 +134,11 @@ export default async function SupportBoardPage({
         ? loadCustomRequests()
         : Promise.resolve([] as CustomTripRequestListItem[]),
       tab === "custom"
+        ? loadDeletedCustomRequests()
+        : Promise.resolve([] as CustomTripRequestListItem[]),
+      tab === "custom"
         ? Promise.resolve(0)
-        : prisma.customTripRequest.count({ where: { status: "NEW" } }),
+        : prisma.customTripRequest.count({ where: { status: "NEW", deletedAt: null } }),
       chatId && tab === "conversations"
         ? prisma.supportChat.findUnique({
             where: { id: chatId },
@@ -132,6 +165,7 @@ export default async function SupportBoardPage({
         status: selectedChat.status,
         customerName: selectedChat.user.name || selectedChat.user.email,
         customerEmail: selectedChat.user.email,
+        deletedAt: selectedChat.deletedAt ? selectedChat.deletedAt.toISOString() : null,
         messages: toSupportMessageViews(selectedChat.messages, session.user.id),
       }
     : null;
@@ -148,6 +182,7 @@ export default async function SupportBoardPage({
   return (
     <SupportBoard
       initialChats={chats}
+      initialResolvedChats={resolvedChats}
       pendingConversationsCount={
         tab === "conversations"
           ? chats.filter(isAwaitingReply).length
@@ -160,6 +195,7 @@ export default async function SupportBoardPage({
           : pendingBookingsCount
       }
       initialCustomRequests={customRequests}
+      deletedCustomRequests={deletedCustomRequests}
       newCustomRequestsCount={
         tab === "custom"
           ? customRequests.filter((request) => request.status === "NEW").length

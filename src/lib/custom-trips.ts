@@ -26,6 +26,16 @@ export const CUSTOM_TRIP_STATUS_STYLES: Record<string, string> = {
   CANCELLED: "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400",
 };
 
+export const CUSTOM_TRIP_DELETED_STYLE =
+  "border-muted-foreground/40 bg-muted-foreground/10 text-muted-foreground";
+
+// Statuses that still count as an open chat (the request hasn't been confirmed
+// or cancelled yet). A user can keep this many open custom trip chats at once.
+export const MAX_OPEN_CUSTOM_TRIP_CHATS = 10;
+export const OPEN_CUSTOM_TRIP_STATUSES = {
+  notIn: ["CONFIRMED", "CANCELLED"],
+} as const;
+
 export type CustomTripMessageView = {
   id: string;
   body: string;
@@ -46,6 +56,7 @@ export type CustomTripRequestListItem = {
   requirements: string | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
   customer: {
     name: string;
     username: string | null;
@@ -104,6 +115,7 @@ export function toCustomTripRequestListItem(request: {
   requirements: string | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
   user: { id: string; name: string | null; email: string; username: string | null };
   chat: { messages: Array<{ senderId: string; body: string }> } | null;
 }): CustomTripRequestListItem {
@@ -122,6 +134,7 @@ export function toCustomTripRequestListItem(request: {
     requirements: request.requirements,
     createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
+    deletedAt: request.deletedAt ? request.deletedAt.toISOString() : null,
     customer: {
       name: request.user.name || request.user.email,
       username: request.user.username,

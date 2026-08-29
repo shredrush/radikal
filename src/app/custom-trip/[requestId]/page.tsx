@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CustomTripChatPanel } from "@/components/custom-trips/custom-trip-chat-panel";
+import { DeleteCustomTripRequestButton } from "@/components/custom-trips/delete-custom-trip-request-button";
 import {
   CUSTOM_TRIP_GROUP_LABELS,
   CUSTOM_TRIP_STATUS_LABELS,
@@ -37,7 +38,7 @@ export default async function CustomTripRequestPage({
   }
 
   const request = await prisma.customTripRequest.findFirst({
-    where: { id: requestId, userId: session.user.id },
+    where: { id: requestId, userId: session.user.id, deletedAt: null },
     include: { chat: { include: { messages: { orderBy: { createdAt: "asc" } } } } },
   });
 
@@ -77,14 +78,19 @@ export default async function CustomTripRequestPage({
                 {formatCustomTripDateRange(request.startDate, request.endDate)}
               </p>
             </div>
-            <Badge
-              className={cn(
-                "rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-widest",
-                CUSTOM_TRIP_STATUS_STYLES[request.status] ?? CUSTOM_TRIP_STATUS_STYLES.NEW,
-              )}
-            >
-              {CUSTOM_TRIP_STATUS_LABELS[request.status] ?? request.status}
-            </Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              {request.status !== "CONFIRMED" ? (
+                <DeleteCustomTripRequestButton requestId={request.id} />
+              ) : null}
+              <Badge
+                className={cn(
+                  "rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-widest",
+                  CUSTOM_TRIP_STATUS_STYLES[request.status] ?? CUSTOM_TRIP_STATUS_STYLES.NEW,
+                )}
+              >
+                {CUSTOM_TRIP_STATUS_LABELS[request.status] ?? request.status}
+              </Badge>
+            </div>
           </div>
 
           <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">

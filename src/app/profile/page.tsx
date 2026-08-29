@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
   AtSign,
+  Ban,
   Bell,
   Camera,
   CalendarDays,
@@ -214,7 +215,7 @@ export default async function ProfilePage({
       : Promise.resolve([]),
     activeTab === "bookings" && !canReadAllBookings
       ? prisma.customTripRequest.findMany({
-          where: { userId: user.id },
+          where: { userId: user.id, deletedAt: null },
           orderBy: { createdAt: "desc" },
           include: {
             user: { select: { id: true, name: true, email: true, username: true } },
@@ -241,7 +242,7 @@ export default async function ProfilePage({
       : Promise.resolve([]),
     !canAccessSupportDesk && activeTab === "support"
       ? prisma.supportChat.findUnique({
-          where: { userId: user.id },
+          where: { userId: user.id, deletedAt: null },
           include: { messages: { orderBy: { createdAt: "asc" } } },
         })
       : Promise.resolve(null),
@@ -256,6 +257,7 @@ export default async function ProfilePage({
            AND sm."senderId" <> ${user.id}
            AND sm."createdAt" > COALESCE(sc."customerLastReadAt", sc."createdAt")
           WHERE sc."userId" = ${user.id}
+            AND sc."deletedAt" IS NULL
           GROUP BY sc.id, sc."status"
         `
       : Promise.resolve(null),
@@ -300,9 +302,13 @@ export default async function ProfilePage({
   // active.
   const completedBookings = bookings.filter((booking) => booking.status === "COMPLETED");
 
-  // Completed trips get their own section, so keep them out of the main
-  // "Your bookings" list to avoid showing each finished trip twice.
-  const activeBookings = bookings.filter((booking) => booking.status !== "COMPLETED");
+  const cancelledBookings = bookings.filter((booking) => booking.status === "CANCELLED");
+
+  // Completed and cancelled trips get their own sections, so keep them out of
+  // the main "Your bookings" list to avoid showing each trip twice.
+  const activeBookings = bookings.filter(
+    (booking) => booking.status !== "COMPLETED" && booking.status !== "CANCELLED",
+  );
 
   // The user's existing reviews, keyed by trip so the completed-trips list can
   // offer "Leave a review" for unreviewed trips and "Edit review" for reviewed
@@ -366,6 +372,53 @@ export default async function ProfilePage({
                     cancellationReason: booking.cancellationReason,
                     showReview: true,
                     review: reviewsByTripId.get(booking.tripId) ?? null,
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const cancelledTripsSection = (
+    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+      <CardHeader>
+        <CardTitle>Cancelled trips</CardTitle>
+        <CardDescription>
+          Trips you&apos;ve cancelled or that were cancelled before they started.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {cancelledBookings.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+            <Ban className="h-8 w-8 text-muted-foreground/50" />
+            <div>
+              <p className="font-medium text-foreground">No cancelled trips</p>
+            </div>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {cancelledBookings.map((booking) => (
+              <li key={booking.id}>
+                <BookingCardDynamic
+                  booking={{
+                    id: booking.id,
+                    tripSlug: booking.trip.slug,
+                    title: booking.trip.title,
+                    location: booking.trip.location,
+                    image: getTripCardImage(booking.trip),
+                    dateRange: formatTripDateRange(
+                      booking.slot.date,
+                      booking.trip.durationDays
+                    ),
+                    participantCount: booking.participantCount,
+                    totalPriceRupees: booking.totalPriceRupees,
+                    status: "CANCELLED",
+                    paymentTransactionId: booking.paymentTransactionId,
+                    bookedAt: booking.createdAt.toISOString(),
+                    cancellationReason: booking.cancellationReason,
                   }}
                 />
               </li>
@@ -761,6 +814,15 @@ export default async function ProfilePage({
                   emptyTitle="No completed trips yet"
                   emptyDescription="Trips you finish will appear here once their dates have passed."
                 />
+
+                <LazyBookingsSectionDynamic
+                  kind="cancelled"
+                  title="Cancelled trips"
+                  description="Trips you've cancelled or that were cancelled before they started."
+                  endpoint="/api/profile/bookings?kind=cancelled"
+                  emptyTitle="No cancelled trips"
+                  emptyDescription="Trips you cancel will appear here so you can still see the details."
+                />
               </div>
             ) : (
               <div className="flex flex-col gap-6">
@@ -779,7 +841,7 @@ export default async function ProfilePage({
                           <p className="mt-1 text-sm text-muted-foreground">
                             {bookings.length === 0
                               ? "Once you book a trip, it will show up here with its status."
-                              : "Your finished trips are listed in the Completed trips section."}
+                              : "Finished and cancelled trips are listed in their own sections below."}
                           </p>
                         </div>
                         <Button
@@ -847,6 +909,8 @@ export default async function ProfilePage({
                     )}
                   </CardContent>
                 </Card>
+
+                {cancelledTripsSection}
               </div>
             )}
           </div>

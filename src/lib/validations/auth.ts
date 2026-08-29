@@ -30,6 +30,11 @@ export const signupSchema = z.object({
     usernameSchema.optional()
   ),
   password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password must be 72 characters or fewer"),
+  // Full E.164 number (e.g. +917217217678): a leading +, then 7–15 digits.
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+\d{7,15}$/, "Enter a valid phone number with country code"),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

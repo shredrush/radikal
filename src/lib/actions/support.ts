@@ -36,11 +36,12 @@ export async function sendSupportMessageAction(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // One thread per customer. If it was closed, the customer's message
-    // reopens it so it reappears in the support board.
+    // One thread per customer. If it was resolved (soft-deleted) or closed, the
+    // customer's message reopens it and clears the deletion so it reappears in
+    // the support board.
     const chat = await tx.supportChat.upsert({
       where: { userId },
-      update: { status: "OPEN" },
+      update: { status: "OPEN", deletedAt: null },
       create: { userId, status: "OPEN" },
     });
 
@@ -88,6 +89,9 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
     if (!chat) {
       throw new Error("Conversation not found.");
     }
+    if (chat.deletedAt) {
+      throw new Error("This conversation was resolved by the customer.");
+    }
 
     await tx.supportMessage.create({
       data: { chatId, senderId: session.user!.id, body },
@@ -134,7 +138,44 @@ export async function setSupportChatStatusAction(
 
   await prisma.supportChat.update({
     where: { id: chatId },
-    data: { status },
+    data: {
+      status,
+      // Reopening a resolved thread clears its soft-delete marker so it leaves
+      // the "Resolved" section instead of appearing in two places.
+      ...(status === "OPEN" ? { deletedAt: null } : {}),
+    },
+  });
+
+  revalidatePath("/support");
+  revalidatePath("/profile");
+}
+
+/**
+ * Support agent marks a closed conversation as resolved. The thread is
+ * soft-deleted (deletedAt set) so it moves from the "Closed" section to the
+ * "Resolved" section of the support dashboard.
+ */
+export async function markSupportChatResolvedAction(chatId: string) {
+  await requirePermission("support.manage", "/login?callbackUrl=/support");
+
+  if (!chatId) {
+    throw new Error("Missing conversation.");
+  }
+
+  const chat = await prisma.supportChat.findUnique({
+    where: { id: chatId },
+    select: { status: true, deletedAt: true },
+  });
+  if (!chat) {
+    throw new Error("Conversation not found.");
+  }
+  if (chat.deletedAt) {
+    throw new Error("This conversation is already resolved.");
+  }
+
+  await prisma.supportChat.update({
+    where: { id: chatId },
+    data: { status: "CLOSED", deletedAt: new Date() },
   });
 
   revalidatePath("/support");
@@ -153,7 +194,7 @@ export async function reopenSupportChatAction() {
 
   await prisma.supportChat.updateMany({
     where: { userId: session.user.id },
-    data: { status: "OPEN" },
+    data: { status: "OPEN", deletedAt: null },
   });
 
   revalidatePath("/profile");
@@ -161,8 +202,10 @@ export async function reopenSupportChatAction() {
 }
 
 /**
- * Customer-facing action: mark their support thread as resolved, which removes
- * it from their view so they get a fresh chat the next time they need help.
+ * Customer-facing action: mark their support thread as resolved. The thread is
+ * soft-deleted (deletedAt set) so it disappears from the customer's view but is
+ * still shown under the "Resolved" section of the support dashboard. A fresh
+ * message from the customer clears the marker and reopens the thread.
  */
 export async function resolveSupportChatAction() {
   const session = await auth();
@@ -170,8 +213,9 @@ export async function resolveSupportChatAction() {
     redirect("/login?callbackUrl=/profile?tab=support");
   }
 
-  await prisma.supportChat.deleteMany({
+  await prisma.supportChat.updateMany({
     where: { userId: session.user.id },
+    data: { status: "CLOSED", deletedAt: new Date() },
   });
 
   revalidatePath("/profile");

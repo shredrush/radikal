@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Archive, Inbox, Send } from "lucide-react";
+import { Archive, Check, Inbox, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  markSupportChatResolvedAction,
   replySupportMessageAction,
   setSupportChatStatusAction,
 } from "@/lib/actions/support";
@@ -25,18 +26,21 @@ function sameThread(a: SupportMessageView[], b: SupportMessageView[]) {
 export function SupportReplyPanel({
   chatId,
   status: initialStatus,
+  resolvedAt: initialResolvedAt = null,
   customerName,
   customerEmail,
   messages: initialMessages,
 }: {
   chatId: string;
   status: "OPEN" | "CLOSED";
+  resolvedAt?: string | null;
   customerName: string;
   customerEmail: string;
   messages: SupportMessageView[];
 }) {
   const [messages, setMessages] = useState<SupportMessageView[]>(initialMessages);
   const [status, setStatus] = useState<"OPEN" | "CLOSED">(initialStatus);
+  const [resolvedAt, setResolvedAt] = useState<string | null>(initialResolvedAt);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -96,12 +100,31 @@ export function SupportReplyPanel({
       try {
         await setSupportChatStatusAction(chatId, nextStatus);
         setStatus(nextStatus);
+        if (nextStatus === "OPEN") {
+          setResolvedAt(null);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not update conversation.";
         toast.error(message);
       }
     });
   }
+
+  function handleMarkResolved() {
+    startTransition(async () => {
+      try {
+        await markSupportChatResolvedAction(chatId);
+        setStatus("CLOSED");
+        setResolvedAt(new Date().toISOString());
+        toast.success("Conversation marked as resolved.");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not resolve conversation.";
+        toast.error(message);
+      }
+    });
+  }
+
+  const isResolved = resolvedAt != null;
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -115,18 +138,20 @@ export function SupportReplyPanel({
         <div className="flex items-center gap-2">
           <Badge
             className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] ${
-              status === "OPEN"
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                : "border-muted-foreground/30 bg-muted text-muted-foreground"
+              isResolved
+                ? "border-muted-foreground/40 bg-muted-foreground/10 text-muted-foreground"
+                : status === "OPEN"
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  : "border-muted-foreground/30 bg-muted text-muted-foreground"
             }`}
           >
-            {status === "OPEN" ? "Open" : "Closed"}
+            {isResolved ? "Resolved" : status === "OPEN" ? "Open" : "Closed"}
           </Badge>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="min-w-36 justify-center rounded-full"
             disabled={isPending}
             onClick={handleToggleStatus}
           >
@@ -142,6 +167,19 @@ export function SupportReplyPanel({
               </>
             )}
           </Button>
+          {status === "CLOSED" && !isResolved ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-w-36 justify-center rounded-full"
+              disabled={isPending}
+              onClick={handleMarkResolved}
+            >
+              <Check className="h-3.5 w-3.5" />
+              Mark resolved
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -158,24 +196,31 @@ export function SupportReplyPanel({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        <textarea
-          name="body"
-          placeholder="Write a reply…"
-          rows={2}
-          className={composerClassName}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
-          }}
-        />
-        <Button type="submit" size="lg" disabled={isPending} className="rounded-xl px-4">
-          <Send className="h-4 w-4" />
-          {isPending ? "Sending…" : "Reply"}
-        </Button>
-      </form>
+      {isResolved ? (
+        <div className="flex items-center justify-center gap-2 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-4 text-center text-sm text-muted-foreground">
+          <Check className="h-4 w-4" />
+          This conversation has been resolved. Reopen it to send a reply.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex items-end gap-2">
+          <textarea
+            name="body"
+            placeholder="Write a reply…"
+            rows={2}
+            className={composerClassName}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <Button type="submit" size="lg" disabled={isPending} className="rounded-xl px-4">
+            <Send className="h-4 w-4" />
+            {isPending ? "Sending…" : "Reply"}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

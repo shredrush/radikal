@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { bookingCardSelect, toBookingCardData } from "@/lib/booking-card";
 import { completePastBookings } from "@/lib/booking-completion";
 
@@ -14,7 +15,19 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const kind = searchParams.get("kind") === "completed" ? "completed" : "upcoming";
+  const requestedKind = searchParams.get("kind");
+  const kind = ["completed", "cancelled"].includes(requestedKind ?? "")
+    ? (requestedKind as "completed" | "cancelled")
+    : "upcoming";
+
+  const statusFilter: Record<
+    "upcoming" | "completed" | "cancelled",
+    NonNullable<Prisma.BookingWhereInput["status"]>
+  > = {
+    upcoming: { notIn: ["COMPLETED", "CANCELLED"] },
+    completed: "COMPLETED",
+    cancelled: "CANCELLED",
+  };
 
   try {
     const now = new Date();
@@ -25,7 +38,7 @@ export async function GET(request: Request) {
       prisma.booking.findMany({
         where: {
           userId: session.user.id,
-          status: kind === "completed" ? "COMPLETED" : { not: "COMPLETED" },
+          status: statusFilter[kind],
         },
         orderBy: { createdAt: "desc" },
         select: bookingCardSelect,
@@ -56,7 +69,6 @@ export async function GET(request: Request) {
             : undefined,
       }),
     );
-
     return NextResponse.json({ bookings: items });
   } catch (error) {
     console.error("[api/profile/bookings] failed to load bookings", error);

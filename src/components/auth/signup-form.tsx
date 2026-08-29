@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Check, Loader2 } from "lucide-react";
 
@@ -8,11 +8,24 @@ import {
   signupAction,
   type SignupActionState,
 } from "@/lib/actions/auth";
+import {
+  DEFAULT_PHONE_COUNTRY,
+  getCountryFlagEmoji,
+  getDialCode,
+  PHONE_COUNTRIES,
+} from "@/lib/phone-countries";
 import { useUsernameAvailability } from "@/hooks/use-username-availability";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 
 const initialState: SignupActionState = {};
 
@@ -21,6 +34,9 @@ export function SignupForm() {
     signupAction,
     initialState
   );
+
+  const [countryCode, setCountryCode] = useState(DEFAULT_PHONE_COUNTRY);
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const {
     availability: usernameStatus,
@@ -111,6 +127,69 @@ export function SignupForm() {
             </p>
           ) : state.fieldErrors?.username ? (
             <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="phone">Phone number</Label>
+          <div className="flex items-stretch gap-2">
+            <Select
+              value={countryCode}
+              onValueChange={(value) =>
+                setCountryCode((value as string) ?? DEFAULT_PHONE_COUNTRY)
+              }
+            >
+              <SelectTrigger
+                className="w-[5.75rem] shrink-0"
+                aria-label="Country code"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="text-base leading-none">
+                    {getCountryFlagEmoji(countryCode)}
+                  </span>
+                  +{getDialCode(countryCode)}
+                </span>
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                <SelectGroup>
+                  {PHONE_COUNTRIES.map((country) => (
+                    <SelectItem key={country.iso2} value={country.iso2}>
+                      <span aria-hidden="true">
+                        {getCountryFlagEmoji(country.iso2)}
+                      </span>
+                      {country.name}
+                      <span className="ml-auto text-muted-foreground">
+                        +{country.dialCode}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Input
+              id="phone"
+              name="phoneNumber"
+              type="tel"
+              autoComplete="tel-national"
+              inputMode="numeric"
+              placeholder="Phone number"
+              value={phoneNumber}
+              onChange={(event) =>
+                setPhoneNumber(
+                  event.target.value.replace(/[^\d]/g, "").slice(0, 15)
+                )
+              }
+              className="flex-1"
+              required
+            />
+          </div>
+          <input
+            type="hidden"
+            name="phone"
+            value={`+${getDialCode(countryCode)}${phoneNumber}`}
+          />
+          {state.fieldErrors?.phone ? (
+            <p className="text-xs text-destructive">{state.fieldErrors.phone}</p>
           ) : null}
         </div>
 

@@ -15,7 +15,7 @@ import {
 
 import { createCustomTripRequestAction } from "@/lib/actions/custom-trips";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
-import { CUSTOM_TRIP_GROUP_LABELS } from "@/lib/custom-trips";
+import { CUSTOM_TRIP_GROUP_LABELS, MAX_OPEN_CUSTOM_TRIP_CHATS } from "@/lib/custom-trips";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 import { pluralize, toDateInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,7 @@ function RequiredAsterisk() {
   );
 }
 
-export function CustomTripForm() {
+export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [groupType, setGroupType] = useState<"PRIVATE" | "CORPORATE">("PRIVATE");
@@ -71,6 +71,13 @@ export function CustomTripForm() {
     event.preventDefault();
     setError(null);
     setErrorField(null);
+
+    if (atChatLimit) {
+      setError(
+        `You can have up to ${MAX_OPEN_CUSTOM_TRIP_CHATS} open custom trip chats at a time. Close an existing request before starting a new one.`,
+      );
+      return;
+    }
 
     if (sports.length === 0) {
       setError("Select at least one sport.");
@@ -346,7 +353,12 @@ export function CustomTripForm() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" size="lg" disabled={isPending} className="w-full rounded-xl bg-orange-700 text-white hover:bg-orange-800 sm:w-auto">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={isPending || atChatLimit}
+            className="w-full rounded-xl bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-60 sm:w-auto"
+          >
             {isPending ? "Sending request…" : "Send trip request"}
             <ArrowRight className="h-4 w-4" />
           </Button>

@@ -62,6 +62,11 @@ export function CustomTripRequestDetailPanel({
         </div>
 
         <div className="flex flex-col items-end gap-2">
+          {request.deletedAt ? (
+            <span className="rounded-full border border-muted-foreground/40 bg-muted-foreground/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
+              Deleted by customer
+            </span>
+          ) : null}
           <Badge
             className={cn(
               "rounded-full border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-widest",

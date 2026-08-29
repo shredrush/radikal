@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     }
 
     const chat = await prisma.supportChat.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
     });
 

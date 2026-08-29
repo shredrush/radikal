@@ -126,11 +126,12 @@ export async function loginAction(
 
 export type SignupActionState = {
   error?: string;
-  fieldErrors?: Partial<Record<"name" | "email" | "username" | "password", string>>;
+  fieldErrors?: Partial<Record<"name" | "email" | "username" | "password" | "phone", string>>;
   values?: {
     name?: string;
     email?: string;
     username?: string;
+    phone?: string;
   };
 };
 
@@ -154,6 +155,7 @@ export async function signupAction(
     email: formData.get("email"),
     username: formData.get("username"),
     password: formData.get("password"),
+    phone: formData.get("phone"),
   });
 
   // Echo back the safe, sanitized form values so the user doesn't have to
@@ -162,20 +164,27 @@ export async function signupAction(
     name: sanitizeText(formData.get("name")?.toString() ?? "", { maxLength: 100 }),
     email: (formData.get("email")?.toString() ?? "").trim().slice(0, 254),
     username: normalizeUsername(formData.get("username")?.toString() ?? ""),
+    phone: (formData.get("phone")?.toString() ?? "").trim().slice(0, 16),
   };
 
   if (!parsed.success) {
     const fieldErrors: SignupActionState["fieldErrors"] = {};
     for (const issue of parsed.error.issues) {
       const field = issue.path[0];
-      if (field === "name" || field === "email" || field === "username" || field === "password") {
+      if (
+        field === "name" ||
+        field === "email" ||
+        field === "username" ||
+        field === "password" ||
+        field === "phone"
+      ) {
         fieldErrors[field] = issue.message;
       }
     }
     return { fieldErrors, values };
   }
 
-  const { name, email, username, password } = parsed.data;
+  const { name, email, username, password, phone } = parsed.data;
 
   // Limit account creation per client IP to curb scripted signups.
   const ip = await getClientIp();
@@ -203,7 +212,7 @@ export async function signupAction(
   let newUserId = "";
   try {
     const createdUser = await prisma.user.create({
-      data: { name, email, username: resolvedUsername, passwordHash },
+      data: { name, email, username: resolvedUsername, passwordHash, phone },
     });
     newUserId = createdUser.id;
   } catch (error) {

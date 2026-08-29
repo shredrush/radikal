@@ -3,8 +3,14 @@ import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { ACCENT_PILL } from "@/lib/card-styles";
+import {
+  MAX_OPEN_CUSTOM_TRIP_CHATS,
+  toCustomTripRequestListItem,
+} from "@/lib/custom-trips";
 import { CustomTripForm } from "@/components/custom-trips/custom-trip-form";
+import { OpenCustomTripRequests } from "@/components/custom-trips/open-custom-trip-requests";
 
 export const metadata: Metadata = {
   title: "Custom Trip — Radikal",
@@ -19,6 +25,21 @@ export default async function CustomTripPage() {
   if (!session?.user) {
     redirect(`/login?callbackUrl=${encodeURIComponent("/custom-trip")}`);
   }
+
+  const openRequests = await prisma.customTripRequest.findMany({
+    where: {
+      userId: session.user.id,
+      status: { notIn: ["CONFIRMED", "CANCELLED"] },
+      deletedAt: null,
+    },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true, username: true } },
+      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    },
+  });
+  const openRequestItems = openRequests.map(toCustomTripRequestListItem);
+  const atChatLimit = openRequestItems.length >= MAX_OPEN_CUSTOM_TRIP_CHATS;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -42,9 +63,11 @@ export default async function CustomTripPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <CustomTripForm />
+          <CustomTripForm atChatLimit={atChatLimit} />
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
+            <OpenCustomTripRequests requests={openRequestItems} />
+
             <div className="rounded-[1.5rem] border border-border/80 bg-muted/20 p-5">
               <h2 className="font-heading text-base font-semibold text-foreground">
                 How it works
