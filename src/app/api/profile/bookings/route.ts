@@ -23,7 +23,10 @@ export async function GET(request: Request) {
     await completePastBookings(now, session.user.id);
     const [bookings, reviews] = await Promise.all([
       prisma.booking.findMany({
-        where: { userId: session.user.id },
+        where: {
+          userId: session.user.id,
+          status: kind === "completed" ? "COMPLETED" : { not: "COMPLETED" },
+        },
         orderBy: { createdAt: "desc" },
         select: bookingCardSelect,
       }),
@@ -43,21 +46,16 @@ export async function GET(request: Request) {
         .map((review) => [review.tripId, review] as const),
     );
 
-    const items = bookings
-      .filter((booking) => {
-        const completed = booking.status === "COMPLETED";
-        return kind === "completed" ? completed : !completed;
-      })
-      .map((booking) =>
-        toBookingCardData(booking, {
-          showUserCancel: kind === "upcoming",
-          showReview: kind === "completed",
-          review:
-            kind === "completed"
-              ? (reviewsByTripId.get(booking.tripId) ?? null)
-              : undefined,
-        }),
-      );
+    const items = bookings.map((booking) =>
+      toBookingCardData(booking, {
+        showUserCancel: kind === "upcoming",
+        showReview: kind === "completed",
+        review:
+          kind === "completed"
+            ? (reviewsByTripId.get(booking.tripId) ?? null)
+            : undefined,
+      }),
+    );
 
     return NextResponse.json({ bookings: items });
   } catch (error) {

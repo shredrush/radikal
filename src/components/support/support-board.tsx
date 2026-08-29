@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Compass, MessageSquare, Ticket, User, type LucideIcon } from "lucide-react";
 
-import { type SupportChatListItem, type SupportMessageView } from "@/lib/support";
+import { isAwaitingReply, type SupportChatListItem, type SupportMessageView } from "@/lib/support";
 import { formatMessageTime } from "@/lib/format";
 import type {
   CustomTripRequestDetail,
@@ -12,11 +13,29 @@ import type {
 } from "@/lib/custom-trips";
 import type { BookingBoardItem } from "@/lib/bookings";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
-import { CustomTripsView } from "@/components/custom-trips/custom-trips-view";
-import { BookingsBoard } from "@/components/bookings/bookings-board";
-import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+const BookingsStats = dynamic(
+  () => import("@/components/bookings/bookings-stats").then((module) => module.BookingsStats),
+  { loading: () => null },
+);
+const BookingsBoard = dynamic(
+  () => import("@/components/bookings/bookings-board").then((module) => module.BookingsBoard),
+  {
+    loading: () => (
+      <p className="py-8 text-center text-sm text-muted-foreground">Loading bookings…</p>
+    ),
+  },
+);
+const CustomTripsView = dynamic(
+  () => import("@/components/custom-trips/custom-trips-view").then((module) => module.CustomTripsView),
+  {
+    loading: () => (
+      <p className="py-8 text-center text-sm text-muted-foreground">Loading custom trips…</p>
+    ),
+  },
+);
 
 export type SupportBoardSelectedChat = {
   id: string;
@@ -75,8 +94,11 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 export function SupportBoard({
   initialChats,
+  pendingConversationsCount,
   initialBookings,
+  pendingBookingsCount,
   initialCustomRequests,
+  newCustomRequestsCount,
   chatId,
   tab,
   selectedChat,
@@ -84,8 +106,11 @@ export function SupportBoard({
   selectedCustomRequest,
 }: {
   initialChats: SupportChatListItem[];
+  pendingConversationsCount: number;
   initialBookings: BookingBoardItem[];
+  pendingBookingsCount: number;
   initialCustomRequests: CustomTripRequestListItem[];
+  newCustomRequestsCount: number;
   chatId?: string;
   tab: SupportBoardTab;
   selectedChat: SupportBoardSelectedChat | null;
@@ -108,33 +133,30 @@ export function SupportBoard({
   }, []);
 
   useEffect(() => {
+    if (tab !== "conversations") return;
     const interval = setInterval(loadChats, 3000);
     return () => clearInterval(interval);
-  }, [loadChats]);
+  }, [loadChats, tab]);
 
   const openChats = chats.filter((chat) => chat.status === "OPEN");
   const closedChats = chats.filter((chat) => chat.status === "CLOSED");
-  const awaitingReplyCount = openChats.filter(
-    (chat) => chat.lastMessageSenderId != null && chat.lastMessageSenderId === chat.userId,
-  ).length;
 
-  const newBookingsCount = initialBookings.filter(
-    (booking) => booking.status === "PENDING",
-  ).length;
-  const newCustomRequestsCount = initialCustomRequests.filter(
-    (request) => request.status === "NEW",
-  ).length;
-  const newConversationsCount = awaitingReplyCount;
+  // On the conversations tab the count stays live with the 3s poll; on the
+  // other tabs the full chat list is never loaded, so use the server-computed
+  // count passed down instead.
+  const awaitingReplyCount =
+    tab === "conversations"
+      ? openChats.filter(isAwaitingReply).length
+      : pendingConversationsCount;
 
   const tabCounts: Record<SupportBoardTab, number> = {
-    conversations: newConversationsCount,
-    bookings: newBookingsCount,
+    conversations: awaitingReplyCount,
+    bookings: pendingBookingsCount,
     custom: newCustomRequestsCount,
   };
 
   function renderChatItem(chat: SupportChatListItem, isActive: boolean) {
-    const awaitingReply =
-      chat.lastMessageSenderId != null && chat.lastMessageSenderId === chat.userId;
+    const awaitingReply = isAwaitingReply(chat);
 
     return (
       <Link

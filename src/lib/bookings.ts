@@ -57,10 +57,7 @@ export const bookingDetailInclude = {
       title: true,
       location: true,
       durationDays: true,
-      description: true,
-      categories: true,
       images: true,
-      type: true,
     },
   },
   slot: { select: { id: true, date: true } },
@@ -121,10 +118,7 @@ function toBookingBoardItem(
       title: string;
       location: string;
       durationDays: number;
-      description: string;
-      categories: string[];
       images: string[];
-      type: string;
     };
     slot: { id: string; date: Date };
     user: { name: string | null; username: string | null; email: string; image: string | null };

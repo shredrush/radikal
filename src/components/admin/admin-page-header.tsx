@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Headset } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { hasPermission, type Role } from "@/lib/authz";
 import { ADMIN_SECTIONS, type AdminSection } from "@/lib/admin-sections";
@@ -11,19 +10,22 @@ export async function AdminPageHeader({
   description,
   active,
   role,
+  pendingTripChanges,
 }: {
   title: string;
   description: string;
   active: AdminSection;
   role?: Role;
+  /**
+   * Precomputed pending trip-change count. Every admin page runs it inside its
+   * own parallel query batch so the header never adds a serial DB round-trip
+   * after render.
+   */
+  pendingTripChanges: number;
 }) {
   const visibleSections = ADMIN_SECTIONS.filter((section) =>
     hasPermission(role, section.permission),
   );
-
-  const pendingTripChanges = hasPermission(role, "trips.manage")
-    ? await prisma.tripChangeRequest.count({ where: { status: "PENDING" } })
-    : 0;
 
   return (
     <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">

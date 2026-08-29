@@ -44,6 +44,7 @@ export default async function AdminTripChangesPage() {
           description="Review trip additions and edits submitted by guides before they go live"
           active="trip-changes"
           role={session.user.role}
+          pendingTripChanges={pendingCount}
         />
 
         <section className="min-w-0">

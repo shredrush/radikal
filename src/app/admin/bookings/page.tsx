@@ -1,5 +1,6 @@
 import { hasPermission, requirePermission } from "@/lib/authz";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
+import { countPendingTripChanges } from "@/lib/admin-stats";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
 import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -15,10 +16,15 @@ export default async function AdminBookingsPage() {
   const canConfirm = hasPermission(session.user.role, "bookings.confirm");
   const canCancel = hasPermission(session.user.role, "bookings.cancel");
 
-  const items = await fetchBookingsWithDetails(
-    {},
-    { completePast: true, includeBookingIds: true, includePaymentDetails: true },
-  );
+  const [items, pendingTripChanges] = await Promise.all([
+    fetchBookingsWithDetails(
+      {},
+      { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+    ),
+    hasPermission(session.user.role, "trips.manage")
+      ? countPendingTripChanges()
+      : Promise.resolve(0),
+  ]);
 
   return (
     <div className="min-h-screen">
@@ -28,6 +34,7 @@ export default async function AdminBookingsPage() {
           description="A live view of every booking on the platform"
           active="bookings"
           role={session.user.role}
+          pendingTripChanges={pendingTripChanges}
         />
 
         <BookingsStats items={items} />

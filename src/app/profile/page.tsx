@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { default as dynamicImport } from "next/dynamic";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -32,20 +33,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChangePasswordForm } from "@/components/profile/change-password-form";
-import { ChangeUsernameForm } from "@/components/profile/change-username-form";
 import { ProfilePhotoForm } from "@/components/profile/profile-photo-form";
 import { getProfileInitials } from "@/lib/profile-initials";
 import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
-import { SupportChatPanel } from "@/components/support/support-chat-panel";
-import { BookingCard } from "@/components/profile/booking-card";
-import { LazyBookingsSection } from "@/components/profile/lazy-bookings-section";
-import { WishlistCard } from "@/components/profile/wishlist-card";
-import {
-  CustomTripRequestCard,
-  CustomTripRequestEmpty,
-} from "@/components/custom-trips/custom-trip-request-card";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import {
@@ -55,9 +46,66 @@ import {
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
 import { formatDateTime } from "@/lib/format";
 import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
-import { NotificationItem } from "@/components/profile/notification-item";
 import { completePastBookings } from "@/lib/booking-completion";
 import { cn } from "@/lib/utils";
+
+// Tab-only client components are lazy-loaded so the initial profile bundle
+// only ships the hero, the sidebar, and the active tab's code. Each chunk is
+// still server-rendered on the tab that uses it, so there is no paint flash.
+const LazyBookingsSectionDynamic = dynamicImport(
+  () => import("@/components/profile/lazy-bookings-section").then((m) => m.LazyBookingsSection),
+  { loading: () => null },
+);
+const BookingCardDynamic = dynamicImport(
+  () => import("@/components/profile/booking-card").then((m) => m.BookingCard),
+  {
+    loading: () => (
+      <div className="rounded-[1rem] border border-border/70 bg-background/60 p-6 text-sm text-muted-foreground">
+        Loading…
+      </div>
+    ),
+  },
+);
+const WishlistCardDynamic = dynamicImport(
+  () => import("@/components/profile/wishlist-card").then((m) => m.WishlistCard),
+  {
+    loading: () => (
+      <div className="rounded-[1rem] border border-border/70 bg-background/60 p-6 text-sm text-muted-foreground">
+        Loading…
+      </div>
+    ),
+  },
+);
+const NotificationItemDynamic = dynamicImport(
+  () => import("@/components/profile/notification-item").then((m) => m.NotificationItem),
+  { loading: () => null },
+);
+const SupportChatPanelDynamic = dynamicImport(
+  () => import("@/components/support/support-chat-panel").then((m) => m.SupportChatPanel),
+  { loading: () => null },
+);
+const ChangeUsernameFormDynamic = dynamicImport(
+  () => import("@/components/profile/change-username-form").then((m) => m.ChangeUsernameForm),
+  { loading: () => null },
+);
+const ChangePasswordFormDynamic = dynamicImport(
+  () => import("@/components/profile/change-password-form").then((m) => m.ChangePasswordForm),
+  { loading: () => null },
+);
+const CustomTripRequestCardDynamic = dynamicImport(
+  () =>
+    import("@/components/custom-trips/custom-trip-request-card").then(
+      (m) => m.CustomTripRequestCard,
+    ),
+  { loading: () => null },
+);
+const CustomTripRequestEmptyDynamic = dynamicImport(
+  () =>
+    import("@/components/custom-trips/custom-trip-request-card").then(
+      (m) => m.CustomTripRequestEmpty,
+    ),
+  { loading: () => null },
+);
 
 export const metadata: Metadata = {
   title: "Profile — Radikal",
@@ -98,10 +146,10 @@ export default async function ProfilePage({
   const isStaffView = canReadAllBookings;
   const adminBoardHref = getAdminBoardHref(user.role);
 
-  // Persist the user's own past CONFIRMED bookings as COMPLETED so the sections
-  // below render the true state. Scoped to this user only — the platform-wide
-  // sweep runs once a day via /api/cron/complete-bookings instead of on every
-  // profile view.
+  // Persist the user's own past CONFIRMED bookings as COMPLETED so the hero
+  // stats and the sections below read the true state on every tab. Scoped to
+  // this user only (and indexed by userId + status), so it stays cheap — the
+  // platform-wide sweep runs once a day via /api/cron/complete-bookings.
   await completePastBookings(new Date(), user.id);
 
   // Fetch only the queries the active tab needs, all in parallel. The page
@@ -130,20 +178,38 @@ export default async function ProfilePage({
           select: { id: true, user: { select: { username: true } } },
         })
       : Promise.resolve(null),
-    isStaffView
-      ? Promise.resolve([])
-      : prisma.booking.findMany({
+    // Full booking rows only when the bookings tab renders them; the hero stats
+    // come from cheap counts otherwise. Staff never load their rows here — their
+    // sections lazy-load through /api/profile/bookings on expand.
+    !isStaffView && activeTab === "bookings"
+      ? prisma.booking.findMany({
           where: { userId: user.id },
           orderBy: { createdAt: "desc" },
           // Only the columns the booking card renders (was `include: trip,
           // slot`, which dragged every Trip column and slot row into memory).
           select: bookingCardSelect,
-        }),
+        })
+      : Promise.resolve([]),
     activeTab === "wishlist"
       ? prisma.wishlistItem.findMany({
           where: { userId: user.id },
-          include: { trip: true },
           orderBy: { createdAt: "desc" },
+          // Only the columns the wishlist card renders instead of the whole
+          // Trip row (description, slots, guide, inclusions, …).
+          select: {
+            id: true,
+            trip: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                location: true,
+                priceInRupees: true,
+                durationDays: true,
+                images: true,
+              },
+            },
+          },
         })
       : Promise.resolve([]),
     activeTab === "bookings" && !canReadAllBookings
@@ -193,7 +259,9 @@ export default async function ProfilePage({
           GROUP BY sc.id, sc."status"
         `
       : Promise.resolve(null),
-    isStaffView
+    // Hero stats: staff always count, and non-staff use counts whenever the
+    // full booking list isn't loaded (i.e. outside the bookings tab).
+    isStaffView || activeTab !== "bookings"
       ? (async () => {
           const [total, confirmed] = await Promise.all([
             prisma.booking.count({ where: { userId: user.id } }),
@@ -218,8 +286,14 @@ export default async function ProfilePage({
     : notifications;
 
   const upcoming = bookings.filter((b) => b.status === "CONFIRMED").length;
-  const heroBookingCount = isStaffView ? (personalBookingCounts?.total ?? 0) : bookings.length;
-  const heroUpcomingCount = isStaffView ? (personalBookingCounts?.upcoming ?? 0) : upcoming;
+  const heroBookingCount =
+    isStaffView || activeTab !== "bookings"
+      ? (personalBookingCounts?.total ?? 0)
+      : bookings.length;
+  const heroUpcomingCount =
+    isStaffView || activeTab !== "bookings"
+      ? (personalBookingCounts?.upcoming ?? 0)
+      : upcoming;
 
   // Completion is persisted (lib/booking-completion.ts runs before the reads
   // above), so the DB status is the single source of truth for completed vs
@@ -273,7 +347,7 @@ export default async function ProfilePage({
           <ul className="flex flex-col gap-3">
             {completedBookings.map((booking) => (
               <li key={booking.id}>
-                <BookingCard
+                <BookingCardDynamic
                   booking={{
                     id: booking.id,
                     tripSlug: booking.trip.slug,
@@ -538,9 +612,9 @@ export default async function ProfilePage({
                 </CardHeader>
                 <CardContent>
                   {activeSection === "username" ? (
-                    <ChangeUsernameForm currentUsername={user.username ?? null} />
+                    <ChangeUsernameFormDynamic currentUsername={user.username ?? null} />
                   ) : (
-                    <ChangePasswordForm />
+                    <ChangePasswordFormDynamic />
                   )}
                 </CardContent>
               </Card>
@@ -575,7 +649,7 @@ export default async function ProfilePage({
                     <ul className="flex flex-col gap-3">
                       {wishlistItems.map((item) => (
                         <li key={item.id}>
-                          <WishlistCard trip={item.trip} />
+                          <WishlistCardDynamic trip={item.trip} />
                         </li>
                       ))}
                     </ul>
@@ -615,7 +689,7 @@ export default async function ProfilePage({
                   ) : (
                     <ul className="flex flex-col gap-3">
                       {notificationList.map((notification) => (
-                        <NotificationItem
+                        <NotificationItemDynamic
                           key={notification.id}
                           id={notification.id}
                           title={notification.title}
@@ -665,13 +739,13 @@ export default async function ProfilePage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <SupportChatPanel messages={supportMessages} status={supportChatStatus} />
+                    <SupportChatPanelDynamic messages={supportMessages} status={supportChatStatus} />
                   </CardContent>
                 </Card>
               )
             ) : canReadAllBookings ? (
               <div className="flex flex-col gap-6">
-                <LazyBookingsSection
+                <LazyBookingsSectionDynamic
                   kind="upcoming"
                   title="Upcoming trips"
                   endpoint="/api/profile/bookings?kind=upcoming"
@@ -679,7 +753,7 @@ export default async function ProfilePage({
                   emptyDescription="Once you book a trip, it will show up here with its status."
                 />
 
-                <LazyBookingsSection
+                <LazyBookingsSectionDynamic
                   kind="completed"
                   title="Completed trips"
                   description="Trips you've already finished with Radikal."
@@ -721,7 +795,7 @@ export default async function ProfilePage({
                       <ul className="flex flex-col gap-3">
                         {activeBookings.map((booking) => (
                           <li key={booking.id}>
-                            <BookingCard
+                            <BookingCardDynamic
                               booking={{
                                 id: booking.id,
                                 tripSlug: booking.trip.slug,
@@ -759,12 +833,12 @@ export default async function ProfilePage({
                   </CardHeader>
                   <CardContent>
                     {customTripRequests.length === 0 ? (
-                      <CustomTripRequestEmpty />
+                      <CustomTripRequestEmptyDynamic />
                     ) : (
                       <ul className="flex flex-col gap-3">
                         {customTripRequests.map((request) => (
                           <li key={request.id}>
-                            <CustomTripRequestCard
+                            <CustomTripRequestCardDynamic
                               request={toCustomTripRequestListItem(request)}
                             />
                           </li>

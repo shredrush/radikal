@@ -1,21 +1,71 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { fetchBookingsWithDetails } from "@/lib/bookings";
 import {
+  fetchBookingsWithDetails,
+  type BookingBoardItem,
+} from "@/lib/bookings";
+import {
+  isAwaitingReply,
   toSupportChatListItem,
   toSupportMessageViews,
+  type SupportChatListItem,
 } from "@/lib/support";
 import {
   toCustomTripMessageViews,
   toCustomTripRequestListItem,
   type CustomTripRequestDetail,
+  type CustomTripRequestListItem,
 } from "@/lib/custom-trips";
 import {
   SupportBoard,
   type SupportBoardSelectedChat,
+  type SupportBoardTab,
 } from "@/components/support/support-board";
 
 export const dynamic = "force-dynamic";
+
+async function loadChats(): Promise<SupportChatListItem[]> {
+  const rows = await prisma.supportChat.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+  return rows.map(toSupportChatListItem);
+}
+
+/**
+ * Cheap stand-in for the full chat list when the support agent is not on the
+ * conversations tab. Counts OPEN chats whose latest message was authored by
+ * the customer (i.e. awaiting an agent reply) without loading every thread.
+ * Bounded by the number of open chats — each one uses the per-chat index to
+ * find its latest message instead of scanning the whole message table.
+ */
+async function countOpenChatsAwaitingReply(): Promise<number> {
+  const rows = await prisma.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*)::int AS "count"
+    FROM support_chats sc
+    WHERE sc."status" = 'OPEN'
+      AND (SELECT sm."senderId"
+           FROM support_messages sm
+           WHERE sm."chatId" = sc.id
+           ORDER BY sm."createdAt" DESC
+           LIMIT 1) = sc."userId"
+  `;
+  return rows[0]?.count ?? 0;
+}
+
+async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
+  const rows = await prisma.customTripRequest.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, email: true, username: true } },
+      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    },
+  });
+  return rows.map(toCustomTripRequestListItem);
+}
 
 export default async function SupportBoardPage({
   searchParams,
@@ -24,38 +74,57 @@ export default async function SupportBoardPage({
 }) {
   const session = await requirePermission("support.manage", "/login?callbackUrl=/support");
 
-  const { chat: chatId, tab, request: requestId } = await searchParams;
+  const { chat: chatId, tab: tabParam, request: requestId } = await searchParams;
+  const tab: SupportBoardTab =
+    tabParam === "bookings" ? "bookings" : tabParam === "custom" ? "custom" : "conversations";
 
-  const chats = await prisma.supportChat.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  });
-
-  const bookings = await fetchBookingsWithDetails(
-    {},
-    { completePast: true, includeBookingIds: true, includePaymentDetails: true },
-  );
-
-  const customRequests = await prisma.customTripRequest.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true, email: true, username: true } },
-      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-    },
-  });
-
-  const selectedChat = chatId
-    ? await prisma.supportChat.findUnique({
-        where: { id: chatId },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          messages: { orderBy: { createdAt: "asc" } },
-        },
-      })
-    : null;
+  // Only load the dataset the active tab renders. The conversations tab is the
+  // default landing, and it previously paid for the platform-wide bookings
+  // query, the global past-booking completion sweep, and every custom trip
+  // request on every visit. Inactive tabs now contribute a single cheap count
+  // (indexed by status) for their tab badge instead.
+  const [chats, awaitingReplyCount, bookings, pendingBookingsCount, customRequests, newCustomRequestsCount, selectedChat, selectedCustomRequest] =
+    await Promise.all([
+      tab === "conversations"
+        ? loadChats()
+        : Promise.resolve([] as SupportChatListItem[]),
+      tab === "conversations"
+        ? Promise.resolve(0)
+        : countOpenChatsAwaitingReply(),
+      tab === "bookings"
+        ? fetchBookingsWithDetails(
+            {},
+            { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+          )
+        : Promise.resolve([] as BookingBoardItem[]),
+      tab === "bookings"
+        ? Promise.resolve(0)
+        : prisma.booking.count({ where: { status: "PENDING" } }),
+      tab === "custom"
+        ? loadCustomRequests()
+        : Promise.resolve([] as CustomTripRequestListItem[]),
+      tab === "custom"
+        ? Promise.resolve(0)
+        : prisma.customTripRequest.count({ where: { status: "NEW" } }),
+      chatId && tab === "conversations"
+        ? prisma.supportChat.findUnique({
+            where: { id: chatId },
+            include: {
+              user: { select: { id: true, name: true, email: true } },
+              messages: { orderBy: { createdAt: "asc" } },
+            },
+          })
+        : Promise.resolve(null),
+      requestId && tab === "custom"
+        ? prisma.customTripRequest.findUnique({
+            where: { id: requestId },
+            include: {
+              user: { select: { id: true, name: true, email: true, username: true } },
+              chat: { include: { messages: { orderBy: { createdAt: "asc" } } } },
+            },
+          })
+        : Promise.resolve(null),
+    ]);
 
   const selectedChatData: SupportBoardSelectedChat | null = selectedChat
     ? {
@@ -65,16 +134,6 @@ export default async function SupportBoardPage({
         customerEmail: selectedChat.user.email,
         messages: toSupportMessageViews(selectedChat.messages, session.user.id),
       }
-    : null;
-
-  const selectedCustomRequest = requestId
-    ? await prisma.customTripRequest.findUnique({
-        where: { id: requestId },
-        include: {
-          user: { select: { id: true, name: true, email: true, username: true } },
-          chat: { include: { messages: { orderBy: { createdAt: "asc" } } } },
-        },
-      })
     : null;
 
   const selectedCustomRequestData: CustomTripRequestDetail | null = selectedCustomRequest
@@ -88,13 +147,26 @@ export default async function SupportBoardPage({
 
   return (
     <SupportBoard
-      initialChats={chats.map(toSupportChatListItem)}
-      initialBookings={bookings}
-      initialCustomRequests={customRequests.map(toCustomTripRequestListItem)}
-      chatId={chatId}
-      tab={
-        tab === "bookings" ? "bookings" : tab === "custom" ? "custom" : "conversations"
+      initialChats={chats}
+      pendingConversationsCount={
+        tab === "conversations"
+          ? chats.filter(isAwaitingReply).length
+          : awaitingReplyCount
       }
+      initialBookings={bookings}
+      pendingBookingsCount={
+        tab === "bookings"
+          ? bookings.filter((booking) => booking.status === "PENDING").length
+          : pendingBookingsCount
+      }
+      initialCustomRequests={customRequests}
+      newCustomRequestsCount={
+        tab === "custom"
+          ? customRequests.filter((request) => request.status === "NEW").length
+          : newCustomRequestsCount
+      }
+      chatId={chatId}
+      tab={tab}
       selectedChat={selectedChatData}
       selectedCustomRequestId={requestId}
       selectedCustomRequest={selectedCustomRequestData}

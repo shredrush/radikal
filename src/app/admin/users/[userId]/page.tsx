@@ -4,6 +4,7 @@ import { ArrowLeft, Globe, MapPin, Monitor, UserX } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -93,7 +94,7 @@ export default async function AdminUserDetailPage({
   const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
   const { userId } = await params;
 
-  const [user, activityLogs] = await Promise.all([
+  const [user, activityLogs, pendingTripChanges] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -106,6 +107,7 @@ export default async function AdminUserDetailPage({
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
+    countPendingTripChanges(),
   ]);
 
   if (!user) {
@@ -122,6 +124,7 @@ export default async function AdminUserDetailPage({
           description="Update this account's details and role, and review its full activity history."
           active="users"
           role={session.user.role}
+          pendingTripChanges={pendingTripChanges}
         />
 
         <Link

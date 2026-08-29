@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Button } from "@/components/ui/button";
 import { AdminTripsManager } from "@/components/admin/admin-trips-manager";
 import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
@@ -33,17 +34,18 @@ export default async function AdminTripsPage({
     Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
   );
 
-  const [guides, totalTrips, totalSlots, draftRows] = await Promise.all([
+  const [guides, totalTrips, totalSlots, draftRows, pendingTripChanges] = await Promise.all([
     prisma.guide.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.trip.count(),
-    prisma.slot.count(),
+    prisma.slot.count({ where: { date: { gte: new Date() } } }),
     prisma.tripDraft.findMany({
       orderBy: { updatedAt: "desc" },
       include: { guide: { select: { name: true } } },
     }),
+    countPendingTripChanges(),
   ]);
 
   const hasSelectedGuide = guides.some((item) => item.id === selectedGuideId);
@@ -77,6 +79,7 @@ export default async function AdminTripsPage({
           description="Update the listed trip details"
           active="trips"
           role={session.user.role}
+          pendingTripChanges={pendingTripChanges}
         />
 
         <section className="min-w-0">

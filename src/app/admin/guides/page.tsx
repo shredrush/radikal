@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { countPendingTripChanges } from "@/lib/admin-stats";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { GuidesManager } from "@/components/admin/guides-manager";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminGuidesPage() {
   const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
-  const [guidesLive, totalLinkedTrips, roleGuideWithoutProfile, guidesWithNonGuideUser] =
+  const [guidesLive, totalLinkedTrips, roleGuideWithoutProfile, guidesWithNonGuideUser, pendingTripChanges] =
     await Promise.all([
       prisma.guide.count(),
       prisma.trip.count({ where: { guideId: { not: null } } }),
@@ -16,6 +17,7 @@ export default async function AdminGuidesPage() {
       prisma.user.count({ where: { role: "GUIDE", guide: { is: null } } }),
       // Orphan check 2: a guide profile's linked user must hold the GUIDE role.
       prisma.guide.count({ where: { user: { role: { not: "GUIDE" } } } }),
+      countPendingTripChanges(),
     ]);
 
   const orphanCount = roleGuideWithoutProfile + guidesWithNonGuideUser;
@@ -28,6 +30,7 @@ export default async function AdminGuidesPage() {
           description="Add, edit, and remove the vetted guides"
           active="guides"
           role={session.user.role}
+          pendingTripChanges={pendingTripChanges}
         />
 
         {orphanCount > 0 ? (

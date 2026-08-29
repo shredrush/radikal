@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Ban,
@@ -19,13 +20,39 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { CancelBookingButton } from "@/components/admin/cancel-booking-button";
-import { ConfirmPaymentButton } from "@/components/admin/confirm-payment-button";
-import { CancelGuideBookingButton } from "@/components/profile/cancel-guide-booking-button";
-import { CancelUserBookingButton } from "@/components/profile/cancel-user-booking-button";
-import { ReviewForm } from "@/components/profile/review-form";
 import { cn } from "@/lib/utils";
 import { Price } from "@/components/currency/price";
+
+// The cancellation flows and review form only render after a card is expanded,
+// so they are code-split and loaded on demand instead of shipping with every
+// booking card.
+const CancelGuideBookingButton = dynamic(
+  () =>
+    import("@/components/profile/cancel-guide-booking-button").then(
+      (module) => module.CancelGuideBookingButton,
+    ),
+  { ssr: false },
+);
+const CancelUserBookingButton = dynamic(
+  () =>
+    import("@/components/profile/cancel-user-booking-button").then(
+      (module) => module.CancelUserBookingButton,
+    ),
+  { ssr: false },
+);
+const CancelBookingButton = dynamic(
+  () => import("@/components/admin/cancel-booking-button").then((module) => module.CancelBookingButton),
+  { ssr: false },
+);
+const ConfirmPaymentButton = dynamic(
+  () =>
+    import("@/components/admin/confirm-payment-button").then((module) => module.ConfirmPaymentButton),
+  { ssr: false },
+);
+const ReviewForm = dynamic(
+  () => import("@/components/profile/review-form").then((module) => module.ReviewForm),
+  { ssr: false },
+);
 
 type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 

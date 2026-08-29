@@ -2,6 +2,7 @@ import { CalendarDays, CheckCircle2, Clock3, ExternalLink, XCircle } from "lucid
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApproveGuideButton, RejectGuideButton } from "@/components/admin/review-guide-application-buttons";
@@ -13,14 +14,17 @@ export const dynamic = "force-dynamic";
 export default async function AdminGuideApplicationsPage() {
   const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
-  const applications = await prisma.guideApplication.findMany({
-    orderBy: { submittedAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true, username: true, email: true } },
-      certifications: { orderBy: { yearIssued: "desc" } },
-      reviewedBy: { select: { name: true } },
-    },
-  });
+  const [applications, pendingTripChanges] = await Promise.all([
+    prisma.guideApplication.findMany({
+      orderBy: { submittedAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, username: true, email: true } },
+        certifications: { orderBy: { yearIssued: "desc" } },
+        reviewedBy: { select: { name: true } },
+      },
+    }),
+    countPendingTripChanges(),
+  ]);
 
   const pendingCount = applications.filter((app) => app.status === "PENDING").length;
   const approvedCount = applications.filter((app) => app.status === "APPROVED").length;
@@ -56,6 +60,7 @@ export default async function AdminGuideApplicationsPage() {
           description={'Review guide applications submitted through the "Become a Guide" flow'}
           active="applications"
           role={session.user.role}
+          pendingTripChanges={pendingTripChanges}
         />
 
         <section className="min-w-0">

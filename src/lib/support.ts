@@ -88,6 +88,23 @@ export function toSupportChatListItem(chat: {
 }
 
 /**
+ * True when a support chat is awaiting an agent reply: the thread is OPEN and
+ * the latest message was written by the customer. Single source of truth for
+ * the "awaiting reply" badge and the SQL count on the support board.
+ */
+export function isAwaitingReply(chat: {
+  status: "OPEN" | "CLOSED";
+  userId: string;
+  lastMessageSenderId: string | null;
+}): boolean {
+  return (
+    chat.status === "OPEN" &&
+    chat.lastMessageSenderId != null &&
+    chat.lastMessageSenderId === chat.userId
+  );
+}
+
+/**
  * Count support-agent replies the customer has not read yet. A message counts
  * as unread when it was sent by someone other than the customer after the
  * customer last viewed the thread.
