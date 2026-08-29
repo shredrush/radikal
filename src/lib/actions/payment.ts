@@ -7,12 +7,14 @@ import { requirePermission } from "@/lib/authz";
 import {
   bookingCancelledEmail,
   bookingConfirmedEmail,
+  guideCancelledBookingAdminEmail,
   paymentReferenceReceivedEmail,
   sendEmailAfter,
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
+import { notifyBookingStaff } from "@/lib/notifications";
 import { processPaymentSchema } from "@/lib/validations/booking";
 
 type CancellationEmail = {
@@ -450,6 +452,149 @@ export async function cancelBookingAsGuide(
 
   revalidatePath("/profile");
   revalidatePath("/support");
+  return { success: true };
+}
+
+/**
+ * Guide-only action that cancels every active booking (PENDING or CONFIRMED)
+ * on a trip slot they guide, in one go. Confirmed spots are released back to
+ * the slot so the capacity stays accurate. Staff are notified in-app and by
+ * email so the cancellation can be reviewed.
+ */
+export async function cancelSlotBookingsAsGuide(
+  slotId: string,
+  reason: string
+): Promise<ProcessPaymentResult> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId || session.user.role !== "GUIDE") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  if (!slotId) {
+    return { success: false, error: "Missing slot id." };
+  }
+
+  const cleanReason = sanitizeText(reason, { maxLength: 500 });
+  if (!cleanReason) {
+    return { success: false, error: "Please provide a reason for cancellation." };
+  }
+
+  let cancelledEmails: CancellationEmail[] = [];
+  let cancelled = false;
+  let guideName = "";
+  let tripTitle = "";
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const slot = await tx.slot.findUnique({
+        where: { id: slotId },
+        include: {
+          trip: { include: { guide: true } },
+          bookings: {
+            where: { status: { in: ["PENDING", "CONFIRMED"] } },
+            include: {
+              user: { select: { email: true, name: true } },
+            },
+          },
+        },
+      });
+
+      if (!slot || slot.trip.guide?.userId !== userId) {
+        throw new Error("Booking not found.");
+      }
+
+      if (slot.bookings.length === 0) {
+        // Nothing active to cancel (e.g. duplicate click).
+        return;
+      }
+
+      // Release the reserved spots for any confirmed bookings.
+      const confirmedCount = slot.bookings
+        .filter((booking) => booking.status === "CONFIRMED")
+        .reduce((sum, booking) => sum + booking.participantCount, 0);
+      if (confirmedCount > 0) {
+        await tx.slot.update({
+          where: { id: slot.id },
+          data: {
+            booked: { decrement: Math.min(confirmedCount, slot.booked) },
+          },
+        });
+      }
+
+      await tx.booking.updateMany({
+        where: { id: { in: slot.bookings.map((booking) => booking.id) } },
+        data: {
+          status: "CANCELLED",
+          cancelledById: userId,
+          cancelledByRole: session.user.role,
+          cancellationReason: cleanReason,
+        },
+      });
+
+      cancelled = true;
+      guideName = slot.trip.guide?.name ?? "The guide";
+      tripTitle = slot.trip.title;
+      cancelledEmails = slot.bookings.map((booking) => ({
+        to: booking.user.email,
+        name: booking.user.name ?? "",
+        tripTitle: slot.trip.title,
+        date: slot.date,
+        cancelledByUser: false,
+      }));
+    });
+  } catch (error) {
+    const message = safePaymentError(error, "Failed to cancel trip.", [
+      "Booking not found.",
+    ]);
+    return { success: false, error: message };
+  }
+
+  revalidatePath("/guide-board/bookings");
+  revalidatePath("/admin/bookings");
+  revalidatePath("/support");
+  revalidatePath("/profile");
+
+  if (!cancelled) {
+    return { success: true };
+  }
+
+  for (const email of cancelledEmails) {
+    sendEmailAfter(bookingCancelledEmail(email));
+  }
+
+  // Notify staff (in-app + email) so the cancellation gets reviewed.
+  try {
+    const staff = await notifyBookingStaff({
+      type: "BOOKING_CANCELLED_BY_GUIDE",
+      title: "Booking cancelled by guide",
+      body: `${guideName} cancelled ${cancelledEmails.length} ${cancelledEmails.length === 1 ? "booking" : "bookings"} for “${tripTitle}”.`,
+      href: "/admin/bookings",
+    });
+
+    for (const user of staff) {
+      sendEmailAfter(
+        guideCancelledBookingAdminEmail({
+          to: user.email,
+          name: user.name ?? "",
+          guideName,
+          tripTitle,
+          participantCount: cancelledEmails.length,
+        }),
+      );
+    }
+  } catch (error) {
+    // Notifications must never break the cancellation.
+    console.error("[payment] failed to notify staff of guide cancellation", error);
+  }
+
+  await logActivity({
+    userId,
+    action: "BOOKING_CANCELLED",
+    label: "Cancelled trip bookings as guide",
+    metadata: { slotId, bookingCount: cancelledEmails.length, reason: cleanReason },
+  });
+
   return { success: true };
 }
 

@@ -494,6 +494,36 @@ export function tripChangeSubmittedAdminEmail({
   };
 }
 
+export function guideCancelledBookingAdminEmail({
+  to,
+  name,
+  guideName,
+  tripTitle,
+  participantCount,
+}: {
+  to: string;
+  name: string;
+  guideName: string;
+  tripTitle: string;
+  participantCount: number;
+}): EmailInput {
+  const bookingsText =
+    participantCount === 1 ? "a booking" : `${participantCount} bookings`;
+
+  return {
+    to,
+    subject: `A guide cancelled a booking for ${tripTitle}`,
+    html: layout(
+      "Booking cancelled by guide",
+      heading(`${escapeHtml(guideName)} cancelled a trip booking`) +
+        paragraph(
+          `Hi ${escapeHtml(name || "there")}, ${escapeHtml(guideName)} cancelled ${bookingsText} for “${escapeHtml(tripTitle)}”. The traveller was notified and the cancelled reservation now sits in the cancelled bookings view.`,
+        ) +
+        button(siteUrl("/admin/bookings"), "View bookings"),
+    ),
+  };
+}
+
 export function tripChangeDecisionEmail({
   to,
   name,

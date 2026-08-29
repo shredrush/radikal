@@ -3,6 +3,7 @@ import { requireGuide } from "@/lib/guide-board";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { formatMessageTime } from "@/lib/format";
+import { formatCancelledBy } from "@/lib/support";
 import { GuideBoardHeader } from "@/components/guides/guide-board-header";
 import {
   GuideBookingsBoard,
@@ -20,6 +21,7 @@ export default async function GuideBoardBookingsPage() {
       trip: true,
       slot: true,
       user: { select: { id: true, name: true, username: true, email: true, image: true } },
+      cancelledBy: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -43,6 +45,10 @@ export default async function GuideBoardBookingsPage() {
     },
     participantCount: booking.participantCount,
     bookedAt: formatMessageTime(booking.createdAt),
+    cancellationReason: booking.cancellationReason,
+    cancelledByText: booking.cancelledBy
+      ? formatCancelledBy(booking.cancelledBy.name, booking.cancelledByRole)
+      : null,
   }));
 
   return (

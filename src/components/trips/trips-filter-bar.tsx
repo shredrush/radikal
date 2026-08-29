@@ -49,7 +49,7 @@ export function TripsFilterBar({
         type="button"
         variant="outline"
         size="xs"
-        className="h-7 w-[112px] self-start rounded-full border-orange-300 px-3 text-[10px] text-orange-700 hover:bg-orange-50"
+        className="h-7 w-[112px] self-start rounded-full border-orange-300 px-3 text-[10px] text-orange-700 hover:bg-orange-50 dark:border-orange-400/40 dark:text-orange-300 dark:hover:bg-orange-400/10"
         onClick={() => setIsOpen((value) => !value)}
       >
         {isOpen ? "Hide Filters" : "Show Filters"}
@@ -58,7 +58,7 @@ export function TripsFilterBar({
       {isOpen ? (
         <div className="flex flex-col gap-3">
           <div className="flex min-w-0 flex-col gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-orange-700">Sport</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-orange-700 dark:text-orange-300/80">Sport</p>
             <div className="grid grid-cols-4 gap-2.5">
               {SPORT_FILTERS.map((filter) => {
                const isActive = normalizedSelectedSports.includes(filter.id) || (filter.id === "all" && normalizedSelectedSports.length === 0);
@@ -72,8 +72,8 @@ export function TripsFilterBar({
                     onClick={() => handleSelectFilter("sport", filter.id)}
                     className={
                       isActive
-                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 bg-orange-100 text-orange-800 hover:bg-orange-100 hover:text-orange-800"
-                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 hover:border-orange-300 hover:bg-orange-100/60 hover:text-orange-800"
+                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 bg-orange-100 text-orange-800 hover:bg-orange-100 hover:text-orange-800 dark:bg-orange-500/15 dark:text-orange-300 dark:hover:bg-orange-500/15 dark:hover:text-orange-300"
+                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 hover:border-orange-300 hover:bg-orange-100/60 hover:text-orange-800 dark:hover:border-orange-400/40 dark:hover:bg-orange-400/10 dark:hover:text-orange-300"
                     }
                   >
                     {filter.id !== "all" ? <SportIcon sport={filter.id} className="size-3.5" /> : null}

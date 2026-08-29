@@ -15,6 +15,10 @@ import {
 import { cn } from "@/lib/utils";
 import { getProfileInitials } from "@/lib/profile-initials";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
+import {
+  GuideSlotCancelBar,
+  GuideSlotCancelButton,
+} from "@/components/guides/guide-slot-cancel";
 
 type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
@@ -37,6 +41,8 @@ export type GuideBookingItem = {
   };
   participantCount: number;
   bookedAt: string;
+  cancellationReason: string | null;
+  cancelledByText: string | null;
 };
 
 type SlotGroup = {
@@ -44,6 +50,8 @@ type SlotGroup = {
   slotLabel: string;
   slotSort: number;
   totalParticipants: number;
+  cancellationReason: string | null;
+  cancelledByText: string | null;
   clients: {
     name: string;
     username: string | null;
@@ -103,9 +111,14 @@ function groupByTripAndSlot(items: GuideBookingItem[]): TripGroup[] {
         slotLabel: item.slotLabel,
         slotSort: item.slotSort,
         totalParticipants: 0,
+        cancellationReason: item.cancellationReason,
+        cancelledByText: item.cancelledByText,
         clients: [],
       };
       trip.slots.push(slot);
+    } else {
+      slot.cancellationReason = slot.cancellationReason ?? item.cancellationReason;
+      slot.cancelledByText = slot.cancelledByText ?? item.cancelledByText;
     }
 
     slot.totalParticipants += item.participantCount;
@@ -135,6 +148,7 @@ function groupByTripAndSlot(items: GuideBookingItem[]): TripGroup[] {
 
 export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
   const [query, setQuery] = useState("");
+  const [cancelSlotId, setCancelSlotId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     CONFIRMED: true,
     PENDING: true,
@@ -275,17 +289,49 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
                                   key={slot.slotId}
                                   className="overflow-hidden rounded-xl border border-border/60 bg-muted/10 dark:bg-muted/20"
                                 >
-                                  <div className="flex items-center justify-between gap-3 bg-muted/30 px-3 py-2 dark:bg-muted/40">
+                                  <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/30 px-3 py-2 dark:bg-muted/40">
                                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
                                       <CalendarDays className="h-4 w-4 text-orange-500" />
                                       {slot.slotLabel}
                                     </span>
-                                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                      <Users className="h-3.5 w-3.5 text-emerald-500" />
-                                      {slot.totalParticipants}{" "}
-                                      {slot.totalParticipants === 1 ? "participant" : "participants"}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                        <Users className="h-3.5 w-3.5 text-emerald-500" />
+                                        {slot.totalParticipants}{" "}
+                                        {slot.totalParticipants === 1 ? "participant" : "participants"}
+                                      </span>
+                                      {section.key !== "CANCELLED" && section.key !== "COMPLETED" && (
+                                        <GuideSlotCancelButton
+                                          onOpen={() => setCancelSlotId(slot.slotId)}
+                                        />
+                                      )}
+                                    </div>
                                   </div>
+
+                                  {cancelSlotId === slot.slotId &&
+                                    section.key !== "CANCELLED" &&
+                                    section.key !== "COMPLETED" && (
+                                      <div className="px-3 py-2">
+                                        <GuideSlotCancelBar
+                                          slotId={slot.slotId}
+                                          onClose={() => setCancelSlotId(null)}
+                                        />
+                                      </div>
+                                    )}
+
+                                  {slot.cancellationReason ? (
+                                    <div className="border-t border-border/50 bg-rose-500/5 px-3 py-2 text-xs leading-relaxed text-rose-600 dark:text-rose-400">
+                                      <span className="font-semibold">
+                                        Cancelled
+                                        {slot.cancelledByText
+                                          ? ` by ${slot.cancelledByText}`
+                                          : ""}
+                                        :{" "}
+                                      </span>
+                                      {slot.cancellationReason}
+                                    </div>
+                                  ) : null}
+
                                   <ul className="divide-y divide-border/50">
                                     {slot.clients.map((client, index) => (
                                       <li

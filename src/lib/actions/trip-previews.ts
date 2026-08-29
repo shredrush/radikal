@@ -10,7 +10,7 @@ import { type TripProposal } from "@/lib/trip-changes";
 
 // How long a preview link stays valid. Kept deliberately short so a leaked
 // link is useless within minutes.
-export const PREVIEW_TTL_MS = 10 * 60 * 1000;
+const PREVIEW_TTL_MS = 10 * 60 * 1000;
 
 type PreviewContext =
   | { kind: "CREATE" }
