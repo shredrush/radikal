@@ -391,6 +391,7 @@ model Booking {
   cancelledBy User?    @relation("BookingCancelledBy", fields: [cancelledById], references: [id])
 
   @@index([userId])
+  @@index([userId, status])
   @@index([slotId])
   @@index([status])
   @@index([tripId])

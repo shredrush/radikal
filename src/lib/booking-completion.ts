@@ -5,15 +5,21 @@ import { isTripCompleted } from "@/lib/trip-dates";
  * Persists the derived "completed" state to the database.
  *
  * A booking's `status` never flips to COMPLETED during the lifecycle; it becomes
- * complete once its final trip day has passed. There is no background scheduler
- * in this app, so this function is called lazily from booking read paths: it
- * transitions any CONFIRMED booking whose trip dates have fully passed to
- * COMPLETED before the caller reads the list. Idempotent — returns the number
- * of bookings transitioned.
+ * complete once its final trip day has passed. A daily cron
+ * (/api/cron/complete-bookings) sweeps the whole table, and per-user read paths
+ * call this scoped to the current user so a single profile view never scans
+ * every CONFIRMED booking in the app. Idempotent — returns the number of
+ * bookings transitioned.
  */
-export async function completePastBookings(now = new Date()): Promise<number> {
+export async function completePastBookings(
+  now = new Date(),
+  userId?: string,
+): Promise<number> {
   const candidates = await prisma.booking.findMany({
-    where: { status: "CONFIRMED" },
+    where: {
+      status: "CONFIRMED",
+      ...(userId ? { userId } : {}),
+    },
     select: {
       id: true,
       slot: { select: { date: true } },

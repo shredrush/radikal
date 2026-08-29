@@ -1,7 +1,7 @@
 export interface TripCardImageTrip {
   title: string;
-  description: string;
-  categories: string[];
+  description?: string;
+  categories?: string[];
   images?: string[];
   type?: string;
   slug?: string;

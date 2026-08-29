@@ -12,6 +12,7 @@ import { formatDurationDays } from "@/lib/trip-dates";
 export type TripCardTrip = TripCardImageTrip & {
   slug: string;
   location: string;
+  categories: string[];
   durationDays: number;
   priceInRupees: number;
 };

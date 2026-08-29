@@ -9,18 +9,17 @@ import { CurrencySelector } from "@/components/currency/currency-selector";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { SportIcon } from "@/components/trips/sport-icon";
-import { prisma } from "@/lib/prisma";
+import { getProfileUser } from "@/lib/profile-user";
 import { getProfileInitials } from "@/lib/profile-initials";
 import { getGuideImage } from "@/lib/guide-images";
 
 export async function SiteHeader() {
   const session = await auth();
   const displayName = session?.user?.name ?? session?.user?.email ?? "User";
+  // Shared with the profile page via React cache() — one row per request, not
+  // one per component.
   const currentUser = session?.user?.id
-    ? await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { image: true, guide: { select: { photo: true, photos: true, user: { select: { username: true } } } } },
-      })
+    ? await getProfileUser(session.user.id)
     : null;
   const guideForImage = currentUser?.guide
     ? {

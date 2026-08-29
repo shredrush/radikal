@@ -2,21 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { toBookingCardData } from "@/lib/booking-card";
+import { bookingCardSelect, toBookingCardData } from "@/lib/booking-card";
 import { completePastBookings } from "@/lib/booking-completion";
 
 export const dynamic = "force-dynamic";
-
-const tripSelect = {
-  slug: true,
-  title: true,
-  location: true,
-  description: true,
-  categories: true,
-  images: true,
-  type: true,
-  durationDays: true,
-} as const;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -29,23 +18,14 @@ export async function GET(request: Request) {
 
   try {
     const now = new Date();
-    await completePastBookings(now);
+    // Scoped to this user only — a staff member expanding their sections never
+    // scans every CONFIRMED booking in the app (the daily cron handles that).
+    await completePastBookings(now, session.user.id);
     const [bookings, reviews] = await Promise.all([
       prisma.booking.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          status: true,
-          tripId: true,
-          participantCount: true,
-          totalPriceRupees: true,
-          paymentTransactionId: true,
-          cancellationReason: true,
-          createdAt: true,
-          trip: { select: tripSelect },
-          slot: { select: { date: true } },
-        },
+        select: bookingCardSelect,
       }),
       kind === "completed"
         ? prisma.review.findMany({

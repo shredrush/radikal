@@ -9,10 +9,7 @@ export type BookingTripForCard = {
   slug: string;
   title: string;
   location: string;
-  description: string;
-  categories: string[];
   images?: string[];
-  type?: string;
   durationDays: number;
 };
 
@@ -30,6 +27,37 @@ export type BookingForCard = {
   user?: { name: string | null; username: string | null; email: string };
   cancelledBy?: { name: string | null } | null;
 };
+
+/**
+ * Prisma `select` for the trip fields the booking card actually renders.
+ * Shared by every booking-list read path (profile page, /api/profile/bookings)
+ * so no caller drags the full Trip row (description, slots, guide, …) across
+ * the wire just to draw a card.
+ */
+export const bookingTripSelect = {
+  slug: true,
+  title: true,
+  location: true,
+  images: true,
+  durationDays: true,
+} as const;
+
+/**
+ * Prisma `select` for a booking row plus exactly the related fields the card
+ * renders. Keeps booking list reads lean and identical across callers.
+ */
+export const bookingCardSelect = {
+  id: true,
+  status: true,
+  tripId: true,
+  participantCount: true,
+  totalPriceRupees: true,
+  paymentTransactionId: true,
+  cancellationReason: true,
+  createdAt: true,
+  trip: { select: bookingTripSelect },
+  slot: { select: { date: true } },
+} as const;
 
 /**
  * A booking is displayed as completed only once its status has been persisted

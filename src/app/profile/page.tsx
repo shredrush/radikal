@@ -21,6 +21,8 @@ import {
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
+import { getProfileUser } from "@/lib/profile-user";
+import { bookingCardSelect } from "@/lib/booking-card";
 import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,9 +98,11 @@ export default async function ProfilePage({
   const isStaffView = canReadAllBookings;
   const adminBoardHref = getAdminBoardHref(user.role);
 
-  // Persist past CONFIRMED bookings as COMPLETED so the sections below render
-  // the true state (no background scheduler exists in this app).
-  await completePastBookings();
+  // Persist the user's own past CONFIRMED bookings as COMPLETED so the sections
+  // below render the true state. Scoped to this user only — the platform-wide
+  // sweep runs once a day via /api/cron/complete-bookings instead of on every
+  // profile view.
+  await completePastBookings(new Date(), user.id);
 
   // Fetch only the queries the active tab needs, all in parallel. The page
   // previously ran every query (including the platform-wide "all bookings"
@@ -118,10 +122,8 @@ export default async function ProfilePage({
     supportUnread,
     personalBookingCounts,
   ] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { image: true, guide: { select: { photo: true, photos: true, user: { select: { username: true } } } } },
-    }),
+    // Deduped with the site header via React cache() — one row per request.
+    getProfileUser(user.id),
     isGuide
       ? prisma.guide.findUnique({
           where: { userId: user.id },
@@ -132,8 +134,10 @@ export default async function ProfilePage({
       ? Promise.resolve([])
       : prisma.booking.findMany({
           where: { userId: user.id },
-          include: { trip: true, slot: true },
           orderBy: { createdAt: "desc" },
+          // Only the columns the booking card renders (was `include: trip,
+          // slot`, which dragged every Trip column and slot row into memory).
+          select: bookingCardSelect,
         }),
     activeTab === "wishlist"
       ? prisma.wishlistItem.findMany({
@@ -152,11 +156,17 @@ export default async function ProfilePage({
           },
         })
       : Promise.resolve([]),
-    prisma.notification.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    }),
+    // Full list only when the notifications tab is open; otherwise just the
+    // unread count for the sidebar badge.
+    activeTab === "notifications"
+      ? prisma.notification.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        })
+      : prisma.notification.count({
+          where: { userId: user.id, readAt: null },
+        }),
     activeTab === "bookings" && !isStaffView
       ? prisma.review.findMany({
           where: { userId: user.id },
@@ -170,23 +180,18 @@ export default async function ProfilePage({
         })
       : Promise.resolve(null),
     !canAccessSupportDesk
-      ? (async () => {
-          const chat = await prisma.supportChat.findUnique({
-            where: { userId: user.id },
-            select: { id: true, status: true, createdAt: true, customerLastReadAt: true },
-          });
-          if (!chat) {
-            return { status: "OPEN" as const, unreadCount: 0 };
-          }
-          const unreadCount = await prisma.supportMessage.count({
-            where: {
-              chatId: chat.id,
-              senderId: { not: user.id },
-              createdAt: { gt: chat.customerLastReadAt ?? chat.createdAt },
-            },
-          });
-          return { status: chat.status, unreadCount };
-        })()
+      ? prisma.$queryRaw<
+          Array<{ status: string; unreadCount: number }>
+        >`
+          SELECT sc."status", COUNT(sm.id)::int AS "unreadCount"
+          FROM support_chats sc
+          LEFT JOIN support_messages sm
+            ON sm."chatId" = sc.id
+           AND sm."senderId" <> ${user.id}
+           AND sm."createdAt" > COALESCE(sc."customerLastReadAt", sc."createdAt")
+          WHERE sc."userId" = ${user.id}
+          GROUP BY sc.id, sc."status"
+        `
       : Promise.resolve(null),
     isStaffView
       ? (async () => {
@@ -207,7 +212,10 @@ export default async function ProfilePage({
       })
     : currentUser?.image;
 
-  const unreadNotificationsCount = notifications.filter((n) => !n.readAt).length;
+  const notificationList = Array.isArray(notifications) ? notifications : [];
+  const unreadNotificationsCount = Array.isArray(notifications)
+    ? notifications.filter((n) => !n.readAt).length
+    : notifications;
 
   const upcoming = bookings.filter((b) => b.status === "CONFIRMED").length;
   const heroBookingCount = isStaffView ? (personalBookingCounts?.total ?? 0) : bookings.length;
@@ -234,8 +242,10 @@ export default async function ProfilePage({
   );
 
   let supportMessages: SupportMessageView[] = [];
-  const supportChatStatus: "OPEN" | "CLOSED" = supportUnread?.status ?? "OPEN";
-  const supportUnreadCount = supportUnread?.unreadCount ?? 0;
+  const supportUnreadRow = supportUnread?.[0];
+  const supportChatStatus: "OPEN" | "CLOSED" =
+    supportUnreadRow?.status === "CLOSED" ? "CLOSED" : "OPEN";
+  const supportUnreadCount = supportUnreadRow?.unreadCount ?? 0;
   if (!canAccessSupportDesk && supportChat) {
     supportMessages = toSupportMessageViews(supportChat.messages, user.id);
   }
@@ -592,7 +602,7 @@ export default async function ProfilePage({
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {notifications.length === 0 ? (
+                  {notificationList.length === 0 ? (
                     <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
                       <Bell className="h-8 w-8 text-muted-foreground/50" />
                       <div>
@@ -604,7 +614,7 @@ export default async function ProfilePage({
                     </div>
                   ) : (
                     <ul className="flex flex-col gap-3">
-                      {notifications.map((notification) => (
+                      {notificationList.map((notification) => (
                         <NotificationItem
                           key={notification.id}
                           id={notification.id}
