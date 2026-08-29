@@ -1,6 +1,6 @@
 import { hasPermission, requirePermission } from "@/lib/authz";
-import { getSupportBookings } from "@/lib/support-bookings";
-import { SupportBookingsView } from "@/components/support/bookings-view";
+import { fetchBookingsWithDetails } from "@/lib/bookings";
+import { BookingsBoard } from "@/components/bookings/bookings-board";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,13 @@ export default async function AdminBookingsPage() {
     "/login?callbackUrl=/admin/bookings",
   );
 
-  const bookings = await getSupportBookings();
+  const canConfirm = hasPermission(session.user.role, "bookings.confirm");
+  const canCancel = hasPermission(session.user.role, "bookings.cancel");
+
+  const items = await fetchBookingsWithDetails(
+    {},
+    { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+  );
 
   return (
     <div className="min-h-screen">
@@ -23,11 +29,12 @@ export default async function AdminBookingsPage() {
           role={session.user.role}
         />
 
-        <SupportBookingsView
-          bookings={bookings}
-          canConfirm={hasPermission(session.user.role, "bookings.confirm")}
-          canCancel={hasPermission(session.user.role, "bookings.cancel")}
-        />
+        <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+          <BookingsBoard
+            items={items}
+            adminActions={{ canConfirm, canCancel }}
+          />
+        </section>
       </div>
     </div>
   );

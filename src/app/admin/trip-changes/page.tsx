@@ -1,64 +1,40 @@
-import { CalendarDays, CheckCircle2, Clock3, XCircle } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { TripChangeDiff } from "@/components/admin/trip-change-diff";
-import {
-  ApproveTripChangeButton,
-  RejectTripChangeButton,
-} from "@/components/admin/review-trip-change-buttons";
-import { PreviewTripChangeButton } from "@/components/admin/preview-trip-change-button";
-import { type TripProposal } from "@/lib/trip-changes";
-import { formatLongDate } from "@/lib/format";
+import { AdminTripChangesList } from "@/components/admin/admin-trip-changes-list";
+import { type AdminTripChangeSummary } from "@/lib/trip-changes";
 
 export const dynamic = "force-dynamic";
-
-function statusBadge(status: string) {
-  if (status === "PENDING") {
-    return (
-      <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-        <Clock3 className="h-3 w-3" /> Pending
-      </Badge>
-    );
-  }
-  if (status === "APPROVED") {
-    return (
-      <Badge variant="outline" className="rounded-full border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-600">
-        <CheckCircle2 className="h-3 w-3" /> Approved
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="rounded-full border-destructive/40 bg-destructive/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-destructive">
-      <XCircle className="h-3 w-3" /> Rejected
-    </Badge>
-  );
-}
 
 export default async function AdminTripChangesPage() {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
 
-  const allChanges = await prisma.tripChangeRequest.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      guide: { select: { name: true, slug: true } },
-      submittedBy: { select: { name: true, username: true, email: true } },
-      reviewedBy: { select: { name: true } },
-      trip: { select: { title: true, slug: true } },
-    },
-  });
+  const changes = await prisma.$queryRaw<AdminTripChangeSummary[]>`
+    SELECT
+      tc.id,
+      tc."type",
+      tc.status,
+      tc."createdAt",
+      tc."reviewedAt",
+      tc.proposed->>'title' AS title,
+      g.name AS "guideName",
+      u.username AS "submittedByUsername",
+      t.title AS "tripTitle",
+      r.name AS "reviewedByName"
+    FROM "trip_change_requests" tc
+    LEFT JOIN "guides" g ON g.id = tc."guideId"
+    LEFT JOIN "users" u ON u.id = tc."submittedById"
+    LEFT JOIN "users" r ON r.id = tc."reviewedById"
+    LEFT JOIN "trips" t ON t.id = tc."tripId"
+    ORDER BY tc."createdAt" DESC
+  `;
 
-  const changes = [
-    ...allChanges.filter((change) => change.status === "PENDING"),
-    ...allChanges.filter((change) => change.status !== "PENDING"),
-  ];
-
-  const pendingCount = allChanges.filter((change) => change.status === "PENDING").length;
-  const approvedCount = allChanges.filter((change) => change.status === "APPROVED").length;
-  const rejectedCount = allChanges.filter((change) => change.status === "REJECTED").length;
+  const pendingCount = changes.filter((change) => change.status === "PENDING").length;
+  const approvedCount = changes.filter((change) => change.status === "APPROVED").length;
+  const rejectedCount = changes.filter((change) => change.status === "REJECTED").length;
 
   return (
     <div className="min-h-screen">
@@ -100,60 +76,7 @@ export default async function AdminTripChangesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-6">
-            {changes.map((change) => {
-              const proposed = change.proposed as unknown as TripProposal;
-              const original = change.original as unknown as TripProposal | null;
-              const isPending = change.status === "PENDING";
-
-              return (
-                <Card
-                  key={change.id}
-                  id={`change-${change.id}`}
-                  className="scroll-mt-6 overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
-                >
-                  <CardHeader className="border-b border-border/70 bg-muted/20">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {statusBadge(change.status)}
-                          <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                            {change.type === "CREATE" ? "New trip" : "Trip edit"}
-                          </Badge>
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl">{proposed.title}</CardTitle>
-                          <CardDescription className="mt-1 text-sm leading-6 text-muted-foreground">
-                            {change.guide ? `Guide: ${change.guide.name}` : "Guide removed"}
-                            {change.submittedBy?.username ? ` · @${change.submittedBy.username}` : ""}
-                            {change.type === "UPDATE" && change.trip
-                              ? ` · Editing “${change.trip.title}”`
-                              : ""}
-                          </CardDescription>
-                          <CardDescription className="mt-1 text-xs text-muted-foreground">
-                            Submitted {formatLongDate(change.createdAt)}
-                            {!isPending && change.reviewedAt
-                              ? ` · Reviewed ${formatLongDate(change.reviewedAt)}${change.reviewedBy?.name ? ` by ${change.reviewedBy.name}` : ""}`
-                              : ""}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      {isPending ? (
-                        <div className="flex flex-wrap gap-2">
-                          <PreviewTripChangeButton changeId={change.id} />
-                          <ApproveTripChangeButton changeId={change.id} />
-                          <RejectTripChangeButton changeId={change.id} />
-                        </div>
-                      ) : null}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <TripChangeDiff type={change.type} proposed={proposed} original={original} />
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <AdminTripChangesList changes={changes} />
         )}
       </div>
     </div>

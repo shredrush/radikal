@@ -15,35 +15,16 @@ import {
 import { cn } from "@/lib/utils";
 import { getProfileInitials } from "@/lib/profile-initials";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
+import type {
+  BookingBoardClient,
+  BookingBoardItem,
+  BookingStatus,
+} from "@/lib/bookings";
+import { AdminBookingActions } from "@/components/admin/admin-booking-actions";
 import {
   GuideSlotCancelBar,
   GuideSlotCancelButton,
 } from "@/components/guides/guide-slot-cancel";
-
-type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-
-export type GuideBookingItem = {
-  tripId: string;
-  slug: string;
-  title: string;
-  location: string;
-  image: string;
-  durationDays: number;
-  slotId: string;
-  slotLabel: string;
-  slotSort: number;
-  status: BookingStatus;
-  customer: {
-    name: string;
-    username: string | null;
-    email: string | null;
-    image: string | null;
-  };
-  participantCount: number;
-  bookedAt: string;
-  cancellationReason: string | null;
-  cancelledByText: string | null;
-};
 
 type SlotGroup = {
   slotId: string;
@@ -52,14 +33,7 @@ type SlotGroup = {
   totalParticipants: number;
   cancellationReason: string | null;
   cancelledByText: string | null;
-  clients: {
-    name: string;
-    username: string | null;
-    email: string | null;
-    image: string | null;
-    participantCount: number;
-    bookedAt: string;
-  }[];
+  clients: BookingBoardClient[];
 };
 
 type TripGroup = {
@@ -86,7 +60,7 @@ const STATUS_DOT: Record<BookingStatus, string> = {
   CANCELLED: "bg-rose-500",
 };
 
-function groupByTripAndSlot(items: GuideBookingItem[]): TripGroup[] {
+function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
   const tripMap = new Map<string, TripGroup>();
 
   for (const item of items) {
@@ -123,11 +97,15 @@ function groupByTripAndSlot(items: GuideBookingItem[]): TripGroup[] {
 
     slot.totalParticipants += item.participantCount;
     slot.clients.push({
+      bookingId: item.bookingId,
+      status: item.status,
       name: item.customer.name,
       username: item.customer.username,
       email: item.customer.email,
       image: item.customer.image,
       participantCount: item.participantCount,
+      totalPriceRupees: item.totalPriceRupees,
+      paymentTransactionId: item.paymentTransactionId,
       bookedAt: item.bookedAt,
     });
   }
@@ -146,7 +124,21 @@ function groupByTripAndSlot(items: GuideBookingItem[]): TripGroup[] {
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
+/**
+ * Shared bookings board used by the guide board and the admin booking view so
+ * both render the same design from the same data shape. `slotCancel` enables
+ * the guide's slot-level cancellation flow; `adminActions` places
+ * per-booking confirm-payment / cancel buttons on the right of each guest row.
+ */
+export function BookingsBoard({
+  items,
+  slotCancel = false,
+  adminActions = null,
+}: {
+  items: BookingBoardItem[];
+  slotCancel?: boolean;
+  adminActions?: { canConfirm: boolean; canCancel: boolean } | null;
+}) {
   const [query, setQuery] = useState("");
   const [cancelSlotId, setCancelSlotId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -180,7 +172,7 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
         <div>
           <p className="font-medium text-foreground">No bookings yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            When travellers reserve one of your trips, it will show up here.
+            When travellers reserve a trip, it will show up here.
           </p>
         </div>
       </div>
@@ -300,24 +292,29 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
                                         {slot.totalParticipants}{" "}
                                         {slot.totalParticipants === 1 ? "participant" : "participants"}
                                       </span>
-                                      {section.key !== "CANCELLED" && section.key !== "COMPLETED" && (
-                                        <GuideSlotCancelButton
-                                          onOpen={() => setCancelSlotId(slot.slotId)}
-                                        />
-                                      )}
+                                      {section.key !== "CANCELLED" &&
+                                        section.key !== "COMPLETED" &&
+                                        slotCancel ? (
+                                          <GuideSlotCancelButton
+                                            onOpen={() =>
+                                              setCancelSlotId(slot.slotId)
+                                            }
+                                          />
+                                        ) : null}
                                     </div>
                                   </div>
 
                                   {cancelSlotId === slot.slotId &&
                                     section.key !== "CANCELLED" &&
-                                    section.key !== "COMPLETED" && (
+                                    section.key !== "COMPLETED" &&
+                                    slotCancel ? (
                                       <div className="px-3 py-2">
                                         <GuideSlotCancelBar
                                           slotId={slot.slotId}
                                           onClose={() => setCancelSlotId(null)}
                                         />
                                       </div>
-                                    )}
+                                    ) : null}
 
                                   {slot.cancellationReason ? (
                                     <div className="border-t border-border/50 bg-rose-500/5 px-3 py-2 text-xs leading-relaxed text-rose-600 dark:text-rose-400">
@@ -335,8 +332,8 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
                                   <ul className="divide-y divide-border/50">
                                     {slot.clients.map((client, index) => (
                                       <li
-                                        key={`${slot.slotId}-${index}`}
-                                        className="flex items-center gap-3 px-3 py-2"
+                                        key={client.bookingId ?? `${slot.slotId}-${index}`}
+                                        className="flex flex-wrap items-center gap-3 px-3 py-2"
                                       >
                                         <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted/60 ring-1 ring-border/60">
                                           {client.image ? (
@@ -358,7 +355,9 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
                                             {client.name}
                                           </p>
                                           <p className="truncate text-xs text-muted-foreground">
-                                            {client.username ? `@${client.username}` : client.email}
+                                            {client.username
+                                              ? `@${client.username}`
+                                              : client.email}
                                           </p>
                                         </div>
                                         <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
@@ -369,6 +368,16 @@ export function GuideBookingsBoard({ items }: { items: GuideBookingItem[] }) {
                                           {client.participantCount}{" "}
                                           {client.participantCount === 1 ? "guest" : "guests"}
                                         </span>
+                                        {adminActions && client.bookingId ? (
+                                          <span className="flex shrink-0 items-center gap-2">
+                                            <AdminBookingActions
+                                              bookingId={client.bookingId}
+                                              status={client.status}
+                                              canConfirm={adminActions.canConfirm}
+                                              canCancel={adminActions.canCancel}
+                                            />
+                                          </span>
+                                        ) : null}
                                       </li>
                                     ))}
                                   </ul>

@@ -90,6 +90,24 @@ export type TripChangeSummary = {
 };
 
 /**
+ * Lightweight summary of a trip change used by the admin review page. The
+ * title is extracted from the `proposed` JSON snapshot without loading the
+ * full diff; the full snapshot is fetched lazily when a card is expanded.
+ */
+export type AdminTripChangeSummary = {
+  id: string;
+  type: "CREATE" | "UPDATE";
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: Date;
+  reviewedAt: Date | null;
+  title: string | null;
+  guideName: string | null;
+  submittedByUsername: string | null;
+  tripTitle: string | null;
+  reviewedByName: string | null;
+};
+
+/**
  * Produce the ordered list of changed fields for display in the admin review
  * UI. For a CREATE there is no `original`, so every field is shown as new.
  */

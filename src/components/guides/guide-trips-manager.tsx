@@ -1,6 +1,7 @@
 import { Clock3, Compass } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { fetchTripsWithDetails } from "@/lib/trips";
 import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
@@ -46,16 +47,7 @@ function toGuideTripData(trip: {
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
   const [trips, changeSummaries, draftRows] = await Promise.all([
-    prisma.trip.findMany({
-      where: { guideId },
-      orderBy: { createdAt: "asc" },
-      include: {
-        tripLocation: true,
-        inclusions: { orderBy: { order: "asc" } },
-        highlights: { orderBy: { order: "asc" } },
-        slots: { orderBy: { date: "asc" } },
-      },
-    }),
+    fetchTripsWithDetails({ guideId }),
     prisma.$queryRaw<TripChangeSummary[]>`
       SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
       FROM "trip_change_requests"

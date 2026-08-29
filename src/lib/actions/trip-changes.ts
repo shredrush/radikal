@@ -656,17 +656,10 @@ export async function rejectTripChangeAction(changeId: string) {
 }
 
 /**
- * Fetch the full proposed/original snapshot for one trip change. Used by the
- * guide's review history to load the diff lazily only when a row is expanded.
- * The signed-in guide can only view their own changes.
+ * Fetch the full proposed/original snapshot for one trip change. Callers wrap
+ * this with their own authorization check.
  */
-export async function getTripChangeDetailsAction(changeId: string): Promise<{
-  type: "CREATE" | "UPDATE";
-  proposed: TripProposal;
-  original: TripProposal | null;
-}> {
-  const { guide } = await requireGuide();
-
+async function fetchChangeSnapshots(changeId: string) {
   if (!changeId) {
     throw new Error("Missing change id.");
   }
@@ -685,13 +678,53 @@ export async function getTripChangeDetailsAction(changeId: string): Promise<{
     throw new Error("Change request not found.");
   }
 
+  return {
+    type: change.type,
+    guideId: change.guideId,
+    proposed: change.proposed as unknown as TripProposal,
+    original: change.original as unknown as TripProposal | null,
+  };
+}
+
+/**
+ * Fetch the full proposed/original snapshot for one trip change. Used by the
+ * guide's review history to load the diff lazily only when a row is expanded.
+ * The signed-in guide can only view their own changes.
+ */
+export async function getTripChangeDetailsAction(changeId: string): Promise<{
+  type: "CREATE" | "UPDATE";
+  proposed: TripProposal;
+  original: TripProposal | null;
+}> {
+  const { guide } = await requireGuide();
+  const change = await fetchChangeSnapshots(changeId);
+
   if (change.guideId !== guide.id) {
     throw new Error("You can only view your own trip changes.");
   }
 
   return {
     type: change.type,
-    proposed: change.proposed as unknown as TripProposal,
-    original: change.original as unknown as TripProposal | null,
+    proposed: change.proposed,
+    original: change.original,
+  };
+}
+
+/**
+ * Fetch the full proposed/original snapshot for one trip change. Used by the
+ * admin review page to load the diff lazily only when a card is expanded.
+ */
+export async function getAdminTripChangeDetailsAction(changeId: string): Promise<{
+  type: "CREATE" | "UPDATE";
+  proposed: TripProposal;
+  original: TripProposal | null;
+}> {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
+  const change = await fetchChangeSnapshots(changeId);
+
+  return {
+    type: change.type,
+    proposed: change.proposed,
+    original: change.original,
   };
 }

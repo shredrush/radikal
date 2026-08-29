@@ -338,7 +338,7 @@ export default async function ProfilePage({
                     size="sm"
                     className="mt-4 rounded-full"
                     nativeButton={false}
-                    render={<Link href={`/${guide.slug}`} />}
+                    render={<Link href={`/${guide.slug}`} target="_blank" rel="noopener noreferrer" />}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     View public profile
