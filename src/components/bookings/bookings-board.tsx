@@ -31,8 +31,10 @@ type SlotGroup = {
   slotLabel: string;
   slotSort: number;
   totalParticipants: number;
+  reserved: number;
   cancellationReason: string | null;
   cancelledByText: string | null;
+  cancelledAt: string | null;
   clients: BookingBoardClient[];
 };
 
@@ -46,18 +48,22 @@ type TripGroup = {
   slots: SlotGroup[];
 };
 
-const SECTIONS: { key: BookingStatus; label: string }[] = [
-  { key: "CONFIRMED", label: "Confirmed" },
+type BookingSectionKey = BookingStatus | "DELETED";
+
+const SECTIONS: { key: BookingSectionKey; label: string }[] = [
   { key: "PENDING", label: "Pending" },
+  { key: "CONFIRMED", label: "Confirmed" },
   { key: "COMPLETED", label: "Completed" },
   { key: "CANCELLED", label: "Cancelled" },
+  { key: "DELETED", label: "Deleted" },
 ];
 
-const STATUS_DOT: Record<BookingStatus, string> = {
+const STATUS_DOT: Record<BookingSectionKey, string> = {
   CONFIRMED: "bg-emerald-500",
   PENDING: "bg-amber-500",
   COMPLETED: "bg-sky-500",
   CANCELLED: "bg-rose-500",
+  DELETED: "bg-zinc-500",
 };
 
 function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
@@ -85,29 +91,38 @@ function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
         slotLabel: item.slotLabel,
         slotSort: item.slotSort,
         totalParticipants: 0,
+        reserved: item.reserved ?? 0,
         cancellationReason: item.cancellationReason,
         cancelledByText: item.cancelledByText,
+        cancelledAt: item.cancelledAt,
         clients: [],
       };
       trip.slots.push(slot);
     } else {
+      slot.reserved = Math.max(slot.reserved, item.reserved ?? 0);
       slot.cancellationReason = slot.cancellationReason ?? item.cancellationReason;
       slot.cancelledByText = slot.cancelledByText ?? item.cancelledByText;
+      slot.cancelledAt = slot.cancelledAt ?? item.cancelledAt;
     }
 
     slot.totalParticipants += item.participantCount;
-    slot.clients.push({
-      bookingId: item.bookingId,
-      status: item.status,
-      name: item.customer.name,
-      username: item.customer.username,
-      email: item.customer.email,
-      image: item.customer.image,
-      participantCount: item.participantCount,
-      totalPriceRupees: item.totalPriceRupees,
-      paymentTransactionId: item.paymentTransactionId,
-      bookedAt: item.bookedAt,
-    });
+    if (!item.isCancelledSlot) {
+      slot.clients.push({
+        bookingId: item.bookingId,
+        status: item.status,
+        name: item.customer.name,
+        username: item.customer.username,
+        email: item.customer.email,
+        image: item.customer.image,
+        participantCount: item.participantCount,
+        totalPriceRupees: item.totalPriceRupees,
+        paymentTransactionId: item.paymentTransactionId,
+        bookedAt: item.bookedAt,
+        cancelledAt: item.cancelledAt,
+        deletedByText: item.deletedByText,
+        deletedAt: item.deletedAt,
+      });
+    }
   }
 
   return Array.from(tripMap.values())
@@ -134,10 +149,12 @@ export function BookingsBoard({
   items,
   slotCancel = false,
   adminActions = null,
+  hideDeletedSection = false,
 }: {
   items: BookingBoardItem[];
   slotCancel?: boolean;
   adminActions?: { canConfirm: boolean; canCancel: boolean } | null;
+  hideDeletedSection?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [cancelSlotId, setCancelSlotId] = useState<string | null>(null);
@@ -146,6 +163,7 @@ export function BookingsBoard({
     PENDING: true,
     COMPLETED: false,
     CANCELLED: false,
+    DELETED: false,
   });
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -155,13 +173,19 @@ export function BookingsBoard({
       ? items.filter((item) => item.title.toLowerCase().includes(normalizedQuery))
       : items;
 
-    return SECTIONS.map((section) => ({
-      ...section,
-      trips: groupByTripAndSlot(
-        filtered.filter((item) => item.status === section.key),
-      ),
-    }));
-  }, [items, normalizedQuery]);
+    return SECTIONS.filter((section) => !(hideDeletedSection && section.key === "DELETED")).map(
+      (section) => ({
+        ...section,
+        trips: groupByTripAndSlot(
+          filtered.filter((item) =>
+            section.key === "DELETED"
+              ? Boolean(item.deletedAt)
+              : !item.deletedAt && item.status === section.key,
+          ),
+        ),
+      }),
+    );
+  }, [items, normalizedQuery, hideDeletedSection]);
 
   const totalTrips = sections.reduce((sum, section) => sum + section.trips.length, 0);
 
@@ -287,11 +311,18 @@ export function BookingsBoard({
                                       {slot.slotLabel}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                        <Users className="h-3.5 w-3.5 text-emerald-500" />
-                                        {slot.totalParticipants}{" "}
-                                        {slot.totalParticipants === 1 ? "participant" : "participants"}
-                                      </span>
+                                      {slot.clients.length === 0 && slot.reserved > 0 ? (
+                                        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                          <Users className="h-3.5 w-3.5 text-amber-500" />
+                                          {slot.reserved} {slot.reserved === 1 ? "spot" : "spots"} reserved
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                          <Users className="h-3.5 w-3.5 text-emerald-500" />
+                                          {slot.totalParticipants}{" "}
+                                          {slot.totalParticipants === 1 ? "participant" : "participants"}
+                                        </span>
+                                      )}
                                       {section.key !== "CANCELLED" &&
                                         section.key !== "COMPLETED" &&
                                         slotCancel ? (
@@ -323,6 +354,7 @@ export function BookingsBoard({
                                         {slot.cancelledByText
                                           ? ` by ${slot.cancelledByText}`
                                           : ""}
+                                        {slot.cancelledAt ? ` on ${slot.cancelledAt}` : ""}
                                         :{" "}
                                       </span>
                                       {slot.cancellationReason}
@@ -364,6 +396,18 @@ export function BookingsBoard({
                                           <Clock className="h-3.5 w-3.5" />
                                           {client.bookedAt}
                                         </span>
+                                        {section.key === "DELETED" && client.deletedAt ? (
+                                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            Deleted{client.deletedByText ? ` by ${client.deletedByText}` : ""} on {client.deletedAt}
+                                          </span>
+                                        ) : null}
+                                        {section.key === "CANCELLED" && client.cancelledAt ? (
+                                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            Cancelled {client.cancelledAt}
+                                          </span>
+                                        ) : null}
                                         <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                                           {client.participantCount}{" "}
                                           {client.participantCount === 1 ? "guest" : "guests"}

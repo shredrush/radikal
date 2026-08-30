@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
 import { notifyUser } from "@/lib/notifications";
-import { sendEmailAfter, tripChangeDecisionEmail } from "@/lib/email";
+import { sendEmailAfter, tripChangeDecisionEmail, bookingCancelledEmail } from "@/lib/email";
 import {
   validTypes,
   asString,
@@ -14,10 +14,14 @@ import {
   validateTripFields,
 } from "@/lib/trip-fields";
 import { parseSlotInteger } from "@/lib/validations/slots";
-import { assertValidStoredMedia, removeStoredMedia } from "@/lib/media";
+import { assertValidStoredMedia } from "@/lib/media";
+import { sanitizeText } from "@/lib/sanitize";
+import { cancelActiveBookingsForSlot, type CancellationEmail } from "@/lib/actions/payment";
+import { startOfTodayIST } from "@/lib/dates";
 
 function revalidateTripPages(slug: string) {
   revalidatePath("/admin/trips");
+  revalidatePath("/admin/trip-changes");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");
@@ -218,7 +222,7 @@ export async function updateTripAction(formData: FormData) {
   }
 }
 
-export async function deleteTripAction(tripId: string) {
+export async function deleteTripAction(tripId: string, reason?: string) {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   if (!tripId) {
@@ -227,35 +231,31 @@ export async function deleteTripAction(tripId: string) {
 
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
-    select: { slug: true, title: true, images: true, videos: true },
+    select: { slug: true, title: true, deletedAt: true },
   });
 
   if (!trip) {
     throw new Error("Trip not found.");
   }
 
+  if (trip.deletedAt) {
+    throw new Error("Trip is already deleted.");
+  }
+
   let rejectedChanges: { id: string; submittedById: string }[] = [];
+  const deletedAt = new Date();
 
   await prisma.$transaction(async (tx) => {
-    // Lock the trip row so a concurrently-created booking serializes against
-    // this delete (createBooking locks the same trip row), then re-check. This
-    // makes the "has bookings?" guard atomic with the delete.
-    const [lockedTrip] = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id FROM trips WHERE id = ${tripId} FOR UPDATE
+    // Lock the trip row so concurrent booking/restore/delete operations
+    // serialize against this soft delete.
+    const [lockedTrip] = await tx.$queryRaw<Array<{ id: string; deletedAt: Date | null }>>`
+      SELECT id, "deletedAt" FROM trips WHERE id = ${tripId} FOR UPDATE
     `;
     if (!lockedTrip) {
       throw new Error("Trip not found.");
     }
-
-    // Any booking — including paid COMPLETED history — is financial/audit data.
-    // Mirror the slot-deletion contract and refuse to delete a trip that has
-    // any bookings; the check runs inside the transaction, so a booking created
-    // concurrently cannot be silently destroyed (no check-then-delete race).
-    const bookingCount = await tx.booking.count({ where: { tripId } });
-    if (bookingCount > 0) {
-      throw new Error(
-        "This trip has bookings and cannot be deleted. Cancel the bookings first.",
-      );
+    if (lockedTrip.deletedAt) {
+      throw new Error("Trip is already deleted.");
     }
 
     // Resolve pending UPDATE changes through the normal review lifecycle
@@ -276,12 +276,17 @@ export async function deleteTripAction(tripId: string) {
       });
     }
 
-    await tx.trip.delete({ where: { id: tripId } });
+    await Promise.all([
+      tx.trip.update({ where: { id: tripId }, data: { deletedAt, deletedById: session.user.id } }),
+      tx.slot.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.booking.updateMany({
+        where: { tripId, deletedAt: null },
+        data: { deletedAt, deletedWithTrip: true, deletedById: session.user.id, deletedByRole: session.user.role },
+      }),
+      tx.wishlistItem.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.review.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    ]);
   });
-
-  // Storage objects are not cascaded by the DB delete — reclaim them
-  // best-effort after the transaction commits.
-  await removeStoredMedia([...(trip.images ?? []), ...(trip.videos ?? [])]);
 
   if (rejectedChanges.length > 0) {
     const submitters = await prisma.user.findMany({
@@ -296,7 +301,7 @@ export async function deleteTripAction(tripId: string) {
         type: "TRIP_CHANGE_REJECTED",
         title: "Trip change rejected",
         body: `Your pending trip change for “${trip.title}” was rejected because the trip was deleted.`,
-        href: "/guide-board/trips#review-history",
+        href: "/guide-board/trips#activity-log",
       });
       sendEmailAfter(
         tripChangeDecisionEmail({
@@ -320,13 +325,63 @@ export async function deleteTripAction(tripId: string) {
     userId: session.user.id,
     action: "TRIP_DELETED",
     label: "Deleted a trip",
+    metadata: { tripId, title: trip.title, ...(reason ? { reason } : {}) },
+  });
+
+  revalidatePath("/admin/trips");
+  revalidatePath("/admin/trip-changes");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  updateTag("trips");
+  revalidatePath(`/trips/${trip.slug}`);
+}
+
+export async function restoreTripAction(tripId: string) {
+  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  if (!tripId) {
+    throw new Error("Missing trip id.");
+  }
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { slug: true, title: true, deletedAt: true },
+  });
+
+  if (!trip) {
+    throw new Error("Trip not found.");
+  }
+
+  if (!trip.deletedAt) {
+    throw new Error("Trip is not deleted.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await Promise.all([
+      tx.trip.update({ where: { id: tripId }, data: { deletedAt: null, deletedById: null } }),
+      tx.slot.updateMany({ where: { tripId, deletedWithTrip: true }, data: { deletedAt: null, deletedWithTrip: false } }),
+      tx.booking.updateMany({
+        where: { tripId, deletedWithTrip: true },
+        data: { deletedAt: null, deletedWithTrip: false, deletedById: null, deletedByRole: null },
+      }),
+      tx.wishlistItem.updateMany({ where: { tripId, deletedWithTrip: true }, data: { deletedAt: null, deletedWithTrip: false } }),
+      tx.review.updateMany({ where: { tripId, deletedWithTrip: true }, data: { deletedAt: null, deletedWithTrip: false } }),
+    ]);
+  });
+
+  await logActivity({
+    userId: session.user.id,
+    action: "TRIP_RESTORED",
+    label: "Restored a deleted trip",
     metadata: { tripId, title: trip.title },
   });
 
   revalidatePath("/admin/trips");
+  revalidatePath("/admin/trip-changes");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");
+  updateTag("reviews");
   revalidatePath(`/trips/${trip.slug}`);
 }
 
@@ -483,39 +538,109 @@ export async function updateSlotAction(formData: FormData) {
   revalidateSlotPages(slug);
 }
 
-export async function deleteSlotAction(slotId: string) {
-  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+export async function cancelSlotAction(slotId: string, reason?: string) {
+  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   if (!slotId) {
     throw new Error("Missing slot id.");
   }
 
+  const cleanReason = sanitizeText(reason ?? "", { maxLength: 500 });
+  const now = new Date();
+  let emails: CancellationEmail[] = [];
   let slug = "";
+  let slotDate = "";
+  let slotCapacity = 0;
+  let slotReserved = 0;
+
   await prisma.$transaction(async (tx) => {
     const slot = await tx.slot.findUnique({
       where: { id: slotId },
       include: {
-        trip: { select: { slug: true } },
-        _count: { select: { bookings: true } },
+        trip: {
+          select: {
+            slug: true,
+            title: true,
+            deletedAt: true,
+            guide: { select: { name: true } },
+          },
+        },
+        bookings: {
+          where: { status: { in: ["PENDING", "CONFIRMED"] } },
+          include: { user: { select: { email: true, name: true } } },
+        },
       },
     });
 
     if (!slot) {
       throw new Error("Slot not found.");
     }
-
-    slug = slot.trip.slug;
-
-    // `Booking.slot` has no cascade, so deleting a slot with bookings would
-    // violate the foreign key. Cancel the bookings first instead.
-    if (slot._count.bookings > 0) {
-      throw new Error(
-        "This date has bookings and cannot be deleted. Cancel the bookings first."
-      );
+    if (slot.trip.deletedAt) {
+      throw new Error("Deleted trips cannot be changed.");
+    }
+    if (slot.deletedAt) {
+      throw new Error("This date is already cancelled.");
+    }
+    if (slot.date < startOfTodayIST()) {
+      throw new Error("Only today or future dates can be cancelled.");
+    }
+    if (slot.bookings.length > 0 && !cleanReason) {
+      throw new Error("This date has bookings. Add a reason so travellers know why it was cancelled.");
     }
 
-    await tx.slot.delete({ where: { id: slotId } });
+    slug = slot.trip.slug;
+    slotDate = slot.date.toISOString();
+    slotCapacity = slot.capacity;
+    slotReserved = slot.reserved;
+    emails = await cancelActiveBookingsForSlot(
+      tx,
+      slot,
+      { id: session.user.id, role: session.user.role },
+      cleanReason || "Slot cancelled",
+    );
+
+    await tx.slot.update({
+      where: { id: slotId },
+      data: { deletedAt: now, deletedWithTrip: false },
+    });
   });
 
+  for (const email of emails) {
+    sendEmailAfter(bookingCancelledEmail(email));
+  }
+
+  if (emails.length > 0) {
+    await logActivity({
+      userId: session.user.id,
+      action: "BOOKING_CANCELLED",
+      label: "Cancelled a trip date and its bookings",
+      metadata: {
+        slotId,
+        date: slotDate,
+        capacity: slotCapacity,
+        reserved: slotReserved,
+        booked: emails.length,
+        reason: cleanReason,
+      },
+    });
+  } else {
+    await logActivity({
+      userId: session.user.id,
+      action: "SLOT_CANCELLED",
+      label: "Cancelled an empty trip date",
+      metadata: {
+        slotId,
+        date: slotDate,
+        capacity: slotCapacity,
+        reserved: slotReserved,
+        booked: 0,
+      },
+    });
+  }
+
   revalidateSlotPages(slug);
+  revalidatePath("/admin/bookings");
+  revalidatePath("/guide-board/bookings");
+  revalidatePath("/support");
+  revalidatePath("/profile");
 }

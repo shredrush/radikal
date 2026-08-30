@@ -6,7 +6,7 @@ import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
-import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
+import { deactivateGuide } from "@/lib/guide-teardown";
 import { removeStoredMedia } from "@/lib/media";
 import { updateUserSchema } from "@/lib/validations/users";
 
@@ -36,11 +36,13 @@ export async function updateUserAction(formData: FormData) {
 
   const target = await prisma.user.findUnique({
     where: { id: data.userId },
-    include: { guide: { select: { id: true, photos: true, videos: true } } },
+    include: { guide: { select: { id: true, photos: true, videos: true, deletedAt: true } } },
   });
-  if (!target) {
+  if (!target || target.deletedAt) {
     throw new Error("User not found.");
   }
+
+  const activeGuide = target.guide && !target.guide.deletedAt ? target.guide : null;
 
   // Never let an admin change their own role — that could lock them (and the
   // last admin) out of the admin board.
@@ -51,7 +53,7 @@ export async function updateUserAction(formData: FormData) {
   // A user can only be a GUIDE when a guide profile is actually linked — the
   // guide's dashboard, trips, and public profile all depend on that row. Set
   // the role first via Admin → Guides instead of orphaning the account.
-  if (data.role === "GUIDE" && !target.guide) {
+  if (data.role === "GUIDE" && !activeGuide) {
     throw new Error(
       "This account has no guide profile. Create one under Admin → Guides before assigning the GUIDE role.",
     );
@@ -60,15 +62,15 @@ export async function updateUserAction(formData: FormData) {
   // Moving a user away from the GUIDE role removes their guide profile too.
   // Leaving the Guide row behind would keep a "vetted guide" public page and
   // bookable trips alive that nobody can manage.
-  const demotingGuide = target.role === "GUIDE" && data.role !== "GUIDE" && !!target.guide;
+  const demotingGuide = target.role === "GUIDE" && data.role !== "GUIDE" && !!activeGuide;
 
   // The teardown unlinks the guide's trips but leaves them live and bookable,
   // so refuse to demote while any of their trips has an active booking — the
   // admin must cancel the bookings or reassign the trips first.
-  if (demotingGuide && target.guide) {
+  if (demotingGuide && activeGuide) {
     const activeBookings = await prisma.booking.count({
       where: {
-        trip: { guideId: target.guide.id },
+        trip: { guideId: activeGuide.id, deletedAt: null },
         status: { in: ["PENDING", "CONFIRMED"] },
       },
     });
@@ -116,13 +118,13 @@ export async function updateUserAction(formData: FormData) {
 
       // Demoting a guide tears down the guide linkage in the same transaction
       // so the role change can never leave an orphaned, unmanaged guide live.
-      if (demotingGuide && target.guide) {
-        await unlinkAndDeleteGuide(tx, target.guide.id);
+      if (demotingGuide && activeGuide) {
+        await deactivateGuide(tx, activeGuide.id);
       }
 
       // Keep the old handle resolving to this user's guide page — only when
       // they remain a guide (a demoted user has no guide page to resolve to).
-      if (usernameChanged && previousUsername && target.guide && data.role === "GUIDE") {
+      if (usernameChanged && previousUsername && activeGuide && data.role === "GUIDE") {
         await tx.usernameAlias.create({
           data: { username: previousUsername, userId: data.userId },
         });
@@ -135,9 +137,9 @@ export async function updateUserAction(formData: FormData) {
     throw error;
   }
 
-  // The guide row is gone; reclaim its storage objects best-effort.
-  if (demotingGuide && target.guide) {
-    await removeStoredMedia([...(target.guide.photos ?? []), ...(target.guide.videos ?? [])]);
+  // The guide row is deactivated; reclaim its storage objects best-effort.
+  if (demotingGuide && activeGuide) {
+    await removeStoredMedia([...(activeGuide.photos ?? []), ...(activeGuide.videos ?? [])]);
   }
 
   await logActivity({
@@ -166,7 +168,7 @@ export async function updateUserAction(formData: FormData) {
       userId: data.userId,
       action: "GUIDE_PROFILE_REMOVED",
       label: "Guide profile removed because the role was changed away from GUIDE",
-      metadata: { guideId: target.guide?.id },
+      metadata: { guideId: activeGuide?.id },
     });
   }
 
@@ -175,7 +177,7 @@ export async function updateUserAction(formData: FormData) {
 
   // For guide accounts the username is the public URL, so a rename must
   // invalidate both the old and the new guide pages.
-  if (target.guide && data.role === "GUIDE" && usernameChanged) {
+  if (activeGuide && data.role === "GUIDE" && usernameChanged) {
     if (previousUsername) revalidatePath(`/${previousUsername}`);
     if (data.username) revalidatePath(`/${data.username}`);
     revalidatePath("/");
@@ -191,4 +193,68 @@ export async function updateUserAction(formData: FormData) {
     revalidatePath("/community");
     updateTag("guides");
   }
+}
+
+/**
+ * Admin action: deactivate an account without deleting connected history.
+ * Active bookings must be resolved first so support and finance records remain
+ * actionable and capacity stays consistent.
+ */
+export async function deactivateUserAction(userId: string) {
+  const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
+
+  if (!userId) {
+    throw new Error("Missing user id.");
+  }
+  if (session.user.id === userId) {
+    throw new Error("You cannot deactivate your own account.");
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { guide: { select: { id: true, deletedAt: true } } },
+  });
+  if (!target || target.deletedAt) {
+    throw new Error("User not found.");
+  }
+
+  const activeBookings = await prisma.booking.count({
+    where: {
+      deletedAt: null,
+      status: { in: ["PENDING", "CONFIRMED"] },
+      OR: [
+        { userId },
+        ...(target.guide && !target.guide.deletedAt
+          ? [{ trip: { guideId: target.guide.id, deletedAt: null } }]
+          : []),
+      ],
+    },
+  });
+  if (activeBookings > 0) {
+    throw new Error("Cancel or complete this account's active bookings before deactivating it.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date() },
+    });
+
+    if (target.guide && !target.guide.deletedAt) {
+      await deactivateGuide(tx, target.guide.id);
+    }
+  });
+
+  await logActivity({
+    userId,
+    action: "USER_DEACTIVATED",
+    label: "Account deactivated by an admin",
+    metadata: { deactivatedById: session.user.id },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+  revalidatePath("/");
+  revalidatePath("/community");
+  updateTag("guides");
 }

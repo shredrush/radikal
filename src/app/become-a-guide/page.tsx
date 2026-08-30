@@ -27,9 +27,9 @@ export default async function BecomeAGuidePage() {
   // Read the account's role and guide linkage from the database (not the
   // possibly-stale JWT) so a demotion or guide removal takes effect
   // immediately instead of leaving the "already a guide" wall up.
-  const account = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true, username: true, guide: { select: { id: true } } },
+  const account = await prisma.user.findFirst({
+    where: { id: user.id, deletedAt: null },
+    select: { role: true, username: true, guide: { select: { id: true, deletedAt: true } } },
   });
   if (!account) {
     redirect("/login?callbackUrl=/become-a-guide");
@@ -37,7 +37,7 @@ export default async function BecomeAGuidePage() {
 
   // The linked guide profile is the ground truth — a GUIDE role without one is
   // an orphan that must be allowed to re-apply.
-  const isAlreadyGuide = !!account.guide;
+  const isAlreadyGuide = !!account.guide && !account.guide.deletedAt;
 
   const application = isAlreadyGuide
     ? null

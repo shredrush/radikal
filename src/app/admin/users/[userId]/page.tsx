@@ -86,6 +86,24 @@ function metadataWithoutGeo(metadata: unknown): unknown {
   return Object.keys(rest).length > 0 ? rest : null;
 }
 
+/** Slot capacity/booking stats for activity entries when present. */
+function activityStatPills(
+  metadata: unknown,
+): { booked: number | null; reserved: number | null; capacity: number | null } | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const record = metadata as Record<string, unknown>;
+  const reserved = typeof record.reserved === "number" ? record.reserved : null;
+  const booked =
+    typeof record.booked === "number"
+      ? record.booked
+      : typeof record.bookingCount === "number"
+        ? record.bookingCount
+        : null;
+  const capacity = typeof record.capacity === "number" ? record.capacity : null;
+  if (reserved === null && booked === null && capacity === null) return null;
+  return { booked, reserved, capacity };
+}
+
 export default async function AdminUserDetailPage({
   params,
 }: {
@@ -98,7 +116,7 @@ export default async function AdminUserDetailPage({
     prisma.user.findUnique({
       where: { id: userId },
       include: {
-        guide: { select: { name: true } },
+        guide: { select: { name: true, deletedAt: true } },
         _count: { select: { bookings: true, reviews: true, guideApplications: true, activityLogs: true } },
       },
     }),
@@ -148,6 +166,11 @@ export default async function AdminUserDetailPage({
                     You
                   </Badge>
                 ) : null}
+                {user.deletedAt ? (
+                  <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground/70">
+                    Deactivated
+                  </Badge>
+                ) : null}
               </div>
               <CardDescription className="space-y-1">
                 <span className="block">{user.username ? `@${user.username} · ` : ""}{user.email}</span>
@@ -157,7 +180,7 @@ export default async function AdminUserDetailPage({
                   {" · "}{pluralize(user._count.reviews, "review")}
                   {" · "}{pluralize(user._count.guideApplications, "application")}
                 </span>
-                {user.guide ? (
+                {user.guide && !user.guide.deletedAt ? (
                   <span className="block">
                     Linked guide:{" "}
                     <Link href={`/admin/guides`} className="text-primary underline underline-offset-4">
@@ -175,6 +198,7 @@ export default async function AdminUserDetailPage({
                   email: user.email,
                   username: user.username,
                   role: user.role,
+                  deletedAt: user.deletedAt,
                 }}
                 isSelf={isSelf}
               />
@@ -213,6 +237,38 @@ export default async function AdminUserDetailPage({
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-foreground/90">{log.label}</p>
+                      {(() => {
+                        const stats = activityStatPills(log.metadata);
+                        if (!stats) return null;
+                        return (
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                            {stats.booked !== null ? (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600"
+                              >
+                                {stats.booked} booked
+                              </Badge>
+                            ) : null}
+                            {stats.reserved !== null ? (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600"
+                              >
+                                {stats.reserved} reserved
+                              </Badge>
+                            ) : null}
+                            {stats.capacity !== null ? (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-border/70 bg-background/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                              >
+                                {stats.capacity} capacity
+                              </Badge>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         {geo ? (
                           <span className="inline-flex items-center gap-1">

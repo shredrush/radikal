@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, ChevronDown, ChevronUp, Clock3, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Clock3, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
 import { PreviewTripChangeButton } from "@/components/admin/preview-trip-change-button";
 import { getAdminTripChangeDetailsAction } from "@/lib/actions/trip-changes";
 import { type AdminTripChangeSummary, type TripProposal } from "@/lib/trip-changes";
-import { formatLongDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 
 type ChangeDetails = {
   type: "CREATE" | "UPDATE";
@@ -33,16 +33,28 @@ function statusBadge(status: AdminTripChangeSummary["status"]) {
   }
   if (status === "APPROVED") {
     return (
-      <Badge variant="outline" className="rounded-full border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-600">
+      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
         <CheckCircle2 className="h-3 w-3" /> Approved
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="rounded-full border-destructive/40 bg-destructive/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-destructive">
+    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
       <XCircle className="h-3 w-3" /> Rejected
     </Badge>
   );
+}
+
+function changeTypeLabel(type: AdminTripChangeSummary["type"]) {
+  if (type === "CREATE") return "New trip";
+  if (type === "UPDATE") return "Trip edit";
+  return "Deleted trip";
+}
+
+function changeTypeBadgeClass(type: AdminTripChangeSummary["type"]) {
+  if (type === "CREATE") return "border-orange-500/40 bg-orange-500/10 text-orange-600";
+  if (type === "UPDATE") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600";
+  return "border-destructive/40 bg-destructive/10 text-destructive";
 }
 
 /**
@@ -77,6 +89,10 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
     <div className="flex flex-col gap-4">
       {changes.map((change) => {
         const isPendingStatus = change.status === "PENDING";
+        const isDeleteEntry = change.type === "DELETE";
+        const submittedBy = change.submittedByUsername
+          ? `@${change.submittedByUsername}`
+          : change.submittedByName;
         const expanded = Boolean(expandedIds[change.id]);
 
         return (
@@ -91,8 +107,9 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     {statusBadge(change.status)}
-                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                      {change.type === "CREATE" ? "New trip" : "Trip edit"}
+                    <Badge variant="outline" className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${changeTypeBadgeClass(change.type)}`}>
+                      {isDeleteEntry ? <Trash2 className="h-3 w-3" /> : null}
+                      {changeTypeLabel(change.type)}
                     </Badge>
                   </div>
                   <div>
@@ -105,9 +122,11 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
                         : ""}
                     </CardDescription>
                     <CardDescription className="mt-0.5 text-xs text-muted-foreground">
-                      Submitted {formatLongDate(change.createdAt)}
-                      {!isPendingStatus && change.reviewedAt
-                        ? ` · Reviewed ${formatLongDate(change.reviewedAt)}${change.reviewedByName ? ` by ${change.reviewedByName}` : ""}`
+                      {isDeleteEntry
+                        ? `Deleted${submittedBy ? ` by ${submittedBy}` : ""}`
+                        : "Submitted"} {formatDateTime(change.createdAt)}
+                      {!isPendingStatus && change.reviewedAt && !isDeleteEntry
+                        ? ` · Reviewed ${formatDateTime(change.reviewedAt)}${change.reviewedByName ? ` by ${change.reviewedByName}` : ""}`
                         : ""}
                     </CardDescription>
                   </div>
@@ -120,22 +139,24 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
                       <RejectTripChangeButton changeId={change.id} />
                     </>
                   ) : null}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full"
-                    aria-expanded={expanded}
-                    disabled={isPending}
-                    onClick={() => handleToggle(change.id)}
-                  >
-                    {expanded ? "Hide changes" : "View changes"}
-                    {expanded ? (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
+                  {!isDeleteEntry ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full"
+                      aria-expanded={expanded}
+                      disabled={isPending}
+                      onClick={() => handleToggle(change.id)}
+                    >
+                      {expanded ? "Hide changes" : "View changes"}
+                      {expanded ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </CardHeader>

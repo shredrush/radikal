@@ -101,9 +101,9 @@ export async function saveTripDraftAction(
   if (draftId) {
     const existing = await prisma.tripDraft.findUnique({
       where: { id: draftId },
-      select: { guideId: true },
+      select: { guideId: true, deletedAt: true },
     });
-    if (!existing || existing.guideId !== guide.id) {
+    if (!existing || existing.guideId !== guide.id || existing.deletedAt) {
       throw new Error("Draft not found.");
     }
     await prisma.tripDraft.update({ where: { id: draftId }, data: fields });
@@ -129,13 +129,16 @@ export async function deleteTripDraftAction(draftId: string): Promise<void> {
 
   const existing = await prisma.tripDraft.findUnique({
     where: { id: draftId },
-    select: { guideId: true },
+    select: { guideId: true, deletedAt: true },
   });
-  if (!existing || existing.guideId !== guide.id) {
+  if (!existing || existing.guideId !== guide.id || existing.deletedAt) {
     throw new Error("Draft not found.");
   }
 
-  await prisma.tripDraft.delete({ where: { id: draftId } });
+  await prisma.tripDraft.update({
+    where: { id: draftId },
+    data: { deletedAt: new Date() },
+  });
   revalidatePath("/guide-board/trips");
   revalidatePath("/admin/trips");
 }

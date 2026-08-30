@@ -8,6 +8,7 @@ const profileUserSelect = {
     select: {
       photo: true,
       photos: true,
+      deletedAt: true,
       user: { select: { username: true } },
     },
   },
@@ -20,8 +21,8 @@ const profileUserSelect = {
  * server-side render.
  */
 export const getProfileUser = cache((userId: string) =>
-  prisma.user.findUnique({
-    where: { id: userId },
+  prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
     select: profileUserSelect,
   }),
 );

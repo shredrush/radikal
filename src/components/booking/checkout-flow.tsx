@@ -6,7 +6,6 @@ import { CalendarDays, Minus, Plus, Shield, ShieldCheck, Users } from "lucide-re
 
 import { createBooking } from "@/lib/actions/booking";
 import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
-import { submitTransactionId } from "@/lib/actions/payment";
 import { sanitizeText } from "@/lib/sanitize";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,6 @@ export function CheckoutFlow({
   const [participantCount, setParticipantCount] = useState(initialParticipantCount);
   const [adventureInsurance, setAdventureInsurance] = useState(false);
   const [step, setStep] = useState<Step>("select");
-  const [bookingId, setBookingId] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -73,27 +71,10 @@ export function CheckoutFlow({
 
   function handleReserve() {
     setError(null);
-    startTransition(async () => {
-      const result = await createBooking({
-        tripId: trip.id,
-        slotId,
-        participantCount,
-        adventureInsurance,
-      });
-
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-
-      setBookingId(result.bookingId);
-      setStep("review");
-    });
+    setStep("review");
   }
 
   function handleSubmitPayment() {
-    if (!bookingId) return;
-
     // Sanitize locally before sending — mirrors the server-side sanitization.
     const cleanTransactionId = sanitizeText(transactionId, { maxLength: 100 });
 
@@ -108,8 +89,11 @@ export function CheckoutFlow({
 
     setError(null);
     startTransition(async () => {
-      const result = await submitTransactionId({
-        bookingId,
+      const result = await createBooking({
+        tripId: trip.id,
+        slotId,
+        participantCount,
+        adventureInsurance,
         transactionId: cleanTransactionId,
       });
 
@@ -267,7 +251,7 @@ export function CheckoutFlow({
           <>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="rounded-full px-3 py-1">
-                Booking reserved · payment pending
+                Payment details · booking not pending yet
               </Badge>
             </div>
             <div className="flex flex-col gap-3 rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">

@@ -21,7 +21,7 @@ export async function SiteHeader() {
   const currentUser = session?.user?.id
     ? await getProfileUser(session.user.id)
     : null;
-  const guideForImage = currentUser?.guide
+  const guideForImage = currentUser?.guide && !currentUser.guide.deletedAt
     ? {
         username: currentUser.guide.user?.username ?? "",
         photo: currentUser.guide.photo,

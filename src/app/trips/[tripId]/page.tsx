@@ -36,8 +36,12 @@ const MAX_REVIEWS = 4;
 // the common case.
 const getTripDetail = unstable_cache(
   async (slug: string) => {
-    return prisma.trip.findUnique({
-      where: { slug },
+    return prisma.trip.findFirst({
+      where: {
+        slug,
+        deletedAt: null,
+        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+      },
       include: {
         guide: {
           include: {
@@ -51,11 +55,13 @@ const getTripDetail = unstable_cache(
           },
         },
         slots: {
+          where: { deletedAt: null },
           orderBy: {
             date: "asc",
           },
         },
         reviews: {
+          where: { deletedAt: null },
           include: { user: { select: { name: true, image: true } } },
           orderBy: { createdAt: "desc" },
           take: MAX_REVIEWS,
@@ -91,6 +97,8 @@ const getSimilarTrips = unstable_cache(
     const similar = await prisma.trip.findMany({
       where: {
         id: { not: excludeId },
+        deletedAt: null,
+        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
         categories: { hasSome: categories },
       },
       select,
@@ -106,6 +114,8 @@ const getSimilarTrips = unstable_cache(
     const filler = await prisma.trip.findMany({
       where: {
         id: { notIn: [excludeId, ...existingIds] },
+        deletedAt: null,
+        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
       },
       select,
       orderBy: { createdAt: "asc" },
@@ -144,8 +154,9 @@ export default async function TripDetailPage({
   const userId = session?.user?.id;
   const inWishlist = userId
     ? Boolean(
-        await prisma.wishlistItem.findUnique({
-          where: { userId_tripId: { userId, tripId: trip.id } },
+        await prisma.wishlistItem.findFirst({
+          where: { userId, tripId: trip.id, deletedAt: null },
+          select: { id: true },
         }),
       )
     : false;

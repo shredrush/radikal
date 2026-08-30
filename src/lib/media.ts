@@ -42,6 +42,42 @@ export function publicMediaUrl(bucket: MediaBucket, path: string): string {
 }
 
 /**
+ * Make sure the bucket and the parent folder for a path exist so a subsequent
+ * signed upload is accepted. Supabase Storage does not auto-create nested
+ * folders and `createSignedUploadUrl` fails with "resource does not exist" when
+ * the parent is missing (which is the case for every brand-new guide/user).
+ * Bucket creation is idempotent and folder creation simply uploads an empty
+ * placeholder object. Fails closed: misconfiguration surfaces as a clear error.
+ */
+async function ensureMediaParent(bucket: MediaBucket, path: string): Promise<void> {
+  const bucketInfo = await storage().getBucket(bucket);
+  if (bucketInfo.error) {
+    if (!String(bucketInfo.error.message).toLowerCase().includes("not found")) {
+      throw new Error(`Could not access storage bucket “${bucket}”: ${bucketInfo.error.message}`);
+    }
+    const created = await storage().createBucket(bucket, { public: true });
+    if (created.error && !String(created.error.message).toLowerCase().includes("already exists")) {
+      throw new Error(`Could not create storage bucket “${bucket}”: ${created.error.message}`);
+    }
+  }
+
+  const lastSlash = path.lastIndexOf("/");
+  if (lastSlash === -1) return;
+  const parent = path.slice(0, lastSlash);
+
+  const listed = await storage().from(bucket).list(parent, { limit: 1 });
+  if (!listed.error) return; // parent already exists (or is empty but writable) — good enough.
+
+  const { error } = await storage().from(bucket).upload(`${parent}/.keep`, new Uint8Array(0), {
+    contentType: "application/octet-stream",
+    upsert: true,
+  });
+  if (error && !String(error.message).toLowerCase().includes("already exists")) {
+    throw new Error(`Could not prepare storage folder “${parent}”: ${error.message}`);
+  }
+}
+
+/**
  * Reverse of `publicMediaUrl`: extract `{ bucket, path }` from a stored URL.
  * Returns null for non-Supabase URLs (e.g. legacy Unsplash or site-relative
  * images), which callers should simply leave untouched.
@@ -82,19 +118,15 @@ export function buildMediaPath(
 export async function issueSignedUploadUrl(
   bucket: MediaBucket,
   path: string,
-): Promise<{ signedUrl: string; publicUrl: string }> {
+): Promise<{ token: string; publicUrl: string }> {
+  await ensureMediaParent(bucket, path);
   const { data, error } = await storage()
     .from(bucket)
     .createSignedUploadUrl(path, { upsert: false });
   if (error) {
     throw new Error(`Could not prepare upload: ${error.message}`);
   }
-  // Build the absolute URL from the token explicitly so we don't depend on
-  // which fields the installed supabase-js version returns in `data`. Encode
-  // each path segment but keep the `/` separators intact.
-  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-  const signedUrl = `${supabaseUrl}/storage/v1/object/upload/sign/${bucket}/${encodedPath}?token=${encodeURIComponent(data.token)}`;
-  return { signedUrl, publicUrl: publicMediaUrl(bucket, path) };
+  return { token: data.token, publicUrl: publicMediaUrl(bucket, path) };
 }
 
 /**
@@ -110,10 +142,14 @@ export async function verifyObject(
   if (error) {
     throw new Error("Uploaded file could not be verified.");
   }
-  return {
-    size: Number(data?.metadata?.size ?? 0),
-    contentType: String(data?.metadata?.mimetype ?? ""),
-  };
+  // `info()` returns a FileObjectV2 with `size`/`contentType` at the top level;
+  // `metadata` is the separate custom-metadata map and is usually empty for
+  // signed uploads. Fall back to it only where the SDK used to nest size there.
+  const size = Number(data?.size ?? data?.metadata?.size ?? 0);
+  const contentType = String(
+    data?.contentType ?? data?.metadata?.mimetype ?? data?.metadata?.contentType ?? "",
+  );
+  return { size, contentType };
 }
 
 /** List the top-level folder names of a bucket. */
@@ -217,11 +253,21 @@ export async function removeStoredMedia(urls: string[]) {
 }
 
 /**
- * Read a video's duration by probing its metadata (moov atom / EBML header)
- * with Range requests — no ffmpeg binary needed. The result is authoritative.
+ * Read a video's duration with ffprobe. Handles MP4, WebM, and QuickTime/.mov
+ * containers (ffprobe is a superset parser). The `@ffprobe-installer` binary is
+ * sometimes extracted without the execute bit (notably in CI/Vercel builds),
+ * which surfaces as a confusing EACCES — so we ensure it is executable first.
  */
 async function readVideoDurationSeconds(url: string): Promise<number> {
   const { getVideoDurationInSeconds } = await import("get-video-duration");
+  const ffprobePath = (await import("@ffprobe-installer/ffprobe")).default.path;
+  if (ffprobePath) {
+    try {
+      await (await import("node:fs/promises")).chmod(ffprobePath, 0o755);
+    } catch {
+      // Best-effort; if the binary runs anyway the read still succeeds.
+    }
+  }
   return getVideoDurationInSeconds(url);
 }
 
@@ -241,7 +287,7 @@ export async function validateVideoDuration(url: string): Promise<string | null>
       return `Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter (this one is ${Math.round(seconds)}s).`;
     }
   } catch {
-    return "Could not read the video. Upload an MP4 or WebM file.";
+    return "Could not read the video. Upload an MP4, WebM, or MOV file.";
   }
   return null;
 }

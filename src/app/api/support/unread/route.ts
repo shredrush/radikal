@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/authz";
+import { getAuthorizedUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { countUnreadSupportMessages } from "@/lib/support";
 
@@ -23,7 +23,7 @@ export async function GET() {
 
   // Users with support access don't have their own customer thread, so there
   // is nothing to surface as "unread" for them.
-  if (hasPermission(session.user.role, "support.manage")) {
+  if (await getAuthorizedUser("support.manage")) {
     return NextResponse.json({
       unreadCount: 0,
       status: "OPEN",
@@ -35,7 +35,12 @@ export async function GET() {
   try {
     const chat = await prisma.supportChat.findUnique({
       where: { userId: session.user.id, deletedAt: null },
-      include: { messages: { select: { senderId: true, createdAt: true } } },
+      include: {
+        messages: {
+          where: { NOT: { senderId: session.user.id } },
+          select: { senderId: true, createdAt: true },
+        },
+      },
     });
 
     if (!chat) {

@@ -12,19 +12,19 @@ export async function GuideBoardStats({ guideId }: { guideId: string }) {
     liveTrips,
   ] = await Promise.all([
     prisma.booking.count({
-      where: { trip: { guideId }, status: "CONFIRMED" },
+      where: { trip: { guideId, deletedAt: null }, status: "CONFIRMED", deletedAt: null },
     }),
     prisma.booking.count({
-      where: { trip: { guideId }, status: "COMPLETED" },
+      where: { trip: { guideId, deletedAt: null }, status: "COMPLETED", deletedAt: null },
     }),
     prisma.trip.count({
-      where: { guideId, bookings: { some: { status: "CONFIRMED" } } },
+      where: { guideId, deletedAt: null, bookings: { some: { status: "CONFIRMED", deletedAt: null } } },
     }),
     prisma.trip.count({
-      where: { guideId, bookings: { some: { status: "COMPLETED" } } },
+      where: { guideId, deletedAt: null, bookings: { some: { status: "COMPLETED", deletedAt: null } } },
     }),
     prisma.trip.count({
-      where: { guideId },
+      where: { guideId, deletedAt: null },
     }),
   ]);
 

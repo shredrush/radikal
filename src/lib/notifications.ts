@@ -22,7 +22,7 @@ export type NotificationInput = {
  */
 export async function notifyTripReviewStaff(input: NotificationInput) {
   const users = await prisma.user.findMany({
-    where: { role: { in: TRIP_REVIEW_ROLES } },
+    where: { role: { in: TRIP_REVIEW_ROLES }, deletedAt: null },
     select: { id: true, email: true, name: true },
   });
 
@@ -55,7 +55,7 @@ const BOOKING_ROLES = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter(
  */
 export async function notifyBookingStaff(input: NotificationInput) {
   const users = await prisma.user.findMany({
-    where: { role: { in: BOOKING_ROLES } },
+    where: { role: { in: BOOKING_ROLES }, deletedAt: null },
     select: { id: true, email: true, name: true },
   });
 

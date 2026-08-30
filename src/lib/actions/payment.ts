@@ -16,8 +16,10 @@ import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
 import { notifyBookingStaff } from "@/lib/notifications";
 import { processPaymentSchema } from "@/lib/validations/booking";
+import type { BookingStatus, Prisma, UserRole } from "@/generated/prisma/client";
+import { startOfTodayIST } from "@/lib/dates";
 
-type CancellationEmail = {
+export type CancellationEmail = {
   to: string;
   name: string;
   tripTitle: string;
@@ -42,11 +44,11 @@ async function requireGuideSession() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
+    select: { role: true, guide: { select: { deletedAt: true } } },
   });
-  if (!user || user.role !== "GUIDE") return null;
+  if (!user || user.role !== "GUIDE" || user.guide?.deletedAt) return null;
   return { userId, role: user.role };
 }
 
@@ -473,6 +475,66 @@ export async function cancelBookingAsGuide(
 }
 
 /**
+ * Cancel every active (PENDING or CONFIRMED) booking on a slot inside the
+ * caller's transaction: confirmed spots are released back to the slot and every
+ * affected booking is marked CANCELLED with the actor and reason recorded.
+ * Returns the cancellation emails for the affected travellers.
+ */
+export async function cancelActiveBookingsForSlot(
+  tx: Prisma.TransactionClient,
+  slot: {
+    id: string;
+    date: Date;
+    booked: number;
+    trip: { title: string; guide?: { name: string } | null };
+    bookings: Array<{
+      id: string;
+      participantCount: number;
+      status: BookingStatus;
+      user: { email: string; name: string | null };
+    }>;
+  },
+  actor: { id: string; role: UserRole },
+  reason: string,
+): Promise<CancellationEmail[]> {
+  const active = slot.bookings.filter(
+    (booking) => booking.status === "PENDING" || booking.status === "CONFIRMED",
+  );
+  if (active.length === 0) return [];
+
+  // Release the reserved spots for any confirmed bookings.
+  const confirmedCount = active
+    .filter((booking) => booking.status === "CONFIRMED")
+    .reduce((sum, booking) => sum + booking.participantCount, 0);
+  if (confirmedCount > 0) {
+    await tx.slot.update({
+      where: { id: slot.id },
+      data: {
+        booked: { decrement: Math.min(confirmedCount, slot.booked) },
+      },
+    });
+  }
+
+  await tx.booking.updateMany({
+    where: { id: { in: active.map((booking) => booking.id) } },
+    data: {
+      status: "CANCELLED",
+      cancelledById: actor.id,
+      cancelledByRole: actor.role,
+      cancellationReason: reason,
+    },
+  });
+
+  return active.map((booking) => ({
+    to: booking.user.email,
+    name: booking.user.name ?? "",
+    tripTitle: slot.trip.title,
+    date: slot.date,
+    cancelledByUser: false,
+  }));
+}
+
+/**
  * Guide-only action that cancels every active booking (PENDING or CONFIRMED)
  * on a trip slot they guide, in one go. Confirmed spots are released back to
  * the slot so the capacity stays accurate. Staff are notified in-app and by
@@ -497,7 +559,7 @@ export async function cancelSlotBookingsAsGuide(
     return { success: false, error: "Please provide a reason for cancellation." };
   }
 
-  let cancelledEmails: CancellationEmail[] = [];
+  let emails: CancellationEmail[] = [];
   let cancelled = false;
   let guideName = "";
   let tripTitle = "";
@@ -520,49 +582,28 @@ export async function cancelSlotBookingsAsGuide(
       if (!slot || slot.trip.guide?.userId !== userId) {
         throw new Error("Booking not found.");
       }
-
-      if (slot.bookings.length === 0) {
-        // Nothing active to cancel (e.g. duplicate click).
-        return;
+      if (slot.deletedAt) {
+        throw new Error("This date has already been cancelled.");
+      }
+      if (slot.date < startOfTodayIST()) {
+        throw new Error("Only today or future dates can be cancelled.");
       }
 
-      // Release the reserved spots for any confirmed bookings.
-      const confirmedCount = slot.bookings
-        .filter((booking) => booking.status === "CONFIRMED")
-        .reduce((sum, booking) => sum + booking.participantCount, 0);
-      if (confirmedCount > 0) {
-        await tx.slot.update({
-          where: { id: slot.id },
-          data: {
-            booked: { decrement: Math.min(confirmedCount, slot.booked) },
-          },
-        });
-      }
-
-      await tx.booking.updateMany({
-        where: { id: { in: slot.bookings.map((booking) => booking.id) } },
-        data: {
-          status: "CANCELLED",
-          cancelledById: userId,
-          cancelledByRole: role,
-          cancellationReason: cleanReason,
-        },
-      });
-
-      cancelled = true;
+      emails = await cancelActiveBookingsForSlot(
+        tx,
+        slot,
+        { id: userId, role },
+        cleanReason,
+      );
+      cancelled = emails.length > 0;
       guideName = slot.trip.guide?.name ?? "The guide";
       tripTitle = slot.trip.title;
-      cancelledEmails = slot.bookings.map((booking) => ({
-        to: booking.user.email,
-        name: booking.user.name ?? "",
-        tripTitle: slot.trip.title,
-        date: slot.date,
-        cancelledByUser: false,
-      }));
     });
   } catch (error) {
     const message = safePaymentError(error, "Failed to cancel trip.", [
       "Booking not found.",
+      "Only today or future dates can be cancelled.",
+      "This date has already been cancelled.",
     ]);
     return { success: false, error: message };
   }
@@ -576,7 +617,7 @@ export async function cancelSlotBookingsAsGuide(
     return { success: true };
   }
 
-  for (const email of cancelledEmails) {
+  for (const email of emails) {
     sendEmailAfter(bookingCancelledEmail(email));
   }
 
@@ -585,7 +626,7 @@ export async function cancelSlotBookingsAsGuide(
     const staff = await notifyBookingStaff({
       type: "BOOKING_CANCELLED_BY_GUIDE",
       title: "Booking cancelled by guide",
-      body: `${guideName} cancelled ${cancelledEmails.length} ${cancelledEmails.length === 1 ? "booking" : "bookings"} for “${tripTitle}”.`,
+      body: `${guideName} cancelled ${emails.length} ${emails.length === 1 ? "booking" : "bookings"} for “${tripTitle}”.`,
       href: "/admin/bookings",
     });
 
@@ -596,7 +637,7 @@ export async function cancelSlotBookingsAsGuide(
           name: user.name ?? "",
           guideName,
           tripTitle,
-          participantCount: cancelledEmails.length,
+          participantCount: emails.length,
         }),
       );
     }
@@ -609,7 +650,7 @@ export async function cancelSlotBookingsAsGuide(
     userId,
     action: "BOOKING_CANCELLED",
     label: "Cancelled trip bookings as guide",
-    metadata: { slotId, bookingCount: cancelledEmails.length, reason: cleanReason },
+    metadata: { slotId, bookingCount: emails.length, reason: cleanReason },
   });
 
   return { success: true };

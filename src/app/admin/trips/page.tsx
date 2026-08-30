@@ -36,12 +36,14 @@ export default async function AdminTripsPage({
 
   const [guides, totalTrips, totalSlots, draftRows, pendingTripChanges] = await Promise.all([
     prisma.guide.findMany({
+      where: { deletedAt: null },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    prisma.trip.count(),
-    prisma.slot.count({ where: { date: { gte: new Date() } } }),
+    prisma.trip.count({ where: { deletedAt: null } }),
+    prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } }),
     prisma.tripDraft.findMany({
+      where: { deletedAt: null, guide: { deletedAt: null } },
       orderBy: { updatedAt: "desc" },
       include: { guide: { select: { name: true } } },
     }),

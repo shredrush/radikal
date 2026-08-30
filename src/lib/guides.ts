@@ -18,7 +18,7 @@ export type GuideWithDetails = Awaited<ReturnType<typeof fetchGuidesWithDetails>
  */
 export function fetchGuidesWithDetails(where: Prisma.GuideWhereInput = {}) {
   return prisma.guide.findMany({
-    where,
+    where: { deletedAt: null, user: { deletedAt: null }, ...where },
     orderBy: { name: "asc" },
     include: guideDetailInclude,
   });

@@ -11,7 +11,10 @@ export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
 
 export const IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
-export const VIDEO_MIME = new Set(["video/mp4", "video/webm"]);
+// `video/quicktime` is what iPhones report for MP4 files (and mobile browsers
+// for `.mp4` picks). It is a valid MP4 container that plays in browsers and the
+// `<video>` element, so it is accepted here. `VIDEO_EXT` maps it to `.mp4`.
+export const VIDEO_MIME = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 
 export const IMAGE_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -23,6 +26,7 @@ export const IMAGE_EXT: Record<string, string> = {
 export const VIDEO_EXT: Record<string, string> = {
   "video/mp4": "mp4",
   "video/webm": "webm",
+  "video/quicktime": "mp4",
 };
 
 // Immutable cache header: media names are content-addressed (UUID), so a

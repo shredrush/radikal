@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
-import { GuideReviewHistory } from "@/components/guides/guide-review-history";
+import { GuideActivityLog } from "@/components/guides/guide-activity-log";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
 import { type TripChangeSummary } from "@/lib/trip-changes";
@@ -57,13 +57,12 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
       ORDER BY "createdAt" DESC
     `,
     prisma.tripDraft.findMany({
-      where: { guideId },
+      where: { guideId, deletedAt: null },
       orderBy: { updatedAt: "desc" },
     }),
   ]);
 
   const pending = changeSummaries.filter((change) => change.status === "PENDING");
-  const reviewed = changeSummaries.filter((change) => change.status !== "PENDING");
 
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({
     draftId: draft.id,
@@ -172,7 +171,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
         )}
       </section>
 
-      <GuideReviewHistory items={reviewed} />
+      <GuideActivityLog />
     </div>
   );
 }

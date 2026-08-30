@@ -12,6 +12,10 @@ import { FaqSection } from "@/components/trips/faq-section";
 const getTripsPageTrips = unstable_cache(
   async () => {
     return prisma.trip.findMany({
+      where: {
+        deletedAt: null,
+        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+      },
       select: {
         id: true,
         slug: true,
@@ -24,7 +28,7 @@ const getTripsPageTrips = unstable_cache(
         durationDays: true,
         images: true,
         guide: { select: { name: true } },
-        slots: { select: { date: true } },
+        slots: { where: { deletedAt: null }, select: { date: true } },
       },
       orderBy: { createdAt: "asc" },
     });

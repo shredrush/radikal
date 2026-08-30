@@ -89,12 +89,12 @@ export default async function CheckoutPage({
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
+  const trip = await prisma.trip.findFirst({
+    where: { id: tripId, deletedAt: null },
     include: {
       guide: true,
       slots: {
-        where: { date: { gte: new Date() } },
+        where: { date: { gte: new Date() }, deletedAt: null },
         orderBy: { date: "asc" },
       },
     },

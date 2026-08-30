@@ -36,8 +36,8 @@ export async function toggleWishlist(
     return { success: false, error: rateLimitError(wishlistLimit) };
   }
 
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
+  const trip = await prisma.trip.findFirst({
+    where: { id: tripId, deletedAt: null },
     select: { id: true },
   });
   if (!trip) {
@@ -48,8 +48,11 @@ export async function toggleWishlist(
     where: { userId_tripId: { userId, tripId } },
   });
 
-  if (existing) {
-    await prisma.wishlistItem.delete({ where: { id: existing.id } });
+  if (existing && !existing.deletedAt) {
+    await prisma.wishlistItem.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date(), deletedWithTrip: false },
+    });
     await logActivity({
       userId,
       action: "WISHLIST_REMOVED",
@@ -58,6 +61,21 @@ export async function toggleWishlist(
     });
     revalidatePath("/profile");
     return { success: true, inWishlist: false };
+  }
+
+  if (existing?.deletedAt) {
+    await prisma.wishlistItem.update({
+      where: { id: existing.id },
+      data: { deletedAt: null, deletedWithTrip: false },
+    });
+    await logActivity({
+      userId,
+      action: "WISHLIST_ADDED",
+      label: "Added a trip to their wishlist",
+      metadata: { tripId },
+    });
+    revalidatePath("/profile");
+    return { success: true, inWishlist: true };
   }
 
   await prisma.wishlistItem.create({

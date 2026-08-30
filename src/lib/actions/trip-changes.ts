@@ -8,7 +8,7 @@ import { requireGuideAction } from "@/lib/guide-board";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isValidSlug, sanitizeText } from "@/lib/sanitize";
-import { notifyTripReviewStaff, notifyUser } from "@/lib/notifications";
+import { notifyTripReviewStaff, notifyUser, notifyBookingStaff } from "@/lib/notifications";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import { assertValidStoredMedia } from "@/lib/media";
 import {
@@ -23,10 +23,14 @@ import { type TripProposal } from "@/lib/trip-changes";
 import { slugify } from "@/lib/format";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import {
+  bookingCancelledEmail,
+  guideCancelledBookingAdminEmail,
   sendEmailAfter,
   tripChangeDecisionEmail,
   tripChangeSubmittedAdminEmail,
 } from "@/lib/email";
+import { cancelActiveBookingsForSlot, type CancellationEmail } from "@/lib/actions/payment";
+import { startOfTodayIST } from "@/lib/dates";
 
 const MAX_SLOT_CAPACITY = 100;
 
@@ -198,6 +202,12 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
   });
 
   await notifySubmitted(change.id, guide.name, proposal);
+  await logActivity({
+    userId,
+    action: "TRIP_CHANGE_SUBMITTED",
+    label: "Submitted a new trip for review",
+    metadata: { changeId: change.id, title: proposal.title },
+  });
 
   revalidatePath("/profile");
   revalidatePath("/admin/trip-changes");
@@ -222,6 +232,10 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   if (!trip) {
     throw new Error("Trip not found.");
+  }
+
+  if (trip.deletedAt) {
+    throw new Error("Deleted trips cannot be submitted for review.");
   }
 
   if (trip.guideId !== guide.id) {
@@ -264,6 +278,12 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   });
 
   await notifySubmitted(change.id, guide.name, proposal);
+  await logActivity({
+    userId,
+    action: "TRIP_CHANGE_SUBMITTED",
+    label: "Submitted trip changes for review",
+    metadata: { changeId: change.id, title: proposal.title },
+  });
 
   revalidatePath("/profile");
   revalidatePath("/admin/trip-changes");
@@ -273,11 +293,15 @@ async function requireGuideTrip(tripId: string) {
   const { guide } = await requireGuide();
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
-    select: { id: true, slug: true, guideId: true },
+    select: { id: true, slug: true, title: true, guideId: true, deletedAt: true },
   });
 
   if (!trip || trip.guideId !== guide.id) {
     throw new Error("You can only manage dates for your own trips.");
+  }
+
+  if (trip.deletedAt) {
+    throw new Error("Deleted trips cannot be changed.");
   }
 
   return trip;
@@ -311,8 +335,15 @@ export async function createGuideSlotAction(formData: FormData): Promise<void> {
   const date = parseSlotDate(dateValue);
   if (!date) throw new Error("Please enter a valid date.");
 
+  const { userId } = await requireGuide();
   const trip = await requireGuideTrip(tripId);
   await prisma.slot.create({ data: { tripId: trip.id, date, capacity, reserved } });
+  await logActivity({
+    userId,
+    action: "SLOT_ADDED",
+    label: "Added a trip date",
+    metadata: { tripId: trip.id, date: date.toISOString(), capacity, reserved },
+  });
   revalidateGuideSlotPages(trip.slug);
 }
 
@@ -334,41 +365,223 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
   const date = parseSlotDate(dateValue);
   if (!date) throw new Error("Please enter a valid date.");
 
-  const { guide } = await requireGuide();
+  const { guide, userId } = await requireGuide();
   const slot = await prisma.slot.findUnique({
     where: { id: slotId },
-    include: { trip: { select: { guideId: true, slug: true } } },
+    include: { trip: { select: { guideId: true, slug: true, deletedAt: true } } },
   });
 
   if (!slot || slot.trip.guideId !== guide.id) {
     throw new Error("You can only manage dates for your own trips.");
+  }
+  if (slot.trip.deletedAt || slot.deletedAt) {
+    throw new Error("Deleted trips cannot be changed.");
   }
   if (reserved > capacity - slot.booked) {
     throw new Error(`Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
   }
 
   await prisma.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
+  await logActivity({
+    userId,
+    action: "SLOT_EDITED",
+    label: "Updated a trip date",
+    metadata: { slotId, tripId: slot.tripId, date: date.toISOString(), capacity, reserved, booked: slot.booked },
+  });
   revalidateGuideSlotPages(slot.trip.slug);
 }
 
-export async function deleteGuideSlotAction(slotId: string): Promise<void> {
+export async function cancelGuideSlotAction(slotId: string, reason?: string): Promise<void> {
   if (!slotId) throw new Error("Missing slot id.");
 
-  const { guide } = await requireGuide();
-  const slot = await prisma.slot.findUnique({
-    where: { id: slotId },
-    include: { trip: { select: { guideId: true, slug: true } }, _count: { select: { bookings: true } } },
+  const { guide, userId } = await requireGuide();
+  const cleanReason = sanitizeText(reason ?? "", { maxLength: 500 });
+  const now = new Date();
+  let emails: CancellationEmail[] = [];
+  let tripSlug = "";
+  let guideName = "";
+  let tripTitle = "";
+  let slotDate = "";
+  let slotCapacity = 0;
+  let slotReserved = 0;
+
+  await prisma.$transaction(async (tx) => {
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: {
+        trip: {
+          select: {
+            guideId: true,
+            slug: true,
+            title: true,
+            deletedAt: true,
+            guide: { select: { name: true } },
+          },
+        },
+        bookings: {
+          where: { status: { in: ["PENDING", "CONFIRMED"] } },
+          include: { user: { select: { email: true, name: true } } },
+        },
+      },
+    });
+
+    if (!slot || slot.trip.guideId !== guide.id) {
+      throw new Error("You can only manage dates for your own trips.");
+    }
+    if (slot.trip.deletedAt) {
+      throw new Error("Deleted trips cannot be changed.");
+    }
+    if (slot.deletedAt) {
+      throw new Error("This date is already cancelled.");
+    }
+    if (slot.date < startOfTodayIST()) {
+      throw new Error("Only today or future dates can be cancelled.");
+    }
+    if (slot.bookings.length > 0 && !cleanReason) {
+      throw new Error("This date has bookings. Add a reason so travellers know why it was cancelled.");
+    }
+
+    tripSlug = slot.trip.slug;
+    guideName = slot.trip.guide?.name ?? "The guide";
+    tripTitle = slot.trip.title;
+    slotDate = slot.date.toISOString();
+    slotCapacity = slot.capacity;
+    slotReserved = slot.reserved;
+    emails = await cancelActiveBookingsForSlot(
+      tx,
+      slot,
+      { id: userId, role: guide.user.role },
+      cleanReason || "Slot cancelled",
+    );
+
+    await tx.slot.update({
+      where: { id: slotId },
+      data: { deletedAt: now, deletedWithTrip: false },
+    });
   });
 
-  if (!slot || slot.trip.guideId !== guide.id) {
-    throw new Error("You can only manage dates for your own trips.");
-  }
-  if (slot._count.bookings > 0) {
-    throw new Error("Dates with bookings cannot be deleted. Ask support to cancel them first.");
+  for (const email of emails) {
+    sendEmailAfter(bookingCancelledEmail(email));
   }
 
-  await prisma.slot.delete({ where: { id: slotId } });
-  revalidateGuideSlotPages(slot.trip.slug);
+  if (emails.length > 0) {
+    try {
+      const staff = await notifyBookingStaff({
+        type: "BOOKING_CANCELLED_BY_GUIDE",
+        title: "Trip date cancelled by guide",
+        body: `${guideName} cancelled the date for “${tripTitle}” — ${emails.length} ${emails.length === 1 ? "booking" : "bookings"} cancelled.`,
+        href: "/admin/bookings",
+      });
+      for (const user of staff) {
+        sendEmailAfter(
+          guideCancelledBookingAdminEmail({
+            to: user.email,
+            name: user.name ?? "",
+            guideName,
+            tripTitle,
+            participantCount: emails.length,
+          }),
+        );
+      }
+    } catch (error) {
+      console.error("[payment] failed to notify staff of guide slot cancellation", error);
+    }
+
+    await logActivity({
+      userId,
+      action: "BOOKING_CANCELLED",
+      label: "Cancelled a trip date and its bookings",
+      metadata: {
+        slotId,
+        date: slotDate,
+        capacity: slotCapacity,
+        reserved: slotReserved,
+        booked: emails.length,
+        reason: cleanReason,
+      },
+    });
+  } else {
+    await logActivity({
+      userId,
+      action: "SLOT_CANCELLED",
+      label: "Cancelled an empty trip date",
+      metadata: {
+        slotId,
+        date: slotDate,
+        capacity: slotCapacity,
+        reserved: slotReserved,
+        booked: 0,
+      },
+    });
+  }
+
+  revalidateGuideSlotPages(tripSlug);
+  revalidatePath("/admin/bookings");
+  revalidatePath("/guide-board/bookings");
+  revalidatePath("/support");
+  revalidatePath("/profile");
+}
+
+export async function deleteGuideTripAction(tripId: string, reason?: string): Promise<void> {
+  if (!tripId) throw new Error("Missing trip id.");
+
+  const cleanReason = sanitizeText(reason ?? "", { maxLength: 500 });
+  if (!cleanReason) throw new Error("Please provide a reason for deleting this trip.");
+
+  const { guide, userId } = await requireGuide();
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { id: true, slug: true, title: true, guideId: true, deletedAt: true },
+  });
+
+  if (!trip || trip.guideId !== guide.id) {
+    throw new Error("You can only delete your own trips.");
+  }
+
+  if (trip.deletedAt) {
+    throw new Error("Trip is already deleted.");
+  }
+
+  const deletedAt = new Date();
+  await prisma.$transaction(async (tx) => {
+    const [lockedTrip] = await tx.$queryRaw<Array<{ id: string; deletedAt: Date | null }>>`
+      SELECT id, "deletedAt" FROM trips WHERE id = ${tripId} FOR UPDATE
+    `;
+    if (!lockedTrip) throw new Error("Trip not found.");
+    if (lockedTrip.deletedAt) throw new Error("Trip is already deleted.");
+
+    await Promise.all([
+      tx.trip.update({ where: { id: tripId }, data: { deletedAt, deletedById: userId } }),
+      tx.slot.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.booking.updateMany({
+        where: { tripId, deletedAt: null },
+        data: { deletedAt, deletedWithTrip: true, deletedById: userId, deletedByRole: "GUIDE" },
+      }),
+      tx.wishlistItem.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.review.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.tripChangeRequest.updateMany({
+        where: { tripId, type: "UPDATE", status: "PENDING" },
+        data: { status: "REJECTED", reviewedAt: deletedAt, reviewedById: userId },
+      }),
+    ]);
+  });
+
+  await logActivity({
+    userId,
+    action: "TRIP_DELETED",
+    label: "Guide deleted a trip",
+    metadata: { tripId, title: trip.title, reason: cleanReason },
+  });
+
+  revalidatePath("/profile");
+  revalidatePath("/guide-board/trips");
+  revalidatePath("/admin/trip-changes");
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  revalidatePath(`/trips/${trip.slug}`);
+  updateTag("trips");
+  updateTag("reviews");
 }
 
 /** Apply the supplemental (location/inclusions/highlights) side tables. */
@@ -463,11 +676,15 @@ export async function approveTripChangeAction(changeId: string) {
 
         const existing = await tx.trip.findUnique({
           where: { id: change.tripId },
-          select: { id: true, guideId: true },
+          select: { id: true, guideId: true, deletedAt: true },
         });
 
         if (!existing) {
           throw new Error("The trip no longer exists.");
+        }
+
+        if (existing.deletedAt) {
+          throw new Error("Deleted trips cannot be approved.");
         }
 
         if (existing.guideId !== change.guideId) {
@@ -536,7 +753,7 @@ export async function approveTripChangeAction(changeId: string) {
       type: "TRIP_CHANGE_APPROVED",
       title: "Trip change approved",
       body: `Your change for “${proposal.title}” was approved and is now live.`,
-      href: "/guide-board/trips#review-history",
+      href: "/guide-board/trips#activity-log",
     });
     sendEmailAfter(
       tripChangeDecisionEmail({
@@ -601,7 +818,7 @@ export async function rejectTripChangeAction(changeId: string) {
       type: "TRIP_CHANGE_REJECTED",
       title: "Trip change rejected",
       body: `Your change for “${proposal.title}” was rejected. You can revise and resubmit it.`,
-      href: "/guide-board/trips#review-history",
+      href: "/guide-board/trips#activity-log",
     });
     sendEmailAfter(
       tripChangeDecisionEmail({
@@ -693,4 +910,127 @@ export async function getAdminTripChangeDetailsAction(changeId: string): Promise
     proposed: change.proposed,
     original: change.original,
   };
+}
+
+export type GuideActivityEntry = {
+  id: string;
+  action: string;
+  label: string;
+  createdAt: string;
+  tripTitle: string | null;
+  tripSlug: string | null;
+  slotDate: string | null;
+  reserved: number | null;
+  booked: number | null;
+  capacity: number | null;
+};
+
+/** Actions relevant to the guide-facing activity log panel. */
+const GUIDE_ACTIVITY_ACTIONS = [
+  "TRIP_CHANGE_SUBMITTED",
+  "TRIP_CHANGE_APPROVED",
+  "TRIP_CHANGE_REJECTED",
+  "TRIP_DELETED",
+  "SLOT_ADDED",
+  "SLOT_EDITED",
+  "SLOT_CANCELLED",
+  "BOOKING_CANCELLED",
+] as const;
+
+function readActivityMetadata(metadata: Prisma.JsonValue | null): {
+  tripId: string | null;
+  slotId: string | null;
+  title: string | null;
+  date: string | null;
+  reserved: number | null;
+  booked: number | null;
+  capacity: number | null;
+} {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return { tripId: null, slotId: null, title: null, date: null, reserved: null, booked: null, capacity: null };
+  }
+  const record = metadata as Record<string, unknown>;
+  return {
+    tripId: typeof record.tripId === "string" ? record.tripId : null,
+    slotId: typeof record.slotId === "string" ? record.slotId : null,
+    title: typeof record.title === "string" ? record.title : null,
+    date: typeof record.date === "string" ? record.date : null,
+    reserved: typeof record.reserved === "number" ? record.reserved : null,
+    booked:
+      typeof record.booked === "number"
+        ? record.booked
+        : typeof record.bookingCount === "number"
+          ? record.bookingCount
+          : null,
+    capacity: typeof record.capacity === "number" ? record.capacity : null,
+  };
+}
+
+/**
+ * Loads the current guide's recent activity (trip edits, slot add/edit/cancel,
+ * cancellations) newest first. Each entry is enriched with the related trip
+ * title/slug and slot date when the logged metadata references them. Fetched
+ * lazily by the guide board activity log panel only when the panel is expanded.
+ */
+export async function getGuideActivityLogAction(): Promise<GuideActivityEntry[]> {
+  const { guide } = await requireGuide();
+
+  const rows = await prisma.activityLog.findMany({
+    where: {
+      userId: guide.userId,
+      action: { in: [...GUIDE_ACTIVITY_ACTIONS] },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  const metas = rows.map((row) => readActivityMetadata(row.metadata));
+
+  const slotIds = new Set<string>();
+  const tripIds = new Set<string>();
+  for (const meta of metas) {
+    if (meta.slotId) slotIds.add(meta.slotId);
+    if (meta.tripId) tripIds.add(meta.tripId);
+  }
+
+  const [slots, trips] = await Promise.all([
+    slotIds.size > 0
+      ? prisma.slot.findMany({
+          where: { id: { in: [...slotIds] } },
+          select: { id: true, date: true, tripId: true },
+        })
+      : Promise.resolve([]),
+    tripIds.size > 0
+      ? prisma.trip.findMany({
+          where: { id: { in: [...tripIds] } },
+          select: { id: true, title: true, slug: true, deletedAt: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const slotByMeta = new Map<string, { date: Date; tripId: string }>();
+  for (const slot of slots) slotByMeta.set(slot.id, { date: slot.date, tripId: slot.tripId });
+
+  const tripById = new Map(trips.map((trip) => [trip.id, trip]));
+
+  return rows.map((row, index) => {
+    const meta = metas[index];
+    const slot = meta.slotId ? slotByMeta.get(meta.slotId) : undefined;
+    const tripId = meta.tripId ?? slot?.tripId ?? null;
+    const trip = tripId ? tripById.get(tripId) : undefined;
+    const tripTitle = meta.title ?? trip?.title ?? null;
+
+    return {
+      id: row.id,
+      action: row.action,
+      label: row.label,
+      createdAt: row.createdAt.toISOString(),
+      tripTitle,
+      tripSlug: trip && !trip.deletedAt ? trip.slug : null,
+      slotDate: slot ? slot.date.toISOString() : meta.date ?? null,
+      reserved: meta.reserved,
+      booked: meta.booked,
+      capacity: meta.capacity,
+    };
+  });
 }

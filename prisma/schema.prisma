@@ -112,9 +112,9 @@ enum TripChangeStatus {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   // Full phone number in E.164 format (e.g. +917217217678), collected at
   // signup with a per-country dial-code dropdown.
   phone        String?
@@ -122,12 +122,13 @@ model User {
   // the guide's public URL segment (e.g. /tenzin). Uniqueness is enforced by a
   // DB constraint; the app layer additionally validates the format, length and
   // reserved-name rules (see lib/sanitize.ts).
-  username     String?  @unique
+  username     String?   @unique
   passwordHash String
-  role         UserRole @default(USER)
+  role         UserRole  @default(USER)
   image        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   bookings                  Booking[]
   wishlistItems             WishlistItem[]
@@ -138,6 +139,7 @@ model User {
   supportChat               SupportChat?
   supportMessages           SupportMessage[]
   cancelledBookings         Booking[]           @relation("BookingCancelledBy")
+  deletedBookings           Booking[]           @relation("BookingDeletedBy")
   passwordResetOtps         PasswordResetOtp[]
   activityLogs              ActivityLog[]
   customTripRequests        CustomTripRequest[]
@@ -150,6 +152,7 @@ model User {
   // Role-based lookups: admin user filtering and the guide-orphan checks
   // (users with the GUIDE role but no linked guide profile).
   @@index([role])
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -189,22 +192,23 @@ model PasswordResetOtp {
 }
 
 model Guide {
-  id              String   @id @default(cuid())
-  userId          String   @unique
+  id              String    @id @default(cuid())
+  userId          String    @unique
   name            String
   bio             String
   photo           String?
-  photos          String[] @default([])
-  videos          String[] @default([])
+  photos          String[]  @default([])
+  videos          String[]  @default([])
   location        String
-  experienceYears Int      @default(0)
+  experienceYears Int       @default(0)
   languages       String[]
   instagramUrl    String?
   facebookUrl     String?
   youtubeUrl      String?
   websiteUrl      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user           User                @relation(fields: [userId], references: [id])
   certifications Certification[]
@@ -213,6 +217,7 @@ model Guide {
   tripChanges    TripChangeRequest[]
   tripDrafts     TripDraft[]
 
+  @@index([deletedAt])
   @@map("guides")
 }
 
@@ -295,21 +300,24 @@ model Trip {
   videos        String[]       @default([])
   maxGroupSize  Int            @default(8)
   guideId       String?
+  deletedAt     DateTime?
+  deletedById   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  guide        Guide?              @relation(fields: [guideId], references: [id])
-  slots        Slot[]
-  bookings     Booking[]
+  guide         Guide?              @relation(fields: [guideId], references: [id])
+  slots         Slot[]
+  bookings      Booking[]
   wishlistItems WishlistItem[]
-  reviews      Review[]
-  tripLocation TripLocation?
-  inclusions   TripInclusion[]
-  highlights   TripHighlight[]
-  tripChanges  TripChangeRequest[]
+  reviews       Review[]
+  tripLocation  TripLocation?
+  inclusions    TripInclusion[]
+  highlights    TripHighlight[]
+  tripChanges   TripChangeRequest[]
 
   @@index([type])
   @@index([guideId])
+  @@index([deletedAt])
   @@map("trips")
 }
 
@@ -357,20 +365,23 @@ model TripHighlight {
 // `capacity` — always check availability inside a transaction before
 // confirming a booking.
 model Slot {
-  id         String   @id @default(cuid())
-  tripId     String
-  date       DateTime
-  capacity   Int
-  booked     Int      @default(0)
-  reserved   Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String    @id @default(cuid())
+  tripId          String
+  date            DateTime
+  capacity        Int
+  booked          Int       @default(0)
+  reserved        Int       @default(0)
+  deletedAt       DateTime?
+  deletedWithTrip Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   bookings Booking[]
 
   @@index([tripId])
   @@index([date])
+  @@index([deletedAt])
   @@map("slots")
 }
 
@@ -388,29 +399,38 @@ model Booking {
   cancelledById        String?
   cancelledByRole      UserRole?
   cancellationReason   String?
+  deletedAt            DateTime?
+  deletedWithTrip      Boolean       @default(false)
+  deletedById          String?
+  deletedByRole        UserRole?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id])
-  trip        Trip     @relation(fields: [tripId], references: [id])
-  slot        Slot     @relation(fields: [slotId], references: [id])
-  cancelledBy User?    @relation("BookingCancelledBy", fields: [cancelledById], references: [id])
+  user        User  @relation(fields: [userId], references: [id])
+  trip        Trip  @relation(fields: [tripId], references: [id])
+  slot        Slot  @relation(fields: [slotId], references: [id])
+  cancelledBy User? @relation("BookingCancelledBy", fields: [cancelledById], references: [id])
+  deletedBy   User? @relation("BookingDeletedBy", fields: [deletedById], references: [id])
 
   @@index([userId])
   @@index([userId, status])
   @@index([slotId])
   @@index([status])
   @@index([tripId])
+  @@index([deletedAt])
+  @@index([deletedById])
   @@map("bookings")
 }
 
 // A traveller's saved trip. One row per user+trip; the composite unique
 // constraint makes the pair idempotent so toggling the heart never duplicates.
 model WishlistItem {
-  id        String   @id @default(cuid())
-  userId    String
-  tripId    String
-  createdAt DateTime @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  tripId          String
+  deletedAt       DateTime?
+  deletedWithTrip Boolean   @default(false)
+  createdAt       DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
@@ -418,25 +438,29 @@ model WishlistItem {
   @@unique([userId, tripId])
   @@index([userId])
   @@index([tripId])
+  @@index([deletedAt])
   @@map("wishlist_items")
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  userId     String
-  tripId     String?
-  guideId    String?
-  rating     Int
-  comment    String
-  createdAt  DateTime @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  tripId          String?
+  guideId         String?
+  rating          Int
+  comment         String
+  deletedAt       DateTime?
+  deletedWithTrip Boolean   @default(false)
+  createdAt       DateTime  @default(now())
 
-  user  User      @relation(fields: [userId], references: [id])
-  trip  Trip?     @relation(fields: [tripId], references: [id])
-  guide Guide?    @relation(fields: [guideId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+  trip  Trip?  @relation(fields: [tripId], references: [id])
+  guide Guide? @relation(fields: [guideId], references: [id])
 
   @@index([userId])
   @@index([tripId])
   @@index([guideId])
+  @@index([deletedAt])
   @@map("reviews")
 }
 
@@ -575,10 +599,10 @@ model TripChangeRequest {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  guide       Guide?    @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  trip        Trip?     @relation(fields: [tripId], references: [id], onDelete: SetNull)
-  submittedBy User      @relation("TripChangeSubmittedBy", fields: [submittedById], references: [id])
-  reviewedBy  User?     @relation("TripChangeReviewedBy", fields: [reviewedById], references: [id])
+  guide       Guide? @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  trip        Trip?  @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  submittedBy User   @relation("TripChangeSubmittedBy", fields: [submittedById], references: [id])
+  reviewedBy  User?  @relation("TripChangeReviewedBy", fields: [reviewedById], references: [id])
 
   @@index([status])
   @@index([guideId])
@@ -590,15 +614,15 @@ model TripChangeRequest {
 // Unlike a TripChangeRequest (a full proposal staged for review), a draft may
 // be partial — guides can save once at least 3 fields are filled.
 model TripDraft {
-  id            String        @id @default(cuid())
+  id            String         @id @default(cuid())
   guideId       String
   title         String?
-  type          TripType      @default(TREK)
+  type          TripType       @default(TREK)
   location      String?
   description   String?
-  priceInRupees Int           @default(0)
-  durationDays  Int           @default(1)
-  maxGroupSize  Int           @default(8)
+  priceInRupees Int            @default(0)
+  durationDays  Int            @default(1)
+  maxGroupSize  Int            @default(8)
   categories    TripCategory[]
   images        String[]
   videos        String[]       @default([])
@@ -607,12 +631,14 @@ model TripDraft {
   inclusions    String[]
   exclusions    String[]
   highlights    String[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([guideId])
+  @@index([deletedAt])
   @@map("trip_drafts")
 }
 

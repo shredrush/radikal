@@ -15,9 +15,29 @@ export async function completePastBookings(
   now = new Date(),
   userId?: string,
 ): Promise<number> {
+  if (!userId) {
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      UPDATE bookings b
+      SET status = 'COMPLETED'
+      FROM slots s, trips t
+      WHERE b."slotId" = s.id
+        AND b."tripId" = t.id
+        AND b.status = 'CONFIRMED'
+        AND b."deletedAt" IS NULL
+        AND s."deletedAt" IS NULL
+        AND t."deletedAt" IS NULL
+        AND (s.date + ((GREATEST(t."durationDays", 1) - 1) * INTERVAL '1 day')) < ${now}
+      RETURNING b.id
+    `;
+    return rows.length;
+  }
+
   const candidates = await prisma.booking.findMany({
     where: {
       status: "CONFIRMED",
+      deletedAt: null,
+      trip: { deletedAt: null },
+      slot: { deletedAt: null },
       ...(userId ? { userId } : {}),
     },
     select: {

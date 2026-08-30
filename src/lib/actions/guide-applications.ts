@@ -151,8 +151,8 @@ export async function submitGuideApplicationAction(
     return { error: error instanceof Error ? error.message : "Media could not be validated." };
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const existingUser = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
     select: { username: true },
   });
   if (!existingUser) {
@@ -182,8 +182,8 @@ export async function submitGuideApplicationAction(
   }
 
   if (existingUser.username !== username) {
-    const usernameTaken = await prisma.user.findUnique({
-      where: { username },
+    const usernameTaken = await prisma.user.findFirst({
+      where: { username, deletedAt: null },
       select: { id: true },
     });
     if (usernameTaken) {

@@ -5,7 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
-import { unlinkAndDeleteGuide } from "@/lib/guide-teardown";
+import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
@@ -159,8 +159,8 @@ export async function createGuideAction(formData: FormData) {
     throw new Error("Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.");
   }
 
-  const linkedUser = await prisma.user.findUnique({
-    where: { email },
+  const linkedUser = await prisma.user.findFirst({
+    where: { email, deletedAt: null },
     select: { id: true, email: true, name: true, username: true },
   });
 
@@ -170,15 +170,18 @@ export async function createGuideAction(formData: FormData) {
 
   const alreadyLinked = await prisma.guide.findUnique({
     where: { userId: linkedUser.id },
-    select: { id: true },
+    select: { id: true, deletedAt: true },
   });
-  if (alreadyLinked) {
+  if (alreadyLinked && !alreadyLinked.deletedAt) {
     throw new Error("This account is already linked to a guide.");
+  }
+  if (alreadyLinked?.deletedAt) {
+    throw new Error("This account has a removed guide profile. Restore or update that profile instead of creating a duplicate.");
   }
 
   if (linkedUser.username !== username) {
-    const usernameTaken = await prisma.user.findUnique({
-      where: { username },
+    const usernameTaken = await prisma.user.findFirst({
+      where: { username, deletedAt: null },
       select: { id: true },
     });
     if (usernameTaken) {
@@ -237,10 +240,10 @@ export async function updateGuideAction(formData: FormData) {
     await prisma.$transaction(async (tx) => {
       const currentGuide = await tx.guide.findUnique({
         where: { id: guideId },
-        select: { user: { select: { username: true } } },
+        select: { deletedAt: true, user: { select: { username: true } } },
       });
 
-      if (!currentGuide) {
+      if (!currentGuide || currentGuide.deletedAt) {
         throw new Error("Guide not found.");
       }
 
@@ -281,13 +284,14 @@ export async function deleteGuideAction(guideId: string) {
     select: {
       id: true,
       userId: true,
+      deletedAt: true,
       photos: true,
       videos: true,
       user: { select: { username: true, role: true } },
     },
   });
 
-  if (!guide) {
+  if (!guide || guide.deletedAt) {
     throw new Error("Guide not found.");
   }
 
@@ -298,7 +302,7 @@ export async function deleteGuideAction(guideId: string) {
   // booking — the admin must cancel the bookings or reassign the trips first.
   const activeBookings = await prisma.booking.count({
     where: {
-      trip: { guideId: guide.id },
+        trip: { guideId: guide.id, deletedAt: null },
       status: { in: ["PENDING", "CONFIRMED"] },
     },
   });
@@ -309,9 +313,7 @@ export async function deleteGuideAction(guideId: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    // Unlink this guide from its trips and reviews before removing the row,
-    // since those relations do not cascade on delete.
-    await unlinkAndDeleteGuide(tx, guide.id);
+    await deactivateGuide(tx, guide.id);
 
     // A user cannot hold the GUIDE role without a linked guide profile — that
     // state redirects them from the guide board while blocking re-application.

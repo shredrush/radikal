@@ -33,6 +33,7 @@ type AdminTripCardProps = {
       capacity: number;
       booked: number;
       reserved: number;
+      _count: { bookings: number };
     }>;
   };
   guides: Array<{ id: string; name: string }>;

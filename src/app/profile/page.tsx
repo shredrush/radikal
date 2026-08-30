@@ -174,8 +174,8 @@ export default async function ProfilePage({
     // Deduped with the site header via React cache() — one row per request.
     getProfileUser(user.id),
     isGuide
-      ? prisma.guide.findUnique({
-          where: { userId: user.id },
+      ? prisma.guide.findFirst({
+          where: { userId: user.id, deletedAt: null },
           select: { id: true, user: { select: { username: true } } },
         })
       : Promise.resolve(null),
@@ -184,7 +184,7 @@ export default async function ProfilePage({
     // sections lazy-load through /api/profile/bookings on expand.
     !isStaffView && activeTab === "bookings"
       ? prisma.booking.findMany({
-          where: { userId: user.id },
+          where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
           orderBy: { createdAt: "desc" },
           // Only the columns the booking card renders (was `include: trip,
           // slot`, which dragged every Trip column and slot row into memory).
@@ -193,7 +193,7 @@ export default async function ProfilePage({
       : Promise.resolve([]),
     activeTab === "wishlist"
       ? prisma.wishlistItem.findMany({
-          where: { userId: user.id },
+          where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
           orderBy: { createdAt: "desc" },
           // Only the columns the wishlist card renders instead of the whole
           // Trip row (description, slots, guide, inclusions, …).
@@ -266,8 +266,8 @@ export default async function ProfilePage({
     isStaffView || activeTab !== "bookings"
       ? (async () => {
           const [total, confirmed] = await Promise.all([
-            prisma.booking.count({ where: { userId: user.id } }),
-            prisma.booking.count({ where: { userId: user.id, status: "CONFIRMED" } }),
+            prisma.booking.count({ where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } } }),
+            prisma.booking.count({ where: { userId: user.id, status: "CONFIRMED", deletedAt: null, trip: { deletedAt: null } } }),
           ]);
           return { total, upcoming: confirmed };
         })()

@@ -68,11 +68,40 @@ export function MediaUploader({
   const [images, setImages] = useState<UploadedItem[]>(initialImages.map((url) => ({ url })));
   const [videos, setVideos] = useState<UploadedItem[]>(initialVideos.map((url) => ({ url })));
   const [uploading, setUploading] = useState(0);
+  // Upload progress as a percentage (0..100). Represents bytes uploaded across
+  // all in-flight files in the current batch, weighted by file size.
+  const [progress, setProgress] = useState(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   function listFor(kind: MediaKind): UploadedItem[] {
     return kind === "images" ? images : videos;
+  }
+
+  /**
+   * Upload a file to the Signed URL with XMLHttpRequest so `upload.onprogress`
+   * reports real byte-level progress. Mirrors the wire format the supabase-js
+   * SDK uses (HTTP PUT + FormData), which is the one that persists; passing the
+   * raw File as a plain body is accepted by the endpoint but does not store.
+   */
+  function uploadToSignedUrl(url: string, form: FormData, onProgress: (pct: number) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+      xhr.setRequestHeader("authorization", `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}`);
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Upload failed. Please try again.`));
+      };
+      xhr.onerror = () => reject(new Error(`Upload failed. Please try again.`));
+      xhr.send(form);
+    });
   }
 
   async function uploadFile(file: File, kind: MediaKind): Promise<void> {
@@ -81,7 +110,7 @@ export function MediaUploader({
       throw new Error(
         kind === "images"
           ? "Only JPG, PNG, WebP, or AVIF images are supported."
-          : "Only MP4 or WebM videos are supported.",
+          : "Only MP4, WebM, or MOV videos are supported.",
       );
     }
 
@@ -99,7 +128,7 @@ export function MediaUploader({
       }
     }
 
-    const { signedUrl, publicUrl, path } = await createMediaUploadAction({
+    const { token, publicUrl, path } = await createMediaUploadAction({
       entity,
       folderKey,
       kind,
@@ -107,18 +136,20 @@ export function MediaUploader({
       size: file.size,
     });
 
-    const res = await fetch(signedUrl, {
-      method: "POST",
-      headers: {
-        "content-type": file.type,
-        "cache-control": CACHE_CONTROL,
-        "x-upsert": "false",
-      },
-      body: file,
-    });
-    if (!res.ok) {
-      throw new Error("Upload failed. Please try again.");
-    }
+    // Reconstruct the signed upload URL exactly like the server did ("PUT")
+    // and mirror the SDK's FormData payload — the format that actually stores.
+    const marker = "/storage/v1/object/public/";
+    const markerIndex = publicUrl.indexOf(marker);
+    const baseUrl = markerIndex >= 0 ? publicUrl.slice(0, markerIndex) : "";
+    const bucket = entity === "guide" ? "guide-media" : "trip-media";
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const signedUrl = `${baseUrl}/storage/v1/object/upload/sign/${bucket}/${encodedPath}?token=${encodeURIComponent(token)}`;
+
+    const form = new FormData();
+    form.append("cacheControl", CACHE_CONTROL);
+    form.append("", file); // unnamed part carries the file
+
+    await uploadToSignedUrl(signedUrl, form, (pct) => setProgress(pct));
 
     const item: UploadedItem = { url: publicUrl, path };
     if (kind === "images") {
@@ -144,6 +175,7 @@ export function MediaUploader({
     }
     const accepted = files.slice(0, remaining);
     setUploading((n) => n + accepted.length);
+    setProgress(0);
 
     // Bounded concurrency: several files upload at once, but never so many
     // that the client slams the server with simultaneous signed-URL requests.
@@ -288,10 +320,18 @@ export function MediaUploader({
       </div>
 
       {uploading > 0 ? (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Uploading {uploading} file{uploading === 1 ? "" : "s"}…
-        </p>
+        <div className="space-y-1.5">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Uploading {uploading} file{uploading === 1 ? "" : "s"}… {progress}%
+          </p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-200"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       ) : null}
 
       {images.map((item) => (

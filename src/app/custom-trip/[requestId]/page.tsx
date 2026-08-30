@@ -24,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+const MAX_MESSAGES = 100;
 
 export default async function CustomTripRequestPage({
   params,
@@ -39,7 +40,7 @@ export default async function CustomTripRequestPage({
 
   const request = await prisma.customTripRequest.findFirst({
     where: { id: requestId, userId: session.user.id, deletedAt: null },
-    include: { chat: { include: { messages: { orderBy: { createdAt: "asc" } } } } },
+    include: { chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } } } },
   });
 
   if (!request) {
@@ -47,7 +48,7 @@ export default async function CustomTripRequestPage({
   }
 
   const messages = request.chat
-    ? toCustomTripMessageViews(request.chat.messages, session.user.id)
+    ? toCustomTripMessageViews(request.chat.messages.slice().reverse(), session.user.id)
     : [];
 
   return (

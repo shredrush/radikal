@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
@@ -7,15 +9,20 @@ import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { createBookingSchema } from "@/lib/validations/booking";
 import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
+import { sanitizeText } from "@/lib/sanitize";
+import {
+  paymentReferenceReceivedEmail,
+  sendEmailAfter,
+} from "@/lib/email";
 
 export type CreateBookingResult =
   | { success: true; bookingId: string }
   | { success: false; error: string };
 
 /**
- * Creates a PENDING booking for the logged-in user against a specific
- * trip + slot. The booking only becomes CONFIRMED once payment succeeds
- * (see lib/actions/payment.ts) — never on the client alone.
+ * Creates a PENDING booking for the logged-in user against a specific trip +
+ * slot. In checkout, this is called after the traveller submits their payment
+ * reference so unpaid review screens do not appear as pending bookings.
  */
 export async function createBooking(
   input: unknown
@@ -33,8 +40,8 @@ export async function createBooking(
     return { success: false, error: "You must be logged in to book." };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
     select: { id: true },
   });
   if (!user) {
@@ -49,7 +56,10 @@ export async function createBooking(
     return { success: false, error: rateLimitError(bookingLimit) };
   }
 
-  const { tripId, slotId, participantCount, adventureInsurance } = parsed.data;
+  const { tripId, slotId, participantCount, adventureInsurance, transactionId } = parsed.data;
+  const cleanTransactionId = transactionId
+    ? sanitizeText(transactionId, { maxLength: 100 })
+    : null;
 
   // The insurance amount is derived from a server-side constant (never a
   // client-supplied price), so opting in only adds a fixed per-person charge.
@@ -64,7 +74,7 @@ export async function createBooking(
         include: { trip: true },
       });
 
-      if (!slot || slot.tripId !== tripId) {
+      if (!slot || slot.tripId !== tripId || slot.deletedAt || slot.trip.deletedAt) {
         return { status: "unavailable" as const };
       }
 
@@ -72,10 +82,10 @@ export async function createBooking(
       // same row, then refuses to delete while bookings exist) serializes
       // against this checkout instead of deleting a booking created after its
       // guard passed.
-      const [lockedTrip] = await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT id FROM trips WHERE id = ${tripId} FOR UPDATE
+      const [lockedTrip] = await tx.$queryRaw<Array<{ id: string; deletedAt: Date | null }>>`
+        SELECT id, "deletedAt" FROM trips WHERE id = ${tripId} FOR UPDATE
       `;
-      if (!lockedTrip) {
+      if (!lockedTrip || lockedTrip.deletedAt) {
         return { status: "unavailable" as const };
       }
 
@@ -83,14 +93,14 @@ export async function createBooking(
       // (the payment confirmation path locks it too). This keeps the pending
       // count read below from racing a concurrent checkout and overselling a
       // slot before payment is captured.
-      const [lockedSlot] = await tx.$queryRaw<Array<{ id: string; booked: number; reserved: number; capacity: number }>>`
-        SELECT id, booked, reserved, capacity
+      const [lockedSlot] = await tx.$queryRaw<Array<{ id: string; booked: number; reserved: number; capacity: number; deletedAt: Date | null }>>`
+        SELECT id, booked, reserved, capacity, "deletedAt"
         FROM slots
         WHERE id = ${slotId}
         FOR UPDATE
       `;
 
-      if (!lockedSlot) {
+      if (!lockedSlot || lockedSlot.deletedAt) {
         return { status: "unavailable" as const };
       }
 
@@ -98,7 +108,7 @@ export async function createBooking(
       // is confirmed). Count PENDING bookings too so a burst of concurrent
       // checkouts cannot oversell a slot before payment is captured.
       const pendingCount = await tx.booking.count({
-        where: { slotId, status: "PENDING" },
+        where: { slotId, status: "PENDING", deletedAt: null },
       });
 
       if (lockedSlot.booked + lockedSlot.reserved + pendingCount + participantCount > lockedSlot.capacity) {
@@ -113,6 +123,12 @@ export async function createBooking(
           participantCount,
           totalPriceRupees: slot.trip.priceInRupees * participantCount + insuranceRupees,
           status: "PENDING",
+          paymentTransactionId: cleanTransactionId,
+        },
+        include: {
+          user: { select: { email: true, name: true } },
+          trip: { select: { title: true, location: true } },
+          slot: { select: { date: true } },
         },
       });
 
@@ -138,8 +154,34 @@ export async function createBooking(
         participantCount,
         adventureInsurance,
         insuranceRupees,
+        transactionId: cleanTransactionId,
       },
     });
+
+    if (cleanTransactionId) {
+      await logActivity({
+        userId,
+        action: "PAYMENT_REFERENCE_SUBMITTED",
+        label: "Submitted a payment reference",
+        metadata: { bookingId: result.booking.id, transactionId: cleanTransactionId },
+      });
+
+      sendEmailAfter(
+        paymentReferenceReceivedEmail({
+          to: result.booking.user.email,
+          name: result.booking.user.name,
+          tripTitle: result.booking.trip.title,
+          location: result.booking.trip.location,
+          date: result.booking.slot.date,
+          participantCount: result.booking.participantCount,
+          totalPriceRupees: result.booking.totalPriceRupees,
+          transactionId: cleanTransactionId,
+        }),
+      );
+    }
+
+    revalidatePath("/profile");
+    revalidatePath("/admin/bookings");
 
     return { success: true, bookingId: result.booking.id };
   } catch (error) {

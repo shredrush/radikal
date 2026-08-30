@@ -98,8 +98,9 @@ export async function loginAction(
   }
 
   const existingUser = await findUserByIdentifier(identifier);
+  const invalidCredentials = "Invalid email/username or password.";
   if (!existingUser) {
-    return { error: "No account found with this email or username.", identifier };
+    return { error: invalidCredentials, identifier };
   }
 
   try {
@@ -116,7 +117,7 @@ export async function loginAction(
         label: "Failed to sign in (incorrect password)",
         metadata: { reason: "invalid_password" },
       });
-      return { error: "Invalid password", identifier };
+      return { error: invalidCredentials, identifier };
     }
     throw error;
   }
@@ -344,7 +345,7 @@ export async function changePasswordAction(
 
   const { currentPassword, newPassword } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
   if (!user) {
     return { error: "Account not found." };
   }
@@ -403,9 +404,9 @@ export async function changeUsernameAction(
 
   const username = parsed.data;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { guide: { select: { id: true } } },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
+    include: { guide: { select: { id: true, deletedAt: true } } },
   });
   if (!user) {
     return { error: "Account not found." };
@@ -457,7 +458,7 @@ export async function changeUsernameAction(
 
   // For guide accounts the username is the public URL, so a rename must
   // invalidate both the old and the new guide pages.
-  if (user.guide) {
+  if (user.guide && !user.guide.deletedAt) {
     if (previousUsername) revalidatePath(`/${previousUsername}`);
     revalidatePath(`/${username}`);
     revalidatePath("/");

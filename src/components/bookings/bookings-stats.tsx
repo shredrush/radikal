@@ -15,25 +15,32 @@ function StatCard({ label, value }: { label: string; value: number }) {
  * match what `BookingsBoard` shows below.
  */
 export function BookingsStats({ items }: { items: BookingBoardItem[] }) {
+  // Pseudo-items for cancelled reserved-only slots are not bookings; keep the
+  // counts accurate and let the board show them under Cancelled.
+  const activeItems = items.filter(
+    (booking) => !booking.deletedAt && !booking.isCancelledSlot,
+  );
+
   return (
-    <section className="grid gap-3 md:grid-cols-5">
-      <StatCard label="Total bookings" value={items.length} />
+    <section className="grid gap-3 md:grid-cols-6">
+      <StatCard label="Total bookings" value={activeItems.length} />
       <StatCard
         label="Pending payment"
-        value={items.filter((booking) => booking.status === "PENDING").length}
+        value={activeItems.filter((booking) => booking.status === "PENDING").length}
       />
       <StatCard
         label="Confirmed"
-        value={items.filter((booking) => booking.status === "CONFIRMED").length}
+        value={activeItems.filter((booking) => booking.status === "CONFIRMED").length}
       />
       <StatCard
         label="Completed"
-        value={items.filter((booking) => booking.status === "COMPLETED").length}
+        value={activeItems.filter((booking) => booking.status === "COMPLETED").length}
       />
       <StatCard
         label="Cancelled"
-        value={items.filter((booking) => booking.status === "CANCELLED").length}
+        value={activeItems.filter((booking) => booking.status === "CANCELLED").length}
       />
+      <StatCard label="Deleted" value={items.filter((booking) => booking.deletedAt).length} />
     </section>
   );
 }

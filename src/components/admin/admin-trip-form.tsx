@@ -240,7 +240,7 @@ export function AdminTripForm({
           ? "Changes publish instantly on the public site after saving."
           : "The new trip goes live immediately after creating. Add booking dates from its card below."}
       </p>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {!isEditing ? (
           <Button
             type="button"

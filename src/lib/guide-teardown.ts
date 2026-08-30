@@ -1,17 +1,28 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
- * Unlink everything that references a Guide row, then delete the Guide itself.
- * Trips and reviews keep their rows but drop the guide link; certifications,
- * trip-change requests, and trip drafts cascade away with the guide.
+ * Deactivate a Guide row without deleting connected history. Trips, reviews,
+ * certifications, trip-change requests, and drafts keep their links so admin
+ * history remains connected and can be audited later.
  * Safe to call inside a transaction — used by guide deletion and when a guide
  * is demoted to a non-guide role.
  */
-export async function unlinkAndDeleteGuide(
+export async function deactivateGuide(
   tx: Prisma.TransactionClient,
   guideId: string,
 ) {
-  await tx.trip.updateMany({ where: { guideId }, data: { guideId: null } });
-  await tx.review.updateMany({ where: { guideId }, data: { guideId: null } });
-  await tx.guide.delete({ where: { id: guideId } });
+  const deletedAt = new Date();
+  await Promise.all([
+    tx.guide.update({ where: { id: guideId }, data: { deletedAt } }),
+    tx.trip.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt } }),
+    tx.slot.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    tx.booking.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    tx.wishlistItem.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    tx.review.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    tx.tripDraft.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt } }),
+    tx.tripChangeRequest.updateMany({
+      where: { guideId, status: "PENDING" },
+      data: { status: "REJECTED", reviewedAt: deletedAt },
+    }),
+  ]);
 }

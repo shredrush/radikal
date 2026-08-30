@@ -32,6 +32,7 @@ export const metadata: Metadata = {
 const getCommunityGuides = unstable_cache(
   async () => {
     return prisma.guide.findMany({
+      where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
       include: {
         certifications: {

@@ -7,7 +7,7 @@ import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots
 import { Button } from "@/components/ui/button";
 import {
   createGuideSlotAction,
-  deleteGuideSlotAction,
+  cancelGuideSlotAction,
   updateGuideSlotAction,
 } from "@/lib/actions/trip-changes";
 
@@ -43,7 +43,7 @@ export function GuideTripSlotsToggle({
             actions={{
               create: createGuideSlotAction,
               update: updateGuideSlotAction,
-              remove: deleteGuideSlotAction,
+              remove: cancelGuideSlotAction,
             }}
           />
         </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/authz";
+import { getAuthorizedUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { toCustomTripMessageViews } from "@/lib/custom-trips";
 
@@ -26,9 +26,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const where = hasPermission(session.user.role, "support.manage")
-      ? { id: requestId }
-      : { id: requestId, userId: session.user.id };
+    const supportUser = await getAuthorizedUser("support.manage");
+    const where = supportUser ? { id: requestId } : { id: requestId, userId: session.user.id };
 
     const customTrip = await prisma.customTripRequest.findFirst({
       where,
@@ -47,7 +46,7 @@ export async function GET(request: Request) {
       status: customTrip.status,
       messages: toCustomTripMessageViews(
         customTrip.chat.messages.slice().reverse(),
-        session.user.id,
+        supportUser?.id ?? session.user.id,
       ),
     });
   } catch (error) {

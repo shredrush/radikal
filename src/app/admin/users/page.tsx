@@ -87,11 +87,12 @@ export default async function AdminUsersPage({
         email: true,
         username: true,
         role: true,
+        deletedAt: true,
         createdAt: true,
         _count: { select: { bookings: true, activityLogs: true } },
       },
     }),
-    prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+    prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }),
     prisma.user.count({ where }),
     hasPermission(session.user.role, "trips.manage")
       ? countPendingTripChanges()
@@ -200,6 +201,11 @@ export default async function AdminUsersPage({
                       <Badge variant="outline" className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${roleBadgeClass(user.role)}`}>
                         {ROLE_LABELS[user.role] ?? user.role}
                       </Badge>
+                      {user.deletedAt ? (
+                        <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground/70">
+                          Deactivated
+                        </Badge>
+                      ) : null}
                       {user.id === session.user.id ? (
                         <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground/70">
                           You

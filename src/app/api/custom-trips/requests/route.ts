@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/authz";
+import { getAuthorizedUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
+const MAX_REQUESTS = 100;
 
 export async function GET() {
-  const session = await auth();
-
-  if (!session?.user || !hasPermission(session.user.role, "support.manage")) {
+  const user = await getAuthorizedUser("support.manage");
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,6 +18,7 @@ export async function GET() {
       prisma.customTripRequest.findMany({
         where: { deletedAt: null },
         orderBy: { updatedAt: "desc" },
+        take: MAX_REQUESTS,
         include: {
           user: { select: { id: true, name: true, email: true, username: true } },
           chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
@@ -27,6 +27,7 @@ export async function GET() {
       prisma.customTripRequest.findMany({
         where: { deletedAt: { not: null } },
         orderBy: { deletedAt: "desc" },
+        take: MAX_REQUESTS,
         include: {
           user: { select: { id: true, name: true, email: true, username: true } },
           chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },

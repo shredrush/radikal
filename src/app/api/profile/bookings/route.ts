@@ -39,13 +39,15 @@ export async function GET(request: Request) {
         where: {
           userId: session.user.id,
           status: statusFilter[kind],
+          deletedAt: null,
+          trip: { deletedAt: null },
         },
         orderBy: { createdAt: "desc" },
         select: bookingCardSelect,
       }),
       kind === "completed"
         ? prisma.review.findMany({
-            where: { userId: session.user.id },
+            where: { userId: session.user.id, deletedAt: null, trip: { deletedAt: null } },
             select: { id: true, tripId: true, rating: true, comment: true },
           })
         : Promise.resolve([]),

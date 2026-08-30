@@ -19,13 +19,14 @@ import { formatMonthYear } from "@/lib/format";
 const getGuideDetail = unstable_cache(
   async (username: string) => {
     return prisma.guide.findFirst({
-      where: { user: { username } },
+      where: { deletedAt: null, user: { username, deletedAt: null } },
       include: {
         user: { select: { username: true } },
         certifications: {
           orderBy: { yearIssued: "desc" },
         },
         trips: {
+          where: { deletedAt: null },
           orderBy: { createdAt: "asc" },
           // Only the fields rendered on the trip cards; the previous `include`
           // pulled every scalar column (including the full description).
@@ -42,6 +43,7 @@ const getGuideDetail = unstable_cache(
           },
         },
         reviews: {
+          where: { deletedAt: null, trip: { deletedAt: null } },
           orderBy: { createdAt: "desc" },
           take: 3,
           select: {
@@ -51,9 +53,6 @@ const getGuideDetail = unstable_cache(
             user: { select: { name: true } },
             trip: { select: { slug: true, title: true } },
           },
-        },
-        _count: {
-          select: { trips: true, reviews: true },
         },
       },
     });
@@ -201,7 +200,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                 Hear It From Those Who&apos;ve Been There  </p>
             </div>
 
-            {guide._count.reviews > 0 && (
+            {guide.reviews.length > 0 && (
               <Link
                 href={`/${guideId}/reviews`}
                 className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"

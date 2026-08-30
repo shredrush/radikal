@@ -13,11 +13,11 @@ export function isEmailLike(identifier: string): boolean {
  */
 export function findUserByIdentifier(identifier: string) {
   if (isEmailLike(identifier)) {
-    return prisma.user.findUnique({
-      where: { email: identifier.trim().toLowerCase() },
+    return prisma.user.findFirst({
+      where: { email: identifier.trim().toLowerCase(), deletedAt: null },
     });
   }
-  return prisma.user.findUnique({
-    where: { username: normalizeUsername(identifier) },
+  return prisma.user.findFirst({
+    where: { username: normalizeUsername(identifier), deletedAt: null },
   });
 }

@@ -2,6 +2,7 @@ import { requireGuide } from "@/lib/guide-board";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
 import { GuideBoardHeader } from "@/components/guides/guide-board-header";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
+import { GuideActivityLog } from "@/components/guides/guide-activity-log";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,10 @@ export default async function GuideBoardBookingsPage() {
         />
 
         <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-          <BookingsBoard items={items} slotCancel />
+          <BookingsBoard items={items} slotCancel hideDeletedSection />
         </section>
+
+        <GuideActivityLog />
       </div>
     </div>
   );

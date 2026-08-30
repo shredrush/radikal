@@ -11,12 +11,12 @@ export default async function AdminGuidesPage() {
 
   const [guidesLive, totalLinkedTrips, roleGuideWithoutProfile, guidesWithNonGuideUser, pendingTripChanges] =
     await Promise.all([
-      prisma.guide.count(),
-      prisma.trip.count({ where: { guideId: { not: null } } }),
+      prisma.guide.count({ where: { deletedAt: null, user: { deletedAt: null } } }),
+      prisma.trip.count({ where: { guideId: { not: null }, deletedAt: null, guide: { deletedAt: null, user: { deletedAt: null } } } }),
       // Orphan check 1: a GUIDE role must always have a linked guide profile.
-      prisma.user.count({ where: { role: "GUIDE", guide: { is: null } } }),
+      prisma.user.count({ where: { role: "GUIDE", deletedAt: null, OR: [{ guide: { is: null } }, { guide: { deletedAt: { not: null } } }] } }),
       // Orphan check 2: a guide profile's linked user must hold the GUIDE role.
-      prisma.guide.count({ where: { user: { role: { not: "GUIDE" } } } }),
+      prisma.guide.count({ where: { deletedAt: null, user: { role: { not: "GUIDE" }, deletedAt: null } } }),
       countPendingTripChanges(),
     ]);
 

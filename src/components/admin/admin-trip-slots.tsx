@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CalendarDays, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Ban, CalendarDays, Pencil, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   createSlotAction,
-  deleteSlotAction,
+  cancelSlotAction,
   updateSlotAction,
 } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import type { SlotItem } from "@/lib/slot-item";
-import { pluralize } from "@/lib/format";
+import { pluralize, formatShortDate } from "@/lib/format";
 
 export type { SlotItem };
 
@@ -28,7 +28,7 @@ const MAX_SLOT_CAPACITY = 100;
 type SlotActions = {
   create: (formData: FormData) => Promise<void>;
   update: (formData: FormData) => Promise<void>;
-  remove: (slotId: string) => Promise<void>;
+  remove: (slotId: string, reason?: string) => Promise<void>;
 };
 
 function readSlotNumber(formData: FormData, field: string) {
@@ -41,36 +41,42 @@ export function SlotsManager({
   actions = {
     create: createSlotAction,
     update: updateSlotAction,
-    remove: deleteSlotAction,
+    remove: cancelSlotAction,
   },
 }: {
   tripId: string;
   slots: SlotItem[];
   actions?: SlotActions;
 }) {
+  const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(new Set());
+  const visibleSlots = slots.filter((slot) => !removedIds.has(slot.id));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Dates &amp; availability</h3>
         <span className="text-xs text-muted-foreground">
-          {pluralize(slots.length, "date")}
+          {pluralize(visibleSlots.length, "date")}
         </span>
       </div>
 
       <AddSlotForm tripId={tripId} createAction={actions.create} />
 
-      {slots.length === 0 ? (
+      {visibleSlots.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
           No dates yet. Add a date above so travellers can book this trip.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {slots.map((slot) => (
+          {visibleSlots.map((slot) => (
             <SlotRow
               key={slot.id}
               slot={slot}
               updateAction={actions.update}
-              deleteAction={actions.remove}
+              cancelAction={actions.remove}
+              onCancelled={(slotId) =>
+                setRemovedIds((prev) => new Set(prev).add(slotId))
+              }
             />
           ))}
         </ul>
@@ -90,7 +96,8 @@ function AddSlotForm({
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     formData.set("tripId", tripId);
 
     if (!String(formData.get("date") ?? "")) {
@@ -115,7 +122,7 @@ function AddSlotForm({
     startTransition(async () => {
       try {
         await createAction(formData);
-        (event.currentTarget as HTMLFormElement).reset();
+        form.reset();
         toast.success("Date added.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not add date.");
@@ -148,21 +155,27 @@ function AddSlotForm({
 function SlotRow({
   slot,
   updateAction,
-  deleteAction,
+  cancelAction,
+  onCancelled,
 }: {
   slot: SlotItem;
   updateAction: SlotActions["update"];
-  deleteAction: SlotActions["remove"];
+  cancelAction: SlotActions["remove"];
+  onCancelled: (slotId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [reason, setReason] = useState("");
   const [isPending, startTransition] = useTransition();
+  const needsReason = slot.bookingCount > 0;
 
   function handleEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("slotId", slot.id);
 
-    if (!String(formData.get("date") ?? "")) {
+    const dateValue = String(formData.get("date") ?? "");
+    if (!dateValue) {
       toast.error("Please choose a date.");
       return;
     }
@@ -181,29 +194,47 @@ function SlotRow({
       return;
     }
 
+    const changes: string[] = [];
+    if (dateValue !== slot.dateInput) {
+      changes.push(`date changed to ${formatShortDate(`${dateValue}T12:00:00`)}`);
+    }
+    if (capacity !== slot.capacity) {
+      changes.push(`capacity changed from ${slot.capacity} to ${capacity}`);
+    }
+    if (reserved !== slot.reserved) {
+      changes.push(`reserve changed from ${slot.reserved} to ${reserved}`);
+    }
+
     startTransition(async () => {
       try {
         await updateAction(formData);
         setEditing(false);
-        toast.success("Date updated.");
+        if (changes.length > 0) {
+          toast.success(`Slot updated: ${changes.join(", ")}.`);
+        } else {
+          toast.success("No changes to this slot.");
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not update date.");
       }
     });
   }
 
-  function handleDelete() {
-    const confirmed = window.confirm(
-      `Delete the date ${slot.dateLabel}? Travellers will no longer be able to book it.`
-    );
-    if (!confirmed) return;
+  function handleCancel() {
+    setConfirmOpen(true);
+  }
+
+  function handleConfirmCancel() {
+    const cleanReason = reason.trim();
+    if (needsReason && !cleanReason) return;
 
     startTransition(async () => {
       try {
-        await deleteAction(slot.id);
-        toast.success(`Date ${slot.dateLabel} deleted.`);
+        await cancelAction(slot.id, needsReason ? cleanReason : undefined);
+        onCancelled(slot.id);
+        toast.success(`Date ${slot.dateLabel} cancelled.`);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not delete date.");
+        toast.error(error instanceof Error ? error.message : "Could not cancel date.");
       }
     });
   }
@@ -255,53 +286,106 @@ function SlotRow({
   }
 
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-border/70 bg-background/90 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2.5">
-        <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
-        <span className="text-sm font-medium text-foreground">{slot.dateLabel}</span>
-      </div>
+    <li className="flex flex-col gap-2 rounded-xl border border-border/70 bg-background/90 px-3 py-2.5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5">
+          <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+          <span className="text-sm font-medium text-foreground">{slot.dateLabel}</span>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge
-          variant="outline"
-          className={cn(
-            "rounded-full border px-2.5 py-1 text-[11px] font-medium",
-            slot.spotsLeft === 0
-              ? "border-destructive/40 bg-destructive/10 text-destructive"
-              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
-          )}
-        >
-          {slot.spotsLeft === 0
-            ? "Full"
-            : `${pluralize(slot.spotsLeft, "spot")} left`}
-        </Badge>
-        <span className="text-xs text-muted-foreground">
-          {slot.booked} booked{slot.reserved > 0 ? ` · ${slot.reserved} reserved` : ""} / {slot.capacity}
-        </span>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="rounded-full"
-            onClick={() => setEditing(true)}
-            aria-label={`Edit ${slot.dateLabel}`}
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[11px] font-medium",
+              slot.spotsLeft === 0
+                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+            )}
           >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="rounded-full text-destructive hover:bg-destructive/10"
-            disabled={isPending}
-            onClick={handleDelete}
-            aria-label={`Delete ${slot.dateLabel}`}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+            {slot.spotsLeft === 0
+              ? "Full"
+              : `${pluralize(slot.spotsLeft, "spot")} left`}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {slot.booked} booked{slot.reserved > 0 ? ` · ${slot.reserved} reserved` : ""} / {slot.capacity}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="rounded-full"
+              onClick={() => setEditing(true)}
+              aria-label={`Edit ${slot.dateLabel}`}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="rounded-full text-destructive hover:bg-destructive/10"
+              disabled={isPending}
+              onClick={handleCancel}
+              aria-label={`Cancel ${slot.dateLabel}`}
+            >
+              <Ban className="h-3 w-3" />
+              Cancel
+            </Button>
+          </div>
         </div>
       </div>
+
+      {confirmOpen ? (
+        <div className="flex w-full flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+          <p className="text-sm font-medium text-destructive">
+            Cancel the date {slot.dateLabel}?
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {needsReason
+              ? `${pluralize(slot.bookingCount, "booking")} ${slot.bookingCount === 1 ? "is" : "are"} on this date and will be notified by email. Travellers will no longer be able to book this date.`
+              : "Travellers will no longer be able to book this date."}
+          </p>
+          {needsReason ? (
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Tell us why you're cancelling this date…"
+              rows={2}
+              autoFocus
+              className={`w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-destructive/40 focus:ring-2 focus:ring-destructive/20`}
+            />
+          ) : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="rounded-full"
+              disabled={isPending || (needsReason && !reason.trim())}
+              onClick={handleConfirmCancel}
+            >
+              <Ban className="h-3.5 w-3.5" />
+              {isPending ? "Cancelling…" : "Cancel date"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              disabled={isPending}
+              onClick={() => {
+                setConfirmOpen(false);
+                setReason("");
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              Back
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }

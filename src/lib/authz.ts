@@ -86,6 +86,26 @@ export function hasPermission(
 }
 
 /**
+ * Return the signed-in user only when their current database role has the
+ * requested permission. Route handlers use this instead of trusting the JWT so
+ * role demotions take effect immediately without triggering redirects.
+ */
+export async function getAuthorizedUser(permission: Permission) {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const user = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
+    select: { role: true },
+  });
+
+  const role = user?.role;
+  if (!role || !hasPermission(role, permission)) return null;
+
+  return { ...session.user, role };
+}
+
+/**
  * Require a signed-in user with `permission`. Redirects otherwise.
  * Used by server actions and pages that read/mutate protected data.
  */
@@ -103,8 +123,8 @@ export async function requirePermission(
   // caches the role from sign-in and is not invalidated when the DB changes, so
   // trusting the token alone would leave a demoted account privileged until the
   // session expires.
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const user = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
     select: { role: true },
   });
 

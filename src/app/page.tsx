@@ -20,6 +20,10 @@ const FEATURED_TRIP_SLUGS = [
 const getHomeTrips = unstable_cache(
   async () => {
     return prisma.trip.findMany({
+      where: {
+        deletedAt: null,
+        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+      },
       select: {
         id: true,
         slug: true,
@@ -45,6 +49,7 @@ const getHomeTrips = unstable_cache(
 const getHomeGuides = unstable_cache(
   async () => {
     return prisma.guide.findMany({
+      where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
       include: {
         certifications: {
@@ -82,7 +87,7 @@ const getHomeReviews = unstable_cache(
         )
         .map((entry) =>
           prisma.review.findFirst({
-            where: { tripId: entry.tripId, createdAt: entry._max.createdAt },
+            where: { tripId: entry.tripId, createdAt: entry._max.createdAt, deletedAt: null, trip: { deletedAt: null } },
             select: {
               tripId: true,
               comment: true,

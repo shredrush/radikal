@@ -2,11 +2,12 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Save, X } from "lucide-react";
+import { Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   submitTripCreateChangeAction,
+  deleteGuideTripAction,
   submitTripUpdateChangeAction,
 } from "@/lib/actions/trip-changes";
 import {
@@ -101,6 +102,9 @@ export function GuideTripForm({
   const [draftId, setDraftId] = useState<string | null>(draft?.draftId ?? null);
   const [isPending, startTransition] = useTransition();
   const [isSavingDraft, startSavingDraft] = useTransition();
+  const [isDeleting, startDeleting] = useTransition();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const title = fields?.title ?? "";
   const type = fields?.type ?? "TREK";
@@ -193,6 +197,29 @@ export function GuideTripForm({
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not save draft.";
+        toast.error(message);
+      }
+    });
+  }
+
+  function handleDeleteTrip() {
+    if (!trip) return;
+    setDeleteOpen(true);
+  }
+
+  function handleConfirmDeleteTrip() {
+    if (!trip) return;
+    const cleanReason = deleteReason.trim();
+    if (!cleanReason) return;
+
+    startDeleting(async () => {
+      try {
+        await deleteGuideTripAction(trip.id, cleanReason);
+        toast.success("Trip deleted");
+        setOpen(false);
+        router.refresh();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not delete trip.";
         toast.error(message);
       }
     });
@@ -320,11 +347,70 @@ export function GuideTripForm({
               {isSavingDraft ? "Saving…" : "Save to draft"}
             </Button>
           ) : null}
-          <Button type="submit" className="rounded-full" disabled={isPending}>
+          {isEditing && !deleteOpen ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full border-destructive/40 text-destructive hover:border-destructive hover:bg-destructive/10"
+              disabled={isDeleting || isPending}
+              onClick={handleDeleteTrip}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeleting ? "Deleting…" : "Delete trip"}
+            </Button>
+          ) : null}
+          <Button type="submit" className="rounded-full" disabled={isPending || isDeleting}>
             {isPending ? "Submitting…" : "Submit for review"}
           </Button>
         </div>
       </form>
+
+      {isEditing && deleteOpen ? (
+        <div className="flex w-full flex-col gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3">
+          <p className="text-sm font-semibold text-destructive">
+            Delete “{trip?.title}”?
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This removes the trip and its dates from public views. It cannot be undone.
+          </p>
+          <textarea
+            value={deleteReason}
+            onChange={(event) => setDeleteReason(event.target.value)}
+            placeholder="Tell us why you're deleting this trip…"
+            rows={2}
+            autoFocus
+            className={`w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-destructive/40 focus:ring-2 focus:ring-destructive/20`}
+          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="rounded-full"
+              disabled={isDeleting || !deleteReason.trim()}
+              onClick={handleConfirmDeleteTrip}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeleting ? "Deleting…" : "Delete trip"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              disabled={isDeleting}
+              onClick={() => {
+                setDeleteOpen(false);
+                setDeleteReason("");
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              Back
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

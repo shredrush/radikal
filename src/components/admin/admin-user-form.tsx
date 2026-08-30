@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateUserAction } from "@/lib/actions/users";
+import { deactivateUserAction, updateUserAction } from "@/lib/actions/users";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ export type AdminUserFormUser = {
   email: string;
   username: string | null;
   role: string;
+  deletedAt?: Date | string | null;
 };
 
 export function AdminUserForm({
@@ -55,6 +56,25 @@ export function AdminUserForm({
     });
   }
 
+  function handleDeactivate() {
+    if (!window.confirm("Deactivate this account? The user will no longer be able to sign in.")) {
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await deactivateUserAction(user.id);
+        toast.success("User deactivated.");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not deactivate user.";
+        toast.error(message);
+      }
+    });
+  }
+
+  const isDeleted = Boolean(user.deletedAt);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <input type="hidden" name="userId" value={user.id} />
@@ -69,6 +89,7 @@ export function AdminUserForm({
             required
             minLength={2}
             maxLength={100}
+            disabled={isDeleted}
             className={inputClassName}
           />
         </div>
@@ -82,6 +103,7 @@ export function AdminUserForm({
             defaultValue={user.email}
             required
             maxLength={254}
+            disabled={isDeleted}
             className={inputClassName}
           />
         </div>
@@ -93,6 +115,7 @@ export function AdminUserForm({
             name="username"
             defaultValue={user.username ?? ""}
             placeholder="Leave blank to remove"
+            disabled={isDeleted}
             className={inputClassName}
           />
           <p className="text-xs text-muted-foreground">
@@ -106,7 +129,7 @@ export function AdminUserForm({
             id={`role-${user.id}`}
             name="role"
             defaultValue={user.role}
-            disabled={isSelf}
+            disabled={isSelf || isDeleted}
             className={inputClassName}
           >
             {USER_ROLE_OPTIONS.map((option) => (
@@ -125,11 +148,20 @@ export function AdminUserForm({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
         <p className="text-sm text-muted-foreground">
-          Changes take effect immediately and are recorded in the user&apos;s activity log.
+          {isDeleted
+            ? "This account is deactivated and cannot sign in. Activity history is preserved."
+            : "Changes take effect immediately and are recorded in the user's activity log."}
         </p>
-        <Button type="submit" className="rounded-full" disabled={isPending}>
-          {isPending ? "Saving…" : "Save changes"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {!isDeleted && !isSelf ? (
+            <Button type="button" variant="outline" className="rounded-full" disabled={isPending} onClick={handleDeactivate}>
+              Deactivate account
+            </Button>
+          ) : null}
+          <Button type="submit" className="rounded-full" disabled={isPending || isDeleted}>
+            {isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
       </div>
     </form>
   );

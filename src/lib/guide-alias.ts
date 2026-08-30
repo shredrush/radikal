@@ -16,15 +16,19 @@ export async function resolveGuideAlias(username: string) {
         select: {
           guide: {
             select: {
+              deletedAt: true,
               user: { select: { username: true } },
             },
           },
+          deletedAt: true,
         },
       },
     },
   });
 
-  const currentUsername = alias?.user.guide?.user.username;
+  const currentUsername = !alias?.user.deletedAt && !alias?.user.guide?.deletedAt
+    ? alias?.user.guide?.user.username
+    : null;
   if (currentUsername && currentUsername !== username) {
     permanentRedirect(`/${currentUsername}`);
   }

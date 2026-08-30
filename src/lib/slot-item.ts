@@ -8,6 +8,7 @@ export type SlotItem = {
   booked: number;
   reserved: number;
   spotsLeft: number;
+  bookingCount: number;
 };
 
 export function toSlotItem(slot: {
@@ -16,6 +17,7 @@ export function toSlotItem(slot: {
   capacity: number;
   booked: number;
   reserved: number;
+  _count?: { bookings: number };
 }): SlotItem {
   return {
     id: slot.id,
@@ -25,5 +27,6 @@ export function toSlotItem(slot: {
     booked: slot.booked,
     reserved: slot.reserved,
     spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
+    bookingCount: slot._count?.bookings ?? 0,
   };
 }

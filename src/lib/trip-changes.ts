@@ -99,12 +99,13 @@ export type TripChangeSummary = {
  */
 export type AdminTripChangeSummary = {
   id: string;
-  type: "CREATE" | "UPDATE";
+  type: "CREATE" | "UPDATE" | "DELETE";
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: Date;
   reviewedAt: Date | null;
   title: string | null;
   guideName: string | null;
+  submittedByName: string | null;
   submittedByUsername: string | null;
   tripTitle: string | null;
   reviewedByName: string | null;

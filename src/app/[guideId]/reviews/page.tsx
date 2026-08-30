@@ -12,11 +12,12 @@ import { formatMonthYear } from "@/lib/format";
 const getGuideReviews = unstable_cache(
   async (username: string) => {
     return prisma.guide.findFirst({
-      where: { user: { username } },
+      where: { deletedAt: null, user: { username, deletedAt: null } },
       select: {
         id: true,
         name: true,
         reviews: {
+          where: { deletedAt: null, trip: { deletedAt: null } },
           orderBy: { createdAt: "desc" },
           select: {
             id: true,

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/authz";
+import { getAuthorizedUser } from "@/lib/authz";
 import { getDatabaseConnectionLogInfo } from "@/lib/database-url";
 import { prisma } from "@/lib/prisma";
 
@@ -9,8 +8,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   // This endpoint exposes database connection details — restrict it to the
   // super admin only. Never leave host/port/database info public.
-  const session = await auth();
-  if (!session?.user || !hasPermission(session.user.role, "system.debug")) {
+  const user = await getAuthorizedUser("system.debug");
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

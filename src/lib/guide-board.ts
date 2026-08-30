@@ -15,9 +15,9 @@ export async function requireGuide(redirectTo = "/profile") {
   if (!session?.user?.id) {
     redirect("/login?callbackUrl=/guide-board/bookings");
   }
-  const guide = await prisma.guide.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true, name: true, user: { select: { username: true, role: true } } },
+  const guide = await prisma.guide.findFirst({
+    where: { userId: session.user.id, deletedAt: null, user: { deletedAt: null } },
+    select: { id: true, name: true, userId: true, user: { select: { username: true, role: true } } },
   });
   if (!guide || guide.user.role !== "GUIDE") {
     redirect(redirectTo);
@@ -35,9 +35,9 @@ export async function requireGuideAction() {
   if (!session?.user?.id) {
     throw new Error("You must be logged in to manage trips.");
   }
-  const guide = await prisma.guide.findUnique({
-    where: { userId: session.user.id },
-    select: { id: true, name: true, user: { select: { role: true } } },
+  const guide = await prisma.guide.findFirst({
+    where: { userId: session.user.id, deletedAt: null, user: { deletedAt: null } },
+    select: { id: true, name: true, userId: true, user: { select: { role: true } } },
   });
   if (!guide || guide.user.role !== "GUIDE") {
     throw new Error("Only guides can manage trips.");

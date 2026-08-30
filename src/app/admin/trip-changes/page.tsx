@@ -15,12 +15,13 @@ export default async function AdminTripChangesPage() {
   const changes = await prisma.$queryRaw<AdminTripChangeSummary[]>`
     SELECT
       tc.id,
-      tc."type",
-      tc.status,
+      tc."type"::text AS "type",
+      tc.status::text AS status,
       tc."createdAt",
       tc."reviewedAt",
       tc.proposed->>'title' AS title,
       g.name AS "guideName",
+      u.name AS "submittedByName",
       u.username AS "submittedByUsername",
       t.title AS "tripTitle",
       r.name AS "reviewedByName"
@@ -29,7 +30,25 @@ export default async function AdminTripChangesPage() {
     LEFT JOIN "users" u ON u.id = tc."submittedById"
     LEFT JOIN "users" r ON r.id = tc."reviewedById"
     LEFT JOIN "trips" t ON t.id = tc."tripId"
-    ORDER BY tc."createdAt" DESC
+    UNION ALL
+    SELECT
+      al.id,
+      'DELETE' AS "type",
+      'APPROVED' AS status,
+      al."createdAt",
+      al."createdAt" AS "reviewedAt",
+      COALESCE(t.title, al.metadata->>'title') AS title,
+      g.name AS "guideName",
+      u.name AS "submittedByName",
+      u.username AS "submittedByUsername",
+      t.title AS "tripTitle",
+      NULL AS "reviewedByName"
+    FROM "activity_logs" al
+    LEFT JOIN "users" u ON u.id = al."userId"
+    LEFT JOIN "trips" t ON t.id = al.metadata->>'tripId'
+    LEFT JOIN "guides" g ON g.id = t."guideId"
+    WHERE al.action = 'TRIP_DELETED'
+    ORDER BY "createdAt" DESC
   `;
 
   const pendingCount = changes.filter((change) => change.status === "PENDING").length;

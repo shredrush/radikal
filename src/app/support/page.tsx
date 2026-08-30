@@ -23,11 +23,14 @@ import {
 } from "@/components/support/support-board";
 
 export const dynamic = "force-dynamic";
+const MAX_SUPPORT_LIST_ITEMS = 100;
+const MAX_SELECTED_MESSAGES = 100;
 
 async function loadChats(): Promise<SupportChatListItem[]> {
   const rows = await prisma.supportChat.findMany({
     where: { deletedAt: null },
     orderBy: { updatedAt: "desc" },
+    take: MAX_SUPPORT_LIST_ITEMS,
     include: {
       user: { select: { id: true, name: true, email: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -40,6 +43,7 @@ async function loadResolvedChats(): Promise<SupportChatListItem[]> {
   const rows = await prisma.supportChat.findMany({
     where: { deletedAt: { not: null } },
     orderBy: { deletedAt: "desc" },
+    take: MAX_SUPPORT_LIST_ITEMS,
     include: {
       user: { select: { id: true, name: true, email: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -74,6 +78,7 @@ async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
   const rows = await prisma.customTripRequest.findMany({
     where: { deletedAt: null },
     orderBy: { updatedAt: "desc" },
+    take: MAX_SUPPORT_LIST_ITEMS,
     include: {
       user: { select: { id: true, name: true, email: true, username: true } },
       chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
@@ -86,6 +91,7 @@ async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]>
   const rows = await prisma.customTripRequest.findMany({
     where: { deletedAt: { not: null } },
     orderBy: { deletedAt: "desc" },
+    take: MAX_SUPPORT_LIST_ITEMS,
     include: {
       user: { select: { id: true, name: true, email: true, username: true } },
       chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
@@ -129,7 +135,7 @@ export default async function SupportBoardPage({
         : Promise.resolve([] as BookingBoardItem[]),
       tab === "bookings"
         ? Promise.resolve(0)
-        : prisma.booking.count({ where: { status: "PENDING" } }),
+        : prisma.booking.count({ where: { status: "PENDING", deletedAt: null, trip: { deletedAt: null } } }),
       tab === "custom"
         ? loadCustomRequests()
         : Promise.resolve([] as CustomTripRequestListItem[]),
@@ -144,7 +150,7 @@ export default async function SupportBoardPage({
             where: { id: chatId },
             include: {
               user: { select: { id: true, name: true, email: true } },
-              messages: { orderBy: { createdAt: "asc" } },
+              messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES },
             },
           })
         : Promise.resolve(null),
@@ -153,7 +159,7 @@ export default async function SupportBoardPage({
             where: { id: requestId },
             include: {
               user: { select: { id: true, name: true, email: true, username: true } },
-              chat: { include: { messages: { orderBy: { createdAt: "asc" } } } },
+              chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES } } },
             },
           })
         : Promise.resolve(null),
@@ -166,7 +172,7 @@ export default async function SupportBoardPage({
         customerName: selectedChat.user.name || selectedChat.user.email,
         customerEmail: selectedChat.user.email,
         deletedAt: selectedChat.deletedAt ? selectedChat.deletedAt.toISOString() : null,
-        messages: toSupportMessageViews(selectedChat.messages, session.user.id),
+        messages: toSupportMessageViews(selectedChat.messages.slice().reverse(), session.user.id),
       }
     : null;
 
@@ -174,7 +180,7 @@ export default async function SupportBoardPage({
     ? {
         ...toCustomTripRequestListItem(selectedCustomRequest),
         messages: selectedCustomRequest.chat
-          ? toCustomTripMessageViews(selectedCustomRequest.chat.messages, session.user.id)
+          ? toCustomTripMessageViews(selectedCustomRequest.chat.messages.slice().reverse(), session.user.id)
           : [],
       }
     : null;

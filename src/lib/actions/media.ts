@@ -85,7 +85,7 @@ async function authorizeFolder(
  * path (content-addressed UUID), so the client can never target arbitrary keys.
  */
 export async function createMediaUploadAction(input: CreateMediaUploadInput): Promise<{
-  signedUrl: string;
+  token: string;
   publicUrl: string;
   path: string;
 }> {
@@ -102,7 +102,7 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
     throw new Error(
       input.kind === "images"
         ? "Upload a JPG, PNG, WebP, or AVIF image."
-        : "Upload an MP4 or WebM video.",
+        : "Upload an MP4, WebM, or MOV video.",
     );
   }
 
@@ -118,9 +118,9 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
     input.kind,
     extFromContentType(input.contentType),
   );
-  const { signedUrl, publicUrl } = await issueSignedUploadUrl(bucket, path);
+  const { token, publicUrl } = await issueSignedUploadUrl(bucket, path);
 
-  return { signedUrl, publicUrl, path };
+  return { token, publicUrl, path };
 }
 
 /**
