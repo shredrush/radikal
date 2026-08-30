@@ -1,4 +1,4 @@
-import { SUPABASE_CA_CERT } from "@/lib/supabase-ca";
+import { SUPABASE_CA_CERT } from "./supabase-ca";
 
 function getDatabaseUrlCandidates() {
   const candidates = [
