@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export type FaqItem = {
@@ -54,18 +53,38 @@ const DEFAULT_FAQ_ITEMS: FaqItem[] = [
   },
 ];
 
-function FaqItemRow({ item, index }: { item: FaqItem; index: number }) {
-  const [open, setOpen] = useState(index === 0);
-
+function FaqItemRow({
+  item,
+  index,
+  open,
+  onToggle,
+}: {
+  item: FaqItem;
+  index: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <li className={cn("border-t border-border/60", index === 0 && "border-t-0")}>
+    <li>
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30 sm:px-6"
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30 dark:hover:bg-emerald-500/5 sm:px-6"
       >
-        <span className="text-sm font-medium text-foreground sm:text-base">{item.question}</span>
+        <span className="flex items-start gap-3">
+          <span
+            className={cn(
+              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors",
+              open
+                ? "bg-emerald-600 text-white"
+                : "bg-black text-white dark:bg-white dark:text-black",
+            )}
+          >
+            {index + 1}
+          </span>
+          <span className="text-sm font-medium text-foreground sm:text-base">{item.question}</span>
+        </span>
         <ChevronDown
           className={cn(
             "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
@@ -80,7 +99,9 @@ function FaqItemRow({ item, index }: { item: FaqItem; index: number }) {
         )}
       >
         <div className="overflow-hidden">
-          <p className="px-5 pb-5 text-sm leading-7 text-muted-foreground sm:px-6">{item.answer}</p>
+          <p className="px-5 pb-5 pl-14 text-sm leading-7 text-muted-foreground sm:px-6 sm:pl-14">
+            {item.answer}
+          </p>
         </div>
       </div>
     </li>
@@ -90,22 +111,39 @@ function FaqItemRow({ item, index }: { item: FaqItem; index: number }) {
 export function FaqSection({
   items = DEFAULT_FAQ_ITEMS,
   title = "Frequently asked questions",
+  subtitle = "Everything you need to know before you go. Still unsure? Reach out via support.",
 }: {
   items?: FaqItem[];
   title?: string;
+  subtitle?: string;
 }) {
+  const [openIndex, setOpenIndex] = useState<number>(0);
+
   return (
-    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-      <CardHeader>
-        <CardTitle className="text-2xl">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-border/60 rounded-[1rem] border border-border/60 bg-background/60">
-          {items.map((item, index) => (
-            <FaqItemRow key={item.question} item={item} index={index} />
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <section className="mt-12">
+      <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-background/90 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+
+            <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              {title}
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">{subtitle}</p>
+          </div>
+
+          <ul className="divide-y divide-border/60 rounded-[1.25rem] border border-border/60 bg-background/60">
+            {items.map((item, index) => (
+              <FaqItemRow
+                key={item.question}
+                item={item}
+                index={index}
+                open={openIndex === index}
+                onToggle={() => setOpenIndex(openIndex === index ? -1 : index)}
+              />
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
   );
 }

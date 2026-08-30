@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Check,
-  ChevronDown,
   Minus,
   Plus,
   Shield,
@@ -47,12 +46,6 @@ const DEMO_PAYMENT_DETAILS = [
   { label: "Bank", value: "HDFC Bank" },
   { label: "Account number", value: "5020 0062 8211 76" },
   { label: "IFSC code", value: "HDFC0005440" },
-];
-
-const CANCELLATION_POLICY_TIERS = [
-  { when: "Up to 1 week before departure", refund: "Full refund" },
-  { when: "Closer to departure", refund: "A fee may apply depending on notice given" },
-  { when: "After the trip has started", refund: "No refund" },
 ];
 
 const TRUST_POINTS = [
@@ -100,7 +93,6 @@ export function CheckoutFlow({
   const [transactionId, setTransactionId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [policyOpen, setPolicyOpen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
 
   const tripImages = useMemo(() => trip.images.filter(Boolean), [trip.images]);
@@ -252,7 +244,7 @@ export function CheckoutFlow({
                     className={cn(
                       "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50",
                       selected
-                        ? "border-black/60 bg-black/[0.04] dark:border-white/50 dark:bg-white/10"
+                        ? "border-emerald-600/60 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/15"
                         : "border-border/70 bg-background/70 hover:border-black/30 hover:bg-muted/40"
                     )}
                   >
@@ -338,13 +330,15 @@ export function CheckoutFlow({
                 aria-checked={adventureInsurance}
                 disabled={step !== "select"}
                 onClick={() => setAdventureInsurance((on) => !on)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                  adventureInsurance ? "bg-emerald-600" : "bg-muted"
+                className={`relative flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5 transition-colors ${
+                  adventureInsurance
+                    ? "border-emerald-700/60 bg-emerald-600 dark:border-emerald-500/50"
+                    : "border-emerald-300 bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950"
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                    adventureInsurance ? "translate-x-5" : "translate-x-0"
+                  className={`block h-4 w-4 rounded-full bg-white shadow transition-all duration-200 ${
+                    adventureInsurance ? "ml-auto" : ""
                   }`}
                 />
               </button>
@@ -372,66 +366,15 @@ export function CheckoutFlow({
                 {specialRequests.length}/{SPECIAL_REQUESTS_MAX_LENGTH}
               </p>
               <p className="text-xs text-muted-foreground">
-                Optional. Our team and your guide will review this before departure.
+                Our team and your guide will review this before departure.
               </p>
-            </div>
-          </section>
-
-          {/* Cancellation policy */}
-          <section className="space-y-4 border-t border-border/70 pt-7">
-            <SectionHeading number={4}>Cancellation policy</SectionHeading>
-            <div className="overflow-hidden rounded-xl border border-border/70">
-              <button
-                type="button"
-                onClick={() => setPolicyOpen((open) => !open)}
-                aria-expanded={policyOpen}
-                className="flex w-full items-center justify-between gap-4 bg-background/70 px-4 py-3.5 text-left transition hover:bg-muted/40"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-black bg-black dark:border-white dark:bg-white">
-                    <Check className="h-2.5 w-2.5 text-white dark:text-black" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-medium text-foreground">Basic</span>
-                    <span className="block text-xs text-muted-foreground">
-                      Full refund if canceled 1 week before departure.
-                    </span>
-                  </span>
-                </span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-                    policyOpen && "rotate-180"
-                  )}
-                />
-              </button>
-              <div
-                className={cn(
-                  "grid transition-all duration-200 ease-out",
-                  policyOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                )}
-              >
-                <div className="overflow-hidden">
-                  <ul className="divide-y divide-border/60 border-t border-border/60 bg-muted/20 px-4">
-                    {CANCELLATION_POLICY_TIERS.map((tier) => (
-                      <li
-                        key={tier.when}
-                        className="flex items-start justify-between gap-4 py-2.5 text-sm"
-                      >
-                        <span className="text-muted-foreground">{tier.when}</span>
-                        <span className="text-right font-medium text-foreground">{tier.refund}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
             </div>
           </section>
 
           {/* Payment */}
           {step === "review" ? (
             <section className="space-y-5 border-t border-border/70 pt-7">
-              <SectionHeading number={5}>Pick how to pay</SectionHeading>
+              <SectionHeading number={4}>Pick how to pay</SectionHeading>
               <div className="flex flex-col gap-3 rounded-xl border border-black/60 bg-black/[0.04] p-4 dark:border-white/40 dark:bg-white/[0.06]">
                 <div className="flex items-center gap-3">
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-black bg-black dark:border-white dark:bg-white">
@@ -593,10 +536,6 @@ export function CheckoutFlow({
                   Payment pending confirmation
                 </Button>
               )}
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                Free cancellation up to 1 week before departure
-              </p>
             </div>
           </div>
         </div>

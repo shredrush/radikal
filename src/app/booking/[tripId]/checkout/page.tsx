@@ -45,6 +45,11 @@ const BOOKING_FAQ_ITEMS: FaqItem[] = [
       "Usually yes. Contact support with your booking details and we’ll move your spot to another available date where possible.",
   },
   {
+    question: "Can you accommodate special needs?",
+    answer:
+      "Yes — share dietary requirements, accessibility needs or medical details in the “Special needs and services” section at checkout, and our team and your guide will review them before departure.",
+  },
+  {
     question: "Is there a booking fee?",
     answer:
       "No — the amount shown at checkout is the trip price only. We don’t add a separate booking fee.",

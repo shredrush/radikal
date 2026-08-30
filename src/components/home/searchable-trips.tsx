@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useEllipsisPlaceholder } from "@/hooks/use-ellipsis-placeholder";
 import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { CTA_PILL } from "@/lib/card-styles";
@@ -92,6 +93,11 @@ export function SearchableTrips({
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const placeholder = useEllipsisPlaceholder(
+    "Search trips, sports, or destinations",
+    query.length === 0
+  );
+
   const rankedTrips = useMemo(() => prioritizeFeaturedTrips(trips, featuredTripSlugs), [trips, featuredTripSlugs]);
 
   const filteredTrips = useMemo(() => {
@@ -166,7 +172,7 @@ export function SearchableTrips({
                 setQuery(event.target.value);
                 setActiveIndex(-1);
               }}
-              placeholder="Search trips, sports, or destinations…"
+              placeholder={placeholder}
               aria-label="Search trips, sports, or destinations"
               autoComplete="off"
               onFocus={() => setIsFocused(true)}

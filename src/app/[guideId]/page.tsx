@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { ShieldCheck } from "lucide-react";
 
 import { TripGallery } from "@/components/trips/trip-gallery";
-import { TripDetailFeature } from "@/components/trips/trip-detail-feature";
-import { TestimonialCard } from "@/components/reviews/testimonial-card";
+import { TripCard } from "@/components/trips/trip-card";
+import { GuideReviewsSection, type GuideReviewData } from "@/components/guides/guide-reviews-section";
 import { prisma, safeDb } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
@@ -57,7 +56,6 @@ const getGuideDetail = unstable_cache(
           // reason to hide one.
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
-          take: 3,
           select: {
             id: true,
             comment: true,
@@ -120,6 +118,15 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
       : guide.photo
         ? [guide.photo]
         : [fallbackImage];
+
+  const guideReviews: GuideReviewData[] = guide.reviews.map((review) => ({
+    id: review.id,
+    name: getDisplayName(review.user.name),
+    trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
+    slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
+    quote: review.comment,
+    date: formatShortDate(review.tripDate ?? review.createdAt),
+  }));
 
   return (
     <div className="flex-1">
@@ -202,63 +209,15 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               No trips have been organised by {guide.name} yet.
             </div>
           ) : (
-            <div className="space-y-10">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {guide.trips.map((trip) => (
-                <TripDetailFeature
-                  key={trip.id}
-                  trip={trip}
-                  action={
-                    <Link
-                      href={`/trips/${trip.slug}`}
-                      className="mt-1 shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
-                    >
-                      Open trip page
-                    </Link>
-                  }
-                />
+                <TripCard key={trip.id} trip={trip} />
               ))}
             </div>
           )}
         </section>
 
-        <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground">
-                Hear It From Those Who&apos;ve Been There  </p>
-            </div>
-
-            {guide.reviews.length > 0 && (
-              <Link
-                href={`/${guideId}/reviews`}
-                className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
-              >
-                View all reviews
-              </Link>
-            )}
-          </div>
-
-          {guide.reviews.length === 0 ? (
-            <div className="rounded-[1.25rem] border border-dashed border-border/80 bg-background/80 p-6 text-sm text-muted-foreground">
-              Travellers haven&apos;t left reviews for {guide.name} yet.
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {guide.reviews.map((review) => (
-                <TestimonialCard
-                  key={review.id}
-                  testimonial={{
-                    name: getDisplayName(review.user.name),
-                    trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
-                    slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
-                    quote: review.comment,
-                    date: formatShortDate(review.tripDate ?? review.createdAt),
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <GuideReviewsSection guideName={guide.name} reviews={guideReviews} />
       </div>
     </div>
   );

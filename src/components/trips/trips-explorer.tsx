@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 
 import { TripCard } from "@/components/trips/trip-card";
+import { useEllipsisPlaceholder } from "@/hooks/use-ellipsis-placeholder";
 import {
   SPORT_FILTERS,
   matchesSearchQuery,
@@ -107,6 +108,11 @@ export function TripsExplorer({
 
   const searchQuery = query.trim().slice(0, 200);
 
+  const placeholder = useEllipsisPlaceholder(
+    "Search trips, sports, or destinations",
+    query.length === 0
+  );
+
   const filteredTrips = useMemo(() => {
     return trips.filter((trip) => {
       const queryMatch = searchQuery ? matchesSearchQuery(trip, searchQuery) : true;
@@ -170,7 +176,7 @@ export function TripsExplorer({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search trips, sports, or destinations…"
+            placeholder={placeholder}
             aria-label="Search trips, sports, or destinations"
             autoComplete="off"
             className="h-8 w-full min-w-0 border-0 bg-transparent px-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
