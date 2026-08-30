@@ -199,6 +199,7 @@ model Guide {
   photo           String?
   photos          String[]  @default([])
   videos          String[]  @default([])
+  mediaOrder      String[]  @default([])
   location        String
   experienceYears Int       @default(0)
   languages       String[]
@@ -249,6 +250,7 @@ model GuideApplication {
   photo           String?
   photos          String[]               @default([])
   videos          String[]               @default([])
+  mediaOrder      String[]               @default([])
   instagramUrl    String?
   facebookUrl     String?
   youtubeUrl      String?
@@ -298,6 +300,7 @@ model Trip {
   durationDays  Int            @default(1)
   images        String[]
   videos        String[]       @default([])
+  mediaOrder    String[]       @default([])
   maxGroupSize  Int            @default(8)
   guideId       String?
   deletedAt     DateTime?
@@ -626,6 +629,7 @@ model TripDraft {
   categories    TripCategory[]
   images        String[]
   videos        String[]       @default([])
+  mediaOrder    String[]       @default([])
   pickup        String?
   drop          String?
   inclusions    String[]

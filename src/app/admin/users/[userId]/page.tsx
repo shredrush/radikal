@@ -183,7 +183,14 @@ export default async function AdminUserDetailPage({
                 ) : null}
               </div>
               <CardDescription className="space-y-1">
-                <span className="block">{user.username ? `@${user.username} · ` : ""}{user.email}</span>
+                {user.username ? (
+                  <>
+                    <span className="block">@{user.username}</span>
+                    <span className="block">{user.email}</span>
+                  </>
+                ) : (
+                  <span className="block">{user.email}</span>
+                )}
                 <span className="block">
                   Joined {formatLongDate(user.createdAt)}
                   {" · "}{pluralize(user._count.bookings, "booking")}

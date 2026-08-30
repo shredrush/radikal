@@ -523,9 +523,16 @@ export default async function ProfilePage({
                 <h1 className="truncate font-heading text-lg font-semibold tracking-wide sm:text-xl">
                   Welcome back, {firstName}
                 </h1>
-                <p className="truncate text-sm text-muted-foreground">
-                  {user.username ? `@${user.username}` : user.email}
-                </p>
+                <div className="space-y-0.5 text-sm text-muted-foreground">
+                  {user.username ? (
+                    <>
+                      <p className="truncate">@{user.username}</p>
+                      <p className="truncate">{user.email}</p>
+                    </>
+                  ) : (
+                    <p className="truncate">{user.email}</p>
+                  )}
+                </div>
                 {isGuide && guide ? (
                   <Button
                     variant="outline"

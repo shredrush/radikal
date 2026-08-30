@@ -117,6 +117,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               <TripGallery
                 images={guidePhotoSources}
                 videos={guide.videos}
+                mediaOrder={guide.mediaOrder}
                 fallbackImage={fallbackImage}
                 alt={guide.name}
                 compact

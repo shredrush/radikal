@@ -17,6 +17,7 @@ export async function GuidesManager({ where }: { where?: Prisma.GuideWhereInput 
     photo: guide.photo,
     photos: guide.photos,
     videos: guide.videos,
+    mediaOrder: guide.mediaOrder,
     location: guide.location,
     experienceYears: guide.experienceYears,
     languages: guide.languages,

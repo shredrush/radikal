@@ -217,9 +217,16 @@ export default async function AdminUsersPage({
                         </Badge>
                       ) : null}
                     </div>
-                    <p className="truncate text-sm text-muted-foreground">
-                      {user.username ? `@${user.username} · ` : ""}{user.email}
-                    </p>
+                    <div className="space-y-0.5 text-sm text-muted-foreground">
+                      {user.username ? (
+                        <>
+                          <p className="truncate">@{user.username}</p>
+                          <p className="truncate">{user.email}</p>
+                        </>
+                      ) : (
+                        <p className="truncate">{user.email}</p>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Joined {formatLongDate(user.createdAt)}
                       {" · "}{pluralize(user._count.bookings, "booking")}

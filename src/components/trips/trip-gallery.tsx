@@ -4,45 +4,18 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import { pluralize } from "@/lib/format";
+import { getOrderedMediaItems, type OrderedMediaItem } from "@/lib/media-order";
 
 interface TripGalleryProps {
   images: string[];
   videos?: string[];
+  mediaOrder?: string[];
   fallbackImage: string;
   alt: string;
   compact?: boolean;
 }
 
-type GalleryItem = { src: string; type: "image" | "video" };
-
-/**
- * Merge photos and videos into a single gallery list with videos spread evenly
- * among the photos (Bresenham-style), so a video reaches the 4-tile hero grid
- * instead of always being buried after every photo. The first slot stays the
- * first photo whenever one exists, keeping the cover image stable.
- */
-function interleaveMedia(photos: GalleryItem[], videos: GalleryItem[]): GalleryItem[] {
-  if (photos.length === 0) return videos;
-  if (videos.length === 0) return photos;
-
-  const total = photos.length + videos.length;
-  const result: GalleryItem[] = [];
-  let emittedVideos = 0;
-
-  for (let i = 0; i < total; i++) {
-    const expectedVideos = Math.floor(((i + 1) * videos.length) / total);
-    if (emittedVideos < expectedVideos) {
-      result.push(videos[emittedVideos]);
-      emittedVideos++;
-    } else {
-      result.push(photos[i - emittedVideos]);
-    }
-  }
-
-  return result;
-}
-
-function mediaCountLabel(items: GalleryItem[]) {
+function mediaCountLabel(items: OrderedMediaItem[]) {
   const photos = items.filter((item) => item.type === "image").length;
   const videos = items.length - photos;
   if (photos > 0 && videos > 0) {
@@ -54,18 +27,8 @@ function mediaCountLabel(items: GalleryItem[]) {
   return `${photos} ${pluralize(photos, "photo")}`;
 }
 
-export function TripGallery({ images, videos = [], fallbackImage, alt, compact = false }: TripGalleryProps) {
-  // Photos and videos are treated as one gallery. Each list is deduped by URL,
-  // then videos are interleaved among the photos so they surface in the hero.
-  const photoItems: GalleryItem[] = Array.from(new Set(images.filter(Boolean))).map((src) => ({
-    src,
-    type: "image",
-  }));
-  const videoItems: GalleryItem[] = Array.from(new Set(videos.filter(Boolean))).map((src) => ({
-    src,
-    type: "video",
-  }));
-  const media = interleaveMedia(photoItems, videoItems);
+export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImage, alt, compact = false }: TripGalleryProps) {
+  const media = getOrderedMediaItems(images.filter(Boolean), videos.filter(Boolean), mediaOrder);
 
   const galleryItems = media.length > 0 ? media : [{ src: fallbackImage, type: "image" as const }];
   // The hero grid always shows 4 tiles, cycling through available media.

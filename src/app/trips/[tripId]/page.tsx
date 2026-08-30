@@ -174,6 +174,12 @@ export default async function TripDetailPage({
     : "/avatars/fox.svg";
 
   const similarTrips = await safeDb("trip.similar", () => getSimilarTrips(trip.categories, trip.id), []);
+  const normalizedTripImages = trip.images
+    .map((image) => normalizeTripImagePath(image, trip.slug))
+    .filter(Boolean);
+  const normalizedMediaOrder = trip.mediaOrder
+    .map((item) => (trip.images.includes(item) ? normalizeTripImagePath(item, trip.slug) : item))
+    .filter(Boolean);
 
   const now = new Date();
   const upcomingSlots = trip.slots.filter((slot) => !isSlotCompleted(slot.date, now));
@@ -190,8 +196,9 @@ export default async function TripDetailPage({
           <div className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="relative overflow-hidden bg-muted/60">
               <TripGallery
-                images={trip.images.map((image) => normalizeTripImagePath(image, trip.slug)).filter(Boolean)}
+                images={normalizedTripImages}
                 videos={trip.videos}
+                mediaOrder={normalizedMediaOrder}
                 fallbackImage={`/activities/${trip.slug}/cover.png`}
                 alt={trip.title}
                 compact

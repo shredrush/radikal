@@ -20,6 +20,7 @@ import {
   validTypes,
 } from "@/lib/trip-fields";
 import { type TripProposal } from "@/lib/trip-changes";
+import { normalizeMediaOrder } from "@/lib/media-order";
 import { slugify } from "@/lib/format";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import {
@@ -65,6 +66,7 @@ type TripFields = {
   categories: (typeof validCategories)[number][];
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -73,6 +75,9 @@ type TripFields = {
 };
 
 function readTripFields(formData: FormData): TripFields {
+  const images = parseMediaList(formData.getAll("images"));
+  const videos = parseMediaList(formData.getAll("videos"));
+
   return {
     title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
@@ -84,8 +89,9 @@ function readTripFields(formData: FormData): TripFields {
     priceInRupees: Number.parseInt(asString(formData.get("priceInRupees")), 10),
     durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
     maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
-    images: parseMediaList(formData.getAll("images")),
-    videos: parseMediaList(formData.getAll("videos")),
+    images,
+    videos,
+    mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
@@ -257,6 +263,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     categories: trip.categories,
     images: trip.images,
     videos: trip.videos,
+    mediaOrder: trip.mediaOrder,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -647,6 +654,11 @@ export async function approveTripChangeAction(changeId: string) {
   }
 
   const proposal = change.proposed as unknown as TripProposal;
+  const proposalMediaOrder = normalizeMediaOrder(
+    proposal.images,
+    proposal.videos,
+    Array.isArray(proposal.mediaOrder) ? proposal.mediaOrder : [],
+  );
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -664,6 +676,7 @@ export async function approveTripChangeAction(changeId: string) {
             categories: proposal.categories as (typeof validCategories)[number][],
             images: proposal.images,
             videos: proposal.videos,
+            mediaOrder: proposalMediaOrder,
             guideId: change.guideId,
           },
         });
@@ -704,6 +717,7 @@ export async function approveTripChangeAction(changeId: string) {
             categories: proposal.categories as (typeof validCategories)[number][],
             images: proposal.images,
             videos: proposal.videos,
+            mediaOrder: proposalMediaOrder,
           },
         });
 

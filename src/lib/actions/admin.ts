@@ -57,6 +57,7 @@ export async function createTripAction(formData: FormData) {
     guideId,
     images,
     videos,
+    mediaOrder,
     categories,
     pickup,
     drop,
@@ -80,6 +81,7 @@ export async function createTripAction(formData: FormData) {
           categories,
           images,
           videos,
+          mediaOrder,
           guideId: guideId || null,
         },
       });
@@ -134,6 +136,7 @@ export async function updateTripAction(formData: FormData) {
     guideId,
     images,
     videos,
+    mediaOrder,
     categories,
     pickup,
     drop,
@@ -175,6 +178,7 @@ export async function updateTripAction(formData: FormData) {
           categories,
           images,
           videos,
+          mediaOrder,
           guideId: guideId || null,
         },
       });

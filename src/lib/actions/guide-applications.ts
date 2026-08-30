@@ -17,6 +17,8 @@ import {
   assertValidStoredMedia,
   parseGuideMediaUrls,
 } from "@/lib/media";
+import { normalizeMediaOrder } from "@/lib/media-order";
+import { parseMediaList } from "@/lib/trip-fields";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -94,6 +96,7 @@ function readApplicationFields(formData: FormData) {
     photo: photos[0] ?? null,
     photos,
     videos,
+    mediaOrder: normalizeMediaOrder(photos, videos, parseMediaList(formData.getAll("mediaOrder"))),
     instagramUrl: parseSocialUrl(asString(formData.get("instagramUrl"))),
     facebookUrl: parseSocialUrl(asString(formData.get("facebookUrl"))),
     youtubeUrl: parseSocialUrl(asString(formData.get("youtubeUrl"))),
@@ -272,6 +275,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
           photo: application.photo,
           photos: application.photos,
           videos: application.videos,
+          mediaOrder: application.mediaOrder,
           location: application.location,
           experienceYears: application.experienceYears,
           languages: application.languages,

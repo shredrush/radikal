@@ -23,6 +23,7 @@ function toGuideTripData(trip: {
   categories: string[];
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   tripLocation: { pickup: string; drop: string } | null;
   inclusions: Array<{ included: boolean; item: string }>;
   highlights: Array<{ text: string }>;
@@ -39,6 +40,7 @@ function toGuideTripData(trip: {
     categories: trip.categories,
     images: trip.images,
     videos: trip.videos,
+    mediaOrder: trip.mediaOrder,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -84,6 +86,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     categories: draft.categories,
     images: draft.images,
     videos: draft.videos,
+    mediaOrder: draft.mediaOrder,
     pickup: draft.pickup ?? "",
     drop: draft.drop ?? "",
     inclusions: draft.inclusions,

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Loader2, Play, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Play, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   type MediaEntity,
   type MediaKind,
 } from "@/lib/media-constants";
+import { normalizeMediaOrder } from "@/lib/media-order";
 
 type UploadedItem = {
   url: string;
@@ -36,25 +37,50 @@ export function MediaUploader({
   folderKey,
   initialImages = [],
   initialVideos = [],
+  initialMediaOrder = [],
   imagesFieldName = "images",
   videosFieldName = "videos",
+  mediaOrderFieldName = "mediaOrder",
 }: {
   entity: MediaEntity;
   folderKey: string;
   initialImages?: string[];
   initialVideos?: string[];
+  initialMediaOrder?: string[];
   imagesFieldName?: string;
   videosFieldName?: string;
+  mediaOrderFieldName?: string;
 }) {
   const limits = MEDIA_LIMITS[entity];
   const [images, setImages] = useState<UploadedItem[]>(initialImages.map((url) => ({ url })));
   const [videos, setVideos] = useState<UploadedItem[]>(initialVideos.map((url) => ({ url })));
+  const [orderedUrls, setOrderedUrls] = useState(() =>
+    normalizeMediaOrder(initialImages, initialVideos, initialMediaOrder),
+  );
   const [uploading, setUploading] = useState(0);
   // Upload progress as a percentage (0..100). Represents bytes uploaded across
   // all in-flight files in the current batch, weighted by file size.
   const [progress, setProgress] = useState(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const imageMap = new Map(images.map((item) => [item.url, item]));
+  const videoMap = new Map(videos.map((item) => [item.url, item]));
+  const orderedItems = normalizeMediaOrder(
+    images.map((item) => item.url),
+    videos.map((item) => item.url),
+    orderedUrls,
+  )
+    .map((url) => {
+      const image = imageMap.get(url);
+      if (image) return { ...image, kind: "images" as const };
+      const video = videoMap.get(url);
+      if (video) return { ...video, kind: "videos" as const };
+      return null;
+    })
+    .filter((item): item is UploadedItem & { kind: MediaKind } => item !== null);
+  const orderedImages = orderedItems.filter((item) => item.kind === "images");
+  const orderedVideos = orderedItems.filter((item) => item.kind === "videos");
 
   function listFor(kind: MediaKind): UploadedItem[] {
     return kind === "images" ? images : videos;
@@ -130,6 +156,7 @@ export function MediaUploader({
     } else {
       setVideos((prev) => [...prev, item]);
     }
+    setOrderedUrls((prev) => [...prev.filter((url) => url !== publicUrl), publicUrl]);
   }
 
   async function handleFiles(fileList: FileList | null, kind: MediaKind) {
@@ -170,125 +197,154 @@ export function MediaUploader({
   }
 
   function handleRemove(kind: MediaKind, item: UploadedItem) {
-    const setter = kind === "images" ? setImages : setVideos;
-    setter((prev) => prev.filter((entry) => entry.url !== item.url));
+    if (kind === "images") {
+      setImages((prev) => prev.filter((entry) => entry.url !== item.url));
+    } else {
+      setVideos((prev) => prev.filter((entry) => entry.url !== item.url));
+    }
+    setOrderedUrls((prev) => prev.filter((url) => url !== item.url));
     if (item.path) {
       deleteMediaAction({ entity, folderKey, paths: [item.path] }).catch(() => {});
     }
   }
 
+  function moveMedia(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= orderedItems.length) return;
+
+    const next = orderedItems.map((item) => item.url);
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    setOrderedUrls(next);
+  }
+
   return (
     <div className="space-y-5">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <Label>
-            Photos ({images.length}/{limits.images})
-          </Label>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept={[...IMAGE_MIME].join(",")}
-            multiple
-            className="hidden"
-            onChange={(event) => handleFiles(event.target.files, "images")}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-full"
-            disabled={uploading > 0 || images.length >= limits.images}
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add photos
-          </Button>
+      <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Label>Gallery order</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              The first four cards are shown on the page as 1 large, 2 top, 3 bottom, and 4 tall right. Move cards to choose the hero layout.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept={[...IMAGE_MIME].join(",")}
+              multiple
+              className="hidden"
+              onChange={(event) => handleFiles(event.target.files, "images")}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={uploading > 0 || images.length >= limits.images}
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add photos ({images.length}/{limits.images})
+            </Button>
+
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept={[...VIDEO_MIME].join(",")}
+              multiple
+              className="hidden"
+              onChange={(event) => handleFiles(event.target.files, "videos")}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={uploading > 0 || videos.length >= limits.videos}
+              onClick={() => videoInputRef.current?.click()}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add videos ({videos.length}/{limits.videos})
+            </Button>
+          </div>
         </div>
 
-        {images.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-            {images.map((item) => (
+        {orderedItems.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {orderedItems.map((item, index) => (
               <div
                 key={item.url}
-                className="group relative aspect-square overflow-hidden rounded-xl border border-border/70 bg-muted"
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border/70 bg-black"
               >
-                <Image
-                  src={item.url}
-                  alt="Uploaded photo"
-                  fill
-                  className="object-cover"
-                  sizes="120px"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemove("images", item)}
-                  aria-label="Remove photo"
-                  className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                {item.kind === "images" ? (
+                  <Image
+                    src={item.url}
+                    alt="Uploaded photo"
+                    fill
+                    className="object-cover"
+                    sizes="160px"
+                  />
+                ) : (
+                  <>
+                    <video
+                      src={item.url}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                    <Play className="pointer-events-none absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-white/80" />
+                  </>
+                )}
+
+                {index < 4 ? (
+                  <span className="absolute left-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full bg-emerald-500 px-2 text-xs font-bold text-white shadow">
+                    {index + 1}
+                  </span>
+                ) : (
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/80">
+                    All #{index + 1}
+                  </span>
+                )}
+
+                <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/80">
+                  {item.kind === "images" ? "Photo" : "Video"}
+                </span>
+
+                <div className="absolute right-1.5 top-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => moveMedia(index, -1)}
+                    disabled={index === 0}
+                    aria-label="Move media earlier"
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveMedia(index, 1)}
+                    disabled={index === orderedItems.length - 1}
+                    aria-label="Move media later"
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(item.kind, item)}
+                    aria-label={`Remove ${item.kind === "images" ? "photo" : "video"}`}
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">No photos yet.</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <Label>
-            Videos ({videos.length}/{limits.videos})
-          </Label>
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept={[...VIDEO_MIME].join(",")}
-            multiple
-            className="hidden"
-            onChange={(event) => handleFiles(event.target.files, "videos")}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-full"
-            disabled={uploading > 0 || videos.length >= limits.videos}
-            onClick={() => videoInputRef.current?.click()}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add videos
-          </Button>
-        </div>
-
-        {videos.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {videos.map((item) => (
-              <div
-                key={item.url}
-                className="group relative aspect-video overflow-hidden rounded-xl border border-border/70 bg-black"
-              >
-                <video
-                  src={item.url}
-                  preload="metadata"
-                  muted
-                  playsInline
-                  className="h-full w-full object-cover"
-                />
-                <Play className="pointer-events-none absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-white/80" />
-                <button
-                  type="button"
-                  onClick={() => handleRemove("videos", item)}
-                  aria-label="Remove video"
-                  className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">No videos yet.</p>
+          <p className="text-xs text-muted-foreground">No photos or videos yet.</p>
         )}
       </div>
 
@@ -307,10 +363,13 @@ export function MediaUploader({
         </div>
       ) : null}
 
-      {images.map((item) => (
+      {orderedItems.map((item) => (
+        <input key={`ord-${item.url}`} type="hidden" name={mediaOrderFieldName} value={item.url} />
+      ))}
+      {orderedImages.map((item) => (
         <input key={`img-${item.url}`} type="hidden" name={imagesFieldName} value={item.url} />
       ))}
-      {videos.map((item) => (
+      {orderedVideos.map((item) => (
         <input key={`vid-${item.url}`} type="hidden" name={videosFieldName} value={item.url} />
       ))}
     </div>

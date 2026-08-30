@@ -35,6 +35,7 @@ export type GuideTripData = {
   categories: string[];
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -116,6 +117,7 @@ export function GuideTripForm({
   const categories = fields?.categories ?? [];
   const images = fields?.images ?? [];
   const videos = fields?.videos ?? [];
+  const mediaOrder = fields?.mediaOrder ?? [];
   const pickup = fields?.pickup ?? "";
   const drop = fields?.drop ?? "";
   const inclusions = fields?.inclusions ?? [];
@@ -322,6 +324,7 @@ export function GuideTripForm({
             folderKey={trip?.id ?? guideId}
             initialImages={images}
             initialVideos={videos}
+            initialMediaOrder={mediaOrder}
           />
         </div>
 

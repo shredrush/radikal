@@ -22,6 +22,7 @@ type AdminTripCardProps = {
     categories: string[];
     images: string[];
     videos: string[];
+    mediaOrder: string[];
     guideId: string | null;
     guide: { id: string; name: string } | null;
     tripLocation: { pickup: string; drop: string } | null;

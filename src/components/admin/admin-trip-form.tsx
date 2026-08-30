@@ -37,6 +37,7 @@ export function AdminTripForm({
     categories: string[];
     images: string[];
     videos: string[];
+    mediaOrder: string[];
     guideId: string | null;
   };
   guides: Array<{ id: string; name: string }>;
@@ -68,6 +69,7 @@ export function AdminTripForm({
   const categories = trip?.categories ?? [];
   const images = trip?.images ?? [];
   const videos = trip?.videos ?? [];
+  const mediaOrder = trip?.mediaOrder ?? [];
   const guideId = trip?.guideId ?? "";
 
   const pickup = supplemental?.pickup ?? "";
@@ -217,6 +219,7 @@ export function AdminTripForm({
               folderKey={trip?.id ?? "pending"}
               initialImages={images}
               initialVideos={videos}
+              initialMediaOrder={mediaOrder}
             />
           </div>
 

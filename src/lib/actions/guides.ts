@@ -14,6 +14,8 @@ import {
   parseGuideMediaUrls,
   removeStoredMedia,
 } from "@/lib/media";
+import { normalizeMediaOrder } from "@/lib/media-order";
+import { parseMediaList } from "@/lib/trip-fields";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -82,6 +84,7 @@ function readGuideFields(formData: FormData) {
     photo,
     photos,
     videos,
+    mediaOrder: normalizeMediaOrder(photos, videos, parseMediaList(formData.getAll("mediaOrder"))),
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
     languages: parseLanguages(asString(formData.get("languages"))),

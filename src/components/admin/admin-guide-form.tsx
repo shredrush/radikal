@@ -32,6 +32,7 @@ export type GuideFormData = {
   photo: string | null;
   photos: string[];
   videos: string[];
+  mediaOrder: string[];
   location: string;
   experienceYears: number;
   languages: string[];
@@ -166,6 +167,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             folderKey={guide?.userId ?? "new-guide"}
             initialImages={guide?.photos.length ? guide.photos : guide?.photo ? [guide.photo] : []}
             initialVideos={guide?.videos}
+            initialMediaOrder={guide?.mediaOrder}
             imagesFieldName="photos"
           />
         </div>

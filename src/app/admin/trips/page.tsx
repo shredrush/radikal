@@ -76,6 +76,7 @@ export default async function AdminTripsPage({
     categories: draft.categories,
     images: draft.images,
     videos: draft.videos,
+    mediaOrder: draft.mediaOrder,
     pickup: draft.pickup,
     drop: draft.drop,
     inclusions: draft.inclusions,

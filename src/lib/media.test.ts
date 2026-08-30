@@ -60,6 +60,7 @@ describe("validateTripFields media caps", () => {
       categories: [],
       images: overrides.images ?? [],
       videos: overrides.videos ?? [],
+      mediaOrder: [],
       pickup: "",
       drop: "",
       inclusions: [],

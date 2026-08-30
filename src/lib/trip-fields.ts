@@ -5,6 +5,7 @@
 // otherwise be rejected by Next.js as non-async server actions.
 import { isValidSlug, isSafeImageSource, sanitizeText } from "@/lib/sanitize";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
+import { normalizeMediaOrder } from "@/lib/media-order";
 
 export const validTypes = [
   "TREK",
@@ -84,6 +85,7 @@ export type TripFields = {
   guideId: string;
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   categories: (typeof validCategories)[number][];
   pickup: string;
   drop: string;
@@ -93,6 +95,9 @@ export type TripFields = {
 };
 
 export function readTripFields(formData: FormData): TripFields {
+  const images = parseMediaList(formData.getAll("images"));
+  const videos = parseMediaList(formData.getAll("videos"));
+
   return {
     title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
     slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
@@ -106,8 +111,9 @@ export function readTripFields(formData: FormData): TripFields {
     durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
     maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
     guideId: asString(formData.get("guideId")),
-    images: parseMediaList(formData.getAll("images")),
-    videos: parseMediaList(formData.getAll("videos")),
+    images,
+    videos,
+    mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),

@@ -63,6 +63,10 @@ export default async function TripPreviewPage({
     .map((image) => normalizeTripImagePath(image, p.slug))
     .filter(Boolean);
   const videos = Array.isArray(p.videos) ? p.videos : [];
+  const rawImages = Array.isArray(p.images) ? p.images : [];
+  const mediaOrder = (Array.isArray(p.mediaOrder) ? p.mediaOrder : [])
+    .map((item) => (rawImages.includes(item) ? normalizeTripImagePath(item, p.slug) : item))
+    .filter(Boolean);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
@@ -80,6 +84,7 @@ export default async function TripPreviewPage({
             <TripGallery
               images={images}
               videos={videos}
+              mediaOrder={mediaOrder}
               fallbackImage={`/activities/${p.slug ?? "cover"}/cover.png`}
               alt={p.title}
               compact

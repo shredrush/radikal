@@ -13,6 +13,7 @@ import {
   validCategories,
   validTypes,
 } from "@/lib/trip-fields";
+import { normalizeMediaOrder } from "@/lib/media-order";
 
 function optionalText(value: string, maxLength: number, allowNewlines = false) {
   const cleaned = sanitizeText(value, { maxLength, allowNewlines });
@@ -35,6 +36,7 @@ type DraftFields = {
   categories: (typeof validCategories)[number][];
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   pickup: string | null;
   drop: string | null;
   inclusions: string[];
@@ -44,6 +46,8 @@ type DraftFields = {
 
 function readDraftFields(formData: FormData): DraftFields {
   const type = asString(formData.get("type"));
+  const images = parseMediaList(formData.getAll("images"));
+  const videos = parseMediaList(formData.getAll("videos"));
   return {
     title: optionalText(asString(formData.get("title")), 200),
     type: validTypes.includes(type as (typeof validTypes)[number])
@@ -55,8 +59,9 @@ function readDraftFields(formData: FormData): DraftFields {
     durationDays: parseIntValue(asString(formData.get("durationDays")), 1),
     maxGroupSize: parseIntValue(asString(formData.get("maxGroupSize")), 8),
     categories: parseCategories(formData.getAll("categories")),
-    images: parseMediaList(formData.getAll("images")),
-    videos: parseMediaList(formData.getAll("videos")),
+    images,
+    videos,
+    mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
     pickup: optionalText(asString(formData.get("pickup")), 200),
     drop: optionalText(asString(formData.get("drop")), 200),
     inclusions: parseList(asString(formData.get("inclusions"))),

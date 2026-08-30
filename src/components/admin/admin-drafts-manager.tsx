@@ -20,6 +20,7 @@ export type AdminDraftData = {
   categories: string[];
   images: string[];
   videos: string[];
+  mediaOrder: string[];
   pickup: string | null;
   drop: string | null;
   inclusions: string[];
