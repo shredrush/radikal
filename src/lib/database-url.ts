@@ -27,10 +27,17 @@ function applyDatabaseUrlDefaults(rawUrl: string) {
     const url = new URL(rawUrl);
 
     const currentSslMode = url.searchParams.get("sslmode");
-    if (!currentSslMode) {
-      url.searchParams.set("sslmode", process.env.NODE_ENV === "production" ? "require" : "disable");
-    } else if (process.env.NODE_ENV === "production" && currentSslMode === "disable") {
-      url.searchParams.set("sslmode", "require");
+    if (process.env.NODE_ENV === "production") {
+      // With node-postgres, `sslmode=require` enables TLS but keeps certificate
+      // chain verification on (rejectUnauthorized defaults to true), which
+      // rejects Supabase's self-signed certificate chain with a P1011 TLS error.
+      // `no-verify` keeps the connection encrypted while skipping chain
+      // verification, matching libpq's `require` semantics.
+      if (!currentSslMode || currentSslMode === "disable" || currentSslMode === "require") {
+        url.searchParams.set("sslmode", "no-verify");
+      }
+    } else if (!currentSslMode) {
+      url.searchParams.set("sslmode", "disable");
     }
 
     if (!url.searchParams.has("connect_timeout")) {
