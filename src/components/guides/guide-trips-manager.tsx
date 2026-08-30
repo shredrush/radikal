@@ -48,29 +48,27 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, changeSummaries, draftRows] = await Promise.all([
-    safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []),
-    safeDb(
-      "guide.trips-manager.change-summaries",
-      () =>
-        prisma.$queryRaw<TripChangeSummary[]>`
+  const trips = await safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []);
+  const changeSummaries = await safeDb(
+    "guide.trips-manager.change-summaries",
+    () =>
+      prisma.$queryRaw<TripChangeSummary[]>`
         SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
         FROM "trip_change_requests"
         WHERE "guideId" = ${guideId}
         ORDER BY "createdAt" DESC
       `,
-      [],
-    ),
-    safeDb(
-      "guide.trips-manager.drafts",
-      () =>
-        prisma.tripDraft.findMany({
-          where: { guideId, deletedAt: null },
-          orderBy: { updatedAt: "desc" },
-        }),
-      [],
-    ),
-  ]);
+    [],
+  );
+  const draftRows = await safeDb(
+    "guide.trips-manager.drafts",
+    () =>
+      prisma.tripDraft.findMany({
+        where: { guideId, deletedAt: null },
+        orderBy: { updatedAt: "desc" },
+      }),
+    [],
+  );
 
   const pending = changeSummaries.filter((change) => change.status === "PENDING");
 

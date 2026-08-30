@@ -26,10 +26,11 @@ const basePrisma =
     // concurrent instances. The Supabase *session* pooler caps total clients at
     // its `pool_size` (default 15) and fails with EMAXCONNSESSION once exceeded;
     // `max: 5` here means ~3 concurrent instances already blow that limit.
-    // Keep it at 1-2 and raise the Supabase pooler `pool_size` for headroom.
-    const parsedMax = Number.parseInt(process.env.DATABASE_POOL_MAX ?? "2", 10);
+    // Keep it at 1 by default and raise the Supabase pooler `pool_size` for
+    // headroom if production traffic needs more concurrency.
+    const parsedMax = Number.parseInt(process.env.DATABASE_POOL_MAX ?? "1", 10);
     const poolConfig = {
-      max: Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : 2,
+      max: Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : 1,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     };

@@ -3,30 +3,47 @@ import { Compass, Globe, Ticket } from "lucide-react";
 import { prisma, safeDb } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
+type GuideStats = {
+  confirmedBookings: number;
+  completedBookings: number;
+  confirmedTrips: number;
+  completedTrips: number;
+  liveTrips: number;
+};
+
+const emptyStats: GuideStats = {
+  confirmedBookings: 0,
+  completedBookings: 0,
+  confirmedTrips: 0,
+  completedTrips: 0,
+  liveTrips: 0,
+};
+
 export async function GuideBoardStats({ guideId }: { guideId: string }) {
-  const [
-    confirmedBookings,
-    completedBookings,
-    confirmedTrips,
-    completedTrips,
-    liveTrips,
-  ] = await Promise.all([
-    safeDb("guide.board-stats.confirmed-bookings", () => prisma.booking.count({
-      where: { trip: { guideId, deletedAt: null }, status: "CONFIRMED", deletedAt: null },
-    }), 0),
-    safeDb("guide.board-stats.completed-bookings", () => prisma.booking.count({
-      where: { trip: { guideId, deletedAt: null }, status: "COMPLETED", deletedAt: null },
-    }), 0),
-    safeDb("guide.board-stats.confirmed-trips", () => prisma.trip.count({
-      where: { guideId, deletedAt: null, bookings: { some: { status: "CONFIRMED", deletedAt: null } } },
-    }), 0),
-    safeDb("guide.board-stats.completed-trips", () => prisma.trip.count({
-      where: { guideId, deletedAt: null, bookings: { some: { status: "COMPLETED", deletedAt: null } } },
-    }), 0),
-    safeDb("guide.board-stats.live-trips", () => prisma.trip.count({
-      where: { guideId, deletedAt: null },
-    }), 0),
-  ]);
+  const stats = await safeDb(
+    "guide.board-stats",
+    async () => {
+      const rows = await prisma.$queryRaw<GuideStats[]>`
+        SELECT
+          COUNT(*) FILTER (WHERE b.status = 'CONFIRMED' AND b."deletedAt" IS NULL)::int AS "confirmedBookings",
+          COUNT(*) FILTER (WHERE b.status = 'COMPLETED' AND b."deletedAt" IS NULL)::int AS "completedBookings",
+          COUNT(DISTINCT t.id) FILTER (
+            WHERE b.status = 'CONFIRMED' AND b."deletedAt" IS NULL
+          )::int AS "confirmedTrips",
+          COUNT(DISTINCT t.id) FILTER (
+            WHERE b.status = 'COMPLETED' AND b."deletedAt" IS NULL
+          )::int AS "completedTrips",
+          COUNT(DISTINCT t.id)::int AS "liveTrips"
+        FROM "trips" t
+        LEFT JOIN "bookings" b ON b."tripId" = t.id
+        WHERE t."guideId" = ${guideId} AND t."deletedAt" IS NULL
+      `;
+      return rows[0] ?? emptyStats;
+    },
+    emptyStats,
+  );
+
+  const { confirmedBookings, completedBookings, confirmedTrips, completedTrips, liveTrips } = stats;
 
   const rows = [
     [
