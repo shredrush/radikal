@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-import { getDatabaseConnectionLogInfo, getDatabaseUrl } from "@/lib/database-url";
+import { getDatabaseCaCert, getDatabaseConnectionLogInfo, getDatabaseUrl } from "@/lib/database-url";
 
 // Reuse a single PrismaClient instance per process. Each instance opens its
 // own connection pool, so creating one per request would exhaust connections
@@ -34,9 +34,19 @@ const basePrisma =
       connectionTimeoutMillis: 10000,
     };
 
+    // In production, authenticate the database server against the pinned CA
+    // (see getDatabaseCaCert) instead of skipping verification. In
+    // development the connection is plaintext (sslmode=disable), so no CA is
+    // applied. If the CA is ever unavailable, the database-url default keeps
+    // `no-verify` encryption and pages still degrade via `safeDb` instead of
+    // crashing.
+    const caCert = process.env.NODE_ENV === "production" ? getDatabaseCaCert() : undefined;
+    const ssl = caCert ? { ca: caCert, rejectUnauthorized: true } : undefined;
+
     return new PrismaClient({
       adapter: new PrismaPg({
         connectionString: databaseUrl,
+        ...(ssl ? { ssl } : {}),
         ...poolConfig,
       }),
     });

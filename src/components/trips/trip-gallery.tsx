@@ -13,11 +13,63 @@ interface TripGalleryProps {
   compact?: boolean;
 }
 
+type GalleryItem = { src: string; type: "image" | "video" };
+
+/**
+ * Merge photos and videos into a single gallery list with videos spread evenly
+ * among the photos (Bresenham-style), so a video reaches the 4-tile hero grid
+ * instead of always being buried after every photo. The first slot stays the
+ * first photo whenever one exists, keeping the cover image stable.
+ */
+function interleaveMedia(photos: GalleryItem[], videos: GalleryItem[]): GalleryItem[] {
+  if (photos.length === 0) return videos;
+  if (videos.length === 0) return photos;
+
+  const total = photos.length + videos.length;
+  const result: GalleryItem[] = [];
+  let emittedVideos = 0;
+
+  for (let i = 0; i < total; i++) {
+    const expectedVideos = Math.floor(((i + 1) * videos.length) / total);
+    if (emittedVideos < expectedVideos) {
+      result.push(videos[emittedVideos]);
+      emittedVideos++;
+    } else {
+      result.push(photos[i - emittedVideos]);
+    }
+  }
+
+  return result;
+}
+
+function mediaCountLabel(items: GalleryItem[]) {
+  const photos = items.filter((item) => item.type === "image").length;
+  const videos = items.length - photos;
+  if (photos > 0 && videos > 0) {
+    return `${photos} ${pluralize(photos, "photo")} · ${videos} ${pluralize(videos, "video")}`;
+  }
+  if (videos > 0) {
+    return `${videos} ${pluralize(videos, "video")}`;
+  }
+  return `${photos} ${pluralize(photos, "photo")}`;
+}
+
 export function TripGallery({ images, videos = [], fallbackImage, alt, compact = false }: TripGalleryProps) {
-  const uniqueImages = Array.from(new Set(images.filter(Boolean)));
-  const galleryImages = uniqueImages.length > 0 ? uniqueImages : [fallbackImage];
-  // The hero grid always shows 4 tiles, cycling through available images.
-  const slots = Array.from({ length: 4 }, (_, i) => galleryImages[i % galleryImages.length]);
+  // Photos and videos are treated as one gallery. Each list is deduped by URL,
+  // then videos are interleaved among the photos so they surface in the hero.
+  const photoItems: GalleryItem[] = Array.from(new Set(images.filter(Boolean))).map((src) => ({
+    src,
+    type: "image",
+  }));
+  const videoItems: GalleryItem[] = Array.from(new Set(videos.filter(Boolean))).map((src) => ({
+    src,
+    type: "video",
+  }));
+  const media = interleaveMedia(photoItems, videoItems);
+
+  const galleryItems = media.length > 0 ? media : [{ src: fallbackImage, type: "image" as const }];
+  // The hero grid always shows 4 tiles, cycling through available media.
+  const slots = Array.from({ length: 4 }, (_, i) => galleryItems[i % galleryItems.length]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isGridOpen, setIsGridOpen] = useState(false);
@@ -31,12 +83,12 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
   }, []);
   const showPrevious = useCallback(() => {
     setSelectedIndex((current) =>
-      current === null ? current : (current - 1 + galleryImages.length) % galleryImages.length,
+      current === null ? current : (current - 1 + galleryItems.length) % galleryItems.length,
     );
-  }, [galleryImages.length]);
+  }, [galleryItems.length]);
   const showNext = useCallback(() => {
-    setSelectedIndex((current) => (current === null ? current : (current + 1) % galleryImages.length));
-  }, [galleryImages.length]);
+    setSelectedIndex((current) => (current === null ? current : (current + 1) % galleryItems.length));
+  }, [galleryItems.length]);
 
   useEffect(() => {
     if (selectedIndex === null && !isGridOpen) return;
@@ -72,24 +124,37 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
           { slot: 3, layout: "col-span-1 row-span-2" },
           { slot: 2, layout: "col-span-1 row-span-1" },
         ].map(({ slot, layout }) => {
-          const src = slots[slot];
-          const imageIndex = slot % galleryImages.length;
+          const item = slots[slot];
+          const imageIndex = slot % galleryItems.length;
 
           return (
             <button
               key={slot}
               type="button"
               onClick={() => setSelectedIndex(imageIndex)}
-              aria-label={`View photo ${slot + 1}`}
+              aria-label={`View ${item.type === "video" ? "video" : "photo"} ${slot + 1}`}
               className={`${layout} group relative overflow-hidden bg-muted/60`}
             >
-              <Image
-                src={src}
-                alt={`${alt} photo ${slot + 1}`}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes={slot === 0 ? "50vw" : "25vw"}
-              />
+              {item.type === "video" ? (
+                <video
+                  src={item.src}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                  aria-label={`${alt} video ${slot + 1}`}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <Image
+                  src={item.src}
+                  alt={`${alt} photo ${slot + 1}`}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes={slot === 0 ? "50vw" : "25vw"}
+                />
+              )}
               <span className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
             </button>
           );
@@ -102,7 +167,7 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
         className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-border/80 bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow backdrop-blur-sm transition hover:bg-background"
       >
         <Images className="h-3.5 w-3.5" />
-        View all photos
+        View all
       </button>
       </div>
 
@@ -111,7 +176,7 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
           className="fixed inset-0 z-50 overflow-y-auto bg-black/95 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label={`All photos of ${alt}`}
+          aria-label={`All photos and videos of ${alt}`}
           onClick={closeGrid}
         >
           <div
@@ -121,12 +186,12 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="font-heading text-xl font-semibold text-white sm:text-2xl">{alt}</h2>
-                <p className="mt-1 text-sm text-white/60">{pluralize(galleryImages.length, "photo")}</p>
+                <p className="mt-1 text-sm text-white/60">{mediaCountLabel(galleryItems)}</p>
               </div>
               <button
                 type="button"
                 onClick={closeGrid}
-                aria-label="Close photo grid"
+                aria-label="Close media grid"
                 className="rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
               >
                 <X className="h-5 w-5" />
@@ -134,21 +199,33 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-              {galleryImages.map((src, index) => (
+              {galleryItems.map((item, index) => (
                 <button
-                  key={index}
+                  key={`${item.type}-${index}`}
                   type="button"
                   onClick={() => openFromGrid(index)}
-                  aria-label={`View photo ${index + 1}`}
+                  aria-label={`View ${item.type === "video" ? "video" : "photo"} ${index + 1}`}
                   className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-white/5"
                 >
-                  <Image
-                    src={src}
-                    alt={`${alt} photo ${index + 1}`}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
+                  {item.type === "video" ? (
+                    <video
+                      src={item.src}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <Image
+                      src={item.src}
+                      alt={`${alt} photo ${index + 1}`}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  )}
                   <span className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
                 </button>
               ))}
@@ -162,17 +239,17 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label={`${alt} photo viewer`}
+          aria-label={`${alt} media viewer`}
           onClick={close}
         >
           <div className="absolute right-4 top-4 flex items-center gap-3">
             <span className="text-sm font-medium text-white/80">
-              {selectedIndex + 1} / {galleryImages.length}
+              {selectedIndex + 1} / {galleryItems.length}
             </span>
             <button
               type="button"
               onClick={close}
-              aria-label="Close photo viewer"
+              aria-label="Close media viewer"
               className="rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
             >
               <X className="h-5 w-5" />
@@ -185,7 +262,7 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
               event.stopPropagation();
               showPrevious();
             }}
-            aria-label="Previous photo"
+            aria-label="Previous"
             className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white transition hover:bg-white/20 sm:left-6"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -195,13 +272,26 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
             className="relative max-h-[85vh] max-w-[90vw]"
             onClick={(event) => event.stopPropagation()}
           >
-            <Image
-              src={galleryImages[selectedIndex]}
-              alt={`${alt} photo ${selectedIndex + 1}`}
-              width={1400}
-              height={1000}
-              className="max-h-[85vh] w-auto max-w-[90vw] rounded-xl object-contain"
-            />
+            {galleryItems[selectedIndex].type === "video" ? (
+              <video
+                src={galleryItems[selectedIndex].src}
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                preload="auto"
+                className="max-h-[85vh] w-auto max-w-[90vw] rounded-xl object-contain"
+              />
+            ) : (
+              <Image
+                src={galleryItems[selectedIndex].src}
+                alt={`${alt} photo ${selectedIndex + 1}`}
+                width={1400}
+                height={1000}
+                className="max-h-[85vh] w-auto max-w-[90vw] rounded-xl object-contain"
+              />
+            )}
           </div>
 
           <button
@@ -210,37 +300,13 @@ export function TripGallery({ images, videos = [], fallbackImage, alt, compact =
               event.stopPropagation();
               showNext();
             }}
-            aria-label="Next photo"
+            aria-label="Next"
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2.5 text-white transition hover:bg-white/20 sm:right-6"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
         </div>
       )}
-
-    {/* Videos never preload data — `preload="none"` means a page with videos
-        transfers zero video bytes until the visitor presses play. */}
-    {videos.length > 0 ? (
-      <div className="mt-4">
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Videos ({videos.length})
-        </h3>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {videos.map((src, index) => (
-            <video
-              key={src}
-              src={src}
-              preload="none"
-              controls
-              playsInline
-              muted
-              aria-label={`${alt} video ${index + 1}`}
-              className="aspect-video w-full rounded-xl bg-black object-cover"
-            />
-          ))}
-        </div>
-      </div>
-    ) : null}
-  </>
+    </>
   );
 }

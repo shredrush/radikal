@@ -1,3 +1,5 @@
+import { SUPABASE_CA_CERT } from "@/lib/supabase-ca";
+
 function getDatabaseUrlCandidates() {
   const candidates = [
     ["DATABASE_URL", process.env.DATABASE_URL],
@@ -22,22 +24,57 @@ function normalizeDatabaseUrl(rawUrl: string | undefined) {
   return trimmed;
 }
 
+/**
+ * The CA certificate used to authenticate the database server over TLS.
+ * Prefers the `DATABASE_CA_CERT` env var (inline PEM, for CA rotations), and
+ * falls back to the bundled Supabase Root 2021 CA. Returns undefined when no
+ * CA is available.
+ */
+export function getDatabaseCaCert() {
+  const override = process.env.DATABASE_CA_CERT?.trim();
+  return override || SUPABASE_CA_CERT;
+}
+
+/**
+ * Whether TLS server authentication is enabled for the production connection.
+ * When a CA is configured, the connection string is stripped of any `sslmode`
+ * so the `ssl: { ca }` pool option (real verification) is not overridden by
+ * node-postgres's URL parsing, and the server is authenticated against the
+ * pinned CA.
+ */
+function usesPinnedCa() {
+  return process.env.NODE_ENV === "production" && Boolean(getDatabaseCaCert());
+}
+
 function applyDatabaseUrlDefaults(rawUrl: string) {
   try {
     const url = new URL(rawUrl);
 
-    const currentSslMode = url.searchParams.get("sslmode");
-    if (process.env.NODE_ENV === "production") {
-      // With node-postgres, `sslmode=require` enables TLS but keeps certificate
-      // chain verification on (rejectUnauthorized defaults to true), which
-      // rejects Supabase's self-signed certificate chain with a P1011 TLS error.
-      // `no-verify` keeps the connection encrypted while skipping chain
-      // verification, matching libpq's `require` semantics.
-      if (!currentSslMode || currentSslMode === "disable" || currentSslMode === "require") {
-        url.searchParams.set("sslmode", "no-verify");
+    if (usesPinnedCa()) {
+      // node-postgres lets a URL `sslmode` silently override the `ssl` object
+      // passed to the pool — that override is exactly what made the old
+      // `sslmode=require` do full verification against the *system* trust
+      // store and fail P1011 against Supabase's private CA. Strip every SSL
+      // parameter here so the pinned CA config in prisma.ts is honoured.
+      url.searchParams.delete("sslmode");
+      url.searchParams.delete("sslrootcert");
+      url.searchParams.delete("sslcert");
+      url.searchParams.delete("sslkey");
+    } else {
+      const currentSslMode = url.searchParams.get("sslmode");
+      if (process.env.NODE_ENV === "production") {
+        // With node-postgres, `sslmode=require` enables TLS but keeps
+        // certificate chain verification on (rejectUnauthorized defaults to
+        // true), which rejects Supabase's self-signed certificate chain with a
+        // P1011 TLS error. `no-verify` keeps the connection encrypted while
+        // skipping chain verification, matching libpq's `require` semantics.
+        // This path only runs when no CA is pinned (see usesPinnedCa above).
+        if (!currentSslMode || currentSslMode === "disable" || currentSslMode === "require") {
+          url.searchParams.set("sslmode", "no-verify");
+        }
+      } else if (!currentSslMode) {
+        url.searchParams.set("sslmode", "disable");
       }
-    } else if (!currentSslMode) {
-      url.searchParams.set("sslmode", "disable");
     }
 
     if (!url.searchParams.has("connect_timeout")) {
@@ -86,7 +123,9 @@ export function getDatabaseConnectionLogInfo() {
       host: url.hostname,
       port: url.port || (url.protocol === "postgres:" ? "5432" : null),
       database: url.pathname.replace(/^\//, "") || null,
-      sslmode: url.searchParams.get("sslmode") || null,
+      sslmode: usesPinnedCa()
+        ? "verify-full (pinned CA)"
+        : url.searchParams.get("sslmode") || null,
     };
   } catch {
     return {
