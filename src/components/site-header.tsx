@@ -1,40 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { User, LayoutDashboard, Headset } from "lucide-react";
-
-import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/authz";
-import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
-import { CurrencySelector } from "@/components/currency/currency-selector";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { LogoutButton } from "@/components/profile/logout-button";
 import { SportIcon } from "@/components/trips/sport-icon";
-import { getProfileUser } from "@/lib/profile-user";
-import { getProfileInitials } from "@/lib/profile-initials";
-import { getGuideImage } from "@/lib/guide-images";
+import { HeaderAccount } from "@/components/header-account";
 
-export async function SiteHeader() {
-  const session = await auth();
-  const displayName = session?.user?.name ?? session?.user?.email ?? "User";
-  // Shared with the profile page via React cache() — one row per request, not
-  // one per component.
-  const currentUser = session?.user?.id
-    ? await getProfileUser(session.user.id)
-    : null;
-  const guideForImage = currentUser?.guide && !currentUser.guide.deletedAt
-    ? {
-        username: currentUser.guide.user?.username ?? "",
-        photo: currentUser.guide.photo,
-        photos: currentUser.guide.photos,
-      }
-    : null;
-  const profileImage = guideForImage ? getGuideImage(guideForImage) : currentUser?.image;
-  const profileInitials = getProfileInitials(displayName);
-  const isGuide = session?.user?.role === "GUIDE";
-  const adminBoardHref = getAdminBoardHref(session?.user?.role);
-  const canAccessSupportDesk = hasPermission(session?.user?.role, "support.manage");
+export function SiteHeader() {
 
   const sportGroups = [
     {
@@ -86,22 +57,7 @@ export async function SiteHeader() {
           </SiteLogoLink>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:hidden">
-            <ThemeToggle />
-            <CurrencySelector />
-            {session?.user ? (
-              <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                {profileImage ? <Image src={profileImage} alt="Profile" width={32} height={32} unoptimized className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground font-heading text-xs font-semibold text-background">{profileInitials}</span>}
-              </Link>
-            ) : (
-              <Button
-                size="sm"
-                className="min-w-[96px] rounded-full px-4 py-2 text-sm font-semibold"
-                nativeButton={false}
-                render={<Link href="/login" />}
-              >
-                Login
-              </Button>
-            )}
+            <HeaderAccount variant="mobile" />
           </div>
         </div>
 
@@ -204,49 +160,7 @@ export async function SiteHeader() {
             </SiteLogoLink>
 
             <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-              <ThemeToggle />
-              <CurrencySelector />
-              {session?.user ? (
-                <div className="group relative">
-                  <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                    {profileImage ? <Image src={profileImage} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">{profileInitials}</span>}
-                  </Link>
-                  <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                    <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Link>
-                    {isGuide ? (
-                      <Link href="/guide-board/bookings" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                        <LayoutDashboard className="h-4 w-4" />
-                        Guide Board
-                      </Link>
-                    ) : null}
-                    {adminBoardHref ? (
-                      <Link href={adminBoardHref} className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                        <LayoutDashboard className="h-4 w-4" />
-                        Admin Board
-                      </Link>
-                    ) : null}
-                    {canAccessSupportDesk ? (
-                      <Link href="/support" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                        <Headset className="h-4 w-4" />
-                        Support Board
-                      </Link>
-                    ) : null}
-                    <LogoutButton variant="menu" />
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  size="lg"
-                  className="min-w-[128px] rounded-full px-6 text-base font-semibold sm:min-w-[152px]"
-                  nativeButton={false}
-                  render={<Link href="/login" />}
-                >
-                  Login
-                </Button>
-              )}
+              <HeaderAccount variant="desktop" />
             </div>
           </div>
 
@@ -420,49 +334,7 @@ export async function SiteHeader() {
           </nav>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-            <ThemeToggle />
-            <CurrencySelector />
-            {session?.user ? (
-              <div className="group relative">
-                <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-                  {profileImage ? <Image src={profileImage} alt="Profile" width={40} height={40} unoptimized className="h-10 w-10 rounded-full object-cover" /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">{profileInitials}</span>}
-                </Link>
-                <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Link>
-                  {isGuide ? (
-                    <Link href="/guide-board/bookings" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Guide Board
-                    </Link>
-                  ) : null}
-                  {adminBoardHref ? (
-                    <Link href={adminBoardHref} className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Admin Board
-                    </Link>
-                  ) : null}
-                  {canAccessSupportDesk ? (
-                    <Link href="/support" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
-                      <Headset className="h-4 w-4" />
-                      Support Board
-                    </Link>
-                  ) : null}
-                  <LogoutButton variant="menu" />
-                </div>
-              </div>
-            ) : (
-              <Button
-                size="lg"
-                className="min-w-[128px] rounded-full px-6 text-base font-semibold sm:min-w-[152px]"
-                nativeButton={false}
-                render={<Link href="/login" />}
-              >
-                Login
-              </Button>
-            )}
+            <HeaderAccount variant="desktop" />
           </div>
         </div>
       </div>

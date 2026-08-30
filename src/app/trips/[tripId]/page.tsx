@@ -23,7 +23,6 @@ import type { TripCategory } from "@/generated/prisma/client";
 import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
-import { auth } from "@/lib/auth";
 import { getDisplayName } from "@/lib/profile-initials";
 import { TripCard } from "@/components/trips/trip-card";
 import { formatMonthYear } from "@/lib/format";
@@ -32,6 +31,27 @@ import { normalizeTripImagePath } from "@/lib/trip-card-image";
 // Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
 const MAX_REVIEWS = 4;
+
+export const revalidate = 300;
+
+// Pre-render currently published trip URLs. New trips remain supported through
+// ISR, while the catalog's existing detail pages avoid a server cold start.
+export async function generateStaticParams() {
+  const trips = await safeDb(
+    "trip.static-params",
+    () =>
+      prisma.trip.findMany({
+        where: {
+          deletedAt: null,
+          OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+        },
+        select: { slug: true },
+      }),
+    [],
+  );
+
+  return trips.map(({ slug }) => ({ tripId: slug }));
+}
 
 // Trip pages were hitting Postgres (with several joined tables) on every
 // request. Admin edits already call updateTag("trips")/revalidatePath for
@@ -144,21 +164,6 @@ export default async function TripDetailPage({
     notFound();
   }
 
-  // Wishlist state is per-user, so it is read outside the cached trip query.
-  const session = await auth();
-  const userId = session?.user?.id;
-  const inWishlist = userId
-    ? await safeDb(
-        "trip.wishlist",
-        () =>
-          prisma.wishlistItem.findFirst({
-            where: { userId, tripId: trip.id, deletedAt: null },
-            select: { id: true },
-          }),
-        null,
-      ).then(Boolean)
-    : false;
-
   const guide = trip.guide;
   const guideProfileImage = guide
     ? getGuideImage({
@@ -189,7 +194,7 @@ export default async function TripDetailPage({
           <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
             {trip.title}
           </h1>
-          <WishlistButton tripId={trip.id} initialWishlisted={inWishlist} />
+          <WishlistButton tripId={trip.id} />
         </div>
 
         {/* Trip photos */}

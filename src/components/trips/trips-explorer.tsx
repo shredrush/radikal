@@ -89,16 +89,11 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
 
 export function TripsExplorer({
   trips,
-  initialQuery,
 }: {
   trips: TripsExplorerTrip[];
-  initialQuery?: string | string[] | undefined;
 }) {
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(() => {
-    const initialValue = Array.isArray(initialQuery) ? initialQuery[0] : initialQuery;
-    return typeof initialValue === "string" ? initialValue.trim().slice(0, 200) : "";
-  });
+  const [query, setQuery] = useState(() => searchParams.get("q")?.trim().slice(0, 200) ?? "");
 
   const selectedSport = normalizeSportFilter(searchParams.getAll("sport"));
   const selectedTravelStyle = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"));

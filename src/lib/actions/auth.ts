@@ -16,6 +16,7 @@ import {
   welcomeEmail,
 } from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
+import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { generateUsername } from "@/lib/username-generator";
 import { logActivity } from "@/lib/activity-log";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
@@ -363,6 +364,7 @@ export async function changePasswordAction(
     where: { id: userId },
     data: { passwordHash: newPasswordHash, sessionVersion: { increment: 1 } },
   });
+  invalidateSessionVersion(userId);
 
   await logActivity({
     userId,
@@ -824,6 +826,7 @@ export async function resetPasswordAction(
   if (!consumed) {
     return { error: "Invalid or expired code.", identifier };
   }
+  invalidateSessionVersion(user.id);
 
   await logActivity({
     userId: user.id,

@@ -1,11 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 
-import { findUserByIdentifier } from "@/lib/login";
 import { loginSchema } from "@/lib/validations/auth";
-import { logActivity } from "@/lib/activity-log";
-import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
@@ -27,6 +23,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         const { identifier, password } = parsed.data;
+        // Keep password hashing and the database driver out of public route
+        // initialization; this branch only runs for a credentials sign-in.
+        const [{ findUserByIdentifier }, bcryptModule] = await Promise.all([
+          import("@/lib/login"),
+          import("bcryptjs"),
+        ]);
+        const bcrypt = bcryptModule.default;
 
         const user = await findUserByIdentifier(identifier);
         if (!user) return null;
@@ -63,12 +66,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         token.sessionVersion = (user as { sessionVersion?: number }).sessionVersion;
       } else if (token.id) {
-        // Stateless JWTs otherwise survive a password reset. Verify the
-        // version on each use so incrementing it revokes every old token.
-        const account = await prisma.user.findFirst({
-          where: { id: token.id as string, deletedAt: null },
-          select: { sessionVersion: true },
-        });
+        // Stateless JWTs otherwise survive a password reset. The session
+        // version lookup is cached and explicitly invalidated on password
+        // changes, rather than querying Postgres for every request.
+        const { getSessionVersion } = await import("@/lib/session-revocation");
+        const account = await getSessionVersion(token.id as string);
         if (!account || account.sessionVersion !== token.sessionVersion) {
           delete token.id;
           delete token.role;
@@ -91,10 +93,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
-    async signIn({ user }) {
-      const userId = (user as { id?: string }).id;
-      if (userId) {
-        await logActivity({
+      async signIn({ user }) {
+        const userId = (user as { id?: string }).id;
+        if (userId) {
+          const { logActivity } = await import("@/lib/activity-log");
+          await logActivity({
           userId,
           action: "LOGIN_SUCCESS",
           label: "Signed in",

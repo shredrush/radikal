@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useEffectEvent, useState, useTransition } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,17 +9,30 @@ import { cn } from "@/lib/utils";
 
 export function WishlistButton({
   tripId,
-  initialWishlisted,
+  initialWishlisted = false,
   size = "md",
   className,
 }: {
   tripId: string;
-  initialWishlisted: boolean;
+  initialWishlisted?: boolean;
   size?: "sm" | "md";
   className?: string;
 }) {
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [isPending, startTransition] = useTransition();
+  const loadWishlistStatus = useEffectEvent(async () => {
+    try {
+      const response = await fetch(`/api/wishlist/${tripId}`, { cache: "no-store" });
+      if (response.ok) {
+        const { wishlisted: isWishlisted } = (await response.json()) as { wishlisted: boolean };
+        setWishlisted(isWishlisted);
+      }
+    } catch {
+      // The button remains usable and the server action remains authoritative.
+    }
+  });
+
+  useEffect(() => { void loadWishlistStatus(); }, [tripId]);
 
   function handleToggle() {
     startTransition(async () => {

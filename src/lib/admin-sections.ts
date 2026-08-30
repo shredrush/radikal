@@ -1,4 +1,4 @@
-import { hasPermission, type Permission, type Role } from "@/lib/authz";
+import { hasPermission, type Permission, type Role } from "@/lib/access-control";
 
 /**
  * Single source of truth for the admin board's section navigation. The admin

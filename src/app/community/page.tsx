@@ -19,9 +19,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
 import { GuideCard } from "@/components/guides/guide-card";
+import { AuthenticatedLink } from "@/components/authenticated-link";
 
 export const metadata: Metadata = {
   title: "Community | Radikal",
@@ -143,8 +143,6 @@ const pillarToneStyles: Record<
 
 export default async function CommunityPage() {
   const guides = await safeDb("community.guides", () => getCommunityGuides(), []);
-  const session = await auth();
-  const joinCommunityHref = session?.user ? "/trips" : "/login";
   return (
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
@@ -173,12 +171,13 @@ export default async function CommunityPage() {
                   Explore trips
                   <ArrowRight size={16} />
                 </Link>
-                <Link
-                  href={joinCommunityHref}
+                <AuthenticatedLink
+                  authenticatedHref="/trips"
+                  unauthenticatedHref="/login"
                   className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-500/40 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-500/10"
                 >
                   Join the community
-                </Link>
+                </AuthenticatedLink>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">

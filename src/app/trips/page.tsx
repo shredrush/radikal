@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 
 import { prisma, safeDb } from "@/lib/prisma";
@@ -39,19 +40,7 @@ const getTripsPageTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-export default async function TripsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    q?: string | undefined;
-    sport?: string | string[] | undefined;
-    travelStyle?: string | string[] | undefined;
-    location?: string | string[] | undefined;
-    startDate?: string | undefined;
-    endDate?: string | undefined;
-  }>;
-}) {
-  const { q } = await searchParams;
+export default async function TripsPage() {
   const trips = await safeDb("trips.catalog", () => getTripsPageTrips(), []);
 
   const serializedTrips = trips.map((trip) => ({
@@ -71,7 +60,15 @@ export default async function TripsPage({
           </p>
         </div>
 
-        <TripsExplorer trips={serializedTrips} initialQuery={q} />
+        <Suspense
+          fallback={
+            <div className="rounded-2xl border border-border/70 bg-card px-4 py-16 text-center text-sm text-muted-foreground">
+              Loading trips...
+            </div>
+          }
+        >
+          <TripsExplorer trips={serializedTrips} />
+        </Suspense>
 
         <FaqSection />
       </section>
