@@ -361,7 +361,7 @@ export async function changePasswordAction(
   const newPasswordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash: newPasswordHash },
+    data: { passwordHash: newPasswordHash, sessionVersion: { increment: 1 } },
   });
 
   await logActivity({
@@ -816,7 +816,7 @@ export async function resetPasswordAction(
     }
     await tx.user.update({
       where: { id: user.id },
-      data: { passwordHash: newPasswordHash },
+      data: { passwordHash: newPasswordHash, sessionVersion: { increment: 1 } },
     });
     return true;
   });

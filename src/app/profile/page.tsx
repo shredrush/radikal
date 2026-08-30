@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { default as dynamicImport } from "next/dynamic";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -36,6 +35,16 @@ import {
 import { getProfileInitials } from "@/lib/profile-initials";
 import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
+import { LazyBookingsSection } from "@/components/profile/lazy-bookings-section";
+import { LazyCustomTripsSection } from "@/components/profile/lazy-custom-trips-section";
+import { WishlistCard } from "@/components/profile/wishlist-card";
+import { NotificationItem } from "@/components/profile/notification-item";
+import { SupportChatPanel } from "@/components/support/support-chat-panel";
+import { LazyProfilePhotoForm } from "@/components/profile/lazy-profile-photo-form";
+import { ChangeUsernameForm } from "@/components/profile/change-username-form";
+import { ChangePasswordForm } from "@/components/profile/change-password-form";
+import { ChangeEmailForm } from "@/components/profile/change-email-form";
+import { ChangePhoneForm } from "@/components/profile/change-phone-form";
 import {
   toSupportMessageViews,
   type SupportMessageView,
@@ -46,59 +55,6 @@ import {
   markAllNotificationsReadAction,
 } from "@/lib/actions/notifications";
 import { cn } from "@/lib/utils";
-
-// Tab-only client components are lazy-loaded so the initial profile bundle
-// only ships the hero, the sidebar, and the active tab's code. Each chunk is
-// still server-rendered on the tab that uses it, so there is no paint flash.
-const LazyBookingsSectionDynamic = dynamicImport(
-  () => import("@/components/profile/lazy-bookings-section").then((m) => m.LazyBookingsSection),
-  { loading: () => null },
-);
-const LazyCustomTripsSectionDynamic = dynamicImport(
-  () =>
-    import("@/components/profile/lazy-custom-trips-section").then(
-      (m) => m.LazyCustomTripsSection,
-    ),
-  { loading: () => null },
-);
-const WishlistCardDynamic = dynamicImport(
-  () => import("@/components/profile/wishlist-card").then((m) => m.WishlistCard),
-  {
-    loading: () => (
-      <div className="rounded-[1rem] border border-border/70 bg-background/60 p-6 text-sm text-muted-foreground">
-        Loading…
-      </div>
-    ),
-  },
-);
-const NotificationItemDynamic = dynamicImport(
-  () => import("@/components/profile/notification-item").then((m) => m.NotificationItem),
-  { loading: () => null },
-);
-const SupportChatPanelDynamic = dynamicImport(
-  () => import("@/components/support/support-chat-panel").then((m) => m.SupportChatPanel),
-  { loading: () => null },
-);
-const ProfilePhotoFormDynamic = dynamicImport(
-  () => import("@/components/profile/lazy-profile-photo-form").then((m) => m.LazyProfilePhotoForm),
-  { loading: () => null },
-);
-const ChangeUsernameFormDynamic = dynamicImport(
-  () => import("@/components/profile/change-username-form").then((m) => m.ChangeUsernameForm),
-  { loading: () => null },
-);
-const ChangePasswordFormDynamic = dynamicImport(
-  () => import("@/components/profile/change-password-form").then((m) => m.ChangePasswordForm),
-  { loading: () => null },
-);
-const ChangeEmailFormDynamic = dynamicImport(
-  () => import("@/components/profile/change-email-form").then((m) => m.ChangeEmailForm),
-  { loading: () => null },
-);
-const ChangePhoneFormDynamic = dynamicImport(
-  () => import("@/components/profile/change-phone-form").then((m) => m.ChangePhoneForm),
-  { loading: () => null },
-);
 export const metadata: Metadata = {
   title: "Profile — Radikal",
 };
@@ -224,7 +180,7 @@ export default async function ProfilePage({
           () =>
             prisma.supportChat.findUnique({
               where: { userId: user.id, deletedAt: null },
-              include: { messages: { orderBy: { createdAt: "asc" } } },
+              include: { messages: { orderBy: { createdAt: "desc" }, take: 100 } },
             }),
           null,
         )
@@ -293,7 +249,7 @@ export default async function ProfilePage({
     supportUnreadRow?.status === "CLOSED" ? "CLOSED" : "OPEN";
   const supportUnreadCount = supportUnreadRow?.unreadCount ?? 0;
   if (!canAccessSupportDesk && supportChat) {
-    supportMessages = toSupportMessageViews(supportChat.messages, user.id);
+    supportMessages = toSupportMessageViews(supportChat.messages.slice().reverse(), user.id);
   }
 
   return (
@@ -304,7 +260,7 @@ export default async function ProfilePage({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 sm:-my-6 sm:-ml-6 sm:w-56 sm:self-stretch">
-                <ProfilePhotoFormDynamic
+                <LazyProfilePhotoForm
                   currentImage={currentUser?.image ?? null}
                   trigger={
                     <button
@@ -578,13 +534,13 @@ export default async function ProfilePage({
                 </CardHeader>
                 <CardContent>
                   {activeSection === "username" ? (
-                    <ChangeUsernameFormDynamic currentUsername={user.username ?? null} />
+                    <ChangeUsernameForm currentUsername={user.username ?? null} />
                   ) : activeSection === "email" ? (
-                    <ChangeEmailFormDynamic currentEmail={currentEmail} />
+                    <ChangeEmailForm currentEmail={currentEmail} />
                   ) : activeSection === "phone" ? (
-                    <ChangePhoneFormDynamic currentPhone={currentPhone} />
+                    <ChangePhoneForm currentPhone={currentPhone} />
                   ) : (
-                    <ChangePasswordFormDynamic />
+                    <ChangePasswordForm />
                   )}
                 </CardContent>
               </Card>
@@ -619,7 +575,7 @@ export default async function ProfilePage({
                     <ul className="flex flex-col gap-3">
                       {wishlistItems.map((item) => (
                         <li key={item.id}>
-                          <WishlistCardDynamic trip={item.trip} />
+                          <WishlistCard trip={item.trip} />
                         </li>
                       ))}
                     </ul>
@@ -673,7 +629,7 @@ export default async function ProfilePage({
                   ) : (
                     <ul className="flex flex-col gap-3">
                       {notificationList.map((notification) => (
-                        <NotificationItemDynamic
+                        <NotificationItem
                           key={notification.id}
                           id={notification.id}
                           title={notification.title}
@@ -723,13 +679,13 @@ export default async function ProfilePage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <SupportChatPanelDynamic messages={supportMessages} status={supportChatStatus} />
+                    <SupportChatPanel messages={supportMessages} status={supportChatStatus} />
                   </CardContent>
                 </Card>
               )
             ) : activeTab === "bookings" ? (
               <div className="flex flex-col gap-6">
-                <LazyBookingsSectionDynamic
+                <LazyBookingsSection
                   kind="upcoming"
                   title="Upcoming trips"
                   endpoint="/api/profile/bookings?kind=upcoming"
@@ -738,7 +694,7 @@ export default async function ProfilePage({
                   defaultOpen={!canReadAllBookings}
                 />
 
-                <LazyBookingsSectionDynamic
+                <LazyBookingsSection
                   kind="completed"
                   title="Completed trips"
                   description="Trips you've already finished with Radikal."
@@ -747,7 +703,7 @@ export default async function ProfilePage({
                   emptyDescription="Trips you finish will appear here once their dates have passed."
                 />
 
-                <LazyBookingsSectionDynamic
+                <LazyBookingsSection
                   kind="cancelled"
                   title="Cancelled trips"
                   description="Trips you've cancelled or that were cancelled before they started."
@@ -755,7 +711,7 @@ export default async function ProfilePage({
                   emptyTitle="No cancelled trips"
                   emptyDescription="Trips you cancel will appear here so you can still see the details."
                 />
-                {!canReadAllBookings ? <LazyCustomTripsSectionDynamic /> : null}
+                {!canReadAllBookings ? <LazyCustomTripsSection /> : null}
               </div>
             ) : null}
           </div>

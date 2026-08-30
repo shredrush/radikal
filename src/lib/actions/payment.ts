@@ -177,6 +177,9 @@ export async function confirmBookingPayment(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Serialize cancellation attempts for one booking. The fresh read below
+      // observes a preceding cancellation after waiting for this row lock.
+      await tx.$queryRaw`SELECT id FROM bookings WHERE id = ${bookingId} FOR UPDATE`;
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {
@@ -305,6 +308,7 @@ export async function cancelBooking(
 
   try {
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM bookings WHERE id = ${bookingId} FOR UPDATE`;
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {
@@ -405,6 +409,9 @@ export async function cancelBookingAsGuide(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // The lock makes both the booking cancellation and its capacity release
+      // idempotent when a customer double-submits the request.
+      await tx.$queryRaw`SELECT id FROM bookings WHERE id = ${bookingId} FOR UPDATE`;
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {
@@ -567,6 +574,7 @@ export async function cancelSlotBookingsAsGuide(
 
   try {
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM slots WHERE id = ${slotId} FOR UPDATE`;
       const slot = await tx.slot.findUnique({
         where: { id: slotId },
         include: {
@@ -684,6 +692,9 @@ export async function cancelBookingAsUser(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Serialize cancellation attempts for this booking before calculating
+      // the capacity release below.
+      await tx.$queryRaw`SELECT id FROM bookings WHERE id = ${bookingId} FOR UPDATE`;
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: {

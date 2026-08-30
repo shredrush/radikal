@@ -89,6 +89,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
         ].map(({ slot, layout }) => {
           const item = slots[slot];
           const imageIndex = slot % galleryItems.length;
+          const isPrimaryTile = slot === 0;
 
           return (
             <button
@@ -101,11 +102,11 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
               {item.type === "video" ? (
                 <video
                   src={item.src}
-                  autoPlay
+                  autoPlay={isPrimaryTile}
                   muted
                   loop
                   playsInline
-                  preload="auto"
+                  preload={isPrimaryTile ? "auto" : "metadata"}
                   aria-label={`${alt} video ${slot + 1}`}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
@@ -173,11 +174,10 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                   {item.type === "video" ? (
                     <video
                       src={item.src}
-                      autoPlay
                       muted
                       loop
                       playsInline
-                      preload="auto"
+                      preload="metadata"
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (

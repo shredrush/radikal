@@ -41,8 +41,7 @@ export async function GET(request: Request) {
     // Scoped to this user only — a staff member expanding their sections never
     // scans every CONFIRMED booking in the app (the daily cron handles that).
     await completePastBookings(now, session.user.id);
-    const [bookings, reviews] = await Promise.all([
-      prisma.booking.findMany({
+    const bookings = await prisma.booking.findMany({
         where: {
           userId: session.user.id,
           status: statusFilter[kind],
@@ -53,14 +52,14 @@ export async function GET(request: Request) {
         take: limit + 1,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         select: bookingCardSelect,
-      }),
-      kind === "completed"
-        ? prisma.review.findMany({
-            where: { userId: session.user.id, deletedAt: null, trip: { deletedAt: null } },
-            select: { id: true, tripId: true, rating: true, comment: true },
-          })
-        : Promise.resolve([]),
-    ]);
+      });
+    const page = bookings.slice(0, limit);
+    const reviews = kind === "completed" && page.length > 0
+      ? await prisma.review.findMany({
+          where: { userId: session.user.id, deletedAt: null, tripId: { in: page.map((booking) => booking.tripId) } },
+          select: { id: true, tripId: true, rating: true, comment: true },
+        })
+      : [];
 
     const reviewsByTripId = new Map(
       reviews
@@ -70,7 +69,6 @@ export async function GET(request: Request) {
         .map((review) => [review.tripId, review] as const),
     );
 
-    const page = bookings.slice(0, limit);
     const items = page.map((booking) =>
       toBookingCardData(booking, {
         showUserCancel: kind === "upcoming",

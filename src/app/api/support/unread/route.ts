@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { countUnreadSupportMessages } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 
@@ -33,15 +32,17 @@ export async function GET() {
   }
 
   try {
-    const chat = await prisma.supportChat.findUnique({
-      where: { userId: session.user.id, deletedAt: null },
-      include: {
-        messages: {
-          where: { NOT: { senderId: session.user.id } },
-          select: { senderId: true, createdAt: true },
-        },
-      },
-    });
+    const rows = await prisma.$queryRaw<Array<{ status: "OPEN" | "CLOSED"; unreadCount: number }>>`
+      SELECT sc.status, COUNT(sm.id)::int AS "unreadCount"
+      FROM support_chats sc
+      LEFT JOIN support_messages sm
+        ON sm."chatId" = sc.id
+       AND sm."senderId" <> ${session.user.id}
+       AND sm."createdAt" > COALESCE(sc."customerLastReadAt", sc."createdAt")
+      WHERE sc."userId" = ${session.user.id} AND sc."deletedAt" IS NULL
+      GROUP BY sc.id, sc.status
+    `;
+    const chat = rows[0];
 
     if (!chat) {
       return NextResponse.json({
@@ -53,7 +54,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      unreadCount: countUnreadSupportMessages(chat, session.user.id),
+      unreadCount: chat.unreadCount,
       status: chat.status,
       isSupportAgent: false,
       hasActiveChat: true,

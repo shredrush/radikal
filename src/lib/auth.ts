@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { findUserByIdentifier } from "@/lib/login";
 import { loginSchema } from "@/lib/validations/auth";
 import { logActivity } from "@/lib/activity-log";
+import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
@@ -43,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image,
           role: user.role,
           username: user.username,
+          sessionVersion: user.sessionVersion,
         };
       },
     }),
@@ -59,16 +61,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (role) {
           token.role = role;
         }
+        token.sessionVersion = (user as { sessionVersion?: number }).sessionVersion;
+      } else if (token.id) {
+        // Stateless JWTs otherwise survive a password reset. Verify the
+        // version on each use so incrementing it revokes every old token.
+        const account = await prisma.user.findFirst({
+          where: { id: token.id as string, deletedAt: null },
+          select: { sessionVersion: true },
+        });
+        if (!account || account.sessionVersion !== token.sessionVersion) {
+          delete token.id;
+          delete token.role;
+          delete token.username;
+          delete token.sessionVersion;
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        session.user.sessionVersion = token.sessionVersion as number | undefined;
         session.user.username = token.username as string | undefined;
         session.user.role = token.role as "USER" | "GUIDE" | "SUPPORT" | "FINANCE" | "CONTENT" | "ADMIN" | "ADMAX" | undefined;
       }
-      return session;
+      return token.id
+        ? session
+        : ({ ...session, user: undefined } as unknown as typeof session);
     },
   },
   events: {

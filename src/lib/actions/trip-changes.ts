@@ -190,9 +190,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           guideId: guide.id,
         },
       });
-
       await applySupplemental(tx, trip.id, proposal);
-
       return tx.tripChangeRequest.create({
         data: {
           type: "CREATE",
@@ -285,9 +283,6 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   const proposal: TripProposal = { ...fields, slug: trip.slug };
 
   const change = await prisma.$transaction(async (tx) => {
-    // The ownership/deleted checks above happen before the transaction starts;
-    // re-assert them atomically here so a trip deleted or reassigned in the
-    // meantime is never silently republished with a misleading APPROVED change.
     const updated = await tx.trip.updateMany({
       where: { id: tripId, deletedAt: null, guideId: guide.id },
       data: {
@@ -304,13 +299,8 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
         mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
       },
     });
-
-    if (updated.count === 0) {
-      throw new Error("This trip is no longer available to edit.");
-    }
-
+    if (updated.count === 0) throw new Error("This trip is no longer available to edit.");
     await applySupplemental(tx, tripId, proposal);
-
     return tx.tripChangeRequest.create({
       data: {
         type: "UPDATE",
@@ -460,6 +450,7 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
   let slotReserved = 0;
 
   await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM slots WHERE id = ${slotId} FOR UPDATE`;
     const slot = await tx.slot.findUnique({
       where: { id: slotId },
       include: {

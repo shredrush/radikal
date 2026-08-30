@@ -31,23 +31,11 @@ const getGuideDetail = unstable_cache(
             id: true,
             slug: true,
             title: true,
-            type: true,
-            description: true,
             location: true,
             categories: true,
             durationDays: true,
-            maxGroupSize: true,
             priceInRupees: true,
             images: true,
-            videos: true,
-            mediaOrder: true,
-            tripLocation: true,
-            inclusions: { orderBy: { order: "asc" } },
-            highlights: { orderBy: { order: "asc" } },
-            slots: {
-              where: { deletedAt: null },
-              orderBy: { date: "asc" },
-            },
           },
         },
         reviews: {
@@ -56,6 +44,7 @@ const getGuideDetail = unstable_cache(
           // reason to hide one.
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
+          take: 20,
           select: {
             id: true,
             comment: true,

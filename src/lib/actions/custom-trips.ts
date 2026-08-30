@@ -49,16 +49,6 @@ export async function createCustomTripRequestAction(
     return { success: false, error: rateLimitError(requestLimit) };
   }
 
-  const openRequestCount = await prisma.customTripRequest.count({
-    where: { userId, status: { notIn: ["CONFIRMED", "CANCELLED"] }, deletedAt: null },
-  });
-  if (openRequestCount >= MAX_OPEN_CUSTOM_TRIP_CHATS) {
-    return {
-      success: false,
-      error: `You can have up to ${MAX_OPEN_CUSTOM_TRIP_CHATS} open custom trip chats at a time. Close an existing request before starting a new one.`,
-    };
-  }
-
   const {
     groupType,
     sports,
@@ -70,8 +60,19 @@ export async function createCustomTripRequestAction(
     requirements,
   } = parsed.data;
 
-  const request = await prisma.$transaction(async (tx) => {
-    const created = await tx.customTripRequest.create({
+  let request;
+  try {
+    request = await prisma.$transaction(async (tx) => {
+      // Lock the account row so concurrent requests for the same customer
+      // serialize before checking the open-chat limit.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      const openRequestCount = await tx.customTripRequest.count({
+        where: { userId, status: { notIn: ["CONFIRMED", "CANCELLED"] }, deletedAt: null },
+      });
+      if (openRequestCount >= MAX_OPEN_CUSTOM_TRIP_CHATS) {
+        throw new Error("OPEN_REQUEST_LIMIT");
+      }
+      const created = await tx.customTripRequest.create({
       data: {
         userId,
         groupType,
@@ -89,8 +90,17 @@ export async function createCustomTripRequestAction(
       },
     });
 
-    return created;
-  });
+      return created;
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "OPEN_REQUEST_LIMIT") {
+      return {
+        success: false,
+        error: `You can have up to ${MAX_OPEN_CUSTOM_TRIP_CHATS} open custom trip chats at a time. Close an existing request before starting a new one.`,
+      };
+    }
+    throw error;
+  }
 
   await logActivity({
     userId,

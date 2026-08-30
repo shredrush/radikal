@@ -103,48 +103,25 @@ const getHomeReviews = unstable_cache(
       take: 4,
     });
 
-    const guideIds: string[] = [];
-    for (const entry of latestPerGuide) {
-      if (entry.guideId !== null && entry._max?.createdAt != null) {
-        guideIds.push(entry.guideId);
-      }
-    }
-    const hasTripOnly = latestPerGuide.some((entry) => entry.guideId === null);
-
-    if (guideIds.length === 0 && !hasTripOnly) return [];
-
-    const rows = await prisma.review.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
-          ...(guideIds.length > 0 ? [{ guideId: { in: guideIds } }] : []),
-          ...(hasTripOnly ? [{ guideId: null, trip: { deletedAt: null } }] : []),
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-      select: {
-        guideId: true,
-        tripId: true,
-        tripName: true,
-        tripDate: true,
-        createdAt: true,
-        comment: true,
-        user: { select: { name: true } },
-        trip: { select: { title: true, slug: true, deletedAt: true } },
-      },
-    });
-
-    // One review per guide (per trip for trip-only reviews); newest wins.
-    const seen = new Set<string>();
-    const reviews: typeof rows = [];
-    for (const review of rows) {
-      const key = review.guideId ?? `trip:${review.tripId}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      reviews.push(review);
-      if (reviews.length === 4) break;
-    }
-    return reviews;
+    const reviews = await Promise.all(
+      latestPerGuide.map((entry) =>
+        prisma.review.findFirst({
+          where: { ...reviewScope, guideId: entry.guideId },
+          orderBy: { createdAt: "desc" },
+          select: {
+            guideId: true,
+            tripId: true,
+            tripName: true,
+            tripDate: true,
+            createdAt: true,
+            comment: true,
+            user: { select: { name: true } },
+            trip: { select: { title: true, slug: true, deletedAt: true } },
+          },
+        }),
+      ),
+    );
+    return reviews.filter((review): review is NonNullable<typeof review> => review !== null);
   },
   ["home-reviews"],
   { tags: ["reviews"], revalidate: 300 },

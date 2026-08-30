@@ -333,7 +333,7 @@ export function CheckoutFlow({
                 className={`relative flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5 transition-colors ${
                   adventureInsurance
                     ? "border-emerald-700/60 bg-emerald-600 dark:border-emerald-500/50"
-                    : "border-emerald-300 bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950"
+                    : "border-neutral-400 bg-neutral-400 dark:border-neutral-500 dark:bg-neutral-500"
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <span

@@ -196,23 +196,30 @@ export async function submitGuideApplicationAction(
 
   const { certifications, ...applicationData } = fields;
 
-  await prisma.$transaction(async (tx) => {
-    // The handle is now live, so retire any alias that still points to it.
-    await tx.usernameAlias.deleteMany({ where: { username } });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // The handle is now live, so retire any alias that still points to it.
+      await tx.usernameAlias.deleteMany({ where: { username } });
 
-    await tx.user.update({
-      where: { id: session.user.id },
-      data: { username },
-    });
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: { username },
+      });
 
-    await tx.guideApplication.create({
-      data: {
-        ...applicationData,
-        userId: session.user.id,
-        certifications: { create: certifications },
-      },
+      await tx.guideApplication.create({
+        data: {
+          ...applicationData,
+          userId: session.user.id,
+          certifications: { create: certifications },
+        },
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      return { error: "You already have an application under review." };
+    }
+    throw error;
+  }
 
   await logActivity({
     userId: session.user.id,
