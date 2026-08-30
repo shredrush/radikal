@@ -162,7 +162,6 @@ export async function AdminTripsManager({
               const deletedSlots = trip.slots.filter((slot) => slot.deletedAt);
               const deletedBookings = trip.bookings.filter((booking) => booking.deletedAt);
               const deletedWishlistItems = trip.wishlistItems.filter((item) => item.deletedAt);
-              const deletedReviews = trip.reviews.filter((review) => review.deletedAt);
 
               return (
                 <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
@@ -178,7 +177,7 @@ export async function AdminTripsManager({
                     <RestoreTripButton tripId={trip.id} tripTitle={trip.title} />
                   </div>
 
-                  <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
+                  <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
                     <div className="rounded-xl border border-border/70 bg-background/70 p-3">
                       <p className="font-semibold text-foreground">Slots</p>
                       <p className="mt-1 text-muted-foreground">{deletedSlots.length} deleted</p>
@@ -195,10 +194,6 @@ export async function AdminTripsManager({
                     <div className="rounded-xl border border-border/70 bg-background/70 p-3">
                       <p className="font-semibold text-foreground">Wishlists</p>
                       <p className="mt-1 text-muted-foreground">{deletedWishlistItems.length} deleted</p>
-                    </div>
-                    <div className="rounded-xl border border-border/70 bg-background/70 p-3">
-                      <p className="font-semibold text-foreground">Reviews</p>
-                      <p className="mt-1 text-muted-foreground">{deletedReviews.length} deleted</p>
                     </div>
                   </div>
 

@@ -20,6 +20,8 @@ export function CancelBookingFlow({
   placeholder = "Add a note or reason for the cancellation…",
   alignActions = "end",
   size = "sm",
+  open: controlledOpen,
+  onOpenChange,
 }: {
   bookingId: string;
   action: CancelAction;
@@ -29,10 +31,18 @@ export function CancelBookingFlow({
   placeholder?: string;
   alignActions?: "start" | "end";
   size?: "xs" | "sm";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const open = controlledOpen ?? uncontrolledOpen;
+
+  function setOpen(nextOpen: boolean) {
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   function handleConfirm() {
     const cleanReason = reason.trim();
