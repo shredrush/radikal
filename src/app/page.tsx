@@ -46,15 +46,23 @@ const getHomeTrips = unstable_cache(
 
 // Guide cards on the home page are data-driven so every guide gets a public
 // profile link; guides rarely change, so cache like the community roster.
+// `select` keeps the cached payload to just the columns the cards render
+// (the previous `include` pulled every guide column — bio, experience,
+// media arrays, … — for a section that only shows name/location/photo).
 const getHomeGuides = unstable_cache(
   async () => {
     return prisma.guide.findMany({
       where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
-      include: {
+      select: {
+        name: true,
+        location: true,
+        photo: true,
+        photos: true,
         certifications: {
           orderBy: { yearIssued: "desc" },
           take: 3,
+          select: { title: true },
         },
         user: { select: { username: true } },
       },
@@ -69,8 +77,6 @@ const getHomeGuides = unstable_cache(
 const getHomeReviews = unstable_cache(
   async () => {
     // Latest review per trip, capped to the 4 most-recently-reviewed trips.
-    // The previous implementation loaded every review (with user + trip joins)
-    // into memory just to keep four testimonials.
     const latestPerTrip = await prisma.review.groupBy({
       by: ["tripId"],
       where: { tripId: { not: null } },
@@ -79,29 +85,44 @@ const getHomeReviews = unstable_cache(
       take: 4,
     });
 
-    const reviews = await Promise.all(
-      latestPerTrip
-        .filter(
-          (entry): entry is typeof entry & { _max: { createdAt: Date } } =>
-            entry._max.createdAt !== null,
-        )
-        .map((entry) =>
-          prisma.review.findFirst({
-            where: { tripId: entry.tripId, createdAt: entry._max.createdAt, deletedAt: null, trip: { deletedAt: null } },
-            select: {
-              tripId: true,
-              comment: true,
-              createdAt: true,
-              user: { select: { name: true } },
-              trip: { select: { title: true, slug: true } },
-            },
-          }),
-        ),
-    );
+    const tripIds = latestPerTrip
+      .filter(
+        (entry): entry is typeof entry & { _max: { createdAt: Date } } =>
+          entry._max.createdAt !== null,
+      )
+      .map((entry) => entry.tripId)
+      .filter((id): id is string => id !== null);
 
-    return reviews.filter(
-      (review): review is NonNullable<typeof review> => review !== null,
-    );
+    if (tripIds.length === 0) return [];
+
+    // One query for every candidate review (newest-first) instead of a
+    // separate `findFirst` per trip — the dedupe below keeps the latest
+    // review of each trip, which is exactly what the testimonials render.
+    const rows = await prisma.review.findMany({
+      where: {
+        tripId: { in: tripIds },
+        deletedAt: null,
+        trip: { deletedAt: null },
+      },
+      orderBy: { createdAt: "desc" },
+      take: tripIds.length,
+      select: {
+        tripId: true,
+        comment: true,
+        createdAt: true,
+        user: { select: { name: true } },
+        trip: { select: { title: true, slug: true } },
+      },
+    });
+
+    const seenTripIds = new Set<string>();
+    const reviews: typeof rows = [];
+    for (const review of rows) {
+      if (review.tripId === null || seenTripIds.has(review.tripId)) continue;
+      seenTripIds.add(review.tripId);
+      reviews.push(review);
+    }
+    return reviews;
   },
   ["home-reviews"],
   { tags: ["reviews"], revalidate: 300 },

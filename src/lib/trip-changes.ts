@@ -82,23 +82,10 @@ export type TripDiffRow = {
 };
 
 /**
- * Lightweight summary of a trip change used by the guide's review history.
- * Title is extracted from the `proposed` JSON snapshot without loading the
- * full diff; the full snapshot is fetched lazily when a row is expanded.
- */
-export type TripChangeSummary = {
-  id: string;
-  type: "CREATE" | "UPDATE";
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  createdAt: Date;
-  reviewedAt: Date | null;
-  title: string | null;
-};
-
-/**
- * Lightweight summary of a trip change used by the admin review page. The
- * title is extracted from the `proposed` JSON snapshot without loading the
- * full diff; the full snapshot is fetched lazily when a card is expanded.
+ * Lightweight summary of a trip change used by the admin trip-changes
+ * history. The title is extracted from the `proposed` JSON snapshot without
+ * loading the full diff; the full snapshot is fetched lazily when a card is
+ * expanded.
  */
 export type AdminTripChangeSummary = {
   id: string;

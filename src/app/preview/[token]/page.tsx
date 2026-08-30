@@ -1,7 +1,7 @@
 import { Eye } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { requirePermission } from "@/lib/authz";
+import { authorizeTripPreviewAction } from "@/lib/actions/trip-previews";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
@@ -21,9 +21,6 @@ export default async function TripPreviewPage({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  // Defense in depth: admins only. The random token is the second factor.
-  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
-
   const { token } = await params;
   const preview = await safeDb(
     "preview.token",
@@ -57,6 +54,8 @@ export default async function TripPreviewPage({
       </div>
     );
   }
+
+  await authorizeTripPreviewAction(preview.context);
 
   const p = preview.proposed as unknown as TripProposal;
   const images = (Array.isArray(p.images) ? p.images : [])

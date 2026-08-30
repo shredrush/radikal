@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 
@@ -19,10 +20,22 @@ const profileUserSelect = {
  * Both the site header (root layout) and the profile page need the same row,
  * so sharing this helper turns two round-trips into one within a single
  * server-side render.
+ *
+ * It is also wrapped in `unstable_cache` (keyed by user id) so the header's
+ * avatar read stops hitting Postgres on every page request — the site header
+ * renders on every route, so this was a per-request DB round-trip on the most
+ * visited pages. Invalidation: tagged "profiles" (photo changes) and "guides"
+ * (guide photo/username/deletion changes); `revalidate` bounds staleness for
+ * anything that slips through.
  */
 export const getProfileUser = cache((userId: string) =>
-  prisma.user.findFirst({
-    where: { id: userId, deletedAt: null },
-    select: profileUserSelect,
-  }),
+  unstable_cache(
+    async () =>
+      prisma.user.findFirst({
+        where: { id: userId, deletedAt: null },
+        select: profileUserSelect,
+      }),
+    ["profile-user", userId],
+    { tags: ["profiles", "guides"], revalidate: 60 },
+  )(),
 );

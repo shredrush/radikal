@@ -244,19 +244,17 @@ export function AdminTripForm({
           : "The new trip goes live immediately after creating. Add booking dates from its card below."}
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        {!isEditing ? (
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
-            disabled={isPreviewing}
-            onClick={handlePreview}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            {isPreviewing ? "Preparing…" : "Preview"}
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="rounded-full bg-orange-700 text-white hover:bg-orange-800"
+          disabled={isPreviewing}
+          onClick={handlePreview}
+        >
+          <Eye className="h-3.5 w-3.5" />
+          {isPreviewing ? "Preparing…" : "Preview"}
+        </Button>
         {isEditing ? (
           <DeleteTripButton tripId={trip?.id ?? ""} tripTitle={title} />
         ) : null}

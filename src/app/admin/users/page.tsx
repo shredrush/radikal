@@ -2,8 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Search, ShieldCheck, Users as UsersIcon } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { hasPermission, requirePermission } from "@/lib/authz";
-import { countPendingTripChanges } from "@/lib/admin-stats";
+import { requirePermission } from "@/lib/authz";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,7 +74,7 @@ export default async function AdminUsersPage({
       : {}),
   };
 
-  const [users, roleCounts, totalMatches, pendingTripChanges] = await Promise.all([
+  const [users, roleCounts, totalMatches] = await Promise.all([
     safeDb(
       "admin.users.list",
       () =>
@@ -99,9 +98,6 @@ export default async function AdminUsersPage({
     ),
     safeDb("admin.users.role-counts", () => prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }), []),
     safeDb("admin.users.total-matches", () => prisma.user.count({ where }), 0),
-    hasPermission(session.user.role, "trips.manage")
-      ? safeDb("admin.users.pending-trip-changes", () => countPendingTripChanges(), 0)
-      : Promise.resolve(0),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE));
@@ -124,7 +120,6 @@ export default async function AdminUsersPage({
           description="Review all accounts and inspect their activity log."
           active="users"
           role={session.user.role}
-          pendingTripChanges={pendingTripChanges}
         />
 
         <section className="min-w-0">

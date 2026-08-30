@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { logActivity } from "@/lib/activity-log";
@@ -69,6 +69,8 @@ export async function updateProfilePhotoAction(
   await prisma.user.update({ where: { id: userId }, data: { image } });
   await logActivity({ userId, action: "PROFILE_PHOTO_CHANGED", label: "Changed profile photo" });
   revalidatePath("/profile");
+  // Invalidate the cached header avatar (see lib/profile-user.ts).
+  updateTag("profiles");
 
   return { success: true };
 }

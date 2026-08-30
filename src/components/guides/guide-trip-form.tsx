@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Save, Trash2, X } from "lucide-react";
+import { Eye, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -14,6 +14,7 @@ import {
   deleteTripDraftAction,
   saveTripDraftAction,
 } from "@/lib/actions/trip-drafts";
+import { createGuideTripPreviewAction } from "@/lib/actions/trip-previews";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -102,6 +103,7 @@ export function GuideTripForm({
   const [filledCount, setFilledCount] = useState(() => countFilledFromValues(fields));
   const [draftId, setDraftId] = useState<string | null>(draft?.draftId ?? null);
   const [isPending, startTransition] = useTransition();
+  const [isPreviewing, startPreviewing] = useTransition();
   const [isSavingDraft, startSavingDraft] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -163,10 +165,10 @@ export function GuideTripForm({
       try {
         if (isEditing) {
           await submitTripUpdateChangeAction(formData);
-          toast.success("Your changes were submitted for review.");
+          toast.success("Your changes were published.");
         } else {
           await submitTripCreateChangeAction(formData);
-          toast.success("Your new trip was submitted for review.");
+          toast.success("Your new trip was published.");
         }
         if (isDraft && draft?.draftId) {
           await deleteTripDraftAction(draft.draftId);
@@ -200,6 +202,21 @@ export function GuideTripForm({
         const message =
           error instanceof Error ? error.message : "Could not save draft.";
         toast.error(message);
+      }
+    });
+  }
+
+  function handlePreview() {
+    const form = formRef.current;
+    if (!form) return;
+    const formData = new FormData(form);
+
+    startPreviewing(async () => {
+      try {
+        const { url } = await createGuideTripPreviewAction(formData);
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not generate preview.");
       }
     });
   }
@@ -330,7 +347,7 @@ export function GuideTripForm({
 
         <div className="flex items-center justify-end gap-3 border-t border-border/70 pt-4">
           <p className="mr-auto text-xs text-muted-foreground">
-            Changes are reviewed by our team before going live.
+            Changes publish immediately and are logged for staff visibility.
           </p>
           {!isEditing ? (
             <Button
@@ -363,8 +380,21 @@ export function GuideTripForm({
               {isDeleting ? "Deleting…" : "Delete trip"}
             </Button>
           ) : null}
-          <Button type="submit" className="rounded-full" disabled={isPending || isDeleting}>
-            {isPending ? "Submitting…" : "Submit for review"}
+          {isEditing ? (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              className="rounded-full bg-orange-700 text-white hover:bg-orange-800"
+              disabled={isPreviewing}
+              onClick={handlePreview}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              {isPreviewing ? "Preparing…" : "Preview"}
+            </Button>
+          ) : null}
+          <Button type="submit" className="rounded-full bg-emerald-700 text-white hover:bg-emerald-800" disabled={isPending || isDeleting}>
+            {isPending ? "Publishing…" : "Publish"}
           </Button>
         </div>
       </form>

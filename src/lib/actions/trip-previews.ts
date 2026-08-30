@@ -1,11 +1,21 @@
 "use server";
 
 import { randomBytes } from "crypto";
+import { redirect } from "next/navigation";
 
 import { Prisma } from "@/generated/prisma/client";
+import { auth } from "@/lib/auth";
+import { hasPermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { readTripFields, validateTripFields } from "@/lib/trip-fields";
+import { requireGuideAction } from "@/lib/guide-board";
+import { slugify } from "@/lib/format";
+import { assertValidStoredMedia } from "@/lib/media";
+import {
+  asString,
+  readTripFields,
+  validateTripFields,
+} from "@/lib/trip-fields";
 import { type TripProposal } from "@/lib/trip-changes";
 
 // How long a preview link stays valid. Kept deliberately short so a leaked
@@ -14,7 +24,7 @@ const PREVIEW_TTL_MS = 10 * 60 * 1000;
 
 type PreviewContext =
   | { kind: "CREATE" }
-  | { kind: "CHANGE"; changeId: string };
+  | { kind: "GUIDE"; guideId: string };
 
 /**
  * Persist a trip snapshot under a fresh high-entropy token and return the
@@ -54,30 +64,69 @@ export async function createTripPreviewAction(
   return { url };
 }
 
-/** Preview for a pending guide trip change — reads change.proposed directly. */
-export async function createTripChangePreviewAction(
-  changeId: string,
+/** Preview for the guide board trip form — only the owning guide can open it. */
+export async function createGuideTripPreviewAction(
+  formData: FormData,
 ): Promise<{ url: string }> {
-  await requirePermission(
-    "trips.manage",
-    "/login?callbackUrl=/admin/trip-changes",
-  );
+  const { guide } = await requireGuideAction();
+  const tripId = asString(formData.get("tripId"));
 
-  if (!changeId) throw new Error("Missing change id.");
+  // Reuse the shared parsing/validation pipeline (sanitization, media limits
+  // and stored-media verification) so a preview can never render content the
+  // publish flow would reject.
+  const fields = readTripFields(formData);
 
-  const change = await prisma.tripChangeRequest.findUnique({
-    where: { id: changeId },
-    select: { proposed: true, status: true },
-  });
-
-  if (!change) throw new Error("Change request not found.");
-  if (change.status !== "PENDING") {
-    throw new Error("This change has already been reviewed.");
+  if (tripId) {
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { guideId: true, slug: true, deletedAt: true },
+    });
+    if (!trip || trip.guideId !== guide.id) {
+      throw new Error("You can only preview your own trips.");
+    }
+    if (trip.deletedAt) {
+      throw new Error("Deleted trips cannot be previewed.");
+    }
+    fields.slug = trip.slug;
+  } else {
+    fields.slug = slugify(asString(formData.get("title")), 60) || "trip-preview";
   }
 
-  const url = await storePreview(change.proposed as unknown as TripProposal, {
-    kind: "CHANGE",
-    changeId,
-  });
+  fields.guideId = guide.id;
+  validateTripFields(fields);
+  await Promise.all([
+    assertValidStoredMedia("images", fields.images),
+    assertValidStoredMedia("videos", fields.videos),
+  ]);
+
+  const url = await storePreview(fields, { kind: "GUIDE", guideId: guide.id });
   return { url };
+}
+
+export async function authorizeTripPreviewAction(context: Prisma.JsonValue) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { id: session.user.id, deletedAt: null },
+    select: { role: true, guide: { select: { id: true, deletedAt: true } } },
+  });
+
+  if (hasPermission(user?.role, "trips.manage")) return;
+
+  const value = typeof context === "object" && context !== null && !Array.isArray(context)
+    ? context as Record<string, unknown>
+    : null;
+  if (
+    value?.kind === "GUIDE" &&
+    typeof value.guideId === "string" &&
+    user?.guide?.id === value.guideId &&
+    !user.guide.deletedAt
+  ) {
+    return;
+  }
+
+  redirect("/profile");
 }

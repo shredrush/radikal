@@ -48,7 +48,7 @@ export function GuideBoardHeader({
                   key={section.key}
                   variant={section.key === active ? "default" : "outline"}
                   size="sm"
-                  className="rounded-full"
+                  className="rounded-full border-2 border-black dark:border-white"
                   nativeButton={false}
                   render={<Link href={section.href} />}
                 >

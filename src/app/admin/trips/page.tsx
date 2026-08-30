@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Button } from "@/components/ui/button";
 import { AdminTripsManager } from "@/components/admin/admin-trips-manager";
 import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
@@ -34,7 +33,7 @@ export default async function AdminTripsPage({
     Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
   );
 
-  const [guides, totalTrips, totalSlots, draftRows, pendingTripChanges] = await Promise.all([
+  const [guides, totalTrips, totalSlots, draftRows] = await Promise.all([
     safeDb(
       "admin.trips.guide-filter",
       () =>
@@ -57,7 +56,6 @@ export default async function AdminTripsPage({
         }),
       [],
     ),
-    safeDb("admin.trips.pending-trip-changes", () => countPendingTripChanges(), 0),
   ]);
 
   const hasSelectedGuide = guides.some((item) => item.id === selectedGuideId);
@@ -93,7 +91,6 @@ export default async function AdminTripsPage({
           description="Update the listed trip details"
           active="trips"
           role={session.user.role}
-          pendingTripChanges={pendingTripChanges}
         />
 
         <section className="min-w-0">
@@ -124,7 +121,7 @@ export default async function AdminTripsPage({
             <Button
               variant={selectedType === "" ? "default" : "outline"}
               size="xs"
-              className="rounded-full"
+              className="rounded-full border-2 border-black dark:border-white"
               nativeButton={false}
               render={<Link href={activeGuideId ? `/admin/trips?guide=${activeGuideId}` : "/admin/trips"} />}
             >
@@ -135,7 +132,7 @@ export default async function AdminTripsPage({
                 key={option.value}
                 variant={selectedType === option.value ? "default" : "outline"}
                 size="xs"
-                className="rounded-full"
+                className="rounded-full border-2 border-black dark:border-white"
                 nativeButton={false}
                 render={
                   <Link

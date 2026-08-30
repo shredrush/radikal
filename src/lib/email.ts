@@ -467,33 +467,6 @@ export function supportReplyEmail({
   };
 }
 
-export function tripChangeSubmittedAdminEmail({
-  to,
-  name,
-  guideName,
-  tripTitle,
-  changeId,
-}: {
-  to: string;
-  name: string;
-  guideName: string;
-  tripTitle: string;
-  changeId: string;
-}): EmailInput {
-  return {
-    to,
-    subject: `A guide trip change needs your review`,
-    html: layout(
-      "Trip change needs review",
-      heading(`New trip change from ${escapeHtml(guideName)}`) +
-        paragraph(
-          `Hi ${escapeHtml(name || "there")}, ${escapeHtml(guideName)} submitted a change for “${escapeHtml(tripTitle)}” that needs your review before it goes live.`,
-        ) +
-        button(siteUrl(`/admin/trip-changes#change-${changeId}`), "Review changes"),
-    ),
-  };
-}
-
 export function guideCancelledBookingAdminEmail({
   to,
   name,
@@ -520,34 +493,6 @@ export function guideCancelledBookingAdminEmail({
           `Hi ${escapeHtml(name || "there")}, ${escapeHtml(guideName)} cancelled ${bookingsText} for “${escapeHtml(tripTitle)}”. The traveller was notified and the cancelled reservation now sits in the cancelled bookings view.`,
         ) +
         button(siteUrl("/admin/bookings"), "View bookings"),
-    ),
-  };
-}
-
-export function tripChangeDecisionEmail({
-  to,
-  name,
-  approved,
-  tripTitle,
-}: {
-  to: string;
-  name: string;
-  approved: boolean;
-  tripTitle: string;
-}): EmailInput {
-  const body = approved
-    ? `Good news — your trip change for “${escapeHtml(tripTitle)}” was <strong>approved</strong> and is now live on ${SITE_NAME}.`
-    : `Your trip change for “${escapeHtml(tripTitle)}” was <strong>rejected</strong>. You can review the details and submit a revised change from your profile.`;
-
-  return {
-    to,
-    subject: approved ? "Your trip change was approved" : "Update on your trip change",
-    html: layout(
-      approved ? "Trip change approved" : "Trip change update",
-      heading(approved ? "Your change is live!" : "Update on your trip change") +
-        paragraph(`Hi ${escapeHtml(name || "there")},`) +
-        paragraph(body) +
-        button(siteUrl("/guide-board/trips"), "View my trips"),
     ),
   };
 }

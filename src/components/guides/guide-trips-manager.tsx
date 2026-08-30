@@ -1,15 +1,13 @@
-import { Clock3, Compass } from "lucide-react";
+import { Compass } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
-import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
 import { GuideActivityLog } from "@/components/guides/guide-activity-log";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
-import { type TripChangeSummary } from "@/lib/trip-changes";
 
 function toGuideTripData(trip: {
   id: string;
@@ -51,17 +49,6 @@ function toGuideTripData(trip: {
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
   const trips = await safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []);
-  const changeSummaries = await safeDb(
-    "guide.trips-manager.change-summaries",
-    () =>
-      prisma.$queryRaw<TripChangeSummary[]>`
-        SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
-        FROM "trip_change_requests"
-        WHERE "guideId" = ${guideId}
-        ORDER BY "createdAt" DESC
-      `,
-    [],
-  );
   const draftRows = await safeDb(
     "guide.trips-manager.drafts",
     () =>
@@ -71,8 +58,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
       }),
     [],
   );
-
-  const pending = changeSummaries.filter((change) => change.status === "PENDING");
 
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({
     draftId: draft.id,
@@ -103,7 +88,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Your trips
             </h3>
             <p className="text-sm text-muted-foreground">
-              Add a new trip or edit an existing one. Changes go live after staff review.
+              Add a new trip or edit an existing one. Changes publish immediately and are logged for staff visibility.
             </p>
           </div>
           <GuideDraftsManager guideId={guideId} drafts={drafts} />
@@ -116,7 +101,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
             <div>
               <p className="font-medium text-foreground">No trips yet</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Add your first trip above — it will be reviewed by our team before going live.
+                Add your first trip above — it will publish immediately.
               </p>
             </div>
           </div>
@@ -142,42 +127,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
                 </li>
               );
             })}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <h3 className="font-heading text-lg font-semibold tracking-wide text-foreground">
-          Pending review
-        </h3>
-
-        {pending.length === 0 ? (
-          <p className="rounded-[1.25rem] border border-dashed border-border/80 bg-muted/20 px-6 py-8 text-center text-sm text-muted-foreground">
-            No changes waiting for review.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {pending.map((change) => (
-              <li
-                key={change.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-amber-500/30 bg-amber-500/5 px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <Clock3 className="h-4 w-4 text-amber-600" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {change.title ?? "Untitled trip"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {change.type === "CREATE" ? "New trip" : "Trip edit"} awaiting approval
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-                  Pending
-                </Badge>
-              </li>
-            ))}
           </ul>
         )}
       </section>

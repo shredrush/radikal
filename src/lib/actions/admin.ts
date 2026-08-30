@@ -5,8 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
-import { notifyUser } from "@/lib/notifications";
-import { sendEmailAfter, tripChangeDecisionEmail, bookingCancelledEmail } from "@/lib/email";
+import { sendEmailAfter, bookingCancelledEmail } from "@/lib/email";
 import {
   validTypes,
   asString,
@@ -246,7 +245,6 @@ export async function deleteTripAction(tripId: string, reason?: string) {
     throw new Error("Trip is already deleted.");
   }
 
-  let rejectedChanges: { id: string; submittedById: string }[] = [];
   const deletedAt = new Date();
 
   await prisma.$transaction(async (tx) => {
@@ -262,24 +260,6 @@ export async function deleteTripAction(tripId: string, reason?: string) {
       throw new Error("Trip is already deleted.");
     }
 
-    // Resolve pending UPDATE changes through the normal review lifecycle
-    // instead of deleting them: reject them, notify the submitting guide, and
-    // keep an audit trail.
-    rejectedChanges = await tx.tripChangeRequest.findMany({
-      where: { tripId, type: "UPDATE", status: "PENDING" },
-      select: { id: true, submittedById: true },
-    });
-    if (rejectedChanges.length > 0) {
-      await tx.tripChangeRequest.updateMany({
-        where: { id: { in: rejectedChanges.map((change) => change.id) } },
-        data: {
-          status: "REJECTED",
-          reviewedById: session.user.id,
-          reviewedAt: new Date(),
-        },
-      });
-    }
-
     await Promise.all([
       tx.trip.update({ where: { id: tripId }, data: { deletedAt, deletedById: session.user.id } }),
       tx.slot.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
@@ -289,41 +269,12 @@ export async function deleteTripAction(tripId: string, reason?: string) {
       }),
       tx.wishlistItem.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
       tx.review.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      tx.tripChangeRequest.updateMany({
+        where: { tripId, type: "UPDATE", status: "PENDING" },
+        data: { status: "REJECTED", reviewedAt: deletedAt, reviewedById: session.user.id },
+      }),
     ]);
   });
-
-  if (rejectedChanges.length > 0) {
-    const submitters = await prisma.user.findMany({
-      where: {
-        id: { in: [...new Set(rejectedChanges.map((change) => change.submittedById))] },
-      },
-      select: { id: true, email: true, name: true },
-    });
-
-    for (const user of submitters) {
-      await notifyUser(user.id, {
-        type: "TRIP_CHANGE_REJECTED",
-        title: "Trip change rejected",
-        body: `Your pending trip change for “${trip.title}” was rejected because the trip was deleted.`,
-        href: "/guide-board/trips#activity-log",
-      });
-      sendEmailAfter(
-        tripChangeDecisionEmail({
-          to: user.email,
-          name: user.name ?? "",
-          approved: false,
-          tripTitle: trip.title,
-        }),
-      );
-    }
-
-    await logActivity({
-      userId: session.user.id,
-      action: "TRIP_CHANGE_REJECTED",
-      label: `Rejected ${rejectedChanges.length} pending trip change(s) for deleted trip “${trip.title}”`,
-      metadata: { tripId, changeIds: rejectedChanges.map((change) => change.id) },
-    });
-  }
 
   await logActivity({
     userId: session.user.id,

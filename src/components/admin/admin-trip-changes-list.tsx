@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, ChevronDown, ChevronUp, Clock3, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TripChangeDiff } from "@/components/admin/trip-change-diff";
-import {
-  ApproveTripChangeButton,
-  RejectTripChangeButton,
-} from "@/components/admin/review-trip-change-buttons";
-import { PreviewTripChangeButton } from "@/components/admin/preview-trip-change-button";
 import { getAdminTripChangeDetailsAction } from "@/lib/actions/trip-changes";
 import { type AdminTripChangeSummary, type TripProposal } from "@/lib/trip-changes";
 import { formatDateTime } from "@/lib/format";
@@ -27,14 +22,14 @@ function statusBadge(status: AdminTripChangeSummary["status"]) {
   if (status === "PENDING") {
     return (
       <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-        <Clock3 className="h-3 w-3" /> Pending
+        Pending
       </Badge>
     );
   }
   if (status === "APPROVED") {
     return (
       <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-        <CheckCircle2 className="h-3 w-3" /> Approved
+        <CheckCircle2 className="h-3 w-3" /> Published
       </Badge>
     );
   }
@@ -58,7 +53,7 @@ function changeTypeBadgeClass(type: AdminTripChangeSummary["type"]) {
 }
 
 /**
- * Admin review list. Cards are collapsed by default; the full before/after
+ * Admin change list. Cards are collapsed by default; the full before/after
  * diff is fetched from the server only when a card is expanded.
  */
 export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSummary[] }) {
@@ -88,7 +83,6 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
   return (
     <div className="flex flex-col gap-4">
       {changes.map((change) => {
-        const isPendingStatus = change.status === "PENDING";
         const isDeleteEntry = change.type === "DELETE";
         const submittedBy = change.submittedByUsername
           ? `@${change.submittedByUsername}`
@@ -125,20 +119,13 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
                       {isDeleteEntry
                         ? `Deleted${submittedBy ? ` by ${submittedBy}` : ""}`
                         : "Submitted"} {formatDateTime(change.createdAt)}
-                      {!isPendingStatus && change.reviewedAt && !isDeleteEntry
-                        ? ` · Reviewed ${formatDateTime(change.reviewedAt)}${change.reviewedByName ? ` by ${change.reviewedByName}` : ""}`
+                      {change.reviewedAt && !isDeleteEntry
+                        ? ` · Published ${formatDateTime(change.reviewedAt)}${change.reviewedByName ? ` by ${change.reviewedByName}` : ""}`
                         : ""}
                     </CardDescription>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {isPendingStatus ? (
-                    <>
-                      <PreviewTripChangeButton changeId={change.id} />
-                      <ApproveTripChangeButton changeId={change.id} />
-                      <RejectTripChangeButton changeId={change.id} />
-                    </>
-                  ) : null}
                   {!isDeleteEntry ? (
                     <Button
                       type="button"

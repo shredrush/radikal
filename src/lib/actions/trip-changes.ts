@@ -8,7 +8,7 @@ import { requireGuideAction } from "@/lib/guide-board";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isValidSlug, sanitizeText } from "@/lib/sanitize";
-import { notifyTripReviewStaff, notifyUser, notifyBookingStaff } from "@/lib/notifications";
+import { notifyBookingStaff } from "@/lib/notifications";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import { assertValidStoredMedia } from "@/lib/media";
 import {
@@ -27,8 +27,6 @@ import {
   bookingCancelledEmail,
   guideCancelledBookingAdminEmail,
   sendEmailAfter,
-  tripChangeDecisionEmail,
-  tripChangeSubmittedAdminEmail,
 } from "@/lib/email";
 import { cancelActiveBookingsForSlot, type CancellationEmail } from "@/lib/actions/payment";
 import { startOfTodayIST } from "@/lib/dates";
@@ -164,32 +162,6 @@ async function uniqueTripSlug(title: string): Promise<string> {
   return `${base.slice(0, 40)}-${Date.now().toString(36)}`;
 }
 
-/** Notify trip-review staff (in-app + email) and write an audit entry. */
-async function notifySubmitted(changeId: string, guideName: string, proposal: TripProposal) {
-  const staff = await notifyTripReviewStaff({
-    type: "TRIP_CHANGE_SUBMITTED",
-    title: "Trip change needs review",
-    body: `${guideName} submitted a change for “${proposal.title}” that needs your review.`,
-    href: `/admin/trip-changes#change-${changeId}`,
-  });
-
-  for (const user of staff) {
-    sendEmailAfter(
-      tripChangeSubmittedAdminEmail({
-        to: user.email,
-        name: user.name ?? "",
-        guideName,
-        tripTitle: proposal.title,
-        changeId,
-      }),
-    );
-  }
-}
-
-function isUniqueConstraint(error: unknown) {
-  return error instanceof Error && error.message.includes("Unique constraint failed");
-}
-
 export async function submitTripCreateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
   const fields = validateTripFields(readTripFields(formData));
@@ -198,25 +170,64 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
 
   const proposal: TripProposal = { slug, ...fields };
 
-  const change = await prisma.tripChangeRequest.create({
-    data: {
-      type: "CREATE",
-      guideId: guide.id,
-      proposed: proposal as unknown as Prisma.InputJsonValue,
-      submittedById: userId,
-    },
-  });
+  let change;
+  try {
+    change = await prisma.$transaction(async (tx) => {
+      const trip = await tx.trip.create({
+        data: {
+          slug: proposal.slug,
+          title: proposal.title,
+          type: proposal.type as (typeof validTypes)[number],
+          location: proposal.location,
+          description: proposal.description,
+          priceInRupees: proposal.priceInRupees,
+          durationDays: proposal.durationDays,
+          maxGroupSize: proposal.maxGroupSize,
+          categories: proposal.categories as (typeof validCategories)[number][],
+          images: proposal.images,
+          videos: proposal.videos,
+          mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
+          guideId: guide.id,
+        },
+      });
 
-  await notifySubmitted(change.id, guide.name, proposal);
+      await applySupplemental(tx, trip.id, proposal);
+
+      return tx.tripChangeRequest.create({
+        data: {
+          type: "CREATE",
+          guideId: guide.id,
+          tripId: trip.id,
+          proposed: proposal as unknown as Prisma.InputJsonValue,
+          status: "APPROVED",
+          submittedById: userId,
+          reviewedAt: new Date(),
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      throw new Error("A trip with this title already exists. Try a different title.");
+    }
+    throw error;
+  }
+
   await logActivity({
     userId,
     action: "TRIP_CHANGE_SUBMITTED",
-    label: "Submitted a new trip for review",
+    label: "Published a new trip",
     metadata: { changeId: change.id, title: proposal.title },
   });
 
   revalidatePath("/profile");
+  revalidatePath("/guide-board/trips");
   revalidatePath("/admin/trip-changes");
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  revalidatePath(`/trips/${proposal.slug}`);
+  updateTag("trips");
+  updateTag("guides");
 }
 
 export async function submitTripUpdateChangeAction(formData: FormData): Promise<void> {
@@ -241,7 +252,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   }
 
   if (trip.deletedAt) {
-    throw new Error("Deleted trips cannot be submitted for review.");
+    throw new Error("Deleted trips cannot be published.");
   }
 
   if (trip.guideId !== guide.id) {
@@ -273,27 +284,63 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   const proposal: TripProposal = { ...fields, slug: trip.slug };
 
-  const change = await prisma.tripChangeRequest.create({
-    data: {
-      type: "UPDATE",
-      guideId: guide.id,
-      tripId,
-      proposed: proposal as unknown as Prisma.InputJsonValue,
-      original: original as unknown as Prisma.InputJsonValue,
-      submittedById: userId,
-    },
+  const change = await prisma.$transaction(async (tx) => {
+    // The ownership/deleted checks above happen before the transaction starts;
+    // re-assert them atomically here so a trip deleted or reassigned in the
+    // meantime is never silently republished with a misleading APPROVED change.
+    const updated = await tx.trip.updateMany({
+      where: { id: tripId, deletedAt: null, guideId: guide.id },
+      data: {
+        title: proposal.title,
+        type: proposal.type as (typeof validTypes)[number],
+        location: proposal.location,
+        description: proposal.description,
+        priceInRupees: proposal.priceInRupees,
+        durationDays: proposal.durationDays,
+        maxGroupSize: proposal.maxGroupSize,
+        categories: proposal.categories as (typeof validCategories)[number][],
+        images: proposal.images,
+        videos: proposal.videos,
+        mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
+      },
+    });
+
+    if (updated.count === 0) {
+      throw new Error("This trip is no longer available to edit.");
+    }
+
+    await applySupplemental(tx, tripId, proposal);
+
+    return tx.tripChangeRequest.create({
+      data: {
+        type: "UPDATE",
+        guideId: guide.id,
+        tripId,
+        proposed: proposal as unknown as Prisma.InputJsonValue,
+        original: original as unknown as Prisma.InputJsonValue,
+        status: "APPROVED",
+        submittedById: userId,
+        reviewedAt: new Date(),
+      },
+    });
   });
 
-  await notifySubmitted(change.id, guide.name, proposal);
   await logActivity({
     userId,
     action: "TRIP_CHANGE_SUBMITTED",
-    label: "Submitted trip changes for review",
+    label: "Published trip changes",
     metadata: { changeId: change.id, title: proposal.title },
   });
 
   revalidatePath("/profile");
+  revalidatePath("/guide-board/trips");
   revalidatePath("/admin/trip-changes");
+  revalidatePath("/admin/trips");
+  revalidatePath("/trips");
+  revalidatePath("/");
+  revalidatePath(`/trips/${proposal.slug}`);
+  updateTag("trips");
+  updateTag("guides");
 }
 
 async function requireGuideTrip(tripId: string) {
@@ -625,233 +672,6 @@ async function applySupplemental(
   }
 }
 
-export async function approveTripChangeAction(changeId: string) {
-  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
-
-  if (!changeId) {
-    throw new Error("Missing change id.");
-  }
-
-  const change = await prisma.tripChangeRequest.findUnique({
-    where: { id: changeId },
-    include: {
-      guide: {
-        select: {
-          id: true,
-          name: true,
-          user: { select: { id: true, email: true, name: true, username: true } },
-        },
-      },
-    },
-  });
-
-  if (!change) {
-    throw new Error("Change request not found.");
-  }
-
-  if (change.status !== "PENDING") {
-    throw new Error("This change has already been reviewed.");
-  }
-
-  const proposal = change.proposed as unknown as TripProposal;
-  const proposalMediaOrder = normalizeMediaOrder(
-    proposal.images,
-    proposal.videos,
-    Array.isArray(proposal.mediaOrder) ? proposal.mediaOrder : [],
-  );
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      if (change.type === "CREATE") {
-        const trip = await tx.trip.create({
-          data: {
-            slug: proposal.slug,
-            title: proposal.title,
-            type: proposal.type as (typeof validTypes)[number],
-            location: proposal.location,
-            description: proposal.description,
-            priceInRupees: proposal.priceInRupees,
-            durationDays: proposal.durationDays,
-            maxGroupSize: proposal.maxGroupSize,
-            categories: proposal.categories as (typeof validCategories)[number][],
-            images: proposal.images,
-            videos: proposal.videos,
-            mediaOrder: proposalMediaOrder,
-            guideId: change.guideId,
-          },
-        });
-
-        await applySupplemental(tx, trip.id, proposal);
-      } else {
-        if (!change.tripId) {
-          throw new Error("Missing trip id for this change.");
-        }
-
-        const existing = await tx.trip.findUnique({
-          where: { id: change.tripId },
-          select: { id: true, guideId: true, deletedAt: true },
-        });
-
-        if (!existing) {
-          throw new Error("The trip no longer exists.");
-        }
-
-        if (existing.deletedAt) {
-          throw new Error("Deleted trips cannot be approved.");
-        }
-
-        if (existing.guideId !== change.guideId) {
-          throw new Error("This trip is no longer linked to this guide.");
-        }
-
-        await tx.trip.update({
-          where: { id: change.tripId },
-          data: {
-            title: proposal.title,
-            type: proposal.type as (typeof validTypes)[number],
-            location: proposal.location,
-            description: proposal.description,
-            priceInRupees: proposal.priceInRupees,
-            durationDays: proposal.durationDays,
-            maxGroupSize: proposal.maxGroupSize,
-            categories: proposal.categories as (typeof validCategories)[number][],
-            images: proposal.images,
-            videos: proposal.videos,
-            mediaOrder: proposalMediaOrder,
-          },
-        });
-
-        await applySupplemental(tx, change.tripId, proposal);
-      }
-
-      await tx.tripChangeRequest.update({
-        where: { id: changeId },
-        data: {
-          status: "APPROVED",
-          reviewedAt: new Date(),
-          reviewedById: session.user.id,
-        },
-      });
-    });
-  } catch (error) {
-    if (isUniqueConstraint(error)) {
-      throw new Error("Slug already exists. Reject this change and ask the guide to use a different title.");
-    }
-    throw error;
-  }
-
-  revalidatePath("/admin/trip-changes");
-  revalidatePath("/admin/trips");
-  revalidatePath("/trips");
-  revalidatePath("/");
-  updateTag("trips");
-  updateTag("guides");
-
-  if (change.type === "UPDATE" && change.tripId) {
-    const trip = await prisma.trip.findUnique({
-      where: { id: change.tripId },
-      select: { slug: true },
-    });
-    if (trip) revalidatePath(`/trips/${trip.slug}`);
-  } else {
-    revalidatePath(`/trips/${proposal.slug}`);
-  }
-
-  if (change.guide?.user.username) {
-    revalidatePath(`/${change.guide.user.username}`);
-  }
-
-  const guideUser = change.guide?.user;
-  if (guideUser) {
-    await notifyUser(guideUser.id, {
-      type: "TRIP_CHANGE_APPROVED",
-      title: "Trip change approved",
-      body: `Your change for “${proposal.title}” was approved and is now live.`,
-      href: "/guide-board/trips#activity-log",
-    });
-    sendEmailAfter(
-      tripChangeDecisionEmail({
-        to: guideUser.email,
-        name: guideUser.name ?? "",
-        approved: true,
-        tripTitle: proposal.title,
-      }),
-    );
-  }
-
-  await logActivity({
-    userId: change.submittedById,
-    action: "TRIP_CHANGE_APPROVED",
-    label: "Guide trip change approved",
-    metadata: { changeId, title: proposal.title },
-  });
-}
-
-export async function rejectTripChangeAction(changeId: string) {
-  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
-
-  if (!changeId) {
-    throw new Error("Missing change id.");
-  }
-
-  const change = await prisma.tripChangeRequest.findUnique({
-    where: { id: changeId },
-    include: {
-      guide: {
-        select: {
-          user: { select: { id: true, email: true, name: true } },
-        },
-      },
-    },
-  });
-
-  if (!change) {
-    throw new Error("Change request not found.");
-  }
-
-  if (change.status !== "PENDING") {
-    throw new Error("This change has already been reviewed.");
-  }
-
-  const proposal = change.proposed as unknown as TripProposal;
-
-  await prisma.tripChangeRequest.update({
-    where: { id: changeId },
-    data: {
-      status: "REJECTED",
-      reviewedAt: new Date(),
-      reviewedById: session.user.id,
-    },
-  });
-
-  revalidatePath("/admin/trip-changes");
-
-  const guideUser = change.guide?.user;
-  if (guideUser) {
-    await notifyUser(guideUser.id, {
-      type: "TRIP_CHANGE_REJECTED",
-      title: "Trip change rejected",
-      body: `Your change for “${proposal.title}” was rejected. You can revise and resubmit it.`,
-      href: "/guide-board/trips#activity-log",
-    });
-    sendEmailAfter(
-      tripChangeDecisionEmail({
-        to: guideUser.email,
-        name: guideUser.name ?? "",
-        approved: false,
-        tripTitle: proposal.title,
-      }),
-    );
-  }
-
-  await logActivity({
-    userId: change.submittedById,
-    action: "TRIP_CHANGE_REJECTED",
-    label: "Guide trip change rejected",
-    metadata: { changeId, title: proposal.title },
-  });
-}
-
 /**
  * Fetch the full proposed/original snapshot for one trip change. Callers wrap
  * this with their own authorization check.
@@ -885,31 +705,8 @@ async function fetchChangeSnapshots(changeId: string) {
 
 /**
  * Fetch the full proposed/original snapshot for one trip change. Used by the
- * guide's review history to load the diff lazily only when a row is expanded.
- * The signed-in guide can only view their own changes.
- */
-export async function getTripChangeDetailsAction(changeId: string): Promise<{
-  type: "CREATE" | "UPDATE";
-  proposed: TripProposal;
-  original: TripProposal | null;
-}> {
-  const { guide } = await requireGuide();
-  const change = await fetchChangeSnapshots(changeId);
-
-  if (change.guideId !== guide.id) {
-    throw new Error("You can only view your own trip changes.");
-  }
-
-  return {
-    type: change.type,
-    proposed: change.proposed,
-    original: change.original,
-  };
-}
-
-/**
- * Fetch the full proposed/original snapshot for one trip change. Used by the
- * admin review page to load the diff lazily only when a card is expanded.
+ * admin trip-changes history to load the diff lazily only when a card is
+ * expanded.
  */
 export async function getAdminTripChangeDetailsAction(changeId: string): Promise<{
   type: "CREATE" | "UPDATE";
@@ -942,8 +739,6 @@ export type GuideActivityEntry = {
 /** Actions relevant to the guide-facing activity log panel. */
 const GUIDE_ACTIVITY_ACTIONS = [
   "TRIP_CHANGE_SUBMITTED",
-  "TRIP_CHANGE_APPROVED",
-  "TRIP_CHANGE_REJECTED",
   "TRIP_DELETED",
   "SLOT_ADDED",
   "SLOT_EDITED",

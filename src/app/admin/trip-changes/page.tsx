@@ -56,34 +56,33 @@ export default async function AdminTripChangesPage() {
     [],
   );
 
-  const pendingCount = changes.filter((change) => change.status === "PENDING").length;
-  const approvedCount = changes.filter((change) => change.status === "APPROVED").length;
-  const rejectedCount = changes.filter((change) => change.status === "REJECTED").length;
+  const publishedCount = changes.filter((change) => change.status === "APPROVED").length;
+  const deletedCount = changes.filter((change) => change.type === "DELETE").length;
+  const editCount = changes.filter((change) => change.type === "UPDATE").length;
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="Trip Changes"
-          description="Review trip additions and edits submitted by guides before they go live"
+          description="Track trip additions and edits published by guides"
           active="trip-changes"
           role={session.user.role}
-          pendingTripChanges={pendingCount}
         />
 
         <section className="min-w-0">
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{pendingCount}</p>
+              <p className="text-sm text-muted-foreground">Published</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{publishedCount}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Approved</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{approvedCount}</p>
+              <p className="text-sm text-muted-foreground">Edits</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{editCount}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-sm text-muted-foreground">Rejected</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{rejectedCount}</p>
+              <p className="text-sm text-muted-foreground">Deleted</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{deletedCount}</p>
             </div>
           </div>
         </section>
@@ -95,7 +94,7 @@ export default async function AdminTripChangesPage() {
               <div className="space-y-2">
                 <h2 className="font-heading text-2xl font-semibold tracking-wide">No trip changes yet</h2>
                 <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                  When guides submit new trips or edits, they will appear here for review.
+                  When guides publish new trips or edits, they will appear here.
                 </p>
               </div>
             </CardContent>

@@ -10,18 +10,11 @@ export async function AdminPageHeader({
   description,
   active,
   role,
-  pendingTripChanges,
 }: {
   title: string;
   description: string;
   active: AdminSection;
   role?: Role;
-  /**
-   * Precomputed pending trip-change count. Every admin page runs it inside its
-   * own parallel query batch so the header never adds a serial DB round-trip
-   * after render.
-   */
-  pendingTripChanges: number;
 }) {
   const visibleSections = ADMIN_SECTIONS.filter((section) =>
     hasPermission(role, section.permission),
@@ -41,7 +34,7 @@ export async function AdminPageHeader({
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="rounded-full border-2 border-black dark:border-white"
             nativeButton={false}
             render={<Link href="/support" />}
           >
@@ -62,16 +55,11 @@ export async function AdminPageHeader({
               key={section.key}
               variant={section.key === active ? "default" : "outline"}
               size="sm"
-              className="rounded-full"
+              className="rounded-full border-2 border-black dark:border-white"
               nativeButton={false}
               render={<Link href={section.href} />}
             >
               {section.label}
-              {section.key === "trip-changes" && pendingTripChanges > 0 ? (
-                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[0.65rem] font-bold leading-none text-white">
-                  {pendingTripChanges > 9 ? "9+" : pendingTripChanges}
-                </span>
-              ) : null}
             </Button>
           ))}
         </div>
