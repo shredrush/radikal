@@ -148,22 +148,26 @@ export function CheckoutFlow({
 
     setError(null);
     startTransition(async () => {
-      const result = await createBooking({
-        tripId: trip.id,
-        slotId,
-        participantCount,
-        adventureInsurance,
-        specialRequests: cleanSpecialRequests,
-        transactionId: cleanTransactionId,
-      });
+      try {
+        const result = await createBooking({
+          tripId: trip.id,
+          slotId,
+          participantCount,
+          adventureInsurance,
+          specialRequests: cleanSpecialRequests,
+          transactionId: cleanTransactionId,
+        });
 
-      if (!result.success) {
-        setError(result.error);
-        return;
+        if (!result.success) {
+          setError(result.error);
+          return;
+        }
+
+        setStep("submitted");
+        router.push("/profile");
+      } catch {
+        setError("Could not submit your booking. Please try again.");
       }
-
-      setStep("submitted");
-      router.push("/profile");
     });
   }
 

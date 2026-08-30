@@ -23,17 +23,21 @@ export function WishlistButton({
 
   function handleToggle() {
     startTransition(async () => {
-      const result = await toggleWishlist(tripId);
+      try {
+        const result = await toggleWishlist(tripId);
 
-      if (!result.success) {
-        toast.error(result.error);
-        return;
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+
+        setWishlisted(result.inWishlist);
+        toast.success(
+          result.inWishlist ? "Added to wishlist." : "Removed from wishlist.",
+        );
+      } catch {
+        toast.error("Could not update your wishlist. Please try again.");
       }
-
-      setWishlisted(result.inWishlist);
-      toast.success(
-        result.inWishlist ? "Added to wishlist." : "Removed from wishlist.",
-      );
     });
   }
 

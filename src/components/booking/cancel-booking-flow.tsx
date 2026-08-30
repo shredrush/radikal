@@ -39,14 +39,18 @@ export function CancelBookingFlow({
     if (!cleanReason) return;
 
     startTransition(async () => {
-      const result = await action(bookingId, cleanReason);
+      try {
+        const result = await action(bookingId, cleanReason);
 
-      if (result.success) {
-        toast.success(successMessage);
-        setOpen(false);
-        setReason("");
-      } else {
-        toast.error(result.error);
+        if (result.success) {
+          toast.success(successMessage);
+          setOpen(false);
+          setReason("");
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error("Could not cancel the booking. Please try again.");
       }
     });
   }

@@ -56,15 +56,19 @@ export function ProfilePhotoForm({
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
-      const result = await updateProfilePhotoAction({}, formData);
-      if (result.error) {
-        setError(result.error);
-        return;
+      try {
+        const result = await updateProfilePhotoAction({}, formData);
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+        setOpen(false);
+        setPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        router.refresh();
+      } catch {
+        setError("Could not update your profile photo. Please try again.");
       }
-      setOpen(false);
-      setPreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      router.refresh();
     });
   }
 

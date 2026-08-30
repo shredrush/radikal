@@ -109,23 +109,27 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
     }
 
     startTransition(async () => {
-      const result = await createCustomTripRequestAction({
-        groupType,
-        sports,
-        startDate,
-        endDate,
-        location,
-        participantCount,
-        budgetRupees: budget === "" ? undefined : Number(budget),
-        requirements,
-      });
+      try {
+        const result = await createCustomTripRequestAction({
+          groupType,
+          sports,
+          startDate,
+          endDate,
+          location,
+          participantCount,
+          budgetRupees: budget === "" ? undefined : Number(budget),
+          requirements,
+        });
 
-      if (!result.success) {
-        setError(result.error);
-        return;
+        if (!result.success) {
+          setError(result.error);
+          return;
+        }
+
+        router.push(`/custom-trip/${result.requestId}`);
+      } catch {
+        setError("Could not send your trip request. Please try again.");
       }
-
-      router.push(`/custom-trip/${result.requestId}`);
     });
   }
 

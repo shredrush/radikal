@@ -18,12 +18,16 @@ export function ConfirmPaymentButton({ bookingId }: { bookingId: string }) {
     if (!confirmed) return;
 
     startTransition(async () => {
-      const result = await confirmBookingPayment(bookingId);
+      try {
+        const result = await confirmBookingPayment(bookingId);
 
-      if (result.success) {
-        toast.success("Booking confirmed.");
-      } else {
-        toast.error(result.error);
+        if (result.success) {
+          toast.success("Booking confirmed.");
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error("Could not confirm the booking. Please try again.");
       }
     });
   }

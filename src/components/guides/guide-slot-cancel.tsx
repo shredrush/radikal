@@ -47,14 +47,18 @@ export function GuideSlotCancelBar({
     if (!cleanReason) return;
 
     startTransition(async () => {
-      const result = await cancelSlotBookingsAsGuide(slotId, cleanReason);
+      try {
+        const result = await cancelSlotBookingsAsGuide(slotId, cleanReason);
 
-      if (result.success) {
-        toast.success("Trip booking cancelled");
-        onClose();
-        setReason("");
-      } else {
-        toast.error(result.error);
+        if (result.success) {
+          toast.success("Trip booking cancelled");
+          onClose();
+          setReason("");
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error("Could not cancel this trip. Please try again.");
       }
     });
   }

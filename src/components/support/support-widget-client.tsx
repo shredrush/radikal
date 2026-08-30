@@ -17,6 +17,7 @@ import { SupportChatPanel } from "@/components/support/support-chat-panel";
 
 type WidgetState =
   | { kind: "checking" }
+  | { kind: "unavailable" }
   | { kind: "anonymous" }
   | { kind: "agent" }
   | { kind: "customer"; status: "OPEN" | "CLOSED"; unreadCount: number; hasActiveChat: boolean };
@@ -33,7 +34,10 @@ export function SupportWidgetClient() {
         return;
       }
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        setState({ kind: "unavailable" });
+        return;
+      }
 
       const data = (await response.json()) as {
         unreadCount?: number;
@@ -54,7 +58,7 @@ export function SupportWidgetClient() {
         hasActiveChat: Boolean(data.hasActiveChat),
       });
     } catch {
-      // Ignore transient network errors; the next poll will retry.
+      setState({ kind: "unavailable" });
     }
   }, []);
 
@@ -66,9 +70,11 @@ export function SupportWidgetClient() {
   }, [loadUnread]);
 
   useEffect(() => {
-    // Only poll when the customer has an existing support thread; there is
-    // nothing to surface as unread otherwise.
-    if (state.kind !== "customer" || !state.hasActiveChat) return;
+    // Retry temporarily unavailable requests, but only poll healthy sessions
+    // when there is an existing thread with unread-state changes to surface.
+    if (state.kind !== "unavailable" && (state.kind !== "customer" || !state.hasActiveChat)) {
+      return;
+    }
 
     const interval = setInterval(loadUnread, 30000);
     return () => clearInterval(interval);
@@ -78,7 +84,7 @@ export function SupportWidgetClient() {
 
   return (
     <Dialog onOpenChange={(open) => {
-      if (!open) loadUnread();
+      if (open) void loadUnread();
     }}>
       <DialogTrigger
         aria-label="Contact support"
@@ -100,7 +106,18 @@ export function SupportWidgetClient() {
           </DialogDescription>
         </DialogHeader>
 
-        {state.kind === "agent" ? (
+        {state.kind === "checking" ? (
+          <p className="mt-5 text-sm text-muted-foreground">Checking support availability…</p>
+        ) : state.kind === "unavailable" ? (
+          <div className="mt-5 flex flex-col items-start gap-4">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Support is temporarily unavailable. Please try again shortly.
+            </p>
+            <Button size="sm" className="rounded-full" onClick={() => void loadUnread()}>
+              Try again
+            </Button>
+          </div>
+        ) : state.kind === "agent" ? (
           <div className="mt-5 flex flex-col items-start gap-4">
             <p className="text-sm leading-relaxed text-muted-foreground">
               You&apos;re signed in as a support agent. Open the board to
