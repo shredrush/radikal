@@ -158,7 +158,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Profile media</p>
           <p className="text-xs text-muted-foreground">
-            Up to 5 photos and 5 videos. The first photo becomes the profile cover.
+            Up to 5 photos and 5 videos. Reorder media here to set the public profile gallery layout.
           </p>
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -169,6 +169,8 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             initialVideos={guide?.videos}
             initialMediaOrder={guide?.mediaOrder}
             imagesFieldName="photos"
+            videosFieldName="videos"
+            mediaOrderFieldName="mediaOrder"
           />
         </div>
         <div className="space-y-2 md:col-span-2">

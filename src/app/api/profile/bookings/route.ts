@@ -7,6 +7,8 @@ import { bookingCardSelect, toBookingCardData } from "@/lib/booking-card";
 import { completePastBookings } from "@/lib/booking-completion";
 
 export const dynamic = "force-dynamic";
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 25;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -19,6 +21,11 @@ export async function GET(request: Request) {
   const kind = ["completed", "cancelled"].includes(requestedKind ?? "")
     ? (requestedKind as "completed" | "cancelled")
     : "upcoming";
+  const cursor = searchParams.get("cursor") || undefined;
+  const requestedLimit = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(Math.trunc(requestedLimit), 1), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
 
   const statusFilter: Record<
     "upcoming" | "completed" | "cancelled",
@@ -43,6 +50,8 @@ export async function GET(request: Request) {
           trip: { deletedAt: null },
         },
         orderBy: { createdAt: "desc" },
+        take: limit + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         select: bookingCardSelect,
       }),
       kind === "completed"
@@ -61,7 +70,8 @@ export async function GET(request: Request) {
         .map((review) => [review.tripId, review] as const),
     );
 
-    const items = bookings.map((booking) =>
+    const page = bookings.slice(0, limit);
+    const items = page.map((booking) =>
       toBookingCardData(booking, {
         showUserCancel: kind === "upcoming",
         showReview: kind === "completed",
@@ -71,7 +81,10 @@ export async function GET(request: Request) {
             : undefined,
       }),
     );
-    return NextResponse.json({ bookings: items });
+    return NextResponse.json({
+      bookings: items,
+      nextCursor: bookings.length > limit ? page.at(-1)?.id : null,
+    });
   } catch (error) {
     console.error("[api/profile/bookings] failed to load bookings", error);
     return NextResponse.json({ error: "Failed to load bookings" }, { status: 500 });

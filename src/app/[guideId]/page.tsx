@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { ShieldCheck } from "lucide-react";
 
 import { TripGallery } from "@/components/trips/trip-gallery";
-import { TripCard } from "@/components/trips/trip-card";
+import { TripDetailFeature } from "@/components/trips/trip-detail-feature";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { prisma, safeDb } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
@@ -28,8 +28,6 @@ const getGuideDetail = unstable_cache(
         trips: {
           where: { deletedAt: null },
           orderBy: { createdAt: "asc" },
-          // Only the fields rendered on the trip cards; the previous `include`
-          // pulled every scalar column (including the full description).
           select: {
             id: true,
             slug: true,
@@ -38,8 +36,18 @@ const getGuideDetail = unstable_cache(
             location: true,
             categories: true,
             durationDays: true,
+            maxGroupSize: true,
             priceInRupees: true,
             images: true,
+            videos: true,
+            mediaOrder: true,
+            tripLocation: true,
+            inclusions: { orderBy: { order: "asc" } },
+            highlights: { orderBy: { order: "asc" } },
+            slots: {
+              where: { deletedAt: null },
+              orderBy: { date: "asc" },
+            },
           },
         },
         reviews: {
@@ -109,7 +117,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
 
   return (
     <div className="flex-1">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
         <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
@@ -188,9 +196,20 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               No trips have been organised by {guide.name} yet.
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-10">
               {guide.trips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} />
+                <TripDetailFeature
+                  key={trip.id}
+                  trip={trip}
+                  action={
+                    <Link
+                      href={`/trips/${trip.slug}`}
+                      className="mt-1 shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+                    >
+                      Open trip page
+                    </Link>
+                  }
+                />
               ))}
             </div>
           )}

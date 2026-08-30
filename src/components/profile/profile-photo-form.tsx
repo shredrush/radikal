@@ -23,12 +23,14 @@ import { updateProfilePhotoAction } from "@/lib/actions/profile";
 export function ProfilePhotoForm({
   currentImage,
   trigger,
+  initialOpen = false,
 }: {
   currentImage: string | null;
   trigger?: ReactElement;
+  initialOpen?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState(

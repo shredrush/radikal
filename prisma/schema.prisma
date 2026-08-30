@@ -417,6 +417,8 @@ model Booking {
 
   @@index([userId])
   @@index([userId, status])
+  @@index([userId, deletedAt, createdAt])
+  @@index([userId, status, deletedAt, createdAt])
   @@index([slotId])
   @@index([status])
   @@index([tripId])
@@ -440,6 +442,7 @@ model WishlistItem {
 
   @@unique([userId, tripId])
   @@index([userId])
+  @@index([userId, deletedAt, createdAt])
   @@index([tripId])
   @@index([deletedAt])
   @@map("wishlist_items")
@@ -461,6 +464,7 @@ model Review {
   guide Guide? @relation(fields: [guideId], references: [id])
 
   @@index([userId])
+  @@index([userId, deletedAt])
   @@index([tripId])
   @@index([guideId])
   @@index([deletedAt])
@@ -487,6 +491,7 @@ model SupportChat {
   messages SupportMessage[]
 
   @@index([status])
+  @@index([userId, deletedAt])
   @@index([updatedAt])
   @@map("support_chats")
 }
@@ -502,6 +507,7 @@ model SupportMessage {
   sender User        @relation(fields: [senderId], references: [id])
 
   @@index([chatId])
+  @@index([chatId, createdAt])
   @@index([senderId])
   @@map("support_messages")
 }
@@ -532,6 +538,7 @@ model CustomTripRequest {
   chat CustomTripChat?
 
   @@index([userId])
+  @@index([userId, deletedAt, createdAt])
   @@index([status])
   @@index([updatedAt])
   @@map("custom_trip_requests")

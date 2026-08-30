@@ -1,42 +1,18 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Ban, CheckCircle2, ChevronDown, Loader2, Ticket } from "lucide-react";
+import { ChevronDown, Compass, Loader2 } from "lucide-react";
 
-import { BookingCard, type BookingCardData } from "@/components/profile/booking-card";
+import {
+  CustomTripRequestCard,
+  CustomTripRequestEmpty,
+} from "@/components/custom-trips/custom-trip-request-card";
+import type { CustomTripRequestListItem } from "@/lib/custom-trips";
 import { cn } from "@/lib/utils";
 
-type SectionKind = "upcoming" | "completed" | "cancelled" | "all";
-
-const emptyIcons = {
-  upcoming: Ticket,
-  completed: CheckCircle2,
-  cancelled: Ban,
-  all: Ticket,
-} as const;
-
-/**
- * A collapsible bookings section that defers its data fetch until the user
- * expands it. Staff profiles render their booking lists through this so the
- * page (and its server round-trips) stay light on first load.
- */
-export function LazyBookingsSection({
-  title,
-  description,
-  endpoint,
-  kind,
-  emptyTitle,
-  emptyDescription,
-}: {
-  title: string;
-  description?: string;
-  endpoint: string;
-  kind: SectionKind;
-  emptyTitle: string;
-  emptyDescription?: string;
-}) {
+export function LazyCustomTripsSection() {
   const [open, setOpen] = useState(false);
-  const [bookings, setBookings] = useState<BookingCardData[] | null>(null);
+  const [requests, setRequests] = useState<CustomTripRequestListItem[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -45,23 +21,23 @@ export function LazyBookingsSection({
     setLoading(true);
     setError(false);
     try {
-      const url = new URL(endpoint, window.location.origin);
+      const url = new URL("/api/profile/custom-trips", window.location.origin);
       if (cursor) url.searchParams.set("cursor", cursor);
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) throw new Error("Request failed");
       const data = (await response.json()) as {
-        bookings?: BookingCardData[];
+        requests?: CustomTripRequestListItem[];
         nextCursor?: string | null;
       };
-      const nextBookings = Array.isArray(data.bookings) ? data.bookings : [];
-      setBookings((current) => (cursor && current ? [...current, ...nextBookings] : nextBookings));
+      const nextRequests = Array.isArray(data.requests) ? data.requests : [];
+      setRequests((current) => (cursor && current ? [...current, ...nextRequests] : nextRequests));
       setNextCursor(data.nextCursor ?? null);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [endpoint]);
+  }, []);
 
   function toggle() {
     if (open) {
@@ -70,12 +46,10 @@ export function LazyBookingsSection({
     }
 
     setOpen(true);
-    if (bookings === null && !loading) {
+    if (requests === null && !loading) {
       void load();
     }
   }
-
-  const EmptyIcon = emptyIcons[kind];
 
   return (
     <div className="overflow-hidden rounded-[1.5rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
@@ -87,11 +61,11 @@ export function LazyBookingsSection({
       >
         <span className="flex flex-col gap-1.5">
           <span className="font-heading text-lg font-semibold uppercase tracking-wider text-foreground">
-            {title}
+            Custom trips
           </span>
-          {description ? (
-            <span className="text-sm leading-relaxed text-muted-foreground">{description}</span>
-          ) : null}
+          <span className="text-sm leading-relaxed text-muted-foreground">
+            Private group and corporate trips you&apos;ve requested on your own dates.
+          </span>
         </span>
         <ChevronDown
           className={cn(
@@ -103,31 +77,23 @@ export function LazyBookingsSection({
 
       {open ? (
         <div className="px-6 pb-6 sm:px-8">
-          {loading ? (
+          {loading && requests === null ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading…
             </div>
           ) : error ? (
             <div className="rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center text-sm text-muted-foreground">
-              Couldn&apos;t load {title.toLowerCase()}. Please try again.
+              Couldn&apos;t load custom trips. Please try again.
             </div>
-          ) : bookings && bookings.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
-              <EmptyIcon className="h-8 w-8 text-muted-foreground/50" />
-              <div>
-                <p className="font-medium text-foreground">{emptyTitle}</p>
-                {emptyDescription ? (
-                  <p className="mt-1 text-sm text-muted-foreground">{emptyDescription}</p>
-                ) : null}
-              </div>
-            </div>
-          ) : bookings ? (
+          ) : requests && requests.length === 0 ? (
+            <CustomTripRequestEmpty />
+          ) : requests ? (
             <>
               <ul className="flex flex-col gap-3">
-                {bookings.map((booking) => (
-                  <li key={booking.id}>
-                    <BookingCard booking={booking} />
+                {requests.map((request) => (
+                  <li key={request.id}>
+                    <CustomTripRequestCard request={request} />
                   </li>
                 ))}
               </ul>
@@ -137,11 +103,22 @@ export function LazyBookingsSection({
                   onClick={() => void load(nextCursor)}
                   className="mt-4 w-full rounded-full border border-border/80 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-border hover:text-foreground"
                 >
-                  Load more
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                    </span>
+                  ) : (
+                    "Load more"
+                  )}
                 </button>
               ) : null}
             </>
-          ) : null}
+          ) : (
+            <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
+              <Compass className="h-8 w-8 text-muted-foreground/50" />
+              <p className="font-medium text-foreground">Open to load custom trips</p>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
