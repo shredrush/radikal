@@ -157,7 +157,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Profile media</p>
           <p className="text-xs text-muted-foreground">
-            Up to 5 photos and 5 short videos (15s max each). The first photo becomes the profile cover.
+            Up to 5 photos and 5 videos. The first photo becomes the profile cover.
           </p>
         </div>
         <div className="space-y-2 md:col-span-2">

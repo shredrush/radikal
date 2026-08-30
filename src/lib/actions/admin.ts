@@ -32,7 +32,7 @@ function isUniqueConstraint(error: unknown) {
   return error instanceof Error && error.message.includes("Unique constraint failed");
 }
 
-/** Authoritative, parallel size/type/duration validation of submitted media. */
+/** Authoritative, parallel size/type validation of submitted media. */
 async function assertValidTripMedia(images: string[], videos: string[]) {
   await Promise.all([
     assertValidStoredMedia("images", images),

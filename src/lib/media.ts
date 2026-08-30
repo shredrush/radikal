@@ -5,7 +5,6 @@ import {
   IMAGE_MIME,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
-  MAX_VIDEO_SECONDS,
   VIDEO_EXT,
   VIDEO_MIME,
   type MediaKind,
@@ -253,77 +252,12 @@ export async function removeStoredMedia(urls: string[]) {
 }
 
 /**
- * Read a video's duration with ffprobe. Handles MP4, WebM, and QuickTime/.mov
- * containers (ffprobe is a superset parser). The `@ffprobe-installer` binary is
- * sometimes extracted without the execute bit (notably in CI/Vercel builds),
- * which surfaces as a confusing EACCES — so we ensure it is executable first.
- */
-async function readVideoDurationSeconds(bucket: MediaBucket, path: string): Promise<number> {
-  const { getVideoDurationInSeconds } = await import("get-video-duration");
-  const ffprobePath = (await import("@ffprobe-installer/ffprobe")).default.path;
-  const fs = await import("node:fs/promises");
-  if (ffprobePath) {
-    try {
-      await fs.chmod(ffprobePath, 0o755);
-    } catch {
-      // Best-effort; if the binary runs anyway the read still succeeds.
-    }
-  }
-
-  const { data, error } = await storage().from(bucket).download(path);
-  if (error || !data) {
-    throw new Error("Could not download video for validation.");
-  }
-
-  const buffer = Buffer.from(await data.arrayBuffer());
-  const { join } = await import("node:path");
-  const { tmpdir } = await import("node:os");
-  const dir = await fs.mkdtemp(join(tmpdir(), "radikal-video-"));
-  const ext = path.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "mp4";
-  const filePath = join(dir, `video.${ext}`);
-
-  try {
-    await fs.writeFile(filePath, buffer);
-    return await getVideoDurationInSeconds(filePath, ffprobePath);
-  } finally {
-    await fs.rm(dir, { recursive: true, force: true });
-  }
-}
-
-/**
- * Returns a user-facing error string when the video is invalid/too long, else
- * null. Only objects hosted on this app's own Supabase storage are probed —
- * probing arbitrary http(s) URLs would let a caller make the server fetch
- * internal addresses (SSRF).
- */
-export async function validateVideoDuration(url: string): Promise<string | null> {
-  const parsed = parseStoredUrl(url);
-  if (!parsed) {
-    return "Videos must be uploaded through Radikal.";
-  }
-  try {
-    const seconds = await readVideoDurationSeconds(parsed.bucket, parsed.path);
-    if (seconds > MAX_VIDEO_SECONDS) {
-      return `Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter (this one is ${Math.round(seconds)}s).`;
-    }
-  } catch (error) {
-    console.error("Video duration validation failed", {
-      bucket: parsed.bucket,
-      path: parsed.path,
-      error,
-    });
-    return "Could not read the video. Upload an MP4, WebM, or MOV file.";
-  }
-  return null;
-}
-
-/**
  * Authoritative, parallel validation of a submitted media list before it is
  * committed. Re-verifies the stored object's actual size and content-type
- * (the values the browser claimed at upload time are never trusted) and, for
- * videos, enforces the duration cap. Non-storage URLs are skipped for images
- * (legacy Unsplash/site-relative entries) but rejected for videos, which can
- * only ever originate from the uploader.
+ * (the values the browser claimed at upload time are never trusted).
+ * Non-storage URLs are skipped for images (legacy Unsplash/site-relative
+ * entries) but rejected for videos, which can only ever originate from the
+ * uploader.
  */
 export async function assertValidStoredMedia(kind: MediaKind, urls: string[]) {
   const errors = await Promise.all(
@@ -350,9 +284,6 @@ export async function assertValidStoredMedia(kind: MediaKind, urls: string[]) {
         return kind === "images"
           ? "Uploaded file is not a supported image."
           : "Uploaded file is not a supported video.";
-      }
-      if (kind === "videos") {
-        return validateVideoDuration(url);
       }
       return null;
     }),

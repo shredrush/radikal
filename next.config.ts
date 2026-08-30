@@ -25,9 +25,6 @@ const contentSecurityPolicy = `
   .trim();
 
 const nextConfig: NextConfig = {
-  // Native/CLI dependencies that must run at runtime, not be bundled. The
-  // ffprobe binary is required by get-video-duration for duration probing.
-  serverExternalPackages: ["get-video-duration", "@ffprobe-installer/ffprobe"],
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
   },

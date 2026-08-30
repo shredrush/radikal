@@ -128,7 +128,7 @@ function validateTripFields(fields: TripFields): TripFields {
   return fields;
 }
 
-/** Authoritative, parallel size/type/duration validation of submitted media. */
+/** Authoritative, parallel size/type validation of submitted media. */
 async function assertValidTripMedia(fields: TripFields) {
   await Promise.all([
     assertValidStoredMedia("images", fields.images),

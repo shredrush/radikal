@@ -13,7 +13,6 @@ import {
   IMAGE_MIME,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
-  MAX_VIDEO_SECONDS,
   MEDIA_LIMITS,
   VIDEO_MIME,
   type MediaEntity,
@@ -25,23 +24,6 @@ type UploadedItem = {
   /** Storage path of an object uploaded in this session (for direct cleanup). */
   path?: string;
 };
-
-function readVideoDuration(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      resolve(video.duration || 0);
-    };
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read the video file."));
-    };
-    video.src = url;
-  });
-}
 
 /**
  * File picker + direct-to-Supabase uploader for a form. It uploads each file
@@ -117,15 +99,6 @@ export function MediaUploader({
     const maxBytes = kind === "images" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
     if (file.size > maxBytes) {
       throw new Error(`File is too large (max ${Math.round(maxBytes / 1024 / 1024)} MB).`);
-    }
-
-    if (kind === "videos") {
-      const seconds = await readVideoDuration(file);
-      if (seconds > MAX_VIDEO_SECONDS) {
-        throw new Error(
-          `Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter (this one is ${Math.round(seconds)}s).`,
-        );
-      }
     }
 
     const { token, publicUrl, path } = await createMediaUploadAction({
@@ -265,7 +238,7 @@ export function MediaUploader({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <Label>
-            Videos ({videos.length}/{limits.videos}) · max {MAX_VIDEO_SECONDS}s each
+            Videos ({videos.length}/{limits.videos})
           </Label>
           <input
             ref={videoInputRef}

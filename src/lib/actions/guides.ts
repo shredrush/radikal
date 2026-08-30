@@ -89,7 +89,7 @@ function readGuideFields(formData: FormData) {
   };
 }
 
-/** Authoritative, parallel size/type/duration validation of guide media. */
+/** Authoritative, parallel size/type validation of guide media. */
 async function assertValidGuideMedia(photos: string[], videos: string[]) {
   await Promise.all([
     assertValidStoredMedia("images", photos),
