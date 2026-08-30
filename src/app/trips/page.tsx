@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { FaqSection } from "@/components/trips/faq-section";
 
@@ -52,7 +52,7 @@ export default async function TripsPage({
   }>;
 }) {
   const { q } = await searchParams;
-  const trips = await getTripsPageTrips();
+  const trips = await safeDb("trips.catalog", () => getTripsPageTrips(), []);
 
   const serializedTrips = trips.map((trip) => ({
     ...trip,

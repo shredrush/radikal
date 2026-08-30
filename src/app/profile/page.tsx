@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
 import { getProfileUser } from "@/lib/profile-user";
 import { bookingCardSelect } from "@/lib/booking-card";
@@ -151,7 +151,11 @@ export default async function ProfilePage({
   // stats and the sections below read the true state on every tab. Scoped to
   // this user only (and indexed by userId + status), so it stays cheap — the
   // platform-wide sweep runs once a day via /api/cron/complete-bookings.
-  await completePastBookings(new Date(), user.id);
+  await safeDb(
+    "profile.complete-past-bookings",
+    () => completePastBookings(new Date(), user.id),
+    undefined,
+  );
 
   // Fetch only the queries the active tab needs, all in parallel. The page
   // previously ran every query (including the platform-wide "all bookings"
@@ -172,84 +176,127 @@ export default async function ProfilePage({
     personalBookingCounts,
   ] = await Promise.all([
     // Deduped with the site header via React cache() — one row per request.
-    getProfileUser(user.id),
+    safeDb("profile.user", () => getProfileUser(user.id), null),
     isGuide
-      ? prisma.guide.findFirst({
-          where: { userId: user.id, deletedAt: null },
-          select: { id: true, user: { select: { username: true } } },
-        })
+      ? safeDb(
+          "profile.guide",
+          () =>
+            prisma.guide.findFirst({
+              where: { userId: user.id, deletedAt: null },
+              select: { id: true, user: { select: { username: true } } },
+            }),
+          null,
+        )
       : Promise.resolve(null),
     // Full booking rows only when the bookings tab renders them; the hero stats
     // come from cheap counts otherwise. Staff never load their rows here — their
     // sections lazy-load through /api/profile/bookings on expand.
     !isStaffView && activeTab === "bookings"
-      ? prisma.booking.findMany({
-          where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
-          orderBy: { createdAt: "desc" },
-          // Only the columns the booking card renders (was `include: trip,
-          // slot`, which dragged every Trip column and slot row into memory).
-          select: bookingCardSelect,
-        })
+      ? safeDb(
+          "profile.bookings",
+          () =>
+            prisma.booking.findMany({
+              where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
+              orderBy: { createdAt: "desc" },
+              // Only the columns the booking card renders (was `include: trip,
+              // slot`, which dragged every Trip column and slot row into memory).
+              select: bookingCardSelect,
+            }),
+          [],
+        )
       : Promise.resolve([]),
     activeTab === "wishlist"
-      ? prisma.wishlistItem.findMany({
-          where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
-          orderBy: { createdAt: "desc" },
-          // Only the columns the wishlist card renders instead of the whole
-          // Trip row (description, slots, guide, inclusions, …).
-          select: {
-            id: true,
-            trip: {
+      ? safeDb(
+          "profile.wishlist",
+          () =>
+            prisma.wishlistItem.findMany({
+              where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
+              orderBy: { createdAt: "desc" },
+              // Only the columns the wishlist card renders instead of the whole
+              // Trip row (description, slots, guide, inclusions, …).
               select: {
                 id: true,
-                slug: true,
-                title: true,
-                location: true,
-                priceInRupees: true,
-                durationDays: true,
-                images: true,
+                trip: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    title: true,
+                    location: true,
+                    priceInRupees: true,
+                    durationDays: true,
+                    images: true,
+                  },
+                },
               },
-            },
-          },
-        })
+            }),
+          [],
+        )
       : Promise.resolve([]),
     activeTab === "bookings" && !canReadAllBookings
-      ? prisma.customTripRequest.findMany({
-          where: { userId: user.id, deletedAt: null },
-          orderBy: { createdAt: "desc" },
-          include: {
-            user: { select: { id: true, name: true, email: true, username: true } },
-            chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-          },
-        })
+      ? safeDb(
+          "profile.custom-trips",
+          () =>
+            prisma.customTripRequest.findMany({
+              where: { userId: user.id, deletedAt: null },
+              orderBy: { createdAt: "desc" },
+              include: {
+                user: { select: { id: true, name: true, email: true, username: true } },
+                chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+              },
+            }),
+          [],
+        )
       : Promise.resolve([]),
     // Full list only when the notifications tab is open; otherwise just the
     // unread count for the sidebar badge.
     activeTab === "notifications"
-      ? prisma.notification.findMany({
-          where: { userId: user.id },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        })
-      : prisma.notification.count({
-          where: { userId: user.id, readAt: null },
-        }),
+      ? safeDb(
+          "profile.notifications",
+          () =>
+            prisma.notification.findMany({
+              where: { userId: user.id },
+              orderBy: { createdAt: "desc" },
+              take: 50,
+            }),
+          [],
+        )
+      : safeDb(
+          "profile.notifications-unread",
+          () =>
+            prisma.notification.count({
+              where: { userId: user.id, readAt: null },
+            }),
+          0,
+        ),
     activeTab === "bookings" && !isStaffView
-      ? prisma.review.findMany({
-          where: { userId: user.id },
-          select: { id: true, tripId: true, rating: true, comment: true },
-        })
+      ? safeDb(
+          "profile.reviews",
+          () =>
+            prisma.review.findMany({
+              where: { userId: user.id },
+              select: { id: true, tripId: true, rating: true, comment: true },
+            }),
+          [],
+        )
       : Promise.resolve([]),
     !canAccessSupportDesk && activeTab === "support"
-      ? prisma.supportChat.findUnique({
-          where: { userId: user.id, deletedAt: null },
-          include: { messages: { orderBy: { createdAt: "asc" } } },
-        })
+      ? safeDb(
+          "profile.support-chat",
+          () =>
+            prisma.supportChat.findUnique({
+              where: { userId: user.id, deletedAt: null },
+              include: { messages: { orderBy: { createdAt: "asc" } } },
+            }),
+          null,
+        )
       : Promise.resolve(null),
     !canAccessSupportDesk
-      ? prisma.$queryRaw<
-          Array<{ status: string; unreadCount: number }>
-        >`
+      ? safeDb(
+          "profile.support-unread",
+          () =>
+            prisma.$queryRaw<
+              Array<{ status: string; unreadCount: number }>
+            >`
           SELECT sc."status", COUNT(sm.id)::int AS "unreadCount"
           FROM support_chats sc
           LEFT JOIN support_messages sm
@@ -259,18 +306,25 @@ export default async function ProfilePage({
           WHERE sc."userId" = ${user.id}
             AND sc."deletedAt" IS NULL
           GROUP BY sc.id, sc."status"
-        `
+        `,
+          null,
+        )
       : Promise.resolve(null),
     // Hero stats: staff always count, and non-staff use counts whenever the
     // full booking list isn't loaded (i.e. outside the bookings tab).
     isStaffView || activeTab !== "bookings"
-      ? (async () => {
-          const [total, confirmed] = await Promise.all([
-            prisma.booking.count({ where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } } }),
-            prisma.booking.count({ where: { userId: user.id, status: "CONFIRMED", deletedAt: null, trip: { deletedAt: null } } }),
-          ]);
-          return { total, upcoming: confirmed };
-        })()
+      ? safeDb(
+          "profile.booking-counts",
+          () =>
+            (async () => {
+              const [total, confirmed] = await Promise.all([
+                prisma.booking.count({ where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } } }),
+                prisma.booking.count({ where: { userId: user.id, status: "CONFIRMED", deletedAt: null, trip: { deletedAt: null } } }),
+              ]);
+              return { total, upcoming: confirmed };
+            })(),
+          null,
+        )
       : Promise.resolve(null),
   ]);
 

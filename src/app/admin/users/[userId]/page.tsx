@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, MapPin, Monitor, UserX } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Badge } from "@/components/ui/badge";
@@ -113,19 +113,29 @@ export default async function AdminUserDetailPage({
   const { userId } = await params;
 
   const [user, activityLogs, pendingTripChanges] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        guide: { select: { name: true, deletedAt: true } },
-        _count: { select: { bookings: true, reviews: true, guideApplications: true, activityLogs: true } },
-      },
-    }),
-    prisma.activityLog.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
-    countPendingTripChanges(),
+    safeDb(
+      "admin.user-detail.user",
+      () =>
+        prisma.user.findUnique({
+          where: { id: userId },
+          include: {
+            guide: { select: { name: true, deletedAt: true } },
+            _count: { select: { bookings: true, reviews: true, guideApplications: true, activityLogs: true } },
+          },
+        }),
+      null,
+    ),
+    safeDb(
+      "admin.user-detail.activity-log",
+      () =>
+        prisma.activityLog.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: 200,
+        }),
+      [],
+    ),
+    safeDb("admin.user-detail.pending-trip-changes", () => countPendingTripChanges(), 0),
   ]);
 
   if (!user) {

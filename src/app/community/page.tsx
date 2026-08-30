@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
 import { GuideCard } from "@/components/guides/guide-card";
@@ -142,7 +142,7 @@ const pillarToneStyles: Record<
 };
 
 export default async function CommunityPage() {
-  const guides = await getCommunityGuides();
+  const guides = await safeDb("community.guides", () => getCommunityGuides(), []);
   const session = await auth();
   const joinCommunityHref = session?.user ? "/trips" : "/login";
   return (
@@ -266,22 +266,28 @@ export default async function CommunityPage() {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
-            {guides.map((guide) => (
-              <GuideCard
-                key={guide.id}
-                variant="community"
-                guide={{
-                  username: guide.user?.username ?? "",
-                  name: guide.name,
-                  location: guide.location,
-                  photo: guide.photo,
-                  photos: guide.photos,
-                  bio: guide.bio,
-                  certifications: guide.certifications.map((certification) => certification.title),
-                  languages: guide.languages,
-                }}
-              />
-            ))}
+            {guides.length === 0 ? (
+              <p className="col-span-full rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
+                Our guide roster is taking a short break — check back in a few minutes.
+              </p>
+            ) : (
+              guides.map((guide) => (
+                <GuideCard
+                  key={guide.id}
+                  variant="community"
+                  guide={{
+                    username: guide.user?.username ?? "",
+                    name: guide.name,
+                    location: guide.location,
+                    photo: guide.photo,
+                    photos: guide.photos,
+                    bio: guide.bio,
+                    certifications: guide.certifications.map((certification) => certification.title),
+                    languages: guide.languages,
+                  }}
+                />
+              ))
+            )}
           </div>
 
           <div className="mt-8 flex justify-center">

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { ACCENT_PILL } from "@/lib/card-styles";
 import {
   MAX_OPEN_CUSTOM_TRIP_CHATS,
@@ -26,18 +26,23 @@ export default async function CustomTripPage() {
     redirect(`/login?callbackUrl=${encodeURIComponent("/custom-trip")}`);
   }
 
-  const openRequests = await prisma.customTripRequest.findMany({
-    where: {
-      userId: session.user.id,
-      status: { notIn: ["CONFIRMED", "CANCELLED"] },
-      deletedAt: null,
-    },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true, email: true, username: true } },
-      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-    },
-  });
+  const openRequests = await safeDb(
+    "custom-trip.open-requests",
+    () =>
+      prisma.customTripRequest.findMany({
+        where: {
+          userId: session.user.id,
+          status: { notIn: ["CONFIRMED", "CANCELLED"] },
+          deletedAt: null,
+        },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          user: { select: { id: true, name: true, email: true, username: true } },
+          chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+        },
+      }),
+    [],
+  );
   const openRequestItems = openRequests.map(toCustomTripRequestListItem);
   const atChatLimit = openRequestItems.length >= MAX_OPEN_CUSTOM_TRIP_CHATS;
 

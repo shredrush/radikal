@@ -1,6 +1,6 @@
 import { Eye } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
@@ -25,14 +25,19 @@ export default async function TripPreviewPage({
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   const { token } = await params;
-  const preview = await prisma.tripPreview.findUnique({
-    where: {
-      token,
-      // Filter at the query level so expiry is enforced by the database rather
-      // than an impure Date.now() call during render.
-      expiresAt: { gt: new Date() },
-    },
-  });
+  const preview = await safeDb(
+    "preview.token",
+    () =>
+      prisma.tripPreview.findUnique({
+        where: {
+          token,
+          // Filter at the query level so expiry is enforced by the database rather
+          // than an impure Date.now() call during render.
+          expiresAt: { gt: new Date() },
+        },
+      }),
+    null,
+  );
 
   if (
     !preview ||

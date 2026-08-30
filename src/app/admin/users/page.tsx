@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Search, ShieldCheck, Users as UsersIcon } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { hasPermission, requirePermission } from "@/lib/authz";
 import { countPendingTripChanges } from "@/lib/admin-stats";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
@@ -76,26 +76,31 @@ export default async function AdminUsersPage({
   };
 
   const [users, roleCounts, totalMatches, pendingTripChanges] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        role: true,
-        deletedAt: true,
-        createdAt: true,
-        _count: { select: { bookings: true, activityLogs: true } },
-      },
-    }),
-    prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }),
-    prisma.user.count({ where }),
+    safeDb(
+      "admin.users.list",
+      () =>
+        prisma.user.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * PAGE_SIZE,
+          take: PAGE_SIZE,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+            role: true,
+            deletedAt: true,
+            createdAt: true,
+            _count: { select: { bookings: true, activityLogs: true } },
+          },
+        }),
+      [],
+    ),
+    safeDb("admin.users.role-counts", () => prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }), []),
+    safeDb("admin.users.total-matches", () => prisma.user.count({ where }), 0),
     hasPermission(session.user.role, "trips.manage")
-      ? countPendingTripChanges()
+      ? safeDb("admin.users.pending-trip-changes", () => countPendingTripChanges(), 0)
       : Promise.resolve(0),
   ]);
 

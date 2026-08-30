@@ -1,6 +1,6 @@
 import { Compass, Globe, Ticket } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 export async function GuideBoardStats({ guideId }: { guideId: string }) {
@@ -11,21 +11,21 @@ export async function GuideBoardStats({ guideId }: { guideId: string }) {
     completedTrips,
     liveTrips,
   ] = await Promise.all([
-    prisma.booking.count({
+    safeDb("guide.board-stats.confirmed-bookings", () => prisma.booking.count({
       where: { trip: { guideId, deletedAt: null }, status: "CONFIRMED", deletedAt: null },
-    }),
-    prisma.booking.count({
+    }), 0),
+    safeDb("guide.board-stats.completed-bookings", () => prisma.booking.count({
       where: { trip: { guideId, deletedAt: null }, status: "COMPLETED", deletedAt: null },
-    }),
-    prisma.trip.count({
+    }), 0),
+    safeDb("guide.board-stats.confirmed-trips", () => prisma.trip.count({
       where: { guideId, deletedAt: null, bookings: { some: { status: "CONFIRMED", deletedAt: null } } },
-    }),
-    prisma.trip.count({
+    }), 0),
+    safeDb("guide.board-stats.completed-trips", () => prisma.trip.count({
       where: { guideId, deletedAt: null, bookings: { some: { status: "COMPLETED", deletedAt: null } } },
-    }),
-    prisma.trip.count({
+    }), 0),
+    safeDb("guide.board-stats.live-trips", () => prisma.trip.count({
       where: { guideId, deletedAt: null },
-    }),
+    }), 0),
   ]);
 
   const rows = [

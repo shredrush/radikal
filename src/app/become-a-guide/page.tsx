@@ -4,7 +4,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock3 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GuideApplicationForm } from "@/components/guides/guide-application-form";
@@ -27,10 +27,15 @@ export default async function BecomeAGuidePage() {
   // Read the account's role and guide linkage from the database (not the
   // possibly-stale JWT) so a demotion or guide removal takes effect
   // immediately instead of leaving the "already a guide" wall up.
-  const account = await prisma.user.findFirst({
-    where: { id: user.id, deletedAt: null },
-    select: { role: true, username: true, guide: { select: { id: true, deletedAt: true } } },
-  });
+  const account = await safeDb(
+    "become-a-guide.account",
+    () =>
+      prisma.user.findFirst({
+        where: { id: user.id, deletedAt: null },
+        select: { role: true, username: true, guide: { select: { id: true, deletedAt: true } } },
+      }),
+    null,
+  );
   if (!account) {
     redirect("/login?callbackUrl=/become-a-guide");
   }
@@ -41,10 +46,15 @@ export default async function BecomeAGuidePage() {
 
   const application = isAlreadyGuide
     ? null
-    : await prisma.guideApplication.findFirst({
-        where: { userId: user.id },
-        orderBy: { submittedAt: "desc" },
-      });
+    : await safeDb(
+        "become-a-guide.application",
+        () =>
+          prisma.guideApplication.findFirst({
+            where: { userId: user.id },
+            orderBy: { submittedAt: "desc" },
+          }),
+        null,
+      );
 
   const pendingApplication =
     application?.status === "PENDING" ? application : null;

@@ -1,6 +1,6 @@
 import { CalendarDays, CheckCircle2, Clock3, ExternalLink, XCircle } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +15,20 @@ export default async function AdminGuideApplicationsPage() {
   const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
   const [applications, pendingTripChanges] = await Promise.all([
-    prisma.guideApplication.findMany({
-      orderBy: { submittedAt: "desc" },
-      include: {
-        user: { select: { id: true, name: true, username: true, email: true } },
-        certifications: { orderBy: { yearIssued: "desc" } },
-        reviewedBy: { select: { name: true } },
-      },
-    }),
-    countPendingTripChanges(),
+    safeDb(
+      "admin.guide-applications.list",
+      () =>
+        prisma.guideApplication.findMany({
+          orderBy: { submittedAt: "desc" },
+          include: {
+            user: { select: { id: true, name: true, username: true, email: true } },
+            certifications: { orderBy: { yearIssued: "desc" } },
+            reviewedBy: { select: { name: true } },
+          },
+        }),
+      [],
+    ),
+    safeDb("admin.guide-applications.pending-trip-changes", () => countPendingTripChanges(), 0),
   ]);
 
   const pendingCount = applications.filter((app) => app.status === "PENDING").length;

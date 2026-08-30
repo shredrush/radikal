@@ -1,6 +1,7 @@
 import { hasPermission, requirePermission } from "@/lib/authz";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
 import { countPendingTripChanges } from "@/lib/admin-stats";
+import { safeDb } from "@/lib/prisma";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
 import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -17,12 +18,17 @@ export default async function AdminBookingsPage() {
   const canCancel = hasPermission(session.user.role, "bookings.cancel");
 
   const [items, pendingTripChanges] = await Promise.all([
-    fetchBookingsWithDetails(
-      {},
-      { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+    safeDb(
+      "admin.bookings.items",
+      () =>
+        fetchBookingsWithDetails(
+          {},
+          { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+        ),
+      [],
     ),
     hasPermission(session.user.role, "trips.manage")
-      ? countPendingTripChanges()
+      ? safeDb("admin.bookings.pending-trip-changes", () => countPendingTripChanges(), 0)
       : Promise.resolve(0),
   ]);
 

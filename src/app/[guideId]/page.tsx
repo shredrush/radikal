@@ -7,7 +7,7 @@ import { ShieldCheck } from "lucide-react";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { TripCard } from "@/components/trips/trip-card";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
@@ -62,10 +62,12 @@ const getGuideDetail = unstable_cache(
 );
 
 async function getResolvedGuide(username: string) {
-  const guide = await getGuideDetail(username);
-  if (guide) return guide;
-  await resolveGuideAlias(username);
-  return null;
+  return safeDb("guide.detail", async () => {
+    const guide = await getGuideDetail(username);
+    if (guide) return guide;
+    await resolveGuideAlias(username);
+    return null;
+  }, null);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {

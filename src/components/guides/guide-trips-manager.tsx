@@ -1,6 +1,6 @@
 import { Clock3, Compass } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
 import { Badge } from "@/components/ui/badge";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
@@ -49,17 +49,27 @@ function toGuideTripData(trip: {
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
   const [trips, changeSummaries, draftRows] = await Promise.all([
-    fetchTripsWithDetails({ guideId }),
-    prisma.$queryRaw<TripChangeSummary[]>`
-      SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
-      FROM "trip_change_requests"
-      WHERE "guideId" = ${guideId}
-      ORDER BY "createdAt" DESC
-    `,
-    prisma.tripDraft.findMany({
-      where: { guideId, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
-    }),
+    safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []),
+    safeDb(
+      "guide.trips-manager.change-summaries",
+      () =>
+        prisma.$queryRaw<TripChangeSummary[]>`
+        SELECT id, "type", status, "createdAt", "reviewedAt", "proposed"->>'title' AS title
+        FROM "trip_change_requests"
+        WHERE "guideId" = ${guideId}
+        ORDER BY "createdAt" DESC
+      `,
+      [],
+    ),
+    safeDb(
+      "guide.trips-manager.drafts",
+      () =>
+        prisma.tripDraft.findMany({
+          where: { guideId, deletedAt: null },
+          orderBy: { updatedAt: "desc" },
+        }),
+      [],
+    ),
   ]);
 
   const pending = changeSummaries.filter((change) => change.status === "PENDING");

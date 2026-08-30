@@ -1,5 +1,6 @@
 import { requireGuide } from "@/lib/guide-board";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
+import { safeDb } from "@/lib/prisma";
 import { GuideBoardHeader } from "@/components/guides/guide-board-header";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
 import { GuideActivityLog } from "@/components/guides/guide-activity-log";
@@ -9,7 +10,11 @@ export const dynamic = "force-dynamic";
 export default async function GuideBoardBookingsPage() {
   const { guide } = await requireGuide();
 
-  const items = await fetchBookingsWithDetails({ trip: { guideId: guide.id } });
+  const items = await safeDb(
+    "guide-board.bookings",
+    () => fetchBookingsWithDetails({ trip: { guideId: guide.id } }),
+    [],
+  );
 
   return (
     <div className="min-h-screen">

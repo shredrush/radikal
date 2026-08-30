@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -12,44 +12,49 @@ export const dynamic = "force-dynamic";
 export default async function AdminTripChangesPage() {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
 
-  const changes = await prisma.$queryRaw<AdminTripChangeSummary[]>`
-    SELECT
-      tc.id,
-      tc."type"::text AS "type",
-      tc.status::text AS status,
-      tc."createdAt",
-      tc."reviewedAt",
-      tc.proposed->>'title' AS title,
-      g.name AS "guideName",
-      u.name AS "submittedByName",
-      u.username AS "submittedByUsername",
-      t.title AS "tripTitle",
-      r.name AS "reviewedByName"
-    FROM "trip_change_requests" tc
-    LEFT JOIN "guides" g ON g.id = tc."guideId"
-    LEFT JOIN "users" u ON u.id = tc."submittedById"
-    LEFT JOIN "users" r ON r.id = tc."reviewedById"
-    LEFT JOIN "trips" t ON t.id = tc."tripId"
-    UNION ALL
-    SELECT
-      al.id,
-      'DELETE' AS "type",
-      'APPROVED' AS status,
-      al."createdAt",
-      al."createdAt" AS "reviewedAt",
-      COALESCE(t.title, al.metadata->>'title') AS title,
-      g.name AS "guideName",
-      u.name AS "submittedByName",
-      u.username AS "submittedByUsername",
-      t.title AS "tripTitle",
-      NULL AS "reviewedByName"
-    FROM "activity_logs" al
-    LEFT JOIN "users" u ON u.id = al."userId"
-    LEFT JOIN "trips" t ON t.id = al.metadata->>'tripId'
-    LEFT JOIN "guides" g ON g.id = t."guideId"
-    WHERE al.action = 'TRIP_DELETED'
-    ORDER BY "createdAt" DESC
-  `;
+  const changes = await safeDb(
+    "admin.trip-changes.list",
+    () =>
+      prisma.$queryRaw<AdminTripChangeSummary[]>`
+      SELECT
+        tc.id,
+        tc."type"::text AS "type",
+        tc.status::text AS status,
+        tc."createdAt",
+        tc."reviewedAt",
+        tc.proposed->>'title' AS title,
+        g.name AS "guideName",
+        u.name AS "submittedByName",
+        u.username AS "submittedByUsername",
+        t.title AS "tripTitle",
+        r.name AS "reviewedByName"
+      FROM "trip_change_requests" tc
+      LEFT JOIN "guides" g ON g.id = tc."guideId"
+      LEFT JOIN "users" u ON u.id = tc."submittedById"
+      LEFT JOIN "users" r ON r.id = tc."reviewedById"
+      LEFT JOIN "trips" t ON t.id = tc."tripId"
+      UNION ALL
+      SELECT
+        al.id,
+        'DELETE' AS "type",
+        'APPROVED' AS status,
+        al."createdAt",
+        al."createdAt" AS "reviewedAt",
+        COALESCE(t.title, al.metadata->>'title') AS title,
+        g.name AS "guideName",
+        u.name AS "submittedByName",
+        u.username AS "submittedByUsername",
+        t.title AS "tripTitle",
+        NULL AS "reviewedByName"
+      FROM "activity_logs" al
+      LEFT JOIN "users" u ON u.id = al."userId"
+      LEFT JOIN "trips" t ON t.id = al.metadata->>'tripId'
+      LEFT JOIN "guides" g ON g.id = t."guideId"
+      WHERE al.action = 'TRIP_DELETED'
+      ORDER BY "createdAt" DESC
+    `,
+    [],
+  );
 
   const pendingCount = changes.filter((change) => change.status === "PENDING").length;
   const approvedCount = changes.filter((change) => change.status === "APPROVED").length;

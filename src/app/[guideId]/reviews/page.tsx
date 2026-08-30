@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { ArrowLeft } from "lucide-react";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatMonthYear } from "@/lib/format";
@@ -35,10 +35,12 @@ const getGuideReviews = unstable_cache(
 );
 
 async function getResolvedGuideReviews(username: string) {
-  const guide = await getGuideReviews(username);
-  if (guide) return guide;
-  await resolveGuideAlias(username);
-  return null;
+  return safeDb("guide.reviews", async () => {
+    const guide = await getGuideReviews(username);
+    if (guide) return guide;
+    await resolveGuideAlias(username);
+    return null;
+  }, null);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {

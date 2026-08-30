@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Briefcase, CalendarDays, MapPin, Users, Wallet } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,15 @@ export default async function CustomTripRequestPage({
     redirect(`/login?callbackUrl=${encodeURIComponent(`/custom-trip/${requestId}`)}`);
   }
 
-  const request = await prisma.customTripRequest.findFirst({
-    where: { id: requestId, userId: session.user.id, deletedAt: null },
-    include: { chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } } } },
-  });
+  const request = await safeDb(
+    "custom-trip.request-detail",
+    () =>
+      prisma.customTripRequest.findFirst({
+        where: { id: requestId, userId: session.user.id, deletedAt: null },
+        include: { chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } } } },
+      }),
+    null,
+  );
 
   if (!request) {
     notFound();

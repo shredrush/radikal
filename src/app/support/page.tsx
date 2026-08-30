@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import {
   fetchBookingsWithDetails,
@@ -27,29 +27,33 @@ const MAX_SUPPORT_LIST_ITEMS = 100;
 const MAX_SELECTED_MESSAGES = 100;
 
 async function loadChats(): Promise<SupportChatListItem[]> {
-  const rows = await prisma.supportChat.findMany({
-    where: { deletedAt: null },
-    orderBy: { updatedAt: "desc" },
-    take: MAX_SUPPORT_LIST_ITEMS,
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  });
-  return rows.map(toSupportChatListItem);
+  return safeDb("support.chats", async () => {
+    const rows = await prisma.supportChat.findMany({
+      where: { deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+      take: MAX_SUPPORT_LIST_ITEMS,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+    return rows.map(toSupportChatListItem);
+  }, []);
 }
 
 async function loadResolvedChats(): Promise<SupportChatListItem[]> {
-  const rows = await prisma.supportChat.findMany({
-    where: { deletedAt: { not: null } },
-    orderBy: { deletedAt: "desc" },
-    take: MAX_SUPPORT_LIST_ITEMS,
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  });
-  return rows.map(toSupportChatListItem);
+  return safeDb("support.resolved-chats", async () => {
+    const rows = await prisma.supportChat.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
+      take: MAX_SUPPORT_LIST_ITEMS,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+    return rows.map(toSupportChatListItem);
+  }, []);
 }
 
 /**
@@ -60,44 +64,50 @@ async function loadResolvedChats(): Promise<SupportChatListItem[]> {
  * find its latest message instead of scanning the whole message table.
  */
 async function countOpenChatsAwaitingReply(): Promise<number> {
-  const rows = await prisma.$queryRaw<Array<{ count: number }>>`
-    SELECT COUNT(*)::int AS "count"
-    FROM support_chats sc
-    WHERE sc."status" = 'OPEN'
-      AND sc."deletedAt" IS NULL
-      AND (SELECT sm."senderId"
-           FROM support_messages sm
-           WHERE sm."chatId" = sc.id
-           ORDER BY sm."createdAt" DESC
-           LIMIT 1) = sc."userId"
-  `;
-  return rows[0]?.count ?? 0;
+  return safeDb("support.awaiting-reply-count", async () => {
+    const rows = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int AS "count"
+      FROM support_chats sc
+      WHERE sc."status" = 'OPEN'
+        AND sc."deletedAt" IS NULL
+        AND (SELECT sm."senderId"
+             FROM support_messages sm
+             WHERE sm."chatId" = sc.id
+             ORDER BY sm."createdAt" DESC
+             LIMIT 1) = sc."userId"
+    `;
+    return rows[0]?.count ?? 0;
+  }, 0);
 }
 
 async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
-  const rows = await prisma.customTripRequest.findMany({
-    where: { deletedAt: null },
-    orderBy: { updatedAt: "desc" },
-    take: MAX_SUPPORT_LIST_ITEMS,
-    include: {
-      user: { select: { id: true, name: true, email: true, username: true } },
-      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-    },
-  });
-  return rows.map(toCustomTripRequestListItem);
+  return safeDb("support.custom-requests", async () => {
+    const rows = await prisma.customTripRequest.findMany({
+      where: { deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+      take: MAX_SUPPORT_LIST_ITEMS,
+      include: {
+        user: { select: { id: true, name: true, email: true, username: true } },
+        chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      },
+    });
+    return rows.map(toCustomTripRequestListItem);
+  }, []);
 }
 
 async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]> {
-  const rows = await prisma.customTripRequest.findMany({
-    where: { deletedAt: { not: null } },
-    orderBy: { deletedAt: "desc" },
-    take: MAX_SUPPORT_LIST_ITEMS,
-    include: {
-      user: { select: { id: true, name: true, email: true, username: true } },
-      chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-    },
-  });
-  return rows.map(toCustomTripRequestListItem);
+  return safeDb("support.deleted-custom-requests", async () => {
+    const rows = await prisma.customTripRequest.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
+      take: MAX_SUPPORT_LIST_ITEMS,
+      include: {
+        user: { select: { id: true, name: true, email: true, username: true } },
+        chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      },
+    });
+    return rows.map(toCustomTripRequestListItem);
+  }, []);
 }
 
 export default async function SupportBoardPage({
@@ -128,14 +138,23 @@ export default async function SupportBoardPage({
         ? loadResolvedChats()
         : Promise.resolve([] as SupportChatListItem[]),
       tab === "bookings"
-        ? fetchBookingsWithDetails(
-            {},
-            { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+        ? safeDb(
+            "support.bookings",
+            () =>
+              fetchBookingsWithDetails(
+                {},
+                { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+              ),
+            [],
           )
         : Promise.resolve([] as BookingBoardItem[]),
       tab === "bookings"
         ? Promise.resolve(0)
-        : prisma.booking.count({ where: { status: "PENDING", deletedAt: null, trip: { deletedAt: null } } }),
+        : safeDb(
+            "support.pending-bookings-count",
+            () => prisma.booking.count({ where: { status: "PENDING", deletedAt: null, trip: { deletedAt: null } } }),
+            0,
+          ),
       tab === "custom"
         ? loadCustomRequests()
         : Promise.resolve([] as CustomTripRequestListItem[]),
@@ -144,24 +163,38 @@ export default async function SupportBoardPage({
         : Promise.resolve([] as CustomTripRequestListItem[]),
       tab === "custom"
         ? Promise.resolve(0)
-        : prisma.customTripRequest.count({ where: { status: "NEW", deletedAt: null } }),
+        : safeDb(
+            "support.new-custom-requests-count",
+            () => prisma.customTripRequest.count({ where: { status: "NEW", deletedAt: null } }),
+            0,
+          ),
       chatId && tab === "conversations"
-        ? prisma.supportChat.findUnique({
-            where: { id: chatId },
-            include: {
-              user: { select: { id: true, name: true, email: true } },
-              messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES },
-            },
-          })
+        ? safeDb(
+            "support.selected-chat",
+            () =>
+              prisma.supportChat.findUnique({
+                where: { id: chatId },
+                include: {
+                  user: { select: { id: true, name: true, email: true } },
+                  messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES },
+                },
+              }),
+            null,
+          )
         : Promise.resolve(null),
       requestId && tab === "custom"
-        ? prisma.customTripRequest.findUnique({
-            where: { id: requestId },
-            include: {
-              user: { select: { id: true, name: true, email: true, username: true } },
-              chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES } } },
-            },
-          })
+        ? safeDb(
+            "support.selected-custom-request",
+            () =>
+              prisma.customTripRequest.findUnique({
+                where: { id: requestId },
+                include: {
+                  user: { select: { id: true, name: true, email: true, username: true } },
+                  chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES } } },
+                },
+              }),
+            null,
+          )
         : Promise.resolve(null),
     ]);
 

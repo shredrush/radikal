@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { BookingBar } from "@/components/trips/booking-bar";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import type { TripCategory } from "@/generated/prisma/client";
 import { formatTripDateRange, formatDurationDays, isSlotCompleted } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
@@ -143,7 +143,7 @@ export default async function TripDetailPage({
 }) {
   const { tripId } = await params;
 
-  const trip = await getTripDetail(tripId);
+  const trip = await safeDb("trip.detail", () => getTripDetail(tripId), null);
 
   if (!trip) {
     notFound();
@@ -153,12 +153,15 @@ export default async function TripDetailPage({
   const session = await auth();
   const userId = session?.user?.id;
   const inWishlist = userId
-    ? Boolean(
-        await prisma.wishlistItem.findFirst({
-          where: { userId, tripId: trip.id, deletedAt: null },
-          select: { id: true },
-        }),
-      )
+    ? await safeDb(
+        "trip.wishlist",
+        () =>
+          prisma.wishlistItem.findFirst({
+            where: { userId, tripId: trip.id, deletedAt: null },
+            select: { id: true },
+          }),
+        null,
+      ).then(Boolean)
     : false;
 
   const guide = trip.guide;
@@ -170,7 +173,7 @@ export default async function TripDetailPage({
       })
     : "/avatars/fox.svg";
 
-  const similarTrips = await getSimilarTrips(trip.categories, trip.id);
+  const similarTrips = await safeDb("trip.similar", () => getSimilarTrips(trip.categories, trip.id), []);
 
   const now = new Date();
   const upcomingSlots = trip.slots.filter((slot) => !isSlotCompleted(slot.date, now));

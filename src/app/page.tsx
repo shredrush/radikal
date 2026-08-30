@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
@@ -108,10 +108,13 @@ const getHomeReviews = unstable_cache(
 );
 
 export default async function Home() {
+  // If the database is unreachable, serve the page with empty sections instead
+  // of crashing. Failures are logged (with connection diagnostics) and never
+  // cached, so the next request recovers automatically.
   const [trips, guides, reviews] = await Promise.all([
-    getHomeTrips(),
-    getHomeGuides(),
-    getHomeReviews(),
+    safeDb("home.trips", () => getHomeTrips(), []),
+    safeDb("home.guides", () => getHomeGuides(), []),
+    safeDb("home.reviews", () => getHomeReviews(), []),
   ]);
 
   return (

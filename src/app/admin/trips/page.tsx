@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { countPendingTripChanges } from "@/lib/admin-stats";
 import { Button } from "@/components/ui/button";
@@ -35,19 +35,29 @@ export default async function AdminTripsPage({
   );
 
   const [guides, totalTrips, totalSlots, draftRows, pendingTripChanges] = await Promise.all([
-    prisma.guide.findMany({
-      where: { deletedAt: null },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.trip.count({ where: { deletedAt: null } }),
-    prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } }),
-    prisma.tripDraft.findMany({
-      where: { deletedAt: null, guide: { deletedAt: null } },
-      orderBy: { updatedAt: "desc" },
-      include: { guide: { select: { name: true } } },
-    }),
-    countPendingTripChanges(),
+    safeDb(
+      "admin.trips.guide-filter",
+      () =>
+        prisma.guide.findMany({
+          where: { deletedAt: null },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
+      [],
+    ),
+    safeDb("admin.trips.trips-count", () => prisma.trip.count({ where: { deletedAt: null } }), 0),
+    safeDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } }), 0),
+    safeDb(
+      "admin.trips.drafts",
+      () =>
+        prisma.tripDraft.findMany({
+          where: { deletedAt: null, guide: { deletedAt: null } },
+          orderBy: { updatedAt: "desc" },
+          include: { guide: { select: { name: true } } },
+        }),
+      [],
+    ),
+    safeDb("admin.trips.pending-trip-changes", () => countPendingTripChanges(), 0),
   ]);
 
   const hasSelectedGuide = guides.some((item) => item.id === selectedGuideId);

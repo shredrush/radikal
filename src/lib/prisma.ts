@@ -47,3 +47,39 @@ export const prisma = basePrisma;
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = basePrisma;
 }
+
+/**
+ * Run a database query and never let a database failure take the page down.
+ *
+ * If the query throws (e.g. a TLS/connection error, a provider outage, or an
+ * exhausted pool), the error is logged with connection diagnostics — source
+ * env var, host, port, database and effective sslmode — so issues like the
+ * production P1011 "self-signed certificate in certificate chain" failure are
+ * visible in Vercel function logs. The caller receives `fallback` (usually an
+ * empty array) and the page renders degraded instead of 500ing.
+ *
+ * Because the fallback is returned by this helper rather than inside an
+ * `unstable_cache` callback, a failure is never cached: the next request
+ * retries the real query and recovers automatically once the database is
+ * reachable again.
+ */
+export async function safeDb<T>(
+  label: string,
+  query: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await query();
+  } catch (error) {
+    const err = error as { code?: string; message?: string };
+    console.error(
+      `[db] "${label}" query failed; serving fallback instead of crashing`,
+      {
+        code: err.code ?? null,
+        error: err.message ?? String(error),
+        connection: getDatabaseConnectionLogInfo(),
+      },
+    );
+    return fallback;
+  }
+}

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { CheckoutFlow } from "@/components/booking/checkout-flow";
 import { FaqSection, type FaqItem } from "@/components/trips/faq-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,16 +89,21 @@ export default async function CheckoutPage({
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  const trip = await prisma.trip.findFirst({
-    where: { id: tripId, deletedAt: null },
-    include: {
-      guide: true,
-      slots: {
-        where: { date: { gte: new Date() }, deletedAt: null },
-        orderBy: { date: "asc" },
-      },
-    },
-  });
+  const trip = await safeDb(
+    "checkout.trip",
+    () =>
+      prisma.trip.findFirst({
+        where: { id: tripId, deletedAt: null },
+        include: {
+          guide: true,
+          slots: {
+            where: { date: { gte: new Date() }, deletedAt: null },
+            orderBy: { date: "asc" },
+          },
+        },
+      }),
+    null,
+  );
 
   if (!trip) {
     notFound();
