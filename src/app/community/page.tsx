@@ -282,6 +282,7 @@ export default async function CommunityPage() {
                     photo: guide.photo,
                     photos: guide.photos,
                     bio: guide.bio,
+                    experienceYears: guide.experienceYears,
                     certifications: guide.certifications.map((certification) => certification.title),
                     languages: guide.languages,
                   }}

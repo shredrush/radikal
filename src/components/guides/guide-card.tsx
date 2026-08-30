@@ -4,7 +4,7 @@ import { ArrowRight, MapPin, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { CARD_SURFACE } from "@/lib/card-styles";
+import { ACCENT_PILL, CARD_SURFACE } from "@/lib/card-styles";
 import { getGuideImage } from "@/lib/guide-images";
 
 export interface GuideCardGuide {
@@ -16,6 +16,7 @@ export interface GuideCardGuide {
   certifications: string[];
   bio?: string;
   languages?: string[];
+  experienceYears?: number;
 }
 
 export function GuideCard({
@@ -77,7 +78,7 @@ export function GuideCard({
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-heading text-xl font-semibold text-foreground">{guide.name}</h3>
-              <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium text-foreground/80">
+              <div className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[0.6rem] font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
                 <ShieldCheck className="h-3 w-3" />
                 Vetted
               </div>
@@ -87,6 +88,12 @@ export function GuideCard({
               <MapPin className="h-3.5 w-3.5" />
               <span>{guide.location}</span>
             </div>
+
+            {guide.experienceYears != null && (
+              <p className="text-xs leading-5 text-muted-foreground">
+                <span className="font-heading font-semibold text-orange-700 dark:text-orange-400">{guide.experienceYears}+</span> years experience
+              </p>
+            )}
           </div>
 
           <p className="text-sm leading-6 text-muted-foreground">
@@ -95,7 +102,10 @@ export function GuideCard({
 
           <div className="flex flex-wrap gap-1.5">
             {guide.certifications.slice(0, 2).map((certification) => (
-              <span key={certification} className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
+              <span
+                key={certification}
+                className={`rounded-full border px-2 py-1 text-[0.65rem] font-medium ${ACCENT_PILL}`}
+              >
                 {certification}
               </span>
             ))}
@@ -109,7 +119,7 @@ export function GuideCard({
               {guide.languages?.map((language) => (
                 <span
                   key={`${guide.username}-${language}`}
-                  className="rounded-full bg-muted/70 px-2 py-1 text-[0.68rem] font-medium text-foreground/80"
+                  className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                 >
                   {language}
                 </span>
@@ -118,7 +128,7 @@ export function GuideCard({
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+        <div className="mt-auto flex items-center justify-center gap-1.5 border-t border-border/70 bg-muted/60 px-3 py-2.5 text-xs font-semibold text-orange-700 transition-colors group-hover:bg-muted group-hover:text-orange-800 dark:text-orange-300 dark:group-hover:text-orange-200">
           View public profile
           <ArrowRight className="h-3.5 w-3.5" />
         </div>

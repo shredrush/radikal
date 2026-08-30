@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { User } from "lucide-react";
+import { User, LayoutDashboard, Headset } from "lucide-react";
 
 import { auth } from "@/lib/auth";
+import { hasPermission } from "@/lib/authz";
+import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { CurrencySelector } from "@/components/currency/currency-selector";
@@ -30,6 +32,9 @@ export async function SiteHeader() {
     : null;
   const profileImage = guideForImage ? getGuideImage(guideForImage) : currentUser?.image;
   const profileInitials = getProfileInitials(displayName);
+  const isGuide = session?.user?.role === "GUIDE";
+  const adminBoardHref = getAdminBoardHref(session?.user?.role);
+  const canAccessSupportDesk = hasPermission(session?.user?.role, "support.manage");
 
   const sportGroups = [
     {
@@ -211,6 +216,24 @@ export async function SiteHeader() {
                       <User className="h-4 w-4" />
                       Profile
                     </Link>
+                    {isGuide ? (
+                      <Link href="/guide-board/bookings" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Guide Board
+                      </Link>
+                    ) : null}
+                    {adminBoardHref ? (
+                      <Link href={adminBoardHref} className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Admin Board
+                      </Link>
+                    ) : null}
+                    {canAccessSupportDesk ? (
+                      <Link href="/support" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                        <Headset className="h-4 w-4" />
+                        Support Board
+                      </Link>
+                    ) : null}
                     <LogoutButton variant="menu" />
                   </div>
                 </div>
@@ -409,6 +432,24 @@ export async function SiteHeader() {
                     <User className="h-4 w-4" />
                     Profile
                   </Link>
+                  {isGuide ? (
+                    <Link href="/guide-board/bookings" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Guide Board
+                    </Link>
+                  ) : null}
+                  {adminBoardHref ? (
+                    <Link href={adminBoardHref} className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Admin Board
+                    </Link>
+                  ) : null}
+                  {canAccessSupportDesk ? (
+                    <Link href="/support" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary">
+                      <Headset className="h-4 w-4" />
+                      Support Board
+                    </Link>
+                  ) : null}
                   <LogoutButton variant="menu" />
                 </div>
               </div>
