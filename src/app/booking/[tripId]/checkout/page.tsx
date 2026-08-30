@@ -1,13 +1,13 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma, safeDb } from "@/lib/prisma";
 import { CheckoutFlow } from "@/components/booking/checkout-flow";
 import { FaqSection, type FaqItem } from "@/components/trips/faq-section";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
@@ -121,14 +121,6 @@ export default async function CheckoutPage({
   const normalizedImages = trip.images
     .map((image) => normalizeTripImagePath(image, trip.slug))
     .filter(Boolean);
-  const galleryImages =
-    normalizedImages.length > 0
-      ? normalizedImages
-      : [`/activities/${trip.slug}/cover.jpg`];
-  const gallerySlots = Array.from(
-    { length: 4 },
-    (_, i) => galleryImages[i % galleryImages.length],
-  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -141,59 +133,51 @@ export default async function CheckoutPage({
           Back to trip
         </Link>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-          {/* Left column — trip photos */}
-          <div className="h-[360px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:h-[540px] lg:h-[740px]">
-            <div className="grid h-full grid-cols-4 grid-rows-2 gap-0.5">
-              <div className="relative col-span-2 row-span-2 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[0]} alt={`${trip.title} photo`} fill className="object-cover" sizes="50vw" priority />
-              </div>
-              <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[1]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
-              </div>
-              <div className="relative col-span-1 row-span-2 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[3]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
-              </div>
-              <div className="relative col-span-1 row-span-1 overflow-hidden bg-muted/60">
-                <Image src={gallerySlots[2]} alt={`${trip.title} photo`} fill className="object-cover" sizes="25vw" />
-              </div>
-            </div>
-          </div>
-
-          {/* Right column — booking form */}
-          {!selectedSlot ? (
-            <Card className="rounded-[2rem] border-border/80 bg-transparent shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-              <CardHeader>
-                <CardTitle>No upcoming dates</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  There are no available slots for this trip right now. Check back
-                  soon or get in touch for a custom date.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <CheckoutFlow
-              trip={{
-                id: trip.id,
-                title: trip.title,
-                location: trip.location,
-                priceInRupees: trip.priceInRupees,
-                durationDays: trip.durationDays,
-                maxGroupSize: trip.maxGroupSize,
-              }}
-              availableSlots={trip.slots.map((slot) => ({
-                id: slot.id,
-                date: slot.date.toISOString(),
-                dateRange: formatTripDateRange(slot.date, trip.durationDays),
-                spotsLeft: slot.capacity - slot.booked - slot.reserved,
-              }))}
-              initialSlotId={selectedSlot.id}
-              initialParticipantCount={initialParticipantCount}
-            />
-          )}
-        </div>
+        {/* Booking flow */}
+        {!selectedSlot ? (
+          <Card className="rounded-[2rem] border-border/80 bg-transparent shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+            <CardHeader>
+              <CardTitle>No upcoming dates</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-start gap-4">
+              <p className="text-sm text-muted-foreground">
+                There are no available slots for this trip right now. Plan your own
+                dates with a custom trip and our team will build an itinerary around
+                you.
+              </p>
+              <Button
+                size="sm"
+                className="rounded-full bg-orange-700 text-white hover:bg-orange-800"
+                nativeButton={false}
+                render={<Link href="/custom-trip" />}
+              >
+                <Sparkles className="h-4 w-4" />
+                Plan a custom trip
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <CheckoutFlow
+            trip={{
+              id: trip.id,
+              slug: trip.slug,
+              title: trip.title,
+              location: trip.location,
+              images: normalizedImages,
+              priceInRupees: trip.priceInRupees,
+              durationDays: trip.durationDays,
+              maxGroupSize: trip.maxGroupSize,
+            }}
+            availableSlots={trip.slots.map((slot) => ({
+              id: slot.id,
+              date: slot.date.toISOString(),
+              dateRange: formatTripDateRange(slot.date, trip.durationDays),
+              spotsLeft: slot.capacity - slot.booked - slot.reserved,
+            }))}
+            initialSlotId={selectedSlot.id}
+            initialParticipantCount={initialParticipantCount}
+          />
+        )}
 
         <FaqSection
           items={BOOKING_FAQ_ITEMS}

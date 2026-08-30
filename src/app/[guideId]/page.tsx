@@ -32,6 +32,7 @@ const getGuideDetail = unstable_cache(
             id: true,
             slug: true,
             title: true,
+            type: true,
             description: true,
             location: true,
             categories: true,
