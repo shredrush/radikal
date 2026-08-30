@@ -258,7 +258,7 @@ export async function removeStoredMedia(urls: string[]) {
  * sometimes extracted without the execute bit (notably in CI/Vercel builds),
  * which surfaces as a confusing EACCES — so we ensure it is executable first.
  */
-async function readVideoDurationSeconds(url: string): Promise<number> {
+async function readVideoDurationSeconds(bucket: MediaBucket, path: string): Promise<number> {
   const { getVideoDurationInSeconds } = await import("get-video-duration");
   const ffprobePath = (await import("@ffprobe-installer/ffprobe")).default.path;
   if (ffprobePath) {
@@ -268,7 +268,15 @@ async function readVideoDurationSeconds(url: string): Promise<number> {
       // Best-effort; if the binary runs anyway the read still succeeds.
     }
   }
-  return getVideoDurationInSeconds(url);
+
+  const { data, error } = await storage().from(bucket).download(path);
+  if (error || !data) {
+    throw new Error("Could not download video for validation.");
+  }
+
+  const buffer = Buffer.from(await data.arrayBuffer());
+  const { Readable } = await import("node:stream");
+  return getVideoDurationInSeconds(Readable.from(buffer), ffprobePath);
 }
 
 /**
@@ -278,11 +286,12 @@ async function readVideoDurationSeconds(url: string): Promise<number> {
  * internal addresses (SSRF).
  */
 export async function validateVideoDuration(url: string): Promise<string | null> {
-  if (!parseStoredUrl(url)) {
+  const parsed = parseStoredUrl(url);
+  if (!parsed) {
     return "Videos must be uploaded through Radikal.";
   }
   try {
-    const seconds = await readVideoDurationSeconds(url);
+    const seconds = await readVideoDurationSeconds(parsed.bucket, parsed.path);
     if (seconds > MAX_VIDEO_SECONDS) {
       return `Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter (this one is ${Math.round(seconds)}s).`;
     }
