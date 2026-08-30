@@ -261,9 +261,10 @@ export async function removeStoredMedia(urls: string[]) {
 async function readVideoDurationSeconds(bucket: MediaBucket, path: string): Promise<number> {
   const { getVideoDurationInSeconds } = await import("get-video-duration");
   const ffprobePath = (await import("@ffprobe-installer/ffprobe")).default.path;
+  const fs = await import("node:fs/promises");
   if (ffprobePath) {
     try {
-      await (await import("node:fs/promises")).chmod(ffprobePath, 0o755);
+      await fs.chmod(ffprobePath, 0o755);
     } catch {
       // Best-effort; if the binary runs anyway the read still succeeds.
     }
@@ -275,8 +276,18 @@ async function readVideoDurationSeconds(bucket: MediaBucket, path: string): Prom
   }
 
   const buffer = Buffer.from(await data.arrayBuffer());
-  const { Readable } = await import("node:stream");
-  return getVideoDurationInSeconds(Readable.from(buffer), ffprobePath);
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+  const dir = await fs.mkdtemp(join(tmpdir(), "radikal-video-"));
+  const ext = path.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "mp4";
+  const filePath = join(dir, `video.${ext}`);
+
+  try {
+    await fs.writeFile(filePath, buffer);
+    return await getVideoDurationInSeconds(filePath, ffprobePath);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
 }
 
 /**
@@ -295,7 +306,12 @@ export async function validateVideoDuration(url: string): Promise<string | null>
     if (seconds > MAX_VIDEO_SECONDS) {
       return `Videos must be ${MAX_VIDEO_SECONDS} seconds or shorter (this one is ${Math.round(seconds)}s).`;
     }
-  } catch {
+  } catch (error) {
+    console.error("Video duration validation failed", {
+      bucket: parsed.bucket,
+      path: parsed.path,
+      error,
+    });
     return "Could not read the video. Upload an MP4, WebM, or MOV file.";
   }
   return null;
