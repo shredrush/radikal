@@ -21,6 +21,7 @@ export type BookingForCard = {
   participantCount: number;
   totalPriceRupees: number;
   paymentTransactionId: string | null;
+  specialRequests?: string | null;
   createdAt: Date;
   cancellationReason?: string | null;
   cancelledByRole?: string | null;
@@ -53,6 +54,7 @@ export const bookingCardSelect = {
   participantCount: true,
   totalPriceRupees: true,
   paymentTransactionId: true,
+  specialRequests: true,
   cancellationReason: true,
   createdAt: true,
   trip: { select: bookingTripSelect },
@@ -85,6 +87,7 @@ export function toBookingCardData(
     totalPriceRupees: booking.totalPriceRupees,
     status: booking.status as BookingStatusValue,
     paymentTransactionId: booking.paymentTransactionId,
+    specialRequests: booking.specialRequests ?? undefined,
     bookedAt: booking.createdAt.toISOString(),
     customer: booking.user
       ? {

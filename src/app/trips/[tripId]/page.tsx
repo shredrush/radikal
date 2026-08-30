@@ -205,7 +205,7 @@ export default async function TripDetailPage({
         </div>
 
         {/* Trip details + booking */}
-        <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid items-stretch gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <TripDetailsCard trip={trip} travelStyleTags={trip.categories} />
           <div className="flex flex-col gap-6">
             <BookingBar

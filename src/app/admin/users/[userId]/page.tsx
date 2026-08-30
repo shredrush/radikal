@@ -37,7 +37,7 @@ function roleBadgeClass(role: string) {
 }
 
 function actionBadgeClass(action: string) {
-  if (action.startsWith("LOGIN") || action === "ACCOUNT_CREATED" || action.startsWith("PASSWORD") || action === "USERNAME_CHANGED") {
+  if (action.startsWith("LOGIN") || action === "ACCOUNT_CREATED" || action.startsWith("PASSWORD") || action === "USERNAME_CHANGED" || action === "EMAIL_CHANGED" || action === "PHONE_CHANGED") {
     return "border-blue-500/40 bg-blue-500/10 text-blue-600";
   }
   if (action.startsWith("BOOKING") || action.startsWith("PAYMENT")) {

@@ -1,10 +1,11 @@
 import { unstable_cache } from "next/cache";
+import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
-import { formatMonthYear } from "@/lib/format";
+import { formatShortDate } from "@/lib/format";
 
 const FEATURED_TRIP_SLUGS = [
   "miyar-valley-trek",
@@ -74,53 +75,74 @@ const getHomeGuides = unstable_cache(
 
 // The home-page "Travellers love the Radikal Experiences" section is driven by
 // the reviews travellers leave on completed trips (seeded via the demo data).
+// Reviews live with the guide, not the trip: they survive trip deletion, so
+// pull the latest live reviews from guides still on the platform. Because any
+// particular trip's reviews can disappear with it, the query falls back to any
+// other available reviews instead of keying off a fixed set of trips.
 const getHomeReviews = unstable_cache(
   async () => {
-    // Latest review per trip, capped to the 4 most-recently-reviewed trips.
-    const latestPerTrip = await prisma.review.groupBy({
-      by: ["tripId"],
-      where: { tripId: { not: null } },
+    const reviewScope: Prisma.ReviewWhereInput = {
+      deletedAt: null,
+      OR: [
+        // Guide-linked reviews stay live as long as the guide is active,
+        // even when the underlying trip was deleted.
+        { guide: { deletedAt: null, user: { deletedAt: null } } },
+        // Trip-only reviews (no guide linked) still require a live trip.
+        { guideId: null, trip: { deletedAt: null } },
+      ],
+    };
+
+    // Latest review per guide, capped to the 4 most-recently-reviewed guides,
+    // so the testimonials row always reaches 4 distinct guides when they exist
+    // (guide-less trip reviews group under null as one fallback slot).
+    const latestPerGuide = await prisma.review.groupBy({
+      by: ["guideId"],
+      where: reviewScope,
       _max: { createdAt: true },
       orderBy: { _max: { createdAt: "desc" } },
       take: 4,
     });
 
-    const tripIds = latestPerTrip
-      .filter(
-        (entry): entry is typeof entry & { _max: { createdAt: Date } } =>
-          entry._max.createdAt !== null,
-      )
-      .map((entry) => entry.tripId)
-      .filter((id): id is string => id !== null);
+    const guideIds: string[] = [];
+    for (const entry of latestPerGuide) {
+      if (entry.guideId !== null && entry._max?.createdAt != null) {
+        guideIds.push(entry.guideId);
+      }
+    }
+    const hasTripOnly = latestPerGuide.some((entry) => entry.guideId === null);
 
-    if (tripIds.length === 0) return [];
+    if (guideIds.length === 0 && !hasTripOnly) return [];
 
-    // One query for every candidate review (newest-first) instead of a
-    // separate `findFirst` per trip — the dedupe below keeps the latest
-    // review of each trip, which is exactly what the testimonials render.
     const rows = await prisma.review.findMany({
       where: {
-        tripId: { in: tripIds },
         deletedAt: null,
-        trip: { deletedAt: null },
+        OR: [
+          ...(guideIds.length > 0 ? [{ guideId: { in: guideIds } }] : []),
+          ...(hasTripOnly ? [{ guideId: null, trip: { deletedAt: null } }] : []),
+        ],
       },
       orderBy: { createdAt: "desc" },
-      take: tripIds.length,
       select: {
+        guideId: true,
         tripId: true,
-        comment: true,
+        tripName: true,
+        tripDate: true,
         createdAt: true,
+        comment: true,
         user: { select: { name: true } },
-        trip: { select: { title: true, slug: true } },
+        trip: { select: { title: true, slug: true, deletedAt: true } },
       },
     });
 
-    const seenTripIds = new Set<string>();
+    // One review per guide (per trip for trip-only reviews); newest wins.
+    const seen = new Set<string>();
     const reviews: typeof rows = [];
     for (const review of rows) {
-      if (review.tripId === null || seenTripIds.has(review.tripId)) continue;
-      seenTripIds.add(review.tripId);
+      const key = review.guideId ?? `trip:${review.tripId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
       reviews.push(review);
+      if (reviews.length === 4) break;
     }
     return reviews;
   },
@@ -168,10 +190,10 @@ export default async function Home() {
         }))}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
-          trip: review.trip?.title ?? "Radikal experience",
-          slug: review.trip?.slug,
+          trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
+          slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
           quote: review.comment,
-          date: formatMonthYear(review.createdAt),
+          date: formatShortDate(review.tripDate ?? review.createdAt),
         }))}
       />
     </div>

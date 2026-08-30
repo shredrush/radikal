@@ -219,6 +219,7 @@ export function paymentReferenceReceivedEmail({
   participantCount,
   totalPriceRupees,
   transactionId,
+  specialRequests,
 }: {
   to: string;
   name: string;
@@ -228,6 +229,7 @@ export function paymentReferenceReceivedEmail({
   participantCount: number;
   totalPriceRupees: number;
   transactionId: string;
+  specialRequests?: string | null;
 }): EmailInput {
   return {
     to,
@@ -246,6 +248,11 @@ export function paymentReferenceReceivedEmail({
           ["Total", formatRupees(totalPriceRupees)],
           ["Transaction ID", transactionId],
         ]) +
+        (specialRequests
+          ? paragraph(
+              `<strong>Special needs and services:</strong><br/>${escapeMultiline(specialRequests)}`,
+            )
+          : "") +
         paragraph(
           `Our team will verify your transfer of <strong>${formatRupees(totalPriceRupees)}</strong> and confirm your booking shortly.`,
         ) +
@@ -373,6 +380,32 @@ export function passwordChangedEmail({
         paragraph(
           `If you did not make this change, please reset your password immediately and contact support.`,
         ),
+    ),
+  };
+}
+
+export function emailChangedEmail({
+  to,
+  name,
+  newEmail,
+}: {
+  to: string;
+  name: string;
+  newEmail: string;
+}): EmailInput {
+  return {
+    to,
+    subject: `Your ${SITE_NAME} email was changed`,
+    html: layout(
+      "Email changed",
+      heading("Your email was changed") +
+        paragraph(
+          `Hi ${escapeHtml(name || "there")}, your ${SITE_NAME} account email was just changed to <strong>${escapeHtml(newEmail)}</strong>. If this was you, no further action is needed.`,
+        ) +
+        paragraph(
+          `If you did not make this change, please contact support immediately — your account may be compromised.`,
+        ) +
+        button(siteUrl("/profile"), "View account"),
     ),
   };
 }

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/currency/price";
 import { getTripCardImage, type TripCardImageTrip } from "@/lib/trip-card-image";
-import { CARD_ACCENT_BORDER, CARD_ACCENT_SHADOW, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
+import { CARD_SURFACE } from "@/lib/card-styles";
 import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
 
@@ -29,10 +29,10 @@ export function TripCard({
   return (
     <Link href={`/trips/${trip.slug}`} className="block">
       <Card
-        className={`flex flex-col gap-0 overflow-hidden border ${CARD_ACCENT_BORDER} bg-background/95 py-0 ${CARD_ACCENT_SHADOW} transition-transform duration-200 hover:-translate-y-1 ${
+        className={`flex flex-col gap-0 overflow-hidden py-0 transition-transform duration-200 hover:-translate-y-1 ${CARD_SURFACE} ${
           compact
-            ? "h-[360px] min-w-0 rounded-[1rem] sm:h-[400px]"
-            : "h-full min-h-[320px] rounded-[1.1rem] sm:min-h-[420px]"
+            ? "h-[360px] min-w-0 rounded-[0.9rem] sm:h-[400px]"
+            : "h-full min-h-[320px] rounded-[0.9rem] sm:min-h-[420px]"
         }`}
       >
         <div
@@ -111,10 +111,8 @@ export function TripCard({
               </span>
             </div>
           ) : (
-            <div className="mt-auto flex items-center justify-between gap-1 border-t border-emerald-100 pt-2 dark:border-emerald-500/15">
-              <span
-                className={`shrink-0 rounded-full border ${ACCENT_PILL_EMERALD} px-1.5 py-0.5 text-[0.6rem] font-medium leading-none sm:text-sm`}
-              >
+            <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
+              <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
                 {formatDurationDays(trip.durationDays)}
               </span>
               <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">

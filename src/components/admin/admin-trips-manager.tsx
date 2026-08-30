@@ -148,7 +148,7 @@ export async function AdminTripsManager({
             Soft deleted trips
           </h3>
           <p className="text-sm text-muted-foreground">
-            Deleted trips stay hidden from customers and guides, with related slots, bookings, wishlists, and reviews preserved here for staff.
+            Deleted trips stay hidden from customers and guides, with related slots, bookings, and wishlists preserved here for staff. Reviews stay attached to the guide.
           </p>
         </div>
 

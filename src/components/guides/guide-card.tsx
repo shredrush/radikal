@@ -4,7 +4,7 @@ import { ArrowRight, MapPin, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { CARD_ACCENT_BORDER, CARD_ACCENT_SHADOW, ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
+import { CARD_SURFACE } from "@/lib/card-styles";
 import { getGuideImage } from "@/lib/guide-images";
 
 export interface GuideCardGuide {
@@ -28,7 +28,7 @@ export function GuideCard({
   if (variant === "home") {
     return (
       <Link href={`/${guide.username}`} className="block">
-        <Card className={`flex h-full min-w-0 flex-col overflow-hidden rounded-[0.85rem] border ${CARD_ACCENT_BORDER} bg-card/95 py-0 ${CARD_ACCENT_SHADOW} transition duration-200 hover:-translate-y-1`}>
+        <Card className={`flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] py-0 ${CARD_SURFACE} transition duration-200 hover:-translate-y-1`}>
           <CardHeader className="gap-0 p-0 pb-0 px-0">
             <div className="flex flex-col items-center text-center">
               <Image
@@ -62,7 +62,7 @@ export function GuideCard({
 
   return (
     <Link href={`/${guide.username}`} className="group block">
-      <article className={`flex h-full flex-col overflow-hidden rounded-[1.25rem] border ${CARD_ACCENT_BORDER} bg-card/95 ${CARD_ACCENT_SHADOW} transition duration-200 hover:-translate-y-1`}>
+      <article className={`flex h-full flex-col overflow-hidden rounded-[0.9rem] ${CARD_SURFACE} transition duration-200 hover:-translate-y-1`}>
         <div className="relative h-56 overflow-hidden sm:h-60 xl:h-64">
           <Image
             src={getGuideImage(guide)}
@@ -77,7 +77,7 @@ export function GuideCard({
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-heading text-xl font-semibold text-foreground">{guide.name}</h3>
-              <div className={`inline-flex items-center gap-1 rounded-full border ${ACCENT_PILL_EMERALD} px-2 py-0.5 text-[0.6rem] font-medium`}>
+              <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium text-foreground/80">
                 <ShieldCheck className="h-3 w-3" />
                 Vetted
               </div>
@@ -95,21 +95,21 @@ export function GuideCard({
 
           <div className="flex flex-wrap gap-1.5">
             {guide.certifications.slice(0, 2).map((certification) => (
-              <span key={certification} className={`rounded-full border ${ACCENT_PILL} px-2 py-1 text-[0.65rem] font-medium`}>
+              <span key={certification} className="rounded-full border border-border/70 bg-background/80 px-2 py-1 text-[0.65rem] font-medium text-foreground/80">
                 {certification}
               </span>
             ))}
           </div>
 
-          <div className="border-t border-emerald-100 pt-3 dark:border-emerald-500/15">
-            <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
+          <div className="border-t border-border/70 pt-3">
+            <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Languages
             </p>
             <div className="flex flex-wrap gap-1.5">
               {guide.languages?.map((language) => (
                 <span
                   key={`${guide.username}-${language}`}
-                  className="rounded-full bg-emerald-50 px-2 py-1 text-[0.68rem] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  className="rounded-full bg-muted/70 px-2 py-1 text-[0.68rem] font-medium text-foreground/80"
                 >
                   {language}
                 </span>

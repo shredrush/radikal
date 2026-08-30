@@ -220,7 +220,7 @@ export function TripsExplorer({
                   </div>
                   <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
                     {group.trips.map((trip) => (
-                      <TripCard key={trip.id} trip={trip} />
+                          <TripCard key={trip.id} trip={trip} />
                     ))}
                   </div>
                 </section>
@@ -254,7 +254,7 @@ export function TripsExplorer({
                       </div>
                       <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
                         {group.trips.map((trip) => (
-                          <TripCard key={trip.id} trip={trip} />
+                      <TripCard key={trip.id} trip={trip} />
                         ))}
                       </div>
                     </section>

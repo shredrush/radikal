@@ -7,7 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
-import { createBookingSchema } from "@/lib/validations/booking";
+import {
+  createBookingSchema,
+  SPECIAL_REQUESTS_MAX_LENGTH,
+} from "@/lib/validations/booking";
 import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
 import { sanitizeText } from "@/lib/sanitize";
 import {
@@ -59,6 +62,15 @@ export async function createBooking(
   const { tripId, slotId, participantCount, adventureInsurance, transactionId } = parsed.data;
   const cleanTransactionId = transactionId
     ? sanitizeText(transactionId, { maxLength: 100 })
+    : null;
+  // Free text is stripped of control characters, whitespace-normalized
+  // (newlines preserved), length-capped, and trimmed before persisting. React
+  // escapes all rendered output, so this keeps storage and log surfaces clean.
+  const cleanSpecialRequests = parsed.data.specialRequests
+    ? sanitizeText(parsed.data.specialRequests, {
+        maxLength: SPECIAL_REQUESTS_MAX_LENGTH,
+        allowNewlines: true,
+      })
     : null;
 
   // The insurance amount is derived from a server-side constant (never a
@@ -124,6 +136,7 @@ export async function createBooking(
           totalPriceRupees: slot.trip.priceInRupees * participantCount + insuranceRupees,
           status: "PENDING",
           paymentTransactionId: cleanTransactionId,
+          specialRequests: cleanSpecialRequests,
         },
         include: {
           user: { select: { email: true, name: true } },
@@ -176,6 +189,7 @@ export async function createBooking(
           participantCount: result.booking.participantCount,
           totalPriceRupees: result.booking.totalPriceRupees,
           transactionId: cleanTransactionId,
+          specialRequests: result.booking.specialRequests,
         }),
       );
     }

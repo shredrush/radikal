@@ -612,7 +612,8 @@ export async function deleteGuideTripAction(tripId: string, reason?: string): Pr
         data: { deletedAt, deletedWithTrip: true, deletedById: userId, deletedByRole: "GUIDE" },
       }),
       tx.wishlistItem.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
-      tx.review.updateMany({ where: { tripId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+      // Reviews are linked to the guide, not the trip: they stay live for as
+      // long as the guide is on the platform, so a deleted trip never hides them.
       tx.tripChangeRequest.updateMany({
         where: { tripId, type: "UPDATE", status: "PENDING" },
         data: { status: "REJECTED", reviewedAt: deletedAt, reviewedById: userId },

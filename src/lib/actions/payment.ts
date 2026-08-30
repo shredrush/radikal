@@ -135,6 +135,7 @@ export async function submitTransactionId(
         participantCount: booking.participantCount,
         totalPriceRupees: booking.totalPriceRupees,
         transactionId: cleanTransactionId,
+        specialRequests: booking.specialRequests,
       }),
     );
   } catch (error) {

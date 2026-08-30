@@ -9,6 +9,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
 import {
+  emailChangedEmail,
   passwordChangedEmail,
   passwordResetOtpEmail,
   sendEmailAfter,
@@ -25,7 +26,9 @@ import {
   sanitizeText,
 } from "@/lib/sanitize";
 import {
+  changeEmailSchema,
   changePasswordSchema,
+  changePhoneSchema,
   loginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
@@ -465,6 +468,136 @@ export async function changeUsernameAction(
     revalidatePath("/community");
     updateTag("guides");
   }
+
+  return { success: true };
+}
+
+export type ChangeEmailActionState = {
+  error?: string;
+  success?: boolean;
+  fieldErrors?: Partial<Record<"email", string>>;
+};
+
+export async function changeEmailAction(
+  _prevState: ChangeEmailActionState,
+  formData: FormData
+): Promise<ChangeEmailActionState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { error: "You must be logged in to change your email." };
+  }
+
+  // Throttle email changes per user to curb account-takeover probes.
+  const emailLimit = rateLimit(`change-email:user:${userId}`, 5, 15 * 60_000);
+  if (!emailLimit.success) {
+    return { error: rateLimitError(emailLimit) };
+  }
+
+  const parsed = changeEmailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) {
+    return {
+      fieldErrors: { email: parsed.error.issues[0]?.message ?? "Enter a valid email address." },
+    };
+  }
+
+  const email = parsed.data.email;
+
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+  if (!user) {
+    return { error: "Account not found." };
+  }
+
+  // Nothing to do when the email is unchanged.
+  if (user.email === email) {
+    return { success: true };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return { fieldErrors: { email: "An account with this email already exists." } };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { email },
+    });
+  } catch (error) {
+    // The DB unique constraint is the final guard against a rename race.
+    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+      return { fieldErrors: { email: "An account with this email already exists." } };
+    }
+    throw error;
+  }
+
+  await logActivity({
+    userId,
+    action: "EMAIL_CHANGED",
+    label: "Changed email",
+    metadata: { email },
+  });
+
+  // Notify both the old and the new address so the change is always visible.
+  sendEmailAfter(emailChangedEmail({ to: email, name: user.name, newEmail: email }));
+  if (user.email !== email) {
+    sendEmailAfter(emailChangedEmail({ to: user.email, name: user.name, newEmail: email }));
+  }
+
+  return { success: true };
+}
+
+export type ChangePhoneActionState = {
+  error?: string;
+  success?: boolean;
+  fieldErrors?: Partial<Record<"phone", string>>;
+};
+
+export async function changePhoneAction(
+  _prevState: ChangePhoneActionState,
+  formData: FormData
+): Promise<ChangePhoneActionState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return { error: "You must be logged in to change your phone number." };
+  }
+
+  const phoneLimit = rateLimit(`change-phone:user:${userId}`, 5, 15 * 60_000);
+  if (!phoneLimit.success) {
+    return { error: rateLimitError(phoneLimit) };
+  }
+
+  const parsed = changePhoneSchema.safeParse(formData.get("phone"));
+  if (!parsed.success) {
+    return {
+      fieldErrors: { phone: parsed.error.issues[0]?.message ?? "Enter a valid phone number." },
+    };
+  }
+
+  const phone = parsed.data.phone;
+
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+  if (!user) {
+    return { error: "Account not found." };
+  }
+
+  // Nothing to do when the phone number is unchanged.
+  if (user.phone === phone) {
+    return { success: true };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { phone },
+  });
+
+  await logActivity({
+    userId,
+    action: "PHONE_CHANGED",
+    label: "Changed phone number",
+    metadata: { phone },
+  });
 
   return { success: true };
 }

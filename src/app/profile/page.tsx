@@ -13,7 +13,9 @@ import {
   Heart,
   KeyRound,
   LayoutDashboard,
+  Mail,
   MessageSquare,
+  Phone,
   Settings2,
   Ticket,
 } from "lucide-react";
@@ -39,7 +41,10 @@ import {
   type SupportMessageView,
 } from "@/lib/support";
 import { formatDateTime } from "@/lib/format";
-import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
+import {
+  clearAllNotificationsAction,
+  markAllNotificationsReadAction,
+} from "@/lib/actions/notifications";
 import { cn } from "@/lib/utils";
 
 // Tab-only client components are lazy-loaded so the initial profile bundle
@@ -86,6 +91,14 @@ const ChangePasswordFormDynamic = dynamicImport(
   () => import("@/components/profile/change-password-form").then((m) => m.ChangePasswordForm),
   { loading: () => null },
 );
+const ChangeEmailFormDynamic = dynamicImport(
+  () => import("@/components/profile/change-email-form").then((m) => m.ChangeEmailForm),
+  { loading: () => null },
+);
+const ChangePhoneFormDynamic = dynamicImport(
+  () => import("@/components/profile/change-phone-form").then((m) => m.ChangePhoneForm),
+  { loading: () => null },
+);
 export const metadata: Metadata = {
   title: "Profile — Radikal",
 };
@@ -108,7 +121,14 @@ export default async function ProfilePage({
   const profileInitials = getProfileInitials(name);
 
   const { tab, section } = await searchParams;
-  const activeSection = section === "username" ? "username" : "password";
+  const activeSection =
+    section === "username"
+      ? "username"
+      : section === "email"
+        ? "email"
+        : section === "phone"
+          ? "phone"
+          : "password";
   const isGuide = user.role === "GUIDE";
   const activeTab =
     tab === "settings"
@@ -252,6 +272,11 @@ export default async function ProfilePage({
         photos: currentUser.guide.photos,
       })
     : currentUser?.image;
+
+  // Prefer the live DB values over the JWT so the settings forms stay accurate
+  // even right after an email/phone change in the same session.
+  const currentEmail = currentUser?.email ?? user.email ?? "";
+  const currentPhone = currentUser?.phone ?? null;
 
   const notificationList = Array.isArray(notifications) ? notifications : [];
   const unreadNotificationsCount = Array.isArray(notifications)
@@ -506,6 +531,32 @@ export default async function ProfilePage({
                   <AtSign className="h-4 w-4" />
                   Change username
                 </Link>
+                <Link
+                  href="/profile?tab=settings&section=email"
+                  prefetch={false}
+                  className={cn(
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    activeSection === "email"
+                      ? "border-primary/40 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <Mail className="h-4 w-4" />
+                  Change email
+                </Link>
+                <Link
+                  href="/profile?tab=settings&section=phone"
+                  prefetch={false}
+                  className={cn(
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    activeSection === "phone"
+                      ? "border-primary/40 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <Phone className="h-4 w-4" />
+                  Change phone
+                </Link>
               </nav>
             </aside>
           ) : null}
@@ -516,12 +567,22 @@ export default async function ProfilePage({
               <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
                 <CardHeader>
                   <CardTitle>
-                    {activeSection === "username" ? "Change username" : "Change password"}
+                    {activeSection === "username"
+                      ? "Change username"
+                      : activeSection === "email"
+                        ? "Change email"
+                        : activeSection === "phone"
+                          ? "Change phone number"
+                          : "Change password"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {activeSection === "username" ? (
                     <ChangeUsernameFormDynamic currentUsername={user.username ?? null} />
+                  ) : activeSection === "email" ? (
+                    <ChangeEmailFormDynamic currentEmail={currentEmail} />
+                  ) : activeSection === "phone" ? (
+                    <ChangePhoneFormDynamic currentPhone={currentPhone} />
                   ) : (
                     <ChangePasswordFormDynamic />
                   )}
@@ -575,13 +636,27 @@ export default async function ProfilePage({
                         Updates about your bookings, trips, and account.
                       </CardDescription>
                     </div>
-                    {unreadNotificationsCount > 0 ? (
-                      <form action={markAllNotificationsReadAction}>
-                        <Button type="submit" variant="outline" size="sm" className="rounded-full">
-                          Mark all read
-                        </Button>
-                      </form>
-                    ) : null}
+                    <div className="flex items-center gap-2">
+                      {unreadNotificationsCount > 0 ? (
+                        <form action={markAllNotificationsReadAction}>
+                          <Button type="submit" variant="outline" size="sm" className="rounded-full">
+                            Mark all read
+                          </Button>
+                        </form>
+                      ) : null}
+                      {notificationList.length > 0 ? (
+                        <form action={clearAllNotificationsAction}>
+                          <Button
+                            type="submit"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full text-destructive hover:text-destructive"
+                          >
+                            Clear all
+                          </Button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -660,6 +735,7 @@ export default async function ProfilePage({
                   endpoint="/api/profile/bookings?kind=upcoming"
                   emptyTitle="No upcoming trips"
                   emptyDescription="Once you book a trip, it will show up here with its status."
+                  defaultOpen={!canReadAllBookings}
                 />
 
                 <LazyBookingsSectionDynamic

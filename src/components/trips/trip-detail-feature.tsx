@@ -56,8 +56,8 @@ export function TripDetailsCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]",
-        travelStyleTags.length > 0 && "gap-4 pt-3"
+        "h-full overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]",
+        travelStyleTags.length > 0 && "gap-4 pt-5"
       )}
     >
       {travelStyleTags.length > 0 ? (
@@ -78,7 +78,7 @@ export function TripDetailsCard({
           <CardDescription>Everything you need to know before you go.</CardDescription>
         </CardHeader>
       )}
-      <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
+      <CardContent className="flex flex-1 flex-col space-y-4 text-sm leading-7 text-muted-foreground">
         <p className="text-foreground">{trip.description}</p>
         <div className="grid gap-3 grid-cols-2">
           <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
@@ -131,7 +131,7 @@ export function AvailableDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
       </CardHeader>
       <CardContent>
         {upcomingSlots.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="max-h-[11.5rem] space-y-2 overflow-y-auto pr-1">
             {upcomingSlots.map((slot) => {
               const occupancy = getSlotOccupancyPercent(slot);
               return (
@@ -179,10 +179,9 @@ export function CompletedDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
     <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
       <CardHeader>
         <CardTitle className="text-xl">Completed dates</CardTitle>
-        <CardDescription>Past departures that have already set off.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-2">
+        <ul className="max-h-[11.5rem] space-y-2 overflow-y-auto pr-1">
           {completedSlots.map((slot) => (
             <li
               key={slot.id}
@@ -207,7 +206,7 @@ export function CompletedDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
 
 export function WhatsIncludedCard({ trip }: { trip: TripDetailFeatureTrip }) {
   return (
-    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+    <Card className="h-full flex-1 overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
       <CardHeader>
         <CardTitle className="text-xl">What&apos;s included</CardTitle>
         <CardDescription>Covered in the price, and what to arrange yourself.</CardDescription>

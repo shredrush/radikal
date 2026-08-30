@@ -12,7 +12,7 @@ import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
 import { ACCENT_PILL } from "@/lib/card-styles";
-import { formatMonthYear } from "@/lib/format";
+import { formatShortDate } from "@/lib/format";
 
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).
@@ -52,22 +52,27 @@ const getGuideDetail = unstable_cache(
           },
         },
         reviews: {
-          where: { deletedAt: null, trip: { deletedAt: null } },
+          // Reviews live with the guide, not the trip: only the guide being
+          // on the platform keeps them, so a deleted trip is no longer a
+          // reason to hide one.
+          where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
           take: 3,
           select: {
             id: true,
             comment: true,
             createdAt: true,
+            tripName: true,
+            tripDate: true,
             user: { select: { name: true } },
-            trip: { select: { slug: true, title: true } },
+            trip: { select: { slug: true, title: true, deletedAt: true } },
           },
         },
       },
     });
   },
   ["guide-detail"],
-  { tags: ["guides", "trips"], revalidate: 3600 },
+  { tags: ["guides", "trips", "reviews"], revalidate: 3600 },
 );
 
 async function getResolvedGuide(username: string) {
@@ -244,10 +249,10 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                   key={review.id}
                   testimonial={{
                     name: getDisplayName(review.user.name),
-                    trip: review.trip?.title ?? "Radikal experience",
-                    slug: review.trip?.slug,
+                    trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
+                    slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
                     quote: review.comment,
-                    date: formatMonthYear(review.createdAt),
+                    date: formatShortDate(review.tripDate ?? review.createdAt),
                   }}
                 />
               ))}

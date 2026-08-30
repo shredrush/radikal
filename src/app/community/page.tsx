@@ -116,7 +116,7 @@ const pillarToneStyles: Record<
   }
 > = {
   orange: {
-    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/80 via-white to-white dark:border-orange-500/20 dark:from-orange-500/10 dark:via-card dark:to-card",
+    card: "bg-gradient-to-br from-orange-50/80 via-white to-white shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:from-orange-500/10 dark:via-card dark:to-card dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]",
     iconBadge: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
     tagline: "text-orange-700 dark:text-orange-300",
     pointIcon: "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300",
@@ -124,7 +124,7 @@ const pillarToneStyles: Record<
     topBar: "bg-orange-500",
   },
   blue: {
-    card: "border-blue-200/70 bg-gradient-to-br from-blue-50/80 via-white to-white dark:border-blue-500/20 dark:from-blue-500/10 dark:via-card dark:to-card",
+    card: "bg-gradient-to-br from-blue-50/80 via-white to-white shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:from-blue-500/10 dark:via-card dark:to-card dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]",
     iconBadge: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
     tagline: "text-blue-700 dark:text-blue-300",
     pointIcon: "bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
@@ -132,7 +132,7 @@ const pillarToneStyles: Record<
     topBar: "bg-blue-500",
   },
   green: {
-    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-white to-white dark:border-emerald-500/20 dark:from-emerald-500/10 dark:via-card dark:to-card",
+    card: "bg-gradient-to-br from-emerald-50/80 via-white to-white shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:from-emerald-500/10 dark:via-card dark:to-card dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]",
     iconBadge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     tagline: "text-emerald-700 dark:text-emerald-300",
     pointIcon: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
@@ -205,7 +205,7 @@ export default async function CommunityPage() {
                 return (
                   <div
                     key={pillar.title}
-                    className={`relative flex flex-col overflow-hidden rounded-[1.75rem] border p-6 shadow-sm sm:p-6 ${tone.card}`}
+                    className={`relative flex flex-col overflow-hidden rounded-[1.75rem] p-6 transition-transform duration-200 hover:-translate-y-1 sm:p-6 ${tone.card}`}
                   >
                     <div className={`absolute inset-x-0 top-0 h-1 ${tone.topBar}`} />
 

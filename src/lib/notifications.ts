@@ -16,6 +16,31 @@ const BOOKING_ROLES = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter(
   (role) => ROLE_PERMISSIONS[role].has("bookings.read"),
 );
 
+/** Maximum notifications kept per user; older ones are auto-cleared. */
+const MAX_NOTIFICATIONS_PER_USER = 21;
+
+/**
+ * Delete every notification beyond the newest {@link MAX_NOTIFICATIONS_PER_USER}
+ * for the given users.
+ */
+async function trimNotificationsToLimit(userIds: string[]) {
+  await prisma.$transaction(async (tx) => {
+    for (const userId of userIds) {
+      const keep = await tx.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+        take: MAX_NOTIFICATIONS_PER_USER,
+      });
+      if (keep.length === 0) continue;
+
+      await tx.notification.deleteMany({
+        where: { userId, id: { notIn: keep.map((n) => n.id) } },
+      });
+    }
+  });
+}
+
 /**
  * Create an in-app notification for every staff user who can read bookings.
  * Returns the notified users (so callers can also email them).
@@ -37,6 +62,8 @@ export async function notifyBookingStaff(input: NotificationInput) {
       href: input.href ?? null,
     })),
   });
+
+  await trimNotificationsToLimit(users.map((user) => user.id));
 
   return users;
 }

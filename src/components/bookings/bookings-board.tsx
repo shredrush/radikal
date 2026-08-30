@@ -117,6 +117,7 @@ function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
         participantCount: item.participantCount,
         totalPriceRupees: item.totalPriceRupees,
         paymentTransactionId: item.paymentTransactionId,
+        specialRequests: item.specialRequests,
         bookedAt: item.bookedAt,
         cancelledAt: item.cancelledAt,
         deletedByText: item.deletedByText,
@@ -392,6 +393,16 @@ export function BookingsBoard({
                                               : client.email}
                                           </p>
                                         </div>
+                                        {client.specialRequests ? (
+                                          <p className="w-full border-t border-border/40 pt-1.5 text-xs leading-5 text-muted-foreground">
+                                            <span className="font-semibold text-foreground">
+                                              Special needs:
+                                            </span>{" "}
+                                            <span className="whitespace-pre-line">
+                                              {client.specialRequests}
+                                            </span>
+                                          </p>
+                                        ) : null}
                                         <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                                           <Clock className="h-3.5 w-3.5" />
                                           {client.bookedAt}

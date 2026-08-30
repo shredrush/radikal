@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { prisma, safeDb } from "@/lib/prisma";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
-import { formatMonthYear } from "@/lib/format";
+import { formatShortDate } from "@/lib/format";
 
 const getGuideReviews = unstable_cache(
   async (username: string) => {
@@ -17,14 +17,19 @@ const getGuideReviews = unstable_cache(
         id: true,
         name: true,
         reviews: {
-          where: { deletedAt: null, trip: { deletedAt: null } },
+          // Reviews live with the guide, not the trip: only the guide being
+          // on the platform keeps them, so a deleted trip is no longer a
+          // reason to hide one.
+          where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
             comment: true,
             createdAt: true,
+            tripName: true,
+            tripDate: true,
             user: { select: { name: true } },
-            trip: { select: { slug: true, title: true } },
+            trip: { select: { slug: true, title: true, deletedAt: true } },
           },
         },
       },
@@ -96,25 +101,32 @@ export default async function GuideReviewsPage({ params }: { params: Promise<{ g
             </div>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {guide.reviews.map((review) => (
-                <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
-                  <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
-                  <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                    {review.trip ? (
-                      <Link
-                        href={`/trips/${review.trip.slug}`}
-                        className="font-medium underline underline-offset-2 transition hover:text-foreground"
-                      >
-                        {review.trip.title}
-                      </Link>
-                    ) : null}
-                    <span>
-                      {formatMonthYear(review.createdAt)}
-                    </span>
-                  </div>
-                </li>
-              ))}
+              {guide.reviews.map((review) => {
+                const tripTitle = review.tripName ?? review.trip?.title;
+                const tripSlug =
+                  review.trip && !review.trip.deletedAt ? review.trip.slug : null;
+                return (
+                  <li key={review.id} className="rounded-[1.25rem] border border-border/70 bg-muted/30 p-4">
+                    <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
+                    <p className="mt-2 text-sm leading-6 text-foreground">&ldquo;{review.comment}&rdquo;</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      {tripTitle ? (
+                        tripSlug ? (
+                          <Link
+                            href={`/trips/${tripSlug}`}
+                            className="font-medium underline underline-offset-2 transition hover:text-foreground"
+                          >
+                            {tripTitle}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{tripTitle}</span>
+                        )
+                      ) : null}
+                      <span>{formatShortDate(review.tripDate ?? review.createdAt)}</span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

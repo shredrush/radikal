@@ -4,6 +4,8 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 const profileUserSelect = {
+  email: true,
+  phone: true,
   image: true,
   guide: {
     select: {

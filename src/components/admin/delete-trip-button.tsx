@@ -52,7 +52,7 @@ export function DeleteTripButton({
             Delete “{tripTitle}”?
           </p>
           <p className="text-xs text-muted-foreground">
-            This removes it from public views and marks related slots, bookings, wishlists, and reviews as deleted. You can restore it later.
+            This removes it from public views and marks related slots, bookings, and wishlists as deleted. Reviews stay attached to the guide. You can restore it later.
           </p>
           <textarea
             value={reason}

@@ -18,7 +18,7 @@ export async function deactivateGuide(
     tx.slot.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
     tx.booking.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
     tx.wishlistItem.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
-    tx.review.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
+    tx.review.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt, deletedWithGuide: true } }),
     tx.tripDraft.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt } }),
     tx.tripChangeRequest.updateMany({
       where: { guideId, status: "PENDING" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Ban, CheckCircle2, ChevronDown, Loader2, Ticket } from "lucide-react";
 
 import { BookingCard, type BookingCardData } from "@/components/profile/booking-card";
@@ -27,6 +27,7 @@ export function LazyBookingsSection({
   kind,
   emptyTitle,
   emptyDescription,
+  defaultOpen = false,
 }: {
   title: string;
   description?: string;
@@ -34,8 +35,9 @@ export function LazyBookingsSection({
   kind: SectionKind;
   emptyTitle: string;
   emptyDescription?: string;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [bookings, setBookings] = useState<BookingCardData[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,12 @@ export function LazyBookingsSection({
       setLoading(false);
     }
   }, [endpoint]);
+
+  useEffect(() => {
+    if (defaultOpen && bookings === null && !loading) {
+      void load();
+    }
+  }, [defaultOpen, bookings, loading, load]);
 
   function toggle() {
     if (open) {

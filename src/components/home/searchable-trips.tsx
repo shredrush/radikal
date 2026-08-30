@@ -315,7 +315,7 @@ export function SearchableTrips({
             <Link
               key={item.title}
               href={item.filter ? `/trips?sport=${item.filter}` : "/custom-trip"}
-              className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.35)] sm:h-[130px] lg:h-[140px]"
+              className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_24px_44px_-20px_rgba(0,0,0,0.4)] sm:h-[130px] lg:h-[140px]"
             >
               <Image
                 src={item.image}
@@ -378,7 +378,7 @@ export function SearchableTrips({
               <Link
                 key={item.title}
                 href="/trips"
-                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.35)] sm:min-h-[190px]"
+                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_24px_44px_-20px_rgba(0,0,0,0.4)] sm:min-h-[190px]"
               >
                 <Image
                   src={item.image}

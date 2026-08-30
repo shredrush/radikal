@@ -19,6 +19,7 @@ export type BookingBoardClient = {
   participantCount: number;
   totalPriceRupees: number;
   paymentTransactionId: string | null;
+  specialRequests: string | null;
   bookedAt: string;
   cancelledAt: string | null;
   deletedByText: string | null;
@@ -46,6 +47,7 @@ export type BookingBoardItem = {
   participantCount: number;
   totalPriceRupees: number;
   paymentTransactionId: string | null;
+  specialRequests: string | null;
   bookedAt: string;
   cancellationReason: string | null;
   cancelledByText: string | null;
@@ -156,6 +158,7 @@ export async function fetchBookingsWithDetails(
     participantCount: 0,
     totalPriceRupees: 0,
     paymentTransactionId: null,
+    specialRequests: null,
     bookedAt: "",
     cancellationReason: null,
     cancelledByText: null,
@@ -181,6 +184,7 @@ function toBookingBoardItem(
     totalPriceRupees: number;
     participantCount: number;
     paymentTransactionId: string | null;
+    specialRequests: string | null;
     cancelledByRole: string | null;
     cancellationReason: string | null;
     deletedByRole: string | null;
@@ -226,6 +230,7 @@ function toBookingBoardItem(
     paymentTransactionId: options.includePaymentDetails
       ? booking.paymentTransactionId
       : null,
+    specialRequests: booking.specialRequests,
     bookedAt: formatMessageTime(booking.createdAt),
     cancelledAt:
       booking.status === "CANCELLED" && (booking.cancellationReason || booking.cancelledBy)

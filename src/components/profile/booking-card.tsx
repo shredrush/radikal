@@ -12,6 +12,7 @@ import {
   Check,
   ChevronDown,
   Clock,
+  HandHeart,
   Hash,
   MapPin,
   Receipt,
@@ -106,6 +107,7 @@ export type BookingCardData = {
   totalPriceRupees: number;
   status: BookingStatus;
   paymentTransactionId: string | null;
+  specialRequests?: string | null;
   bookedAt: string;
   customer?: {
     name: string;
@@ -310,6 +312,15 @@ export function BookingCard({ booking }: { booking: BookingCardData }) {
                   Cancellation reason
                 </dt>
                 <dd className="max-w-[60%] text-right text-foreground">{booking.cancellationReason}</dd>
+              </div>
+            ) : null}
+            {booking.specialRequests ? (
+              <div className="border-t border-border/60 pt-2.5">
+                <dt className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <HandHeart className="h-3.5 w-3.5 text-primary" />
+                  Special needs and services
+                </dt>
+                <dd className="mt-1 whitespace-pre-line text-foreground">{booking.specialRequests}</dd>
               </div>
             ) : null}
             <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-2.5">

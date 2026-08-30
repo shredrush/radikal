@@ -397,6 +397,10 @@ model Booking {
   paymentTransactionId String?
   participantCount     Int           @default(1)
   totalPriceRupees     Int
+  // Free text for accessibility needs, dietary requirements, and other
+  // services the traveller wants the guide/team to arrange. Sanitized and
+  // length-capped before it is persisted.
+  specialRequests      String?
   // Audit trail for cancellations: who cancelled and in which role, so the
   // support board can show exactly who cancelled a booking.
   cancelledById        String?
@@ -449,25 +453,34 @@ model WishlistItem {
 }
 
 model Review {
-  id              String    @id @default(cuid())
-  userId          String
-  tripId          String?
-  guideId         String?
-  rating          Int
-  comment         String
-  deletedAt       DateTime?
-  deletedWithTrip Boolean   @default(false)
+  id        String    @id @default(cuid())
+  userId    String
+  tripId    String?
+  guideId   String?
+  // Snapshot of the trip taken when the review was submitted. A review is
+  // tied to the guide (it lives as long as the guide is on the platform), so
+  // these copies keep the trip name and travel date meaningful even after the
+  // underlying trip has been deleted.
+  tripName  String?
+  tripDate  DateTime?
+  rating    Int
+  comment   String
+  deletedAt DateTime?
+  // Set when the review is retired together with its guide (guide deleted or
+  // demoted). Trip deletion alone never hides a review.
+  deletedWithGuide Boolean   @default(false)
   createdAt       DateTime  @default(now())
 
-  user  User   @relation(fields: [userId], references: [id])
-  trip  Trip?  @relation(fields: [tripId], references: [id])
-  guide Guide? @relation(fields: [guideId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  trip  Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  guide Guide? @relation(fields: [guideId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([userId, deletedAt])
   @@index([tripId])
-  @@index([guideId])
+  @@index([guideId, deletedAt])
   @@index([deletedAt])
+  @@index([deletedAt, createdAt])
   @@map("reviews")
 }
 

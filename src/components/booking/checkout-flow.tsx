@@ -16,6 +16,7 @@ import {
 
 import { createBooking } from "@/lib/actions/booking";
 import { ADVENTURE_INSURANCE_PER_PERSON_RUPEES } from "@/lib/booking-pricing";
+import { SPECIAL_REQUESTS_MAX_LENGTH } from "@/lib/validations/booking";
 import { sanitizeText } from "@/lib/sanitize";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ export function CheckoutFlow({
   const [slotId, setSlotId] = useState(initialSlotId);
   const [participantCount, setParticipantCount] = useState(initialParticipantCount);
   const [adventureInsurance, setAdventureInsurance] = useState(false);
+  const [specialRequests, setSpecialRequests] = useState("");
   const [step, setStep] = useState<Step>("select");
   const [transactionId, setTransactionId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +140,10 @@ export function CheckoutFlow({
   function handleSubmitPayment() {
     // Sanitize locally before sending — mirrors the server-side sanitization.
     const cleanTransactionId = sanitizeText(transactionId, { maxLength: 100 });
+    const cleanSpecialRequests = sanitizeText(specialRequests, {
+      maxLength: SPECIAL_REQUESTS_MAX_LENGTH,
+      allowNewlines: true,
+    });
 
     if (!cleanTransactionId) {
       setError("Please enter the transaction ID from your bank transfer.");
@@ -155,6 +161,7 @@ export function CheckoutFlow({
         slotId,
         participantCount,
         adventureInsurance,
+        specialRequests: cleanSpecialRequests,
         transactionId: cleanTransactionId,
       });
 
@@ -344,9 +351,35 @@ export function CheckoutFlow({
             </div>
           </section>
 
+          {/* Special needs and services */}
+          <section className="space-y-5 border-t border-border/70 pt-7">
+            <SectionHeading number={3}>Special needs and services</SectionHeading>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="special-requests" className="text-muted-foreground">
+                How can we make this trip comfortable and safe for you?
+              </Label>
+              <textarea
+                id="special-requests"
+                value={specialRequests}
+                onChange={(event) => setSpecialRequests(event.target.value)}
+                maxLength={SPECIAL_REQUESTS_MAX_LENGTH}
+                rows={4}
+                disabled={step !== "select"}
+                placeholder="e.g. wheelchair access, dietary requirements, medical needs, gear you'd like us to arrange…"
+                className={`min-h-28 w-full resize-y rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm leading-6 shadow-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50`}
+              />
+              <p className="text-right text-xs tabular-nums text-muted-foreground" aria-live="polite">
+                {specialRequests.length}/{SPECIAL_REQUESTS_MAX_LENGTH}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Optional. Our team and your guide will review this before departure.
+              </p>
+            </div>
+          </section>
+
           {/* Cancellation policy */}
           <section className="space-y-4 border-t border-border/70 pt-7">
-            <SectionHeading number={3}>Cancellation policy</SectionHeading>
+            <SectionHeading number={4}>Cancellation policy</SectionHeading>
             <div className="overflow-hidden rounded-xl border border-border/70">
               <button
                 type="button"
@@ -398,7 +431,7 @@ export function CheckoutFlow({
           {/* Payment */}
           {step === "review" ? (
             <section className="space-y-5 border-t border-border/70 pt-7">
-              <SectionHeading number={4}>Pick how to pay</SectionHeading>
+              <SectionHeading number={5}>Pick how to pay</SectionHeading>
               <div className="flex flex-col gap-3 rounded-xl border border-black/60 bg-black/[0.04] p-4 dark:border-white/40 dark:bg-white/[0.06]">
                 <div className="flex items-center gap-3">
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-black bg-black dark:border-white dark:bg-white">

@@ -20,6 +20,10 @@ type ValidatedReview = {
   tripId: string;
   guideId: string | null;
   tripSlug: string;
+  // Snapshot taken at review time so the review stays meaningful even if the
+  // trip is later deleted — the review lives with the guide, not the trip.
+  tripName: string;
+  tripDate: Date;
   rating: number;
   comment: string;
 };
@@ -85,8 +89,9 @@ async function validateReviewSubmission(
       status: true,
       tripId: true,
       trip: {
-        select: { slug: true, guideId: true },
+        select: { slug: true, guideId: true, title: true },
       },
+      slot: { select: { date: true } },
     },
   });
 
@@ -117,6 +122,8 @@ async function validateReviewSubmission(
       tripId: booking.tripId,
       guideId: booking.trip.guideId ?? null,
       tripSlug: booking.trip.slug,
+      tripName: booking.trip.title,
+      tripDate: booking.slot.date,
       rating,
       comment,
     },
@@ -139,7 +146,7 @@ export async function createReviewAction(
   const validated = await validateReviewSubmission(formData);
   if (!validated.ok) return validated.state;
 
-  const { userId, bookingId, tripId, guideId, tripSlug, rating, comment } =
+  const { userId, bookingId, tripId, guideId, tripSlug, tripName, tripDate, rating, comment } =
     validated.data;
 
   const existing = await prisma.review.findFirst({
@@ -151,7 +158,7 @@ export async function createReviewAction(
   }
 
   await prisma.review.create({
-    data: { userId, tripId, guideId, rating, comment },
+    data: { userId, tripId, guideId, tripName, tripDate, rating, comment },
   });
 
   await logActivity({

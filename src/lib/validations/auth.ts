@@ -59,6 +59,22 @@ export const changePasswordSchema = z
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const changeEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().max(254).email("Enter a valid email address"),
+});
+
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
+export const changePhoneSchema = z.object({
+  // Full E.164 number (e.g. +917217217678): a leading +, then 7–15 digits.
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+\d{7,15}$/, "Enter a valid phone number with country code"),
+});
+
+export type ChangePhoneInput = z.infer<typeof changePhoneSchema>;
+
 export const requestPasswordResetSchema = z.object({
   identifier: z.string().trim().min(1, "Enter your email or username").max(254),
 });
