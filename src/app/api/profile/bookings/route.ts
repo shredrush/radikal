@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { bookingCardSelect, toBookingCardData } from "@/lib/booking-card";
-import { completePastBookings } from "@/lib/booking-completion";
 
 export const dynamic = "force-dynamic";
 const DEFAULT_PAGE_SIZE = 10;
@@ -37,10 +36,6 @@ export async function GET(request: Request) {
   };
 
   try {
-    const now = new Date();
-    // Scoped to this user only — a staff member expanding their sections never
-    // scans every CONFIRMED booking in the app (the daily cron handles that).
-    await completePastBookings(now, session.user.id);
     const bookings = await prisma.booking.findMany({
         where: {
           userId: session.user.id,

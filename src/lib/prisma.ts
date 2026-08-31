@@ -26,11 +26,13 @@ const basePrisma =
     // its `pool_size` (default 15) and fails with EMAXCONNSESSION once exceeded;
     // `max: 5` here means ~3 concurrent instances already blow that limit.
     // Keep it at 1 by default and raise the Supabase pooler `pool_size` for
-    // headroom if production traffic needs more concurrency.
+    // headroom if production traffic needs more concurrency. Release idle
+    // serverless connections promptly so brief traffic bursts do not retain
+    // all session-pool clients.
     const parsedMax = Number.parseInt(process.env.DATABASE_POOL_MAX ?? "1", 10);
     const poolConfig = {
       max: Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : 1,
-      idleTimeoutMillis: 30000,
+      idleTimeoutMillis: 5000,
       connectionTimeoutMillis: 10000,
     };
 
@@ -54,9 +56,9 @@ const basePrisma =
 
 export const prisma = basePrisma;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = basePrisma;
-}
+// Next can load route bundles independently in production. Storing the client
+// globally prevents each bundle from creating a separate session-pool client.
+globalForPrisma.prisma = basePrisma;
 
 /**
  * Run a database query and never let a database failure take the page down.

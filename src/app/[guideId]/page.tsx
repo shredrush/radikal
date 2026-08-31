@@ -22,10 +22,23 @@ const getGuideDetail = unstable_cache(
   async (username: string) => {
     return prisma.guide.findFirst({
       where: { deletedAt: null, user: { username, deletedAt: null } },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        bio: true,
+        photo: true,
+        photos: true,
+        videos: true,
+        mediaOrder: true,
+        location: true,
+        experienceYears: true,
+        languages: true,
+        sports: true,
         user: { select: { username: true } },
         certifications: {
           orderBy: { yearIssued: "desc" },
+          select: { id: true, title: true },
         },
         trips: {
           where: { deletedAt: null },

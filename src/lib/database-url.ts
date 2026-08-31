@@ -2,6 +2,9 @@ import { SUPABASE_CA_CERT } from "./supabase-ca";
 
 function getDatabaseUrlCandidates() {
   const candidates = [
+    // Application queries should use Supabase's transaction pooler. Keep
+    // DATABASE_URL available for Prisma CLI commands and direct connections.
+    ["DATABASE_POOL_URL", process.env.DATABASE_POOL_URL],
     ["DATABASE_URL", process.env.DATABASE_URL],
     ["POSTGRES_URL", process.env.POSTGRES_URL],
     ["POSTGRES_URL_NON_POOLING", process.env.POSTGRES_URL_NON_POOLING],
