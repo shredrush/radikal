@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { invalidateProfileSummary } from "@/lib/profile-summary";
 
 /** Mark all of the signed-in user's notifications as read. */
 export async function markAllNotificationsReadAction() {
@@ -15,6 +16,7 @@ export async function markAllNotificationsReadAction() {
     data: { readAt: new Date() },
   });
 
+  invalidateProfileSummary(session.user.id);
   revalidatePath("/profile");
 }
 
@@ -27,6 +29,7 @@ export async function clearAllNotificationsAction() {
     where: { userId: session.user.id },
   });
 
+  invalidateProfileSummary(session.user.id);
   revalidatePath("/profile");
 }
 
@@ -40,5 +43,6 @@ export async function markNotificationReadAction(notificationId: string) {
     data: { readAt: new Date() },
   });
 
+  invalidateProfileSummary(session.user.id);
   revalidatePath("/profile");
 }

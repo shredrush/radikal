@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma, safeDb } from "@/lib/prisma";
+import { orderGuidesByFeaturedUsernames } from "@/lib/guides";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
@@ -13,10 +14,6 @@ const FEATURED_TRIP_SLUGS = [
   "sethan-snowboarding-course",
   "spiti-meditation-escape",
 ] as const;
-
-// Add guide usernames here in the order they should appear on the home page.
-// Guides not listed continue to appear alphabetically after these entries.
-const HOME_GUIDE_USERNAMES: readonly string[] = [];
 
 // Cached like the /trips catalog query below: the home page is the most
 // visited route, so hitting Postgres on every request was the single
@@ -73,19 +70,7 @@ const getHomeGuides = unstable_cache(
       },
     });
 
-    const positionByUsername = new Map(
-      HOME_GUIDE_USERNAMES.map((username, position) => [username, position]),
-    );
-
-    return guides.sort((left, right) => {
-      const leftPosition = positionByUsername.get(left.user?.username ?? "");
-      const rightPosition = positionByUsername.get(right.user?.username ?? "");
-
-      if (leftPosition === undefined && rightPosition === undefined) return 0;
-      if (leftPosition === undefined) return 1;
-      if (rightPosition === undefined) return -1;
-      return leftPosition - rightPosition;
-    });
+    return orderGuidesByFeaturedUsernames(guides);
   },
   ["home-guides"],
   { tags: ["guides"], revalidate: 3600 },

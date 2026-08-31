@@ -19,6 +19,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
+import { orderGuidesByFeaturedUsernames } from "@/lib/guides";
 import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
 import { GuideCard } from "@/components/guides/guide-card";
 import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 // Guide roster changes rarely; avoid a DB round-trip on every request.
 const getCommunityGuides = unstable_cache(
   async () => {
-    return prisma.guide.findMany({
+    const guides = await prisma.guide.findMany({
       where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
       include: {
@@ -46,6 +47,8 @@ const getCommunityGuides = unstable_cache(
         },
       },
     });
+
+    return orderGuidesByFeaturedUsernames(guides);
   },
   ["community-guides"],
   { tags: ["guides"], revalidate: 3600 },

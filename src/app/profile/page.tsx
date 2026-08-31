@@ -23,6 +23,7 @@ import { auth } from "@/lib/auth";
 import { prisma, safeDb } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
 import { getProfileUser } from "@/lib/profile-user";
+import { getProfileSummary, type ProfileSummary } from "@/lib/profile-summary";
 import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,8 +110,7 @@ export default async function ProfilePage({
     wishlistItems,
     notifications,
     supportChat,
-    supportUnread,
-    personalBookingCounts,
+    profileSummary,
   ] = await Promise.all([
     // Deduped with the site header via React cache() — one row per request.
     safeDb("profile.user", () => getProfileUser(user.id), null),
@@ -153,8 +153,8 @@ export default async function ProfilePage({
           [],
         )
       : Promise.resolve([]),
-    // Full list only when the notifications tab is open; otherwise just the
-    // unread count for the sidebar badge.
+    // Full notification content is only loaded when the tab is open. The
+    // sidebar count is served by the cached profile summary below.
     activeTab === "notifications"
       ? safeDb(
           "profile.notifications",
@@ -166,14 +166,7 @@ export default async function ProfilePage({
             }),
           [],
         )
-      : safeDb(
-          "profile.notifications-unread",
-          () =>
-            prisma.notification.count({
-              where: { userId: user.id, readAt: null },
-            }),
-          0,
-        ),
+      : Promise.resolve([]),
     !canAccessSupportDesk && activeTab === "support"
       ? safeDb(
           "profile.support-chat",
@@ -185,39 +178,15 @@ export default async function ProfilePage({
           null,
         )
       : Promise.resolve(null),
-    !canAccessSupportDesk
-      ? safeDb(
-          "profile.support-unread",
-          () =>
-            prisma.$queryRaw<
-              Array<{ status: string; unreadCount: number }>
-            >`
-          SELECT sc."status", COUNT(sm.id)::int AS "unreadCount"
-          FROM support_chats sc
-          LEFT JOIN support_messages sm
-            ON sm."chatId" = sc.id
-           AND sm."senderId" <> ${user.id}
-           AND sm."createdAt" > COALESCE(sc."customerLastReadAt", sc."createdAt")
-          WHERE sc."userId" = ${user.id}
-            AND sc."deletedAt" IS NULL
-          GROUP BY sc.id, sc."status"
-        `,
-          null,
-        )
-      : Promise.resolve(null),
     safeDb(
-      "profile.booking-counts",
-      () =>
-        prisma.$queryRaw<Array<{ total: number; upcoming: number }>>`
-          SELECT
-            COUNT(*)::int AS total,
-            COUNT(*) FILTER (WHERE b.status = 'CONFIRMED')::int AS upcoming
-          FROM bookings b
-          INNER JOIN trips t ON t.id = b."tripId" AND t."deletedAt" IS NULL
-          WHERE b."userId" = ${user.id}
-            AND b."deletedAt" IS NULL
-        `,
-      null,
+      "profile.summary",
+      () => getProfileSummary(user.id),
+      {
+        unreadNotifications: 0,
+        bookingTotal: 0,
+        upcomingBookings: 0,
+        supportUnread: 0,
+      } satisfies ProfileSummary,
     ),
   ]);
 
@@ -234,20 +203,18 @@ export default async function ProfilePage({
   const currentEmail = currentUser?.email ?? user.email ?? "";
   const currentPhone = currentUser?.phone ?? null;
 
-  const notificationList = Array.isArray(notifications) ? notifications : [];
-  const unreadNotificationsCount = Array.isArray(notifications)
-    ? notifications.filter((n) => !n.readAt).length
-    : notifications;
+  const notificationList = notifications;
+  const unreadNotificationsCount =
+    activeTab === "notifications"
+      ? notifications.filter((notification) => !notification.readAt).length
+      : profileSummary.unreadNotifications;
 
-  const bookingCountRow = personalBookingCounts?.[0];
-  const heroBookingCount = bookingCountRow?.total ?? 0;
-  const heroUpcomingCount = bookingCountRow?.upcoming ?? 0;
+  const heroBookingCount = profileSummary.bookingTotal;
+  const heroUpcomingCount = profileSummary.upcomingBookings;
 
   let supportMessages: SupportMessageView[] = [];
-  const supportUnreadRow = supportUnread?.[0];
-  const supportChatStatus: "OPEN" | "CLOSED" =
-    supportUnreadRow?.status === "CLOSED" ? "CLOSED" : "OPEN";
-  const supportUnreadCount = supportUnreadRow?.unreadCount ?? 0;
+  const supportChatStatus: "OPEN" | "CLOSED" = supportChat?.status === "CLOSED" ? "CLOSED" : "OPEN";
+  const supportUnreadCount = canAccessSupportDesk ? 0 : profileSummary.supportUnread;
   if (!canAccessSupportDesk && supportChat) {
     supportMessages = toSupportMessageViews(supportChat.messages.slice().reverse(), user.id);
   }

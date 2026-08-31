@@ -70,7 +70,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // version lookup is cached and explicitly invalidated on password
         // changes, rather than querying Postgres for every request.
         const { getSessionVersion } = await import("@/lib/session-revocation");
-        const account = await getSessionVersion(token.id as string);
+        let account: Awaited<ReturnType<typeof getSessionVersion>>;
+        try {
+          account = await getSessionVersion(token.id as string);
+        } catch (error) {
+          const err = error as { code?: string; message?: string };
+          // A pool/provider outage must not turn an otherwise valid session
+          // into a 500. Privileged operations still re-check permissions in
+          // the database and fail closed when it is unavailable.
+          console.error("[auth] session refresh failed; retaining existing JWT", {
+            code: err.code ?? null,
+            error: err.message ?? String(error),
+          });
+          return token;
+        }
+
         if (!account || account.sessionVersion !== token.sessionVersion) {
           delete token.id;
           delete token.role;
