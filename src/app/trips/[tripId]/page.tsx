@@ -53,10 +53,8 @@ export async function generateStaticParams() {
   return trips.map(({ slug }) => ({ tripId: slug }));
 }
 
-// Trip pages were hitting Postgres (with several joined tables) on every
-// request. Admin edits already call updateTag("trips")/revalidatePath for
-// this route, so caching here is safe and removes the DB round-trip from
-// the common case.
+// Cache compact render metadata only. Media may contain large data URLs, which
+// exceed Next's 2 MB Data Cache entry limit and cause cache writes to be rejected.
 const getTripDetail = unstable_cache(
   async (slug: string) => {
     return prisma.trip.findFirst({
@@ -65,13 +63,28 @@ const getTripDetail = unstable_cache(
         deletedAt: null,
         OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
       },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        type: true,
+        categories: true,
+        description: true,
+        location: true,
+        priceInRupees: true,
+        durationDays: true,
+        maxGroupSize: true,
         guide: {
-          include: {
-            certifications: true,
+          select: {
+            id: true,
+            name: true,
+            bio: true,
+            location: true,
+            experienceYears: true,
+            languages: true,
+            certifications: { select: { id: true, title: true } },
             user: {
               select: {
-                image: true,
                 username: true,
               },
             },
@@ -82,22 +95,67 @@ const getTripDetail = unstable_cache(
           orderBy: {
             date: "asc",
           },
+          select: {
+            id: true,
+            date: true,
+            capacity: true,
+            booked: true,
+            reserved: true,
+          },
         },
         reviews: {
           where: { deletedAt: null },
-          include: { user: { select: { name: true, image: true } } },
+          select: {
+            id: true,
+            comment: true,
+            createdAt: true,
+            user: { select: { name: true } },
+          },
           orderBy: { createdAt: "desc" },
           take: MAX_REVIEWS,
         },
-        tripLocation: true,
-        inclusions: { orderBy: { order: "asc" } },
-        highlights: { orderBy: { order: "asc" } },
+        tripLocation: { select: { pickup: true, drop: true } },
+        inclusions: {
+          orderBy: { order: "asc" },
+          select: { id: true, item: true, included: true },
+        },
+        highlights: {
+          orderBy: { order: "asc" },
+          select: { id: true, text: true },
+        },
       },
     });
   },
   ["trip-detail"],
   { tags: ["trips"], revalidate: 300 },
 );
+
+// Large media is intentionally outside the Data Cache. It remains available
+// on the page, while the metadata above retains the common-case cache hit.
+function getTripMedia(slug: string) {
+  return prisma.trip.findFirst({
+    where: {
+      slug,
+      deletedAt: null,
+      OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+    },
+    select: {
+      images: true,
+      videos: true,
+      mediaOrder: true,
+      guidePhoto: true,
+      guide: { select: { photo: true, photos: true, videos: true } },
+    },
+  });
+}
+
+const EMPTY_TRIP_MEDIA = {
+  images: [] as string[],
+  videos: [] as string[],
+  mediaOrder: [] as string[],
+  guidePhoto: null,
+  guide: null,
+};
 
 // Four trips to show below the FAQ. Prefer trips sharing a category with the
 // current trip, then backfill with any remaining trips so the row stays full.
@@ -158,11 +216,31 @@ export default async function TripDetailPage({
 }) {
   const { tripId } = await params;
 
-  const trip = await safeDb("trip.detail", () => getTripDetail(tripId), null);
+  const [tripDetail, tripMedia] = await Promise.all([
+    safeDb("trip.detail", () => getTripDetail(tripId), null),
+    safeDb("trip.media", () => getTripMedia(tripId), EMPTY_TRIP_MEDIA),
+  ]);
 
-  if (!trip) {
+  if (!tripDetail) {
     notFound();
   }
+
+  const media = tripMedia ?? EMPTY_TRIP_MEDIA;
+  const trip = {
+    ...tripDetail,
+    images: media.images,
+    videos: media.videos,
+    mediaOrder: media.mediaOrder,
+    guidePhoto: media.guidePhoto,
+    guide: tripDetail.guide
+      ? {
+          ...tripDetail.guide,
+          photo: media.guide?.photo ?? null,
+          photos: media.guide?.photos ?? [],
+          videos: media.guide?.videos ?? [],
+        }
+      : null,
+  };
 
   const guide = trip.guide;
   const guideProfileImage = trip.guidePhoto ?? (guide
