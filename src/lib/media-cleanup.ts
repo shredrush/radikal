@@ -13,7 +13,7 @@ import type { TripProposal } from "@/lib/trip-changes";
 // an edit) and can be reclaimed.
 const ORPHAN_AGE_MS = 24 * 60 * 60 * 1000;
 
-const BUCKETS: MediaBucket[] = ["guide-media", "trip-media"];
+const BUCKETS: MediaBucket[] = ["guide-media", "profile-media", "trip-media"];
 
 // Bounded concurrency for storage listings so the cron stays within Vercel
 // function duration limits as the platform grows.
@@ -47,7 +47,7 @@ async function mapWithConcurrency<T, R>(
 /**
  * Nightly sweep that deletes Supabase Storage objects older than 24h that are
  * not referenced by any live record. References are:
- *   - live trip / guide / application / draft rows, and
+ *   - live trip / guide / application / draft / user rows, and
  *   - PENDING trip-change snapshots (media not yet promoted to a live trip)
  *     and short-lived previews.
  * Historical approved/rejected snapshots and `original` snapshots are NOT
@@ -56,7 +56,7 @@ async function mapWithConcurrency<T, R>(
  * so uploads that never made it into any row (abandoned forms) are covered.
  */
 export async function sweepOrphanMedia() {
-  const [trips, guides, applications, drafts, pendingChanges, previews] = await Promise.all([
+  const [trips, guides, applications, drafts, users, pendingChanges, previews] = await Promise.all([
     prisma.trip.findMany({ select: { images: true, videos: true } }),
     prisma.guide.findMany({ select: { photos: true, videos: true } }),
     prisma.guideApplication.findMany({
@@ -64,6 +64,7 @@ export async function sweepOrphanMedia() {
       select: { photos: true, videos: true },
     }),
     prisma.tripDraft.findMany({ select: { images: true, videos: true } }),
+    prisma.user.findMany({ select: { image: true } }),
     prisma.tripChangeRequest.findMany({
       where: { status: "PENDING" },
       select: { proposed: true },
@@ -79,6 +80,9 @@ export async function sweepOrphanMedia() {
     recordUrl(referenced, [...application.photos, ...application.videos]);
   }
   for (const draft of drafts) recordUrl(referenced, [...draft.images, ...draft.videos]);
+  for (const user of users) {
+    if (user.image) recordUrl(referenced, [user.image]);
+  }
   for (const change of pendingChanges) {
     recordUrl(referenced, (change.proposed as TripProposal | null)?.images ?? []);
     recordUrl(referenced, (change.proposed as TripProposal | null)?.videos ?? []);
@@ -109,7 +113,8 @@ export async function sweepOrphanMedia() {
           name: string;
           createdAt: Date | null;
         }> = [];
-        for (const kind of ["images", "videos"] as const) {
+        const kinds = bucket === "profile-media" ? ["images"] : ["images", "videos"];
+        for (const kind of kinds) {
           const entries = await listObjects(bucket, `${folderKey}/${kind}`);
           for (const entry of entries) {
             found.push({ folderKey, kind, name: entry.name, createdAt: entry.createdAt });

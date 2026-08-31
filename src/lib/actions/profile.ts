@@ -4,32 +4,15 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { logActivity } from "@/lib/activity-log";
-import { MAX_PROFILE_IMAGE_BYTES } from "@/lib/media-constants";
+import { assertValidStoredProfileImage, removeStoredMedia } from "@/lib/media";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { PROFILE_AVATARS } from "@/lib/profile-avatars";
-
-const PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-const PHOTO_MIME_TYPE_SET = new Set<string>(PHOTO_MIME_TYPES);
 
 export type ProfilePhotoActionState = {
   error?: string;
   success?: boolean;
 };
-
-function matchesSignature(bytes: Uint8Array, type: string) {
-  if (type === "image/jpeg") {
-    return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  }
-  if (type === "image/png") {
-    return bytes.slice(0, 8).every((value, index) => value === [137, 80, 78, 71, 13, 10, 26, 10][index]);
-  }
-  return (
-    type === "image/webp" &&
-    new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
-    new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP"
-  );
-}
 
 export async function updateProfilePhotoAction(
   _prevState: ProfilePhotoActionState,
@@ -44,29 +27,31 @@ export async function updateProfilePhotoAction(
 
   const avatarKey = formData.get("avatarKey")?.toString() ?? "";
   const avatar = PROFILE_AVATARS.find((item) => item.key === avatarKey);
-  const photo = formData.get("photo");
+  const imageUrl = formData.get("imageUrl")?.toString() ?? "";
 
   let image: string;
   if (avatar) {
     image = avatar.src;
-  } else if (photo instanceof File && photo.size > 0) {
-    if (photo.size > MAX_PROFILE_IMAGE_BYTES) {
-      return { error: `Photo must be ${Math.round(MAX_PROFILE_IMAGE_BYTES / 1024 / 1024)} MB or smaller.` };
+  } else if (imageUrl) {
+    try {
+      await assertValidStoredProfileImage(imageUrl, userId);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Profile photo could not be validated." };
     }
-    if (!PHOTO_MIME_TYPE_SET.has(photo.type)) {
-      return { error: "Upload a JPG, PNG, or WebP photo." };
-    }
-
-    const bytes = new Uint8Array(await photo.arrayBuffer());
-    if (!matchesSignature(bytes, photo.type)) {
-      return { error: "That file is not a valid JPG, PNG, or WebP image." };
-    }
-    image = `data:${photo.type};base64,${Buffer.from(bytes).toString("base64")}`;
+    image = imageUrl;
   } else {
     return { error: "Choose an avatar or upload a photo." };
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { image } });
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { image: true },
+  });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { image },
+  });
+  if (existing?.image && existing.image !== image) void removeStoredMedia([existing.image]);
   await logActivity({ userId, action: "PROFILE_PHOTO_CHANGED", label: "Changed profile photo" });
   revalidatePath("/profile");
   // Invalidate the cached header avatar (see lib/profile-user.ts).

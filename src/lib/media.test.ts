@@ -123,6 +123,15 @@ describe("parseStoredUrl", () => {
     });
   });
 
+  it("extracts profile-media URLs", () => {
+    const url =
+      "https://olqfpvfpvbpydqkaahxg.supabase.co/storage/v1/object/public/profile-media/user-id/images/abc.jpg";
+    expect(parseStoredUrl(url)).toEqual({
+      bucket: "profile-media",
+      path: "user-id/images/abc.jpg",
+    });
+  });
+
   it("returns null for non-storage URLs", () => {
     expect(parseStoredUrl("https://images.unsplash.com/photo.jpg")).toBeNull();
     expect(parseStoredUrl("/activities/slug/cover.jpg")).toBeNull();

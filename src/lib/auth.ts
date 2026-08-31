@@ -44,7 +44,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
-          image: user.image,
+          // The profile image is loaded from the database by consumers that
+          // render it. Never put it in the JWT: legacy data URLs can exceed
+          // cookie and request-header limits, preventing a completed sign-in.
           role: user.role,
           username: user.username,
           sessionVersion: user.sessionVersion,

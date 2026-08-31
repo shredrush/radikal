@@ -4,6 +4,7 @@ import {
   IMAGE_EXT,
   IMAGE_MIME,
   MAX_IMAGE_BYTES,
+  MAX_PROFILE_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
   VIDEO_EXT,
   VIDEO_MIME,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/media-constants";
 import { isSafeHttpUrl } from "@/lib/sanitize";
 
-export type MediaBucket = "guide-media" | "trip-media";
+export type MediaBucket = "guide-media" | "profile-media" | "trip-media";
 
 const supabaseUrl = process.env.SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -92,7 +93,7 @@ export function parseStoredUrl(
   if (slash === -1) return null;
   const bucket = rest.slice(0, slash);
   const path = rest.slice(slash + 1);
-  if (bucket !== "guide-media" && bucket !== "trip-media") return null;
+  if (bucket !== "guide-media" && bucket !== "profile-media" && bucket !== "trip-media") return null;
   return { bucket, path };
 }
 
@@ -291,6 +292,32 @@ export async function assertValidStoredMedia(kind: MediaKind, urls: string[]) {
 
   const firstError = errors.find((error) => error !== null);
   if (firstError) throw new Error(firstError);
+}
+
+/** Validate a profile upload before its public URL is persisted on a user. */
+export async function assertValidStoredProfileImage(url: string, userId: string) {
+  const parsed = parseStoredUrl(url);
+  if (
+    !parsed ||
+    parsed.bucket !== "profile-media" ||
+    !parsed.path.startsWith(`${userId}/images/`)
+  ) {
+    throw new Error("Profile photos must be uploaded through Radikal.");
+  }
+
+  let meta: { size: number; contentType: string };
+  try {
+    meta = await verifyObject(parsed.bucket, parsed.path);
+  } catch {
+    throw new Error("Uploaded profile photo could not be verified.");
+  }
+
+  if (meta.size <= 0 || meta.size > MAX_PROFILE_IMAGE_BYTES) {
+    throw new Error(`Profile photo exceeds the ${Math.round(MAX_PROFILE_IMAGE_BYTES / 1024 / 1024)} MB limit.`);
+  }
+  if (!IMAGE_MIME.has(meta.contentType)) {
+    throw new Error("Uploaded profile photo is not a supported image.");
+  }
 }
 
 /**

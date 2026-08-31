@@ -8,6 +8,7 @@ import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
   IMAGE_EXT,
   MAX_IMAGE_BYTES,
+  MAX_PROFILE_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
   VIDEO_EXT,
 } from "@/lib/media-constants";
@@ -20,7 +21,7 @@ import {
 } from "@/lib/media";
 
 export type CreateMediaUploadInput = {
-  entity: "guide" | "trip";
+  entity: "guide" | "profile" | "trip";
   folderKey: string;
   kind: "images" | "videos";
   contentType: string;
@@ -41,7 +42,7 @@ const FOLDER_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
  *   staff with `trips.manage`.
  */
 async function authorizeFolder(
-  entity: "guide" | "trip",
+  entity: "guide" | "profile" | "trip",
   folderKey: string,
 ): Promise<string> {
   const session = await auth();
@@ -51,6 +52,11 @@ async function authorizeFolder(
 
   if (!FOLDER_KEY_PATTERN.test(folderKey)) {
     throw new Error("Invalid upload folder.");
+  }
+
+  if (entity === "profile") {
+    if (session.user.id !== folderKey) throw new Error("Invalid upload folder.");
+    return session.user.id;
   }
 
   if (entity === "guide") {
@@ -106,12 +112,16 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
     );
   }
 
-  const maxBytes = input.kind === "images" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+  const maxBytes = input.kind === "images"
+    ? input.entity === "profile" ? MAX_PROFILE_IMAGE_BYTES : MAX_IMAGE_BYTES
+    : MAX_VIDEO_BYTES;
   if (input.size <= 0 || input.size > maxBytes) {
     throw new Error(`File too large (max ${Math.round(maxBytes / 1024 / 1024)} MB).`);
   }
 
-  const bucket: MediaBucket = input.entity === "guide" ? "guide-media" : "trip-media";
+  const bucket: MediaBucket = input.entity === "guide"
+    ? "guide-media"
+    : input.entity === "profile" ? "profile-media" : "trip-media";
   const path = buildMediaPath(
     bucket,
     input.folderKey,
@@ -130,13 +140,15 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
  * failed deletion here is not a leak.
  */
 export async function deleteMediaAction(input: {
-  entity: "guide" | "trip";
+  entity: "guide" | "profile" | "trip";
   folderKey: string;
   paths: string[];
 }): Promise<void> {
   await authorizeFolder(input.entity, input.folderKey);
 
-  const bucket: MediaBucket = input.entity === "guide" ? "guide-media" : "trip-media";
+  const bucket: MediaBucket = input.entity === "guide"
+    ? "guide-media"
+    : input.entity === "profile" ? "profile-media" : "trip-media";
   const scoped = [...new Set(input.paths)].filter((path) =>
     path.startsWith(`${input.folderKey}/`),
   );

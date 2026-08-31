@@ -11,15 +11,17 @@ const ProfilePhotoForm = dynamic(
 
 export function LazyProfilePhotoForm({
   currentImage,
+  userId,
   trigger,
 }: {
   currentImage: string | null;
+  userId: string;
   trigger: ReactElement<{ onClick?: (event: MouseEvent) => void }>;
 }) {
   const [armed, setArmed] = useState(false);
 
   if (armed) {
-    return <ProfilePhotoForm currentImage={currentImage} trigger={trigger} initialOpen />;
+    return <ProfilePhotoForm currentImage={currentImage} userId={userId} trigger={trigger} initialOpen />;
   }
 
   return cloneElement(trigger, {

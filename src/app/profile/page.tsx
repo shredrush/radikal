@@ -229,6 +229,7 @@ export default async function ProfilePage({
               <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 sm:-my-6 sm:-ml-6 sm:w-56 sm:self-stretch">
                 <LazyProfilePhotoForm
                   currentImage={currentUser?.image ?? null}
+                  userId={user.id}
                   trigger={
                     <button
                       type="button"

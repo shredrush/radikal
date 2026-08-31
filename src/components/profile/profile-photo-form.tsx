@@ -18,15 +18,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { convertHeicToJpeg, isHeicFile } from "@/lib/heic";
+import { createMediaUploadAction } from "@/lib/actions/media";
+import { CACHE_CONTROL, MAX_PROFILE_IMAGE_BYTES } from "@/lib/media-constants";
 import { PROFILE_AVATARS } from "@/lib/profile-avatars";
 import { updateProfilePhotoAction } from "@/lib/actions/profile";
 
 export function ProfilePhotoForm({
   currentImage,
+  userId,
   trigger,
   initialOpen = false,
 }: {
   currentImage: string | null;
+  userId: string;
   trigger?: ReactElement;
   initialOpen?: boolean;
 }) {
@@ -90,11 +94,53 @@ export function ProfilePhotoForm({
     }
   }
 
+  function uploadToSignedUrl(url: string, form: FormData): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+      xhr.setRequestHeader("authorization", `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}`);
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error("Upload failed. Please try again."));
+      };
+      xhr.onerror = () => reject(new Error("Upload failed. Please try again."));
+      xhr.send(form);
+    });
+  }
+
+  async function uploadProfilePhoto(file: File): Promise<string> {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      throw new Error("Upload a JPG, PNG, or WebP photo.");
+    }
+    if (file.size <= 0 || file.size > MAX_PROFILE_IMAGE_BYTES) {
+      throw new Error(`Photo must be ${Math.round(MAX_PROFILE_IMAGE_BYTES / 1024 / 1024)} MB or smaller.`);
+    }
+
+    const { token, publicUrl, path } = await createMediaUploadAction({
+      entity: "profile",
+      folderKey: userId,
+      kind: "images",
+      contentType: file.type,
+      size: file.size,
+    });
+    const marker = "/storage/v1/object/public/";
+    const markerIndex = publicUrl.indexOf(marker);
+    const baseUrl = markerIndex >= 0 ? publicUrl.slice(0, markerIndex) : "";
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const signedUrl = `${baseUrl}/storage/v1/object/upload/sign/profile-media/${encodedPath}?token=${encodeURIComponent(token)}`;
+    const form = new FormData();
+    form.append("cacheControl", CACHE_CONTROL);
+    form.append("", file);
+    await uploadToSignedUrl(signedUrl, form);
+    return publicUrl;
+  }
+
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
       try {
-        if (photoFile) formData.set("photo", photoFile);
+        if (photoFile) formData.set("imageUrl", await uploadProfilePhoto(photoFile));
         const result = await updateProfilePhotoAction({}, formData);
         if (result.error) {
           setError(result.error);
@@ -146,7 +192,7 @@ export function ProfilePhotoForm({
 
           <div className="flex flex-col gap-2 border-t border-border/60 pt-4">
             <Label htmlFor="profile-photo">Or upload from your device</Label>
-            <Input ref={fileInputRef} id="profile-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFileChange(file); }} className="h-11 rounded-lg border border-border/80 bg-muted/10 px-3 py-2 file:mr-3 file:rounded-md file:border file:border-border/80 file:bg-background file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground hover:border-foreground/40" />
+            <Input ref={fileInputRef} id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFileChange(file); }} className="h-11 rounded-lg border border-border/80 bg-muted/10 px-3 py-2 file:mr-3 file:rounded-md file:border file:border-border/80 file:bg-background file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground hover:border-foreground/40" />
             <p className="text-xs text-muted-foreground">JPG, PNG, WebP, or HEIC (iPhone) photos. Maximum file size: 4 MB.</p>
           </div>
 
