@@ -134,6 +134,7 @@ export function CustomTripChatPanel({
           name="body"
           placeholder={role === "support" ? "Write a reply…" : "Type your message…"}
           rows={2}
+          maxLength={2000}
           className={composerClassName}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {

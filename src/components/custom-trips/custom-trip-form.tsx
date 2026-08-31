@@ -213,6 +213,7 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
                 id="location"
                 ref={locationRef}
                 type="text"
+                maxLength={100}
                 value={location}
                 onChange={(event) => {
                   setLocation(event.target.value);
@@ -319,7 +320,7 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
               <p className="mt-1 text-sm leading-6 text-muted-foreground">Optional. A ballpark helps us make thoughtful recommendations.</p>
               <div className="relative mt-3">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">₹</span>
-                <input id="budget" type="number" min={0} step={1000} value={budget} onChange={(event) => setBudget(event.target.value)} placeholder="Leave open for a tailored quote" className={cn(inputClassName, "pl-8")} />
+                <input id="budget" type="number" min={0} max={10_000_000} step={1000} value={budget} onChange={(event) => setBudget(event.target.value)} placeholder="Leave open for a tailored quote" className={cn(inputClassName, "pl-8")} />
               </div>
             </div>
             <div>
@@ -327,6 +328,7 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
               <textarea
                 id="requirements"
                 rows={3}
+                maxLength={4000}
                 value={requirements}
                 onChange={(event) => setRequirements(event.target.value)}
                 placeholder="Your pace, comforts, experience level, a celebration, or the one thing you don't want to miss..."

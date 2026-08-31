@@ -30,14 +30,6 @@ function asString(value: FormDataEntryValue | null) {
 export async function createCustomTripRequestAction(
   input: unknown,
 ): Promise<CreateCustomTripResult> {
-  const parsed = createCustomTripSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Invalid request details.",
-    };
-  }
-
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
@@ -47,6 +39,14 @@ export async function createCustomTripRequestAction(
   const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
   if (!requestLimit.success) {
     return { success: false, error: rateLimitError(requestLimit) };
+  }
+
+  const parsed = createCustomTripSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid request details.",
+    };
   }
 
   const {
@@ -133,18 +133,18 @@ export async function sendCustomTripMessageAction(requestId: string, formData: F
     throw new Error("Missing request.");
   }
 
+  const userId = session.user.id;
+  const msgLimit = rateLimit(`custom-trip-send:user:${userId}`, 20, 60_000);
+  if (!msgLimit.success) {
+    throw new Error(rateLimitError(msgLimit));
+  }
+
   const parsed = customTripMessageSchema.safeParse({ body: asString(formData.get("body")) });
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Message is invalid.");
   }
 
-  const userId = session.user.id;
   const { body } = parsed.data;
-
-  const msgLimit = rateLimit(`custom-trip-send:user:${userId}`, 20, 60_000);
-  if (!msgLimit.success) {
-    throw new Error(rateLimitError(msgLimit));
-  }
 
   await prisma.$transaction(async (tx) => {
     const request = await tx.customTripRequest.findFirst({
@@ -188,17 +188,17 @@ export async function replyCustomTripMessageAction(requestId: string, formData: 
     throw new Error("Missing request.");
   }
 
+  const replyLimit = rateLimit(`custom-trip-reply:user:${session.user.id}`, 60, 60_000);
+  if (!replyLimit.success) {
+    throw new Error(rateLimitError(replyLimit));
+  }
+
   const parsed = customTripMessageSchema.safeParse({ body: asString(formData.get("body")) });
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Reply is invalid.");
   }
 
   const { body } = parsed.data;
-
-  const replyLimit = rateLimit(`custom-trip-reply:user:${session.user.id}`, 60, 60_000);
-  if (!replyLimit.success) {
-    throw new Error(rateLimitError(replyLimit));
-  }
 
   await prisma.$transaction(async (tx) => {
     const request = await tx.customTripRequest.findUnique({

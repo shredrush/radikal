@@ -10,6 +10,7 @@ import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import {
   assertValidStoredMedia,
@@ -43,6 +44,18 @@ function parseExperienceYears(value: string) {
 }
 
 const guideSportValues = new Set<string>(ACTIVITY_TYPE_OPTIONS.map((option) => option.value));
+const MAX_GUIDE_LANGUAGES = 20;
+const MAX_GUIDE_CERTIFICATIONS = 25;
+const MAX_GUIDE_LANGUAGES_INPUT_CHARS = 1700;
+const MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS = 5100;
+
+function readBoundedText(formData: FormData, field: string, maxLength: number) {
+  const value = asString(formData.get(field));
+  if (value.length > maxLength) {
+    throw new Error(`${field} must be ${maxLength.toLocaleString()} characters or fewer.`);
+  }
+  return value;
+}
 
 function parseSports(formData: FormData) {
   return Array.from(new Set(formData.getAll("sports").map((value) => value.toString()))).filter((sport) => guideSportValues.has(sport));
@@ -81,17 +94,19 @@ function readGuideFields(formData: FormData) {
   const photo = photos[0] ?? null;
 
   return {
-    name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
-    bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
+    name: sanitizeText(readBoundedText(formData, "name", 120), { maxLength: 120 }),
+    bio: sanitizeText(readBoundedText(formData, "bio", 3000), { maxLength: 3000, allowNewlines: true }),
     photo,
     photos,
     videos,
     mediaOrder: normalizeMediaOrder(photos, videos, parseMediaList(formData.getAll("mediaOrder"))),
-    location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
+    location: sanitizeText(readBoundedText(formData, "location", 200), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
-    languages: parseLanguages(asString(formData.get("languages"))),
+    languages: parseLanguages(readBoundedText(formData, "languages", MAX_GUIDE_LANGUAGES_INPUT_CHARS)),
     sports: parseSports(formData),
-    certifications: parseCertifications(asString(formData.get("certifications"))),
+    certifications: parseCertifications(
+      readBoundedText(formData, "certifications", MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS),
+    ),
   };
 }
 
@@ -119,6 +134,14 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
     throw new Error(
       `Guides can have at most ${MEDIA_LIMITS.guide.images} photos and ${MEDIA_LIMITS.guide.videos} videos.`,
     );
+  }
+
+  if (fields.languages.length > MAX_GUIDE_LANGUAGES) {
+    throw new Error(`Guides can list at most ${MAX_GUIDE_LANGUAGES} languages.`);
+  }
+
+  if (fields.certifications.length > MAX_GUIDE_CERTIFICATIONS) {
+    throw new Error(`Guides can list at most ${MAX_GUIDE_CERTIFICATIONS} certifications.`);
   }
 
   return fields;
@@ -287,7 +310,11 @@ export async function updateGuideAction(formData: FormData) {
  * active session so a guide can never update another guide's public profile.
  */
 export async function updateOwnGuideProfileAction(formData: FormData) {
-  const { guide } = await requireGuideAction();
+  const { guide, userId } = await requireGuideAction();
+  const updateLimit = rateLimit(`guide-profile-update:user:${userId}`, 20, 60 * 60_000);
+  if (!updateLimit.success) {
+    throw new Error(rateLimitError(updateLimit));
+  }
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
   await assertValidGuideMedia(fields.photos, fields.videos);

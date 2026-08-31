@@ -2,6 +2,22 @@ import { z } from "zod";
 
 import { sanitizeText } from "@/lib/sanitize";
 
+export const CUSTOM_TRIP_LOCATION_MAX_CHARS = 100;
+export const CUSTOM_TRIP_REQUIREMENTS_MAX_CHARS = 4000;
+export const CUSTOM_TRIP_MESSAGE_MAX_CHARS = 2000;
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidIsoDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 export const CUSTOM_TRIP_SPORT_VALUES = [
   "TREK",
   "BIKE",
@@ -23,12 +39,19 @@ export const createCustomTripSchema = z
       .array(customTripSportSchema)
       .min(1, "Select at least one sport")
       .max(CUSTOM_TRIP_SPORT_VALUES.length),
-    startDate: z.string().trim().min(1, "Start date is required"),
-    endDate: z.string().trim().min(1, "End date is required"),
+    startDate: z
+      .string()
+      .regex(ISO_DATE_PATTERN, "Start date must be a valid date")
+      .refine(isValidIsoDate, "Start date must be a valid date"),
+    endDate: z
+      .string()
+      .regex(ISO_DATE_PATTERN, "End date must be a valid date")
+      .refine(isValidIsoDate, "End date must be a valid date"),
     location: z
       .string()
+      .max(CUSTOM_TRIP_LOCATION_MAX_CHARS, "Location must be 100 characters or fewer")
       .trim()
-      .transform((value) => sanitizeText(value, { maxLength: 100 }))
+      .transform((value) => sanitizeText(value, { maxLength: CUSTOM_TRIP_LOCATION_MAX_CHARS }))
       .refine((value) => value.length > 0, "Location is required"),
     participantCount: z.coerce.number().int().min(1, "At least 1 participant").max(200),
     budgetRupees: z.preprocess(
@@ -42,8 +65,17 @@ export const createCustomTripSchema = z
     ),
     requirements: z
       .string()
+      .max(
+        CUSTOM_TRIP_REQUIREMENTS_MAX_CHARS,
+        "Requirements must be 4,000 characters or fewer",
+      )
       .trim()
-      .transform((value) => sanitizeText(value, { maxLength: 4000, allowNewlines: true }))
+      .transform((value) =>
+        sanitizeText(value, {
+          maxLength: CUSTOM_TRIP_REQUIREMENTS_MAX_CHARS,
+          allowNewlines: true,
+        }),
+      )
       .optional(),
   })
   .refine(
@@ -60,7 +92,10 @@ export type CreateCustomTripInput = z.infer<typeof createCustomTripSchema>;
 export const customTripMessageSchema = z.object({
   body: z
     .string()
-    .transform((value) => sanitizeText(value, { maxLength: 2000, allowNewlines: true }))
+    .max(CUSTOM_TRIP_MESSAGE_MAX_CHARS, "Message must be 2,000 characters or fewer")
+    .transform((value) =>
+      sanitizeText(value, { maxLength: CUSTOM_TRIP_MESSAGE_MAX_CHARS, allowNewlines: true }),
+    )
     .refine((value) => value.length > 0, "Message cannot be empty"),
 });
 
