@@ -7,14 +7,6 @@ const profileUserSelect = {
   email: true,
   phone: true,
   image: true,
-  guide: {
-    select: {
-      photo: true,
-      photos: true,
-      deletedAt: true,
-      user: { select: { username: true } },
-    },
-  },
 } as const;
 
 /**
@@ -27,8 +19,7 @@ const profileUserSelect = {
  * avatar read stops hitting Postgres on every page request — the site header
  * renders on every route, so this was a per-request DB round-trip on the most
  * visited pages. Invalidation: tagged "profiles" (photo changes) and "guides"
- * (guide photo/username/deletion changes); `revalidate` bounds staleness for
- * anything that slips through.
+ * `revalidate` bounds staleness for anything that slips through.
  */
 export const getProfileUser = cache((userId: string) =>
   unstable_cache(
@@ -38,6 +29,6 @@ export const getProfileUser = cache((userId: string) =>
         select: profileUserSelect,
       }),
     ["profile-user", userId],
-    { tags: ["profiles", "guides"], revalidate: 60 },
+    { tags: ["profiles"], revalidate: 60 },
   )(),
 );

@@ -34,7 +34,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getProfileInitials } from "@/lib/profile-initials";
-import { getGuideImage } from "@/lib/guide-images";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { LazyBookingsSection } from "@/components/profile/lazy-bookings-section";
 import { LazyCustomTripsSection } from "@/components/profile/lazy-custom-trips-section";
@@ -190,13 +189,9 @@ export default async function ProfilePage({
     ),
   ]);
 
-  const profileImage = currentUser?.guide
-    ? getGuideImage({
-        username: currentUser.guide.user?.username ?? "",
-        photo: currentUser.guide.photo,
-        photos: currentUser.guide.photos,
-      })
-    : currentUser?.image;
+  // This is the private account photo edited below. A guide's public gallery is
+  // managed separately and must not mask the account-photo update.
+  const profileImage = currentUser?.image;
 
   // Prefer the live DB values over the JWT so the settings forms stay accurate
   // even right after an email/phone change in the same session.

@@ -13,6 +13,7 @@ const FEATURED_TRIP_SLUGS = [
   "lahaul-spiti-cycle",
   "sethan-snowboarding-course",
   "spiti-meditation-escape",
+  "ladakh-yoga-course",
 ] as const;
 
 // Cached like the /trips catalog query below: the home page is the most
