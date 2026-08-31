@@ -28,10 +28,10 @@ export function GuideCard({
 }) {
   if (variant === "home") {
     return (
-      <Link href={`/${guide.username}`} className="block">
+      <Link href={`/${guide.username}`} className="group block min-w-0">
         <Card className={`flex h-full min-w-0 flex-col overflow-hidden rounded-[0.9rem] py-0 ${CARD_SURFACE} transition duration-200 hover:-translate-y-1`}>
           <CardHeader className="gap-0 p-0 pb-0 px-0">
-            <div className="flex flex-col items-center text-center">
+            <div className="flex min-w-0 flex-col items-center text-center">
               <Image
                 src={getGuideImage(guide)}
                 alt={guide.name}
@@ -39,12 +39,12 @@ export function GuideCard({
                 height={320}
                 className="h-32 w-full rounded-b-[0.7rem] rounded-t-[0.85rem] object-cover shadow-sm sm:h-36 lg:h-40"
               />
-              <div className="w-full px-2 pb-3 pt-2">
-                <CardTitle className="text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
-                <p className="mt-0.5 text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.location}</p>
+              <div className="w-full min-w-0 px-3 pb-3 pt-2">
+                <CardTitle className="break-words text-[clamp(0.82rem,0.95vw,1rem)] leading-4 text-foreground">{guide.name}</CardTitle>
+                <p className="mt-0.5 break-words text-[clamp(0.68rem,0.76vw,0.8rem)] text-muted-foreground">{guide.location}</p>
                 <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                   {guide.certifications.map((certification) => (
-                    <Badge key={certification} className="rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.62vw,0.72rem)] font-small text-foreground/90">
+                    <Badge key={certification} className="max-w-full whitespace-normal break-words rounded-full border border-border/70 bg-background/80 px-1.5 py-0.45 text-[clamp(0.62rem,0.62vw,0.72rem)] font-small text-foreground/90">
                       {certification}
                     </Badge>
                   ))}

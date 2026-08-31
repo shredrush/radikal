@@ -414,15 +414,17 @@ export function SearchableTrips({
               Curated, small group, sustainable adventures with certified expert guides
              </h4>
            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
              {visibleTrips.length === 0 ? (
                <p className="col-span-full rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
                  No trips match your search yet. Try a broader destination or trip name.
                </p>
              ) : null}
-               {visibleTrips.map((trip) => (
-                 <TripCard key={trip.id} showPrice={false} trip={trip} />
-               ))}
+                {visibleTrips.map((trip, index) => (
+                  <div key={trip.id} className={index > 3 ? "hidden md:block" : undefined}>
+                    <TripCard showPrice={false} trip={trip} />
+                  </div>
+                ))}
             </div>
           </div>
          
@@ -452,9 +454,11 @@ export function SearchableTrips({
               </h4>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-5">
-              {guides.slice(0, 5).map((guide) => (
-                <GuideCard key={guide.username} guide={guide} />
+            <div className="mx-auto mt-5 grid w-full max-w-7xl grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+              {guides.slice(0, 5).map((guide, index) => (
+                <div key={guide.username} className={index > 3 ? "hidden md:block" : undefined}>
+                  <GuideCard guide={guide} />
+                </div>
               ))}
             </div>
 
