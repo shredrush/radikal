@@ -21,6 +21,7 @@ import type { LucideIcon } from "lucide-react";
 import { prisma, safeDb } from "@/lib/prisma";
 import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
 import { GuideCard } from "@/components/guides/guide-card";
+import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
 import { AuthenticatedLink } from "@/components/authenticated-link";
 
 export const metadata: Metadata = {
@@ -143,6 +144,14 @@ const pillarToneStyles: Record<
 
 export default async function CommunityPage() {
   const guides = await safeDb("community.guides", () => getCommunityGuides(), []);
+  const guideMedia = guides.flatMap((guide) =>
+    (guide.photos ?? []).filter(Boolean).map((src, index) => ({
+      src,
+      alt: `${guide.name} photo ${index + 1}`,
+      username: guide.user?.username ?? "",
+    })).filter((guide) => guide.username),
+  );
+
   return (
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
@@ -301,6 +310,8 @@ export default async function CommunityPage() {
           </div>
           </div>
         </section>
+
+        <CommunityGuideMedia items={guideMedia} />
       </div>
     </div>
   );

@@ -239,6 +239,9 @@ export function WhatsIncludedCard({ trip }: { trip: TripDetailFeatureTrip }) {
               </div>
             ))}
           </div>
+          <p className="border-t border-border/60 pt-4 text-sm leading-6 text-muted-foreground">
+            Travel Insurance available as an add on at checkout
+          </p>
         </div>
       </CardContent>
     </Card>

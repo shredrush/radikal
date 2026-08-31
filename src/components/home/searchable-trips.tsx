@@ -458,7 +458,7 @@ export function SearchableTrips({
               ))}
             </div>
 
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button
                 size="sm"
                 className={`${CTA_PILL} px-5`}
@@ -467,6 +467,17 @@ export function SearchableTrips({
               >
                 <span className="flex items-center gap-2">
                   <span>Become a Guide</span>
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-full border border-black bg-white px-5 text-black hover:bg-neutral-100 dark:border-white dark:bg-black dark:text-white dark:hover:bg-neutral-900"
+                nativeButton={false}
+                render={<Link href="/community" />}
+              >
+                <span className="flex items-center gap-2">
+                  <span>Check Out Our Community</span>
                   <ArrowRight className="h-4 w-4" />
                 </span>
               </Button>

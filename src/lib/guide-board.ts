@@ -13,7 +13,7 @@ import { prisma, safeDb } from "@/lib/prisma";
 export async function requireGuide(redirectTo = "/profile") {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/login?callbackUrl=/guide-board/bookings");
+    redirect("/login?callbackUrl=/guide-board/trips");
   }
   const guide = await safeDb(
     "guide-board.require-guide",

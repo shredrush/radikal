@@ -335,7 +335,7 @@ export default async function ProfilePage({
                   size="sm"
                   className="w-full justify-start rounded-full sm:w-auto"
                   nativeButton={false}
-                  render={<Link href="/guide-board/bookings" />}
+                  render={<Link href="/guide-board/trips" />}
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   Guide board

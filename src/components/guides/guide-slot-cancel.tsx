@@ -35,9 +35,11 @@ export function GuideSlotCancelButton({ onOpen }: { onOpen: () => void }) {
 export function GuideSlotCancelBar({
   slotId,
   onClose,
+  onCancelled,
 }: {
   slotId: string;
   onClose: () => void;
+  onCancelled: (slotId: string, reason: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [reason, setReason] = useState("");
@@ -52,6 +54,7 @@ export function GuideSlotCancelBar({
 
         if (result.success) {
           toast.success("Trip booking cancelled");
+          onCancelled(slotId, cleanReason);
           onClose();
           setReason("");
         } else {

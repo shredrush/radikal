@@ -158,6 +158,7 @@ export function BookingsBoard({
   hideDeletedSection?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [bookingItems, setBookingItems] = useState(items);
   const [cancelSlotId, setCancelSlotId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     CONFIRMED: true,
@@ -171,8 +172,8 @@ export function BookingsBoard({
 
   const sections = useMemo(() => {
     const filtered = normalizedQuery
-      ? items.filter((item) => item.title.toLowerCase().includes(normalizedQuery))
-      : items;
+      ? bookingItems.filter((item) => item.title.toLowerCase().includes(normalizedQuery))
+      : bookingItems;
 
     return SECTIONS.filter((section) => !(hideDeletedSection && section.key === "DELETED")).map(
       (section) => ({
@@ -186,11 +187,11 @@ export function BookingsBoard({
         ),
       }),
     );
-  }, [items, normalizedQuery, hideDeletedSection]);
+  }, [bookingItems, normalizedQuery, hideDeletedSection]);
 
   const totalTrips = sections.reduce((sum, section) => sum + section.trips.length, 0);
 
-  if (items.length === 0) {
+  if (bookingItems.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">
         <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
@@ -344,6 +345,23 @@ export function BookingsBoard({
                                         <GuideSlotCancelBar
                                           slotId={slot.slotId}
                                           onClose={() => setCancelSlotId(null)}
+                                          onCancelled={(slotId, reason) => {
+                                            setBookingItems((current) =>
+                                              current.map((item) =>
+                                                item.slotId === slotId
+                                                  ? {
+                                                      ...item,
+                                                      status: "CANCELLED",
+                                                      cancellationReason: reason,
+                                                    }
+                                                  : item,
+                                              ),
+                                            );
+                                            setOpenSections((current) => ({
+                                              ...current,
+                                              CANCELLED: true,
+                                            }));
+                                          }}
                                         />
                                       </div>
                                     ) : null}
