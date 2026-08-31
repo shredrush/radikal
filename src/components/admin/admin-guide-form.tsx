@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DeleteGuideButton } from "@/components/admin/delete-guide-button";
 import { MediaUploader } from "@/components/media/media-uploader";
+import { GuideSportsField } from "@/components/guides/guide-sports";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -33,6 +34,7 @@ export type GuideFormData = {
   location: string;
   experienceYears: number;
   languages: string[];
+  sports: string[];
   certifications: GuideCertification[];
 };
 
@@ -205,6 +207,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             Separate certifications with commas or new lines.
           </p>
         </div>
+        <GuideSportsField sports={guide?.sports} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">

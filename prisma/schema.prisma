@@ -206,6 +206,7 @@ model Guide {
   location        String
   experienceYears Int       @default(0)
   languages       String[]
+  sports          String[]  @default([])
   instagramUrl    String?
   facebookUrl     String?
   youtubeUrl      String?

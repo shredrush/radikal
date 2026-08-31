@@ -21,6 +21,7 @@ export default async function GuideBoardProfilePage() {
       location: true,
       experienceYears: true,
       languages: true,
+      sports: true,
       certifications: {
         orderBy: { yearIssued: "desc" },
         select: { title: true },

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Loader2, Play, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +42,9 @@ export function MediaUploader({
   imagesFieldName = "images",
   videosFieldName = "videos",
   mediaOrderFieldName = "mediaOrder",
+  formId,
+  emitHiddenInputs = true,
+  onMediaChange,
 }: {
   entity: MediaEntity;
   folderKey: string;
@@ -51,6 +54,9 @@ export function MediaUploader({
   imagesFieldName?: string;
   videosFieldName?: string;
   mediaOrderFieldName?: string;
+  formId?: string;
+  emitHiddenInputs?: boolean;
+  onMediaChange?: (media: { images: string[]; videos: string[]; mediaOrder: string[] }) => void;
 }) {
   const limits = MEDIA_LIMITS[entity];
   const [images, setImages] = useState<UploadedItem[]>(initialImages.map((url) => ({ url })));
@@ -82,6 +88,14 @@ export function MediaUploader({
     .filter((item): item is UploadedItem & { kind: MediaKind } => item !== null);
   const orderedImages = orderedItems.filter((item) => item.kind === "images");
   const orderedVideos = orderedItems.filter((item) => item.kind === "videos");
+
+  useEffect(() => {
+    onMediaChange?.({
+      images: orderedImages.map((item) => item.url),
+      videos: orderedVideos.map((item) => item.url),
+      mediaOrder: orderedItems.map((item) => item.url),
+    });
+  }, [onMediaChange, orderedImages, orderedItems, orderedVideos]);
 
   function listFor(kind: MediaKind): UploadedItem[] {
     return kind === "images" ? images : videos;
@@ -381,14 +395,14 @@ export function MediaUploader({
         </div>
       ) : null}
 
-      {orderedItems.map((item) => (
-        <input key={`ord-${item.url}`} type="hidden" name={mediaOrderFieldName} value={item.url} />
+      {emitHiddenInputs && orderedItems.map((item) => (
+        <input key={`ord-${item.url}`} type="hidden" name={mediaOrderFieldName} value={item.url} form={formId} />
       ))}
-      {orderedImages.map((item) => (
-        <input key={`img-${item.url}`} type="hidden" name={imagesFieldName} value={item.url} />
+      {emitHiddenInputs && orderedImages.map((item) => (
+        <input key={`img-${item.url}`} type="hidden" name={imagesFieldName} value={item.url} form={formId} />
       ))}
-      {orderedVideos.map((item) => (
-        <input key={`vid-${item.url}`} type="hidden" name={videosFieldName} value={item.url} />
+      {emitHiddenInputs && orderedVideos.map((item) => (
+        <input key={`vid-${item.url}`} type="hidden" name={videosFieldName} value={item.url} form={formId} />
       ))}
     </div>
   );

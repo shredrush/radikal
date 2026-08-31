@@ -18,6 +18,7 @@ import {
 } from "@/lib/media";
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -39,6 +40,12 @@ function parseExperienceYears(value: string) {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) return 0;
   return Math.min(Math.max(0, parsed), 100);
+}
+
+const guideSportValues = new Set<string>(ACTIVITY_TYPE_OPTIONS.map((option) => option.value));
+
+function parseSports(formData: FormData) {
+  return Array.from(new Set(formData.getAll("sports").map((value) => value.toString()))).filter((sport) => guideSportValues.has(sport));
 }
 
 type CertificationInput = {
@@ -83,6 +90,7 @@ function readGuideFields(formData: FormData) {
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
     languages: parseLanguages(asString(formData.get("languages"))),
+    sports: parseSports(formData),
     certifications: parseCertifications(asString(formData.get("certifications"))),
   };
 }

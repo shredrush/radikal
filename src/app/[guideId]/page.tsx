@@ -6,7 +6,10 @@ import { ShieldCheck } from "lucide-react";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { TripCard } from "@/components/trips/trip-card";
 import { GuideReviewsSection, type GuideReviewData } from "@/components/guides/guide-reviews-section";
+import { GuideProfileHeroEditor } from "@/components/guides/guide-profile-hero-editor";
+import { GuideSports } from "@/components/guides/guide-sports";
 import { prisma, safeDb } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
@@ -96,6 +99,9 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     notFound();
   }
 
+  const session = await auth();
+  const isOwnGuide = session?.user?.id === guide.userId;
+
   const fallbackImage = getGuideImage({
     username: guide.user?.username ?? "",
     photo: guide.photo,
@@ -121,8 +127,11 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     <div className="flex-1">
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
 
+        {isOwnGuide ? (
+          <GuideProfileHeroEditor guide={guide} fallbackImage={fallbackImage} />
+        ) : (
         <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
-          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
               <TripGallery
                 images={guidePhotoSources}
@@ -168,6 +177,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                   </div>
                 </div>
 
+                <GuideSports sports={guide.sports} />
                 <div>
                   <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Languages</p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -185,6 +195,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
             </div>
           </div>
         </article>
+        )}
 
         <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
           <div className="mb-6 flex flex-col gap-2">

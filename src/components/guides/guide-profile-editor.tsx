@@ -8,6 +8,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
+import { GuideSportsField } from "@/components/guides/guide-sports";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -31,6 +32,7 @@ export type GuideProfileEditorData = {
   location: string;
   experienceYears: number;
   languages: string[];
+  sports: string[];
   certifications: Certification[];
 };
 
@@ -103,6 +105,10 @@ export function GuideProfileEditor({ guide }: { guide: GuideProfileEditorData })
             <textarea id="guide-profile-certifications" name="certifications" defaultValue={serializeCertifications(guide.certifications)} rows={4} placeholder="Advanced Mountaineering, Wilderness First Aid" className={textareaClassName} />
             <p className="text-xs text-muted-foreground">Separate certifications with commas or new lines.</p>
           </div>
+        </div>
+        <div className="grid gap-2 md:grid-cols-[11rem_1fr]">
+          <p className="text-sm font-medium">Sports</p>
+          <GuideSportsField sports={guide.sports} />
         </div>
       </div>
 
