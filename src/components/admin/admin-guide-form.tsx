@@ -42,7 +42,13 @@ function serializeCertifications(certifications: GuideCertification[]) {
   return certifications.map((cert) => cert.title).join("\n");
 }
 
-export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
+export function AdminGuideForm({
+  guide,
+  onSaved,
+}: {
+  guide?: GuideFormData;
+  onSaved?: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
   const isEditing = Boolean(guide);
 
@@ -61,6 +67,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
           toast.success("Guide created.");
           form.reset();
         }
+        onSaved?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not save guide.";
         toast.error(message);

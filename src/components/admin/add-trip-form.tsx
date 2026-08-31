@@ -30,7 +30,7 @@ export function AddTripForm({
           Close
         </Button>
       </div>
-      <AdminTripForm guides={guides} />
+      <AdminTripForm guides={guides} onSaved={() => setOpen(false)} />
     </div>
   );
 }

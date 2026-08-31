@@ -87,6 +87,7 @@ export function AdminTripCard({ trip, guides }: AdminTripCardProps) {
               exclusions: trip.inclusions.filter((item) => !item.included).map((item) => item.item),
               highlights: trip.highlights.map((item) => item.text),
             }}
+            onSaved={() => setEditing(false)}
           />
         </div>
       ) : null}

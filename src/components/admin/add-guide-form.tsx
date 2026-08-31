@@ -30,7 +30,7 @@ export function AddGuideForm() {
         </Button>
       </div>
       <div className="rounded-[1.25rem] border border-border/70 bg-muted/20 p-4">
-        <AdminGuideForm />
+        <AdminGuideForm onSaved={() => setOpen(false)} />
       </div>
     </div>
   );

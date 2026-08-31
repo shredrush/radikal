@@ -13,7 +13,6 @@ import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
-import { pluralize } from "@/lib/format";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -23,6 +22,7 @@ export function AdminTripForm({
   guides,
   supplemental,
   slots = [],
+  onSaved,
 }: {
   trip?: {
     id: string;
@@ -49,6 +49,7 @@ export function AdminTripForm({
     highlights: string[];
   };
   slots?: SlotItem[];
+  onSaved?: () => void;
 }) {
   const isEditing = Boolean(trip);
   const key = trip?.id ?? "new";
@@ -93,6 +94,7 @@ export function AdminTripForm({
           toast.success("Trip created.");
           form.reset();
         }
+        onSaved?.();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not save trip changes.";
@@ -223,9 +225,6 @@ export function AdminTripForm({
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-            <span>{pluralize(categories.length, "category tag")}</span>
-          </div>
         </div>
       </div>
 

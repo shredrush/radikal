@@ -41,7 +41,7 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
       >
         <div className="overflow-hidden">
           <div className="border-t border-border/70 px-4 pb-5 pt-5">
-            <AdminGuideForm guide={guide} />
+            <AdminGuideForm guide={guide} onSaved={() => setOpen(false)} />
           </div>
         </div>
       </div>
