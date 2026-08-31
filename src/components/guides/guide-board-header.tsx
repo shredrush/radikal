@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, ClipboardList, Compass } from "lucide-react";
+import { ArrowLeft, ClipboardList, Compass, UserRoundPen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GuideBoardStats } from "@/components/guides/guide-board-stats";
 
 const GUIDE_BOARD_SECTIONS = [
+  { key: "profile", href: "/guide-board/profile", label: "Edit public profile" },
   { key: "trips", href: "/guide-board/trips", label: "My trips" },
   { key: "bookings", href: "/guide-board/bookings", label: "My Bookings" },
 ] as const;
@@ -52,7 +53,9 @@ export function GuideBoardHeader({
                   nativeButton={false}
                   render={<Link href={section.href} />}
                 >
-                  {section.key === "trips" ? (
+                  {section.key === "profile" ? (
+                    <UserRoundPen className="h-3.5 w-3.5" />
+                  ) : section.key === "trips" ? (
                     <Compass className="h-3.5 w-3.5" />
                   ) : (
                     <ClipboardList className="h-3.5 w-3.5" />

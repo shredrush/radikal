@@ -2,7 +2,7 @@
 // imported by browser components (MediaUploader) as well as server code.
 
 export const MEDIA_LIMITS = {
-  guide: { images: 5, videos: 5 },
+  guide: { images: 10, videos: 5 },
   trip: { images: 10, videos: 5 },
 } as const;
 

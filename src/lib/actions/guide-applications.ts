@@ -59,29 +59,22 @@ type CertificationInput = {
   credentialUrl: string | null;
 };
 
-// Each certification is one line, formatted as:
-//   Title | Issuing body | Year | Credential URL
-// The year and URL are optional; Title and issuing body are required.
+// Certifications are simple comma- or newline-separated labels. The legacy
+// structured columns remain populated for database compatibility only.
 function parseCertifications(value: string): CertificationInput[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [title, issuingBody, year, url] = line.split("|").map((part) => part.trim());
-      const parsedYear = year ? Number.parseInt(year, 10) : null;
-      const credentialUrl = url ? (isSafeHttpUrl(url) ? url : null) : null;
-      return {
-        title: title ? sanitizeText(title, { maxLength: 200 }) : "",
-        issuingBody: issuingBody ? sanitizeText(issuingBody, { maxLength: 200 }) : "",
-        yearIssued:
-          parsedYear !== null && !Number.isNaN(parsedYear) && parsedYear >= 1900 && parsedYear <= 2100
-            ? parsedYear
-            : null,
-        credentialUrl,
-      };
-    })
-    .filter((cert) => cert.title && cert.issuingBody);
+  return Array.from(
+    new Set(
+      value
+        .split(/[\r\n,]+/)
+        .map((item) => sanitizeText(item, { maxLength: 200 }))
+        .filter(Boolean),
+    ),
+  ).map((title) => ({
+    title,
+    issuingBody: "Not specified",
+    yearIssued: null,
+    credentialUrl: null,
+  }));
 }
 
 function readApplicationFields(formData: FormData) {

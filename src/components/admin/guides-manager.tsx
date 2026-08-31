@@ -23,9 +23,6 @@ export async function GuidesManager({ where }: { where?: Prisma.GuideWhereInput 
     languages: guide.languages,
     certifications: guide.certifications.map((cert) => ({
       title: cert.title,
-      issuingBody: cert.issuingBody,
-      yearIssued: cert.yearIssued,
-      credentialUrl: cert.credentialUrl,
     })),
     tripsCount: guide._count.trips,
   }));

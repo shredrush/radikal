@@ -18,9 +18,6 @@ const textareaClassName =
 
 export type GuideCertification = {
   title: string;
-  issuingBody: string;
-  yearIssued: number | null;
-  credentialUrl: string | null;
 };
 
 export type GuideFormData = {
@@ -40,11 +37,7 @@ export type GuideFormData = {
 };
 
 function serializeCertifications(certifications: GuideCertification[]) {
-  return certifications
-    .map((cert) =>
-      [cert.title, cert.issuingBody, cert.yearIssued ?? "", cert.credentialUrl ?? ""].join(" | "),
-    )
-    .join("\n");
+  return certifications.map((cert) => cert.title).join("\n");
 }
 
 export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
@@ -158,7 +151,7 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Profile media</p>
           <p className="text-xs text-muted-foreground">
-            Up to 5 photos and 5 videos. Reorder media here to set the public profile gallery layout.
+            Up to 10 photos and 5 videos. Reorder media here to set the public profile gallery layout.
           </p>
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -205,11 +198,11 @@ export function AdminGuideForm({ guide }: { guide?: GuideFormData }) {
             name="certifications"
             defaultValue={guide ? serializeCertifications(guide.certifications) : ""}
             rows={4}
-            placeholder={"Advanced Mountaineering | Indian Mountaineering Foundation (IMF) | 2012 | https://…"}
+            placeholder="Advanced Mountaineering, Wilderness First Aid"
             className={textareaClassName}
           />
           <p className="text-xs text-muted-foreground">
-            One per line: <span className="font-medium">Title | Issuing body | Year | URL</span>. Year and URL are optional.
+            Separate certifications with commas or new lines.
           </p>
         </div>
       </div>

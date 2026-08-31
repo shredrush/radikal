@@ -4,11 +4,12 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { requireGuideAction } from "@/lib/guide-board";
 import { logActivity } from "@/lib/activity-log";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
-import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import { isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import {
   assertValidStoredMedia,
@@ -47,29 +48,22 @@ type CertificationInput = {
   credentialUrl: string | null;
 };
 
-// Each certification is one line, formatted as:
-//   Title | Issuing body | Year | Credential URL
-// The year and URL are optional; Title and issuing body are required.
+// Certifications are simple comma- or newline-separated labels. The legacy
+// structured columns remain populated for database compatibility only.
 function parseCertifications(value: string): CertificationInput[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [title, issuingBody, year, url] = line.split("|").map((part) => part.trim());
-      const parsedYear = year ? Number.parseInt(year, 10) : null;
-      const credentialUrl = url ? (isSafeHttpUrl(url) ? url : null) : null;
-      return {
-        title: title ? sanitizeText(title, { maxLength: 200 }) : "",
-        issuingBody: issuingBody ? sanitizeText(issuingBody, { maxLength: 200 }) : "",
-        yearIssued:
-          parsedYear !== null && !Number.isNaN(parsedYear) && parsedYear >= 1900 && parsedYear <= 2100
-            ? parsedYear
-            : null,
-        credentialUrl,
-      };
-    })
-    .filter((cert) => cert.title && cert.issuingBody);
+  return Array.from(
+    new Set(
+      value
+        .split(/[\r\n,]+/)
+        .map((item) => sanitizeText(item, { maxLength: 200 }))
+        .filter(Boolean),
+    ),
+  ).map((title) => ({
+    title,
+    issuingBody: "Not specified",
+    yearIssued: null,
+    credentialUrl: null,
+  }));
 }
 
 function readGuideFields(formData: FormData) {
@@ -278,6 +272,54 @@ export async function updateGuideAction(formData: FormData) {
   }
 
   revalidateGuidePages(username);
+}
+
+/**
+ * Self-service profile editing. The guide id is deliberately resolved from the
+ * active session so a guide can never update another guide's public profile.
+ */
+export async function updateOwnGuideProfileAction(formData: FormData) {
+  const { guide } = await requireGuideAction();
+  const fields = validateGuideFields(readGuideFields(formData));
+  const { certifications, ...guideData } = fields;
+  await assertValidGuideMedia(fields.photos, fields.videos);
+
+  let username = "";
+
+  await prisma.$transaction(async (tx) => {
+    const currentGuide = await tx.guide.findFirst({
+      where: {
+        id: guide.id,
+        userId: guide.userId,
+        deletedAt: null,
+        user: { deletedAt: null, role: "GUIDE" },
+      },
+      select: { user: { select: { username: true } } },
+    });
+
+    if (!currentGuide) {
+      throw new Error("Your guide profile is no longer active.");
+    }
+
+    username = currentGuide.user.username ?? "";
+
+    await tx.guide.update({
+      where: { id: guide.id },
+      data: guideData,
+    });
+
+    // Replace the certification list wholesale so removed credentials do not
+    // remain published on the public profile.
+    await tx.certification.deleteMany({ where: { guideId: guide.id } });
+    if (certifications.length > 0) {
+      await tx.certification.createMany({
+        data: certifications.map((cert) => ({ guideId: guide.id, ...cert })),
+      });
+    }
+  });
+
+  revalidateGuidePages(username);
+  revalidatePath("/guide-board/profile");
 }
 
 export async function deleteGuideAction(guideId: string) {

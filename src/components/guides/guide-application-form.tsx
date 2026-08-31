@@ -169,7 +169,7 @@ export function GuideApplicationForm({
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Profile media (optional)</p>
           <p className="text-xs text-muted-foreground">
-            Up to 5 photos and 5 videos. Reorder media here to set your public profile gallery layout.
+            Up to 10 photos and 5 videos. Reorder media here to set your public profile gallery layout.
           </p>
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -235,11 +235,11 @@ export function GuideApplicationForm({
             id="application-certifications"
             name="certifications"
             rows={4}
-            placeholder={"Advanced Mountaineering | Indian Mountaineering Foundation (IMF) | 2012 | https://…"}
+            placeholder="Advanced Mountaineering, Wilderness First Aid"
             className={textareaClassName}
           />
           <p className="text-xs text-muted-foreground">
-            One per line: <span className="font-medium">Title | Issuing body | Year | URL</span>. Year and URL are optional.
+            Separate certifications with commas or new lines.
           </p>
         </div>
       </div>
