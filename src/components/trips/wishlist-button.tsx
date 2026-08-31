@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,19 +21,23 @@ export function WishlistButton({
 }) {
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [isPending, startTransition] = useTransition();
-  const loadWishlistStatus = useEffectEvent(async () => {
-    try {
-      const response = await fetch(`/api/wishlist/${tripId}`, { cache: "no-store" });
-      if (response.ok) {
-        const { wishlisted: isWishlisted } = (await response.json()) as { wishlisted: boolean };
-        setWishlisted(isWishlisted);
-      }
-    } catch {
-      // The button remains usable and the server action remains authoritative.
-    }
-  });
+  const pathname = usePathname();
 
-  useEffect(() => { void loadWishlistStatus(); }, [tripId]);
+  // Refetch when the path changes so the heart reflects the session after a
+  // login/logout redirect, not only on first mount.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch(`/api/wishlist/${tripId}`, { cache: "no-store" });
+        if (response.ok) {
+          const { wishlisted: isWishlisted } = (await response.json()) as { wishlisted: boolean };
+          setWishlisted(isWishlisted);
+        }
+      } catch {
+        // The button remains usable and the server action remains authoritative.
+      }
+    })();
+  }, [tripId, pathname]);
 
   function handleToggle() {
     startTransition(async () => {

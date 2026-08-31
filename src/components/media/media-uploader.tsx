@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { convertHeicToJpeg, isHeicFile } from "@/lib/heic";
 import { createMediaUploadAction, deleteMediaAction } from "@/lib/actions/media";
 import {
   CACHE_CONTROL,
@@ -114,7 +115,22 @@ export function MediaUploader({
 
   async function uploadFile(file: File, kind: MediaKind): Promise<void> {
     const mimeSet = kind === "images" ? IMAGE_MIME : VIDEO_MIME;
-    if (!mimeSet.has(file.type)) {
+
+    // iPhones shoot HEIC by default. Convert to JPEG client-side so the file
+    // that lands in Storage renders everywhere (HEIC only displays in Safari,
+    // and the Next.js image optimizer cannot decode it at all).
+    let fileToUpload = file;
+    if (kind === "images" && isHeicFile(file)) {
+      try {
+        fileToUpload = await convertHeicToJpeg(file);
+      } catch {
+        throw new Error(
+          "Could not convert this iPhone photo (HEIC). Please upload a JPG, PNG, or WebP instead.",
+        );
+      }
+    }
+
+    if (!mimeSet.has(fileToUpload.type)) {
       throw new Error(
         kind === "images"
           ? "Only JPG, PNG, WebP, or AVIF images are supported."
@@ -122,8 +138,10 @@ export function MediaUploader({
       );
     }
 
+    // Size is checked against the converted file, since HEIC can be larger
+    // than its JPEG equivalent while still compressing under the limit.
     const maxBytes = kind === "images" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
-    if (file.size > maxBytes) {
+    if (fileToUpload.size > maxBytes) {
       throw new Error(`File is too large (max ${Math.round(maxBytes / 1024 / 1024)} MB).`);
     }
 
@@ -131,8 +149,8 @@ export function MediaUploader({
       entity,
       folderKey,
       kind,
-      contentType: file.type,
-      size: file.size,
+      contentType: fileToUpload.type,
+      size: fileToUpload.size,
     });
 
     // Reconstruct the signed upload URL exactly like the server did ("PUT")
@@ -146,7 +164,7 @@ export function MediaUploader({
 
     const form = new FormData();
     form.append("cacheControl", CACHE_CONTROL);
-    form.append("", file); // unnamed part carries the file
+    form.append("", fileToUpload); // unnamed part carries the file
 
     await uploadToSignedUrl(signedUrl, form, (pct) => setProgress(pct));
 
@@ -231,7 +249,7 @@ export function MediaUploader({
             <input
               ref={imageInputRef}
               type="file"
-              accept={[...IMAGE_MIME].join(",")}
+              accept={`${[...IMAGE_MIME, "image/heic", "image/heif"].join(",")},.heic,.heif`}
               multiple
               className="hidden"
               onChange={(event) => handleFiles(event.target.files, "images")}

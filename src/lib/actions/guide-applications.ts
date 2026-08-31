@@ -5,10 +5,12 @@ import { revalidatePath, updateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { requirePermission } from "@/lib/authz";
 import {
+  guideApplicationAdminEmail,
   guideApplicationDecisionEmail,
   guideApplicationReceivedEmail,
   sendEmailAfter,
 } from "@/lib/email";
+import { notifyGuideApplicationStaff } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
@@ -234,6 +236,52 @@ export async function submitGuideApplicationAction(
       name: session.user.name ?? fields.name,
     }),
   );
+
+  // Let the applicant know in-app that their application is under review.
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: session.user.id,
+        type: "GUIDE_APPLICATION_SUBMITTED",
+        title: "Application under review",
+        body: "Your guide application is under review. We'll email you once a decision is made.",
+        href: "/become-a-guide",
+      },
+    });
+  } catch (error) {
+    console.error("[guide-application] failed to notify applicant", error);
+  }
+
+  // Tell the staff who review applications — in-app and by email — so a new
+  // submission never goes unnoticed. A notification/email failure must not
+  // fail the submission itself.
+  try {
+    const staff = await notifyGuideApplicationStaff({
+      type: "GUIDE_APPLICATION_NEW",
+      title: "New guide application",
+      body: `${fields.name} (${username ? `@${username}` : "no username"}) applied to become a guide.`,
+      href: "/admin/guide-applications",
+    });
+
+    for (const user of staff) {
+      sendEmailAfter(
+        guideApplicationAdminEmail({
+          to: user.email,
+          name: user.name ?? "",
+          applicant: {
+            name: fields.name,
+            username,
+            location: fields.location,
+            experienceYears: fields.experienceYears,
+            languages: fields.languages,
+            bio: fields.bio,
+          },
+        }),
+      );
+    }
+  } catch (error) {
+    console.error("[guide-application] failed to notify staff", error);
+  }
 
   revalidatePath("/become-a-guide");
   revalidatePath("/admin/guide-applications");

@@ -101,7 +101,7 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
   if (!allowedTypes[input.contentType]) {
     throw new Error(
       input.kind === "images"
-        ? "Upload a JPG, PNG, WebP, or AVIF image."
+        ? "Upload a JPG, PNG, WebP, AVIF, or HEIC image."
         : "Upload an MP4, WebM, or MOV video.",
     );
   }

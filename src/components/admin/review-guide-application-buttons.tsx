@@ -37,9 +37,8 @@ export function ApproveGuideButton({
   return (
     <Button
       type="button"
-      variant="outline"
       size="sm"
-      className="rounded-full border-primary/40 text-primary hover:border-primary hover:bg-primary/10"
+      className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
       disabled={isPending}
       onClick={handleApprove}
     >

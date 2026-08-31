@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { convertHeicToJpeg, isHeicFile } from "@/lib/heic";
 import { PROFILE_AVATARS } from "@/lib/profile-avatars";
 import { updateProfilePhotoAction } from "@/lib/actions/profile";
 
@@ -37,11 +38,17 @@ export function ProfilePhotoForm({
     PROFILE_AVATARS.find((avatar) => avatar.src === currentImage)?.key ?? "",
   );
   const [preview, setPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [converting, setConverting] = useState(false);
+  const conversionToken = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function resetForm() {
     setError(null);
     setPreview(null);
+    setPhotoFile(null);
+    setConverting(false);
+    conversionToken.current += 1;
     setSelectedAvatar(
       PROFILE_AVATARS.find((avatar) => avatar.src === currentImage)?.key ?? "",
     );
@@ -53,10 +60,41 @@ export function ProfilePhotoForm({
     if (nextOpen) resetForm();
   }
 
+  async function handleFileChange(file: File) {
+    setError(null);
+    setSelectedAvatar("");
+    if (!isHeicFile(file)) {
+      setPhotoFile(file);
+      setPreview(URL.createObjectURL(file));
+      return;
+    }
+
+    // iPhones shoot HEIC by default. Convert to JPEG client-side so the photo
+    // previews and stores as a format that renders everywhere.
+    const token = ++conversionToken.current;
+    setConverting(true);
+    try {
+      const jpeg = await convertHeicToJpeg(file);
+      if (token !== conversionToken.current) return; // a newer file was picked
+      setPhotoFile(jpeg);
+      setPreview(URL.createObjectURL(jpeg));
+    } catch {
+      if (token !== conversionToken.current) return;
+      setPhotoFile(null);
+      setPreview(null);
+      setError(
+        "Could not convert this iPhone photo (HEIC). Please upload a JPG, PNG, or WebP instead.",
+      );
+    } finally {
+      if (token === conversionToken.current) setConverting(false);
+    }
+  }
+
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
       try {
+        if (photoFile) formData.set("photo", photoFile);
         const result = await updateProfilePhotoAction({}, formData);
         if (result.error) {
           setError(result.error);
@@ -95,7 +133,7 @@ export function ProfilePhotoForm({
             <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
               {PROFILE_AVATARS.map((avatar) => (
                 <label key={avatar.key} className="group flex cursor-pointer flex-col items-center gap-1.5 text-center text-[0.65rem] text-muted-foreground">
-                  <input type="radio" name="avatarKey" value={avatar.key} checked={selectedAvatar === avatar.key} onChange={() => { setSelectedAvatar(avatar.key); setPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="sr-only" />
+                  <input type="radio" name="avatarKey" value={avatar.key} checked={selectedAvatar === avatar.key} onChange={() => { setSelectedAvatar(avatar.key); setPreview(null); setPhotoFile(null); conversionToken.current += 1; if (fileInputRef.current) fileInputRef.current.value = ""; }} className="sr-only" />
                   <span className={`relative rounded-full p-0.5 ring-2 transition ${selectedAvatar === avatar.key ? "ring-primary" : "ring-transparent group-hover:ring-border"}`}>
                     <Image src={avatar.src} alt={avatar.label} width={52} height={52} className="size-12 rounded-full object-contain" />
                     {selectedAvatar === avatar.key ? <Check className="absolute -right-1 -top-1 rounded-full bg-primary p-0.5 text-primary-foreground" size={18} /> : null}
@@ -108,12 +146,12 @@ export function ProfilePhotoForm({
 
           <div className="flex flex-col gap-2 border-t border-border/60 pt-4">
             <Label htmlFor="profile-photo">Or upload from your device</Label>
-            <Input ref={fileInputRef} id="profile-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setPreview(URL.createObjectURL(file)); setSelectedAvatar(""); } }} className="h-11 rounded-lg border border-border/80 bg-muted/10 px-3 py-2 file:mr-3 file:rounded-md file:border file:border-border/80 file:bg-background file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground hover:border-foreground/40" />
-            <p className="text-xs text-muted-foreground">JPG, PNG, or WebP. Maximum file size: 4 MB.</p>
+            <Input ref={fileInputRef} id="profile-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFileChange(file); }} className="h-11 rounded-lg border border-border/80 bg-muted/10 px-3 py-2 file:mr-3 file:rounded-md file:border file:border-border/80 file:bg-background file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground hover:border-foreground/40" />
+            <p className="text-xs text-muted-foreground">JPG, PNG, WebP, or HEIC (iPhone) photos. Maximum file size: 4 MB.</p>
           </div>
 
           {preview ? <div className="flex items-center gap-3 text-sm text-muted-foreground"><ImagePlus className="h-4 w-4" /> Selected photo preview <Image src={preview} alt="Selected profile photo" width={40} height={40} unoptimized className="size-10 rounded-full object-cover" /></div> : null}
-          <Button type="submit" disabled={isPending} className="w-full sm:w-auto"><Camera />{isPending ? <><Loader2 className="animate-spin" /> Updating...</> : "Update profile photo"}</Button>
+          <Button type="submit" disabled={isPending || converting} className="w-full sm:w-auto"><Camera />{converting ? <><Loader2 className="animate-spin" /> Converting...</> : isPending ? <><Loader2 className="animate-spin" /> Updating...</> : "Update profile photo"}</Button>
         </form>
       </DialogContent>
     </Dialog>

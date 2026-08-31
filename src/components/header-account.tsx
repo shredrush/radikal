@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState } from "react";
 import { Headset, LayoutDashboard, User } from "lucide-react";
 
 import { getAdminBoardHref } from "@/lib/admin-sections";
@@ -19,20 +19,21 @@ type HeaderAccountData = { name: string | null; email: string | null; role: Role
 export function HeaderAccount({ variant }: { variant: "mobile" | "desktop" }) {
   const [account, setAccount] = useState<HeaderAccountData | null>();
   const pathname = usePathname();
-  const loadAccount = useEffectEvent(async () => {
-    try {
-      const response = await fetch("/api/header-account", { cache: "no-store" });
-      if (!response.ok) throw new Error("Unable to load account.");
-      setAccount((await response.json()) as HeaderAccountData | null);
-    } catch {
-      setAccount(null);
-    }
-  });
 
   // The header lives in the root layout and stays mounted across client-side
   // navigations. Refetch whenever the path changes so the login state updates
   // immediately after logging in or out, instead of waiting for a reload.
-  useEffect(() => { void loadAccount(); }, [pathname]);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch("/api/header-account", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load account.");
+        setAccount((await response.json()) as HeaderAccountData | null);
+      } catch {
+        setAccount(null);
+      }
+    })();
+  }, [pathname]);
 
   const isMobile = variant === "mobile";
   const displayName = account?.name ?? account?.email ?? "User";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function AuthenticatedLink({
   authenticatedHref,
@@ -17,16 +17,17 @@ export function AuthenticatedLink({
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const pathname = usePathname();
-  const loadSession = useEffectEvent(async () => {
-    try {
-      const response = await fetch("/api/header-account", { cache: "no-store" });
-      setIsAuthenticated(response.ok && (await response.json()) !== null);
-    } catch {
-      setIsAuthenticated(false);
-    }
-  });
 
-  useEffect(() => { void loadSession(); }, [pathname]);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch("/api/header-account", { cache: "no-store" });
+        setIsAuthenticated(response.ok && (await response.json()) !== null);
+      } catch {
+        setIsAuthenticated(false);
+      }
+    })();
+  }, [pathname]);
 
   return <Link href={isAuthenticated ? authenticatedHref : unauthenticatedHref} className={className}>{children}</Link>;
 }

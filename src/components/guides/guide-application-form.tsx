@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 import { submitGuideApplicationAction, type GuideApplicationState } from "@/lib/actions/guide-applications";
@@ -30,13 +31,37 @@ export function GuideApplicationForm({
 
   if (state.success) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-border/70 bg-background/95 p-10 text-center shadow-sm">
-        <CheckCircle2 className="size-10 text-primary" />
-        <h2 className="font-heading text-2xl font-semibold tracking-wide">Application submitted</h2>
-        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Thanks! Your guide application is now under review. Our team will verify your details and
-          get back to you soon.
-        </p>
+      <div className="flex flex-col items-center gap-8 py-4 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <CheckCircle2 className="size-12 text-primary" />
+          <h2 className="font-heading text-2xl font-semibold tracking-wide">Application submitted</h2>
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+            Thanks! Your guide application is now under review. Our team will verify your details and
+            get back to you soon.
+          </p>
+        </div>
+
+        <div className="w-full rounded-2xl border border-border/70 bg-muted/20 p-6 text-left">
+          <h3 className="font-heading text-base font-semibold tracking-wide">What happens next?</h3>
+          <ul className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <li className="flex gap-3">
+              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+              Our team reviews your certifications, experience, and media.
+            </li>
+            <li className="flex gap-3">
+              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+              We may reach out if anything needs clarification.
+            </li>
+            <li className="flex gap-3">
+              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+              You&apos;ll be notified by email once a decision is made.
+            </li>
+          </ul>
+        </div>
+
+        <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
+          Go to profile
+        </Button>
       </div>
     );
   }

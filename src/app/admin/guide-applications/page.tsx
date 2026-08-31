@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock3, ExternalLink, XCircle } from "lucide-react";
+import { CalendarDays, Clock3, History, Inbox } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
@@ -6,7 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApproveGuideButton, RejectGuideButton } from "@/components/admin/review-guide-application-buttons";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { formatLongDate } from "@/lib/format";
+import { GuideApplicationDetails } from "@/components/admin/guide-application-details";
+import {
+  GuideApplicationHistory,
+  type GuideApplicationHistoryItem,
+} from "@/components/admin/guide-application-history";
 
 export const dynamic = "force-dynamic";
 
@@ -29,31 +33,18 @@ export default async function AdminGuideApplicationsPage() {
     ),
   ]);
 
-  const pendingCount = applications.filter((app) => app.status === "PENDING").length;
-  const approvedCount = applications.filter((app) => app.status === "APPROVED").length;
-  const rejectedCount = applications.filter((app) => app.status === "REJECTED").length;
+  const pendingApplications = applications.filter((app) => app.status === "PENDING");
+  const historyApplications = applications.filter(
+    (app) => app.status === "APPROVED" || app.status === "REJECTED",
+  ) as GuideApplicationHistoryItem[];
+  const approvedCount = historyApplications.filter((app) => app.status === "APPROVED").length;
+  const rejectedCount = historyApplications.filter((app) => app.status === "REJECTED").length;
 
-  const statusBadge = (status: string) => {
-    if (status === "PENDING") {
-      return (
-        <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-          <Clock3 className="h-3 w-3" /> Pending
-        </Badge>
-      );
-    }
-    if (status === "APPROVED") {
-      return (
-        <Badge variant="outline" className="rounded-full border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-600">
-          <CheckCircle2 className="h-3 w-3" /> Approved
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="rounded-full border-destructive/40 bg-destructive/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-destructive">
-        <XCircle className="h-3 w-3" /> Rejected
-      </Badge>
-    );
-  };
+  const statusBadge = () => (
+    <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
+      <Clock3 className="h-3 w-3" /> Pending
+    </Badge>
+  );
 
   return (
     <div className="min-h-screen">
@@ -69,7 +60,7 @@ export default async function AdminGuideApplicationsPage() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{pendingCount}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{pendingApplications.length}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Approved</p>
@@ -95,133 +86,73 @@ export default async function AdminGuideApplicationsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-6">
-            {applications.map((application) => (
-              <Card key={application.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-                <CardHeader className="border-b border-border/70 bg-muted/20">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {statusBadge(application.status)}
-                        <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                          {application.experienceYears} yrs
-                        </Badge>
-                        <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                          {application.location}
-                        </Badge>
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">{application.name}</CardTitle>
-                        <CardDescription className="mt-1 text-sm leading-6 text-muted-foreground">
-                          {application.user.username ? `@${application.user.username}` : ""}
-                          {application.user.email ? ` · ${application.user.email}` : ""}
-                          {application.phone ? ` · ${application.phone}` : ""}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    {application.status === "PENDING" ? (
-                      <div className="flex flex-wrap gap-2">
-                        <ApproveGuideButton applicationId={application.id} applicantName={application.name} />
-                        <RejectGuideButton applicationId={application.id} applicantName={application.name} />
-                      </div>
-                    ) : (
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {application.reviewedAt
-                          ? `Reviewed ${formatLongDate(application.reviewedAt)}`
-                          : ""}
-                        {application.reviewedBy?.name ? ` by ${application.reviewedBy.name}` : ""}
-                      </CardDescription>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-5 pt-6">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">About</p>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">{application.bio}</p>
-                  </div>
+          <div className="flex flex-col gap-10">
+            <section className="min-w-0">
+              <div className="mb-4 flex items-center gap-2">
+                <Inbox className="h-5 w-5 text-muted-foreground" />
+                <h2 className="font-heading text-xl font-semibold tracking-wide">Review queue</h2>
+                <span className="ml-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600">
+                  {pendingApplications.length} pending
+                </span>
+              </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {application.languages.map((language) => (
-                      <Badge key={language} variant="secondary" className="rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
-                        {language}
-                      </Badge>
-                    ))}
-                  </div>
+              {pendingApplications.length === 0 ? (
+                <div className="rounded-[1.2rem] border border-border/70 bg-background/95 p-10 text-center shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+                  <Clock3 className="mx-auto size-8 text-muted-foreground" />
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    You&apos;re all caught up — no applications waiting for review.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {pendingApplications.map((application) => (
+                    <Card key={application.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+                      <CardHeader className="border-b border-border/70 bg-muted/20">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {statusBadge()}
+                              <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                                {application.experienceYears} yrs
+                              </Badge>
+                              <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                                {application.location}
+                              </Badge>
+                            </div>
+                            <div>
+                              <CardTitle className="text-xl">{application.name}</CardTitle>
+                              <CardDescription className="mt-1 text-sm leading-6 text-muted-foreground">
+                                {application.user.username ? `@${application.user.username}` : ""}
+                                {application.user.email ? ` · ${application.user.email}` : ""}
+                                {application.phone ? ` · ${application.phone}` : ""}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <ApproveGuideButton applicationId={application.id} applicantName={application.name} />
+                            <RejectGuideButton applicationId={application.id} applicantName={application.name} />
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-6">
+                        <GuideApplicationDetails application={application} />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
 
-                  {application.certifications.length > 0 ? (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Certifications</p>
-                      <ul className="mt-2 space-y-2">
-                        {application.certifications.map((cert) => (
-                          <li key={cert.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-foreground/90">
-                            <span className="font-medium">{cert.title}</span>
-                            <span className="text-muted-foreground">— {cert.issuingBody}</span>
-                            {cert.yearIssued ? <span className="text-muted-foreground">({cert.yearIssued})</span> : null}
-                            {cert.credentialUrl ? (
-                              <a
-                                href={cert.credentialUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-primary underline underline-offset-4"
-                              >
-                                View credential <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      ["Instagram", application.instagramUrl],
-                      ["Facebook", application.facebookUrl],
-                      ["YouTube", application.youtubeUrl],
-                      ["Website", application.websiteUrl],
-                    ]
-                      .filter(([, url]) => url)
-                      .map(([label, url]) => (
-                        <a
-                          key={label}
-                          href={url ?? undefined}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-medium text-foreground/80 transition hover:text-foreground"
-                        >
-                          {label} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ))}
-                  </div>
-
-                  {application.photos.length > 0 ? (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Photos</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {application.photos.map((photo, index) => (
-                          <a key={photo} href={photo} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline underline-offset-4">
-                            Photo {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {application.videos.length > 0 ? (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">Videos</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {application.videos.map((video, index) => (
-                          <a key={video} href={video} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline underline-offset-4">
-                            Video {index + 1}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
+            <section className="min-w-0">
+              <div className="mb-4 flex items-center gap-2">
+                <History className="h-5 w-5 text-muted-foreground" />
+                <h2 className="font-heading text-xl font-semibold tracking-wide">History</h2>
+                <span className="ml-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                  {historyApplications.length} reviewed
+                </span>
+              </div>
+              <GuideApplicationHistory applications={historyApplications} />
+            </section>
           </div>
         )}
       </div>

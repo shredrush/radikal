@@ -430,6 +430,44 @@ export function guideApplicationReceivedEmail({
   };
 }
 
+export function guideApplicationAdminEmail({
+  to,
+  name,
+  applicant,
+}: {
+  to: string;
+  name: string;
+  applicant: {
+    name: string;
+    username: string | null;
+    location: string;
+    experienceYears: number;
+    languages: string[];
+    bio: string;
+  };
+}): EmailInput {
+  return {
+    to,
+    subject: `New guide application — ${applicant.name}`,
+    html: layout(
+      "New guide application",
+      heading(`New guide application: ${escapeHtml(applicant.name)}`) +
+        paragraph(
+          `Hi ${escapeHtml(name || "there")}, a new guide application is waiting for review.`,
+        ) +
+        detailTable([
+          ["Name", applicant.name],
+          ["Username", applicant.username ? `@${applicant.username}` : "—"],
+          ["Location", applicant.location],
+          ["Experience", `${applicant.experienceYears} yrs`],
+          ["Languages", applicant.languages.join(", ") || "—"],
+        ]) +
+        paragraph(`<strong>About:</strong><br/>${escapeMultiline(applicant.bio)}`) +
+        button(siteUrl("/admin/guide-applications"), "Review application"),
+    ),
+  };
+}
+
 export function guideApplicationDecisionEmail({
   to,
   name,
