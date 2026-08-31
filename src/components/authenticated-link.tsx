@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useEffectEvent, useState } from "react";
 
 export function AuthenticatedLink({
@@ -15,6 +16,7 @@ export function AuthenticatedLink({
   children: React.ReactNode;
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const pathname = usePathname();
   const loadSession = useEffectEvent(async () => {
     try {
       const response = await fetch("/api/header-account", { cache: "no-store" });
@@ -24,7 +26,7 @@ export function AuthenticatedLink({
     }
   });
 
-  useEffect(() => { void loadSession(); }, []);
+  useEffect(() => { void loadSession(); }, [pathname]);
 
   return <Link href={isAuthenticated ? authenticatedHref : unauthenticatedHref} className={className}>{children}</Link>;
 }

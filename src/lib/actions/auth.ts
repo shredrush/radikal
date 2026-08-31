@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { revalidatePath, updateTag } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { auth, signIn, signOut } from "@/lib/auth";
@@ -239,25 +240,7 @@ export async function signupAction(
   // Welcome the new account in the background — never block signup on email.
   sendEmailAfter(welcomeEmail({ to: email, name }));
 
-  try {
-    // Log the new user in immediately after signup. The credentials provider
-    // reads `identifier` (email or username), not `email` — passing `email`
-    // here would fail `loginSchema` and abort the automatic sign-in.
-    await signIn("credentials", {
-      identifier: email,
-      password,
-      redirectTo: "/",
-    });
-  } catch (error) {
-    // next-auth signals a successful redirect by throwing a special error —
-    // let Next.js handle it, don't swallow it as a login failure.
-    if (error instanceof AuthError) {
-      return { error: "Account created, but automatic sign-in failed. Please log in." };
-    }
-    throw error;
-  }
-
-  return {};
+  redirect("/login");
 }
 
 export type UsernameAvailabilityState = {
