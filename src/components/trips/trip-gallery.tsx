@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import { pluralize } from "@/lib/format";
 import { getOrderedMediaItems, type OrderedMediaItem } from "@/lib/media-order";
@@ -31,51 +31,63 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
   const media = getOrderedMediaItems(images.filter(Boolean), videos.filter(Boolean), mediaOrder);
 
   const galleryItems = media.length > 0 ? media : [{ src: fallbackImage, type: "image" as const }];
-  // The hero grid always shows 4 tiles, cycling through available media.
-  const slots = Array.from({ length: 4 }, (_, i) => galleryItems[i % galleryItems.length]);
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isGridOpen, setIsGridOpen] = useState(false);
+  const [mediaOffset, setMediaOffset] = useState(0);
+  const shouldRotateMedia = galleryItems.length > 4;
+  const activeMedia = galleryItems[mediaOffset % galleryItems.length];
+  // The hero grid always shows four tiles, advancing through any additional media.
+  const slots = Array.from({ length: 4 }, (_, i) => galleryItems[(mediaOffset + i) % galleryItems.length]);
 
-  const close = useCallback(() => setSelectedIndex(null), []);
-  const openGrid = useCallback(() => setIsGridOpen(true), []);
-  const closeGrid = useCallback(() => setIsGridOpen(false), []);
-  const openFromGrid = useCallback((index: number) => {
+  const close = () => setSelectedIndex(null);
+  const openGrid = () => setIsGridOpen(true);
+  const closeGrid = () => setIsGridOpen(false);
+  const openFromGrid = (index: number) => {
     setIsGridOpen(false);
     setSelectedIndex(index);
-  }, []);
-  const showPrevious = useCallback(() => {
+  };
+  const showPrevious = () => {
     setSelectedIndex((current) =>
       current === null ? current : (current - 1 + galleryItems.length) % galleryItems.length,
     );
-  }, [galleryItems.length]);
-  const showNext = useCallback(() => {
+  };
+  const showNext = () => {
     setSelectedIndex((current) => (current === null ? current : (current + 1) % galleryItems.length));
-  }, [galleryItems.length]);
+  };
+
+  const handleGalleryKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      if (selectedIndex !== null) {
+        close();
+      } else {
+        closeGrid();
+      }
+    }
+    if (event.key === "ArrowLeft") showPrevious();
+    if (event.key === "ArrowRight") showNext();
+  });
 
   useEffect(() => {
     if (selectedIndex === null && !isGridOpen) return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (selectedIndex !== null) {
-          close();
-        } else {
-          closeGrid();
-        }
-      }
-      if (event.key === "ArrowLeft") showPrevious();
-      if (event.key === "ArrowRight") showNext();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", handleGalleryKeyDown);
     document.body.style.overflow = "hidden";
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", handleGalleryKeyDown);
       document.body.style.overflow = "";
     };
-  }, [selectedIndex, isGridOpen, close, closeGrid, showPrevious, showNext]);
+  }, [selectedIndex, isGridOpen]);
+
+  useEffect(() => {
+    if (!shouldRotateMedia || activeMedia.type === "video") return;
+
+    const timer = window.setTimeout(() => {
+      setMediaOffset((current) => (current + 1) % galleryItems.length);
+    }, 5_000);
+    return () => window.clearTimeout(timer);
+  }, [activeMedia.type, galleryItems.length, shouldRotateMedia]);
 
   return (
     <>
@@ -88,7 +100,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
           { slot: 2, layout: "col-span-1 row-span-1" },
         ].map(({ slot, layout }) => {
           const item = slots[slot];
-          const imageIndex = slot % galleryItems.length;
+          const imageIndex = (mediaOffset + slot) % galleryItems.length;
           const isPrimaryTile = slot === 0;
 
           return (
@@ -104,9 +116,14 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                   src={item.src}
                   autoPlay={isPrimaryTile}
                   muted
-                  loop
+                  loop={!shouldRotateMedia || !isPrimaryTile}
                   playsInline
                   preload={isPrimaryTile ? "auto" : "metadata"}
+                  onEnded={
+                    shouldRotateMedia && isPrimaryTile
+                      ? () => setMediaOffset((current) => (current + 1) % galleryItems.length)
+                      : undefined
+                  }
                   aria-label={`${alt} video ${slot + 1}`}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />

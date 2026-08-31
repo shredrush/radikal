@@ -4,11 +4,11 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { logActivity } from "@/lib/activity-log";
+import { MAX_IMAGE_BYTES } from "@/lib/media-constants";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { PROFILE_AVATARS } from "@/lib/profile-avatars";
 
-const MAX_PROFILE_PHOTO_BYTES = 4 * 1024 * 1024;
 const PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const PHOTO_MIME_TYPE_SET = new Set<string>(PHOTO_MIME_TYPES);
 
@@ -50,8 +50,8 @@ export async function updateProfilePhotoAction(
   if (avatar) {
     image = avatar.src;
   } else if (photo instanceof File && photo.size > 0) {
-    if (photo.size > MAX_PROFILE_PHOTO_BYTES) {
-      return { error: "Photo must be 4 MB or smaller." };
+    if (photo.size > MAX_IMAGE_BYTES) {
+      return { error: `Photo must be ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)} MB or smaller.` };
     }
     if (!PHOTO_MIME_TYPE_SET.has(photo.type)) {
       return { error: "Upload a JPG, PNG, or WebP photo." };

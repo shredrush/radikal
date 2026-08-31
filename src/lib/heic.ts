@@ -21,13 +21,23 @@ export function isHeicFile(file: File): boolean {
  */
 export async function convertHeicToJpeg(file: File): Promise<File> {
   if (!isHeicFile(file)) return file;
-  const heic2any = (await import("heic2any")).default;
-  const converted = await heic2any({
-    blob: file,
-    toType: "image/jpeg",
-    quality: 0.92,
-  });
-  return new File([converted as Blob], file.name.replace(HEIC_EXTENSION_RE, ".jpg"), {
-    type: "image/jpeg",
-  });
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const converted = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.92,
+    });
+    return new File([converted as Blob], file.name.replace(HEIC_EXTENSION_RE, ".jpg"), {
+      type: "image/jpeg",
+    });
+  } catch (error) {
+    console.error("HEIC conversion failed.", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      error,
+    });
+    throw error;
+  }
 }
