@@ -165,13 +165,16 @@ export default async function TripDetailPage({
   }
 
   const guide = trip.guide;
-  const guideProfileImage = guide
+  const guideProfileImage = trip.guidePhoto ?? (guide
     ? getGuideImage({
         username: guide.user?.username ?? "",
         photo: guide.photo,
         photos: guide.photos,
       })
-    : "/avatars/fox.svg";
+    : "/avatars/fox.svg");
+  const guideMediaIsVideo = Boolean(
+    guide && trip.guidePhoto && guide.videos.includes(trip.guidePhoto),
+  );
 
   const similarTrips = await safeDb("trip.similar", () => getSimilarTrips(trip.categories, trip.id), []);
 
@@ -233,13 +236,25 @@ export default async function TripDetailPage({
             {guide ? (
               <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
                 <div className="relative min-h-[288px] overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60 lg:min-h-0">
-                  <Image
-                    src={guideProfileImage}
-                    alt={guide.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 24vw"
-                  />
+                  {guideMediaIsVideo ? (
+                    <video
+                      src={trip.guidePhoto ?? undefined}
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={guideProfileImage}
+                      alt={guide.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 24vw"
+                    />
+                  )}
                 </div>
 
                 <div className="flex flex-col justify-start">

@@ -14,6 +14,10 @@ const FEATURED_TRIP_SLUGS = [
   "spiti-meditation-escape",
 ] as const;
 
+// Add guide usernames here in the order they should appear on the home page.
+// Guides not listed continue to appear alphabetically after these entries.
+const HOME_GUIDE_USERNAMES: readonly string[] = [];
+
 // Cached like the /trips catalog query below: the home page is the most
 // visited route, so hitting Postgres on every request was the single
 // biggest contributor to slow production loads. Admin mutations already
@@ -52,7 +56,7 @@ const getHomeTrips = unstable_cache(
 // media arrays, … — for a section that only shows name/location/photo).
 const getHomeGuides = unstable_cache(
   async () => {
-    return prisma.guide.findMany({
+    const guides = await prisma.guide.findMany({
       where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
       select: {
@@ -67,6 +71,20 @@ const getHomeGuides = unstable_cache(
         },
         user: { select: { username: true } },
       },
+    });
+
+    const positionByUsername = new Map(
+      HOME_GUIDE_USERNAMES.map((username, position) => [username, position]),
+    );
+
+    return guides.sort((left, right) => {
+      const leftPosition = positionByUsername.get(left.user?.username ?? "");
+      const rightPosition = positionByUsername.get(right.user?.username ?? "");
+
+      if (leftPosition === undefined && rightPosition === undefined) return 0;
+      if (leftPosition === undefined) return 1;
+      if (rightPosition === undefined) return -1;
+      return leftPosition - rightPosition;
     });
   },
   ["home-guides"],

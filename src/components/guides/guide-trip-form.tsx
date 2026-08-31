@@ -19,6 +19,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
+import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 
 const inputClassName =
@@ -37,6 +38,7 @@ export type GuideTripData = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
+  guidePhoto: string | null;
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -86,10 +88,12 @@ function countFilledFromForm(form: HTMLFormElement) {
 
 export function GuideTripForm({
   guideId,
+  guideMedia,
   trip,
   draft,
 }: {
   guideId: string;
+  guideMedia: GuideMediaItem[];
   trip?: GuideTripData | null;
   draft?: GuideDraftData | null;
 }) {
@@ -120,6 +124,7 @@ export function GuideTripForm({
   const images = fields?.images ?? [];
   const videos = fields?.videos ?? [];
   const mediaOrder = fields?.mediaOrder ?? [];
+  const [guidePhoto, setGuidePhoto] = useState(fields?.guidePhoto ?? "");
   const pickup = fields?.pickup ?? "";
   const drop = fields?.drop ?? "";
   const inclusions = fields?.inclusions ?? [];
@@ -343,6 +348,11 @@ export function GuideTripForm({
             initialVideos={videos}
             initialMediaOrder={mediaOrder}
           />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
+          <input type="hidden" name="guidePhoto" value={guidePhoto} />
+          <GuideMediaPicker media={guideMedia} value={guidePhoto} onChange={setGuidePhoto} />
+          <p className="text-xs text-muted-foreground">Choose the photo or video shown in this trip&apos;s public guide section.</p>
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border/70 pt-4">

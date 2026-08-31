@@ -21,10 +21,12 @@ const textareaClassName =
 export function GuideApplicationForm({
   fullName,
   username,
+  phone,
   userId,
 }: {
   fullName?: string | null;
   username?: string | null;
+  phone?: string | null;
   userId?: string | null;
 }) {
   const [state, formAction, isPending] = useActionState(submitGuideApplicationAction, initialState);
@@ -112,7 +114,9 @@ export function GuideApplicationForm({
             id="application-phone"
             name="phone"
             type="tel"
+            autoComplete="tel"
             placeholder="+91 …"
+            defaultValue={phone ?? ""}
             maxLength={40}
             className={inputClassName}
           />

@@ -452,8 +452,8 @@ export function SearchableTrips({
               </h4>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-5 lg:grid-cols-5">
-              {guides.map((guide) => (
+            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-5">
+              {guides.slice(0, 5).map((guide) => (
                 <GuideCard key={guide.username} guide={guide} />
               ))}
             </div>

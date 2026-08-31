@@ -86,6 +86,7 @@ export type TripFields = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
+  guidePhoto: string;
   categories: (typeof validCategories)[number][];
   pickup: string;
   drop: string;
@@ -114,6 +115,7 @@ export function readTripFields(formData: FormData): TripFields {
     images,
     videos,
     mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
+    guidePhoto: parseMediaList(formData.getAll("guidePhoto"))[0] ?? "",
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),

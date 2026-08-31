@@ -9,7 +9,7 @@ import { AdminTripForm } from "@/components/admin/admin-trip-form";
 export function AddTripForm({
   guides,
 }: {
-  guides: Array<{ id: string; name: string }>;
+  guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
 }) {
   const [open, setOpen] = useState(false);
 

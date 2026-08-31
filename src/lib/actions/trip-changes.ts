@@ -65,6 +65,7 @@ type TripFields = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
+  guidePhoto: string;
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -90,6 +91,7 @@ function readTripFields(formData: FormData): TripFields {
     images,
     videos,
     mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
+    guidePhoto: parseMediaList(formData.getAll("guidePhoto"))[0] ?? "",
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),
@@ -140,6 +142,17 @@ async function assertValidTripMedia(fields: TripFields) {
   ]);
 }
 
+async function assertGuidePhotoBelongsToGuide(guideId: string, guidePhoto: string) {
+  if (!guidePhoto) return;
+  const guide = await prisma.guide.findFirst({
+    where: { id: guideId, deletedAt: null },
+    select: { photo: true, photos: true, videos: true },
+  });
+  if (!guide || ![guide.photo, ...guide.photos, ...guide.videos].includes(guidePhoto)) {
+    throw new Error("Choose a photo from your public profile.");
+  }
+}
+
 /** Resolve the signed-in user's linked guide record, or throw. Role is
  * re-read from the database so a demotion is enforced immediately. */
 async function requireGuide() {
@@ -166,6 +179,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
   const { guide, userId } = await requireGuide();
   const fields = validateTripFields(readTripFields(formData));
   await assertValidTripMedia(fields);
+  await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);
   const slug = await uniqueTripSlug(fields.title);
 
   const proposal: TripProposal = { slug, ...fields };
@@ -187,6 +201,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           images: proposal.images,
           videos: proposal.videos,
           mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
+          guidePhoto: proposal.guidePhoto || null,
           guideId: guide.id,
         },
       });
@@ -259,6 +274,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   const fields = validateTripFields(readTripFields(formData));
   await assertValidTripMedia(fields);
+  await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);
 
   const original: TripProposal = {
     slug: trip.slug,
@@ -273,6 +289,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     images: trip.images,
     videos: trip.videos,
     mediaOrder: trip.mediaOrder,
+    guidePhoto: trip.guidePhoto ?? "",
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -297,6 +314,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
         images: proposal.images,
         videos: proposal.videos,
         mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
+        guidePhoto: proposal.guidePhoto || null,
       },
     });
     if (updated.count === 0) throw new Error("This trip is no longer available to edit.");

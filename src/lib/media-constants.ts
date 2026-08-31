@@ -7,6 +7,7 @@ export const MEDIA_LIMITS = {
 } as const;
 
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+export const MAX_PROFILE_IMAGE_BYTES = 4 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 42 * 1024 * 1024;
 
 export const IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);

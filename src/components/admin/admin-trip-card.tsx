@@ -23,6 +23,7 @@ type AdminTripCardProps = {
     images: string[];
     videos: string[];
     mediaOrder: string[];
+    guidePhoto: string | null;
     guideId: string | null;
     guide: { id: string; name: string } | null;
     tripLocation: { pickup: string; drop: string } | null;
@@ -37,7 +38,7 @@ type AdminTripCardProps = {
       _count: { bookings: number };
     }>;
   };
-  guides: Array<{ id: string; name: string }>;
+  guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
 };
 
 export function AdminTripCard({ trip, guides }: AdminTripCardProps) {

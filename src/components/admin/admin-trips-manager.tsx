@@ -21,7 +21,7 @@ export async function AdminTripsManager({
   type,
   page,
 }: {
-  guides: Array<{ id: string; name: string }>;
+  guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
   drafts: AdminDraftData[];
   selectedGuideId: string | null;
   type?: string;

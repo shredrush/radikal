@@ -33,7 +33,12 @@ export default async function BecomeAGuidePage() {
     () =>
       prisma.user.findFirst({
         where: { id: user.id, deletedAt: null },
-        select: { role: true, username: true, guide: { select: { id: true, deletedAt: true } } },
+        select: {
+          role: true,
+          username: true,
+          phone: true,
+          guide: { select: { id: true, deletedAt: true } },
+        },
       }),
     null,
   );
@@ -138,6 +143,7 @@ export default async function BecomeAGuidePage() {
               <GuideApplicationForm
                 fullName={user.name}
                 username={account.username}
+                phone={account.phone}
                 userId={user.id}
               />
             </CardContent>

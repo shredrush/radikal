@@ -3,6 +3,7 @@ import { Compass } from "lucide-react";
 import { prisma, safeDb } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
+import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
 import { GuideActivityLog } from "@/components/guides/guide-activity-log";
@@ -22,6 +23,7 @@ function toGuideTripData(trip: {
   images: string[];
   videos: string[];
   mediaOrder: string[];
+  guidePhoto: string | null;
   tripLocation: { pickup: string; drop: string } | null;
   inclusions: Array<{ included: boolean; item: string }>;
   highlights: Array<{ text: string }>;
@@ -39,6 +41,7 @@ function toGuideTripData(trip: {
     images: trip.images,
     videos: trip.videos,
     mediaOrder: trip.mediaOrder,
+    guidePhoto: trip.guidePhoto,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -48,7 +51,18 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const trips = await safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []);
+  const [trips, guideProfile] = await Promise.all([
+    safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []),
+    safeDb(
+      "guide.trips-manager.guide-profile",
+      () => prisma.guide.findUnique({ where: { id: guideId }, select: { photo: true, photos: true, videos: true } }),
+      null,
+    ),
+  ]);
+  const guideMedia: GuideMediaItem[] = [
+    ...Array.from(new Set([...(guideProfile?.photos ?? []), guideProfile?.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
+    ...guideProfile?.videos.map((url) => ({ url, type: "video" as const })) ?? [],
+  ];
   const draftRows = await safeDb(
     "guide.trips-manager.drafts",
     () =>
@@ -72,6 +86,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     images: draft.images,
     videos: draft.videos,
     mediaOrder: draft.mediaOrder,
+    guidePhoto: "",
     pickup: draft.pickup ?? "",
     drop: draft.drop ?? "",
     inclusions: draft.inclusions,
@@ -91,8 +106,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Add a new trip or edit an existing one. Changes publish immediately and are logged for staff visibility.
             </p>
           </div>
-          <GuideDraftsManager guideId={guideId} drafts={drafts} />
-          <GuideTripForm guideId={guideId} />
+          <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} drafts={drafts} />
+          <GuideTripForm guideId={guideId} guideMedia={guideMedia} />
         </div>
 
         {trips.length === 0 ? (
@@ -118,7 +133,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col items-end gap-3">
-                    <GuideTripForm guideId={guideId} trip={data} />
+                    <GuideTripForm guideId={guideId} guideMedia={guideMedia} trip={data} />
                     <GuideTripSlotsToggle
                       tripId={trip.id}
                       slots={trip.slots.map(toSlotItem)}

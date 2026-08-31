@@ -7,14 +7,17 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { GuideTripForm, type GuideDraftData } from "@/components/guides/guide-trip-form";
+import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { deleteTripDraftAction } from "@/lib/actions/trip-drafts";
 import { cn } from "@/lib/utils";
 
 export function GuideDraftsManager({
   guideId,
+  guideMedia,
   drafts,
 }: {
   guideId: string;
+  guideMedia: GuideMediaItem[];
   drafts: GuideDraftData[];
 }) {
   const router = useRouter();
@@ -97,7 +100,7 @@ export function GuideDraftsManager({
 
                     {expanded ? (
                       <div className="border-t border-border/70 p-4">
-                        <GuideTripForm key={draft.draftId} guideId={guideId} draft={draft} />
+                        <GuideTripForm key={draft.draftId} guideId={guideId} guideMedia={guideMedia} draft={draft} />
                       </div>
                     ) : null}
                   </li>

@@ -147,7 +147,7 @@ export function ProfilePhotoForm({
           <div className="flex flex-col gap-2 border-t border-border/60 pt-4">
             <Label htmlFor="profile-photo">Or upload from your device</Label>
             <Input ref={fileInputRef} id="profile-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleFileChange(file); }} className="h-11 rounded-lg border border-border/80 bg-muted/10 px-3 py-2 file:mr-3 file:rounded-md file:border file:border-border/80 file:bg-background file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground hover:border-foreground/40" />
-            <p className="text-xs text-muted-foreground">JPG, PNG, WebP, or HEIC (iPhone) photos. Maximum file size: 8 MB.</p>
+            <p className="text-xs text-muted-foreground">JPG, PNG, WebP, or HEIC (iPhone) photos. Maximum file size: 4 MB.</p>
           </div>
 
           {preview ? <div className="flex items-center gap-3 text-sm text-muted-foreground"><ImagePlus className="h-4 w-4" /> Selected photo preview <Image src={preview} alt="Selected profile photo" width={40} height={40} unoptimized className="size-10 rounded-full object-cover" /></div> : null}

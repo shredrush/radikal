@@ -19,6 +19,7 @@ export type TripProposal = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
+  guidePhoto: string;
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -38,6 +39,7 @@ const FIELD_LABELS: Record<string, string> = {
   images: "Images",
   videos: "Videos",
   mediaOrder: "Media order",
+  guidePhoto: "Guide photo",
   pickup: "Pickup point",
   drop: "Drop point",
   inclusions: "Included",
@@ -57,6 +59,7 @@ const FIELD_ORDER = [
   "images",
   "videos",
   "mediaOrder",
+  "guidePhoto",
   "pickup",
   "drop",
   "inclusions",

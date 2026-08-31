@@ -27,6 +27,10 @@ const contentSecurityPolicy = `
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
+    // Leave room for multipart form-data overhead above the 4 MB photo limit.
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
   },
   images: {
     remotePatterns: [

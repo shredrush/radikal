@@ -305,6 +305,7 @@ model Trip {
   images        String[]
   videos        String[]       @default([])
   mediaOrder    String[]       @default([])
+  guidePhoto    String?
   maxGroupSize  Int            @default(8)
   guideId       String?
   deletedAt     DateTime?

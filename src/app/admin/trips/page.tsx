@@ -40,7 +40,7 @@ export default async function AdminTripsPage({
         prisma.guide.findMany({
           where: { deletedAt: null },
           orderBy: { name: "asc" },
-          select: { id: true, name: true },
+          select: { id: true, name: true, photo: true, photos: true, videos: true },
         }),
       [],
     ),

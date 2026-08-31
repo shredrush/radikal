@@ -44,7 +44,7 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
     return { images, videos: guide.videos, mediaOrder: guide.mediaOrder };
   });
   const formId = "guide-profile-hero-form";
-  const images = guide.photos.length > 0 ? guide.photos : guide.photo ? [guide.photo] : [fallbackImage];
+  const images = mediaValues.images.length > 0 ? mediaValues.images : [fallbackImage];
 
   function saveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,8 +81,8 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
         <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
           <TripGallery
             images={images}
-            videos={guide.videos}
-            mediaOrder={guide.mediaOrder}
+            videos={mediaValues.videos}
+            mediaOrder={mediaValues.mediaOrder}
             fallbackImage={fallbackImage}
             alt={guide.name}
             compact
