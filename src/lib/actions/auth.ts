@@ -8,7 +8,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { auth, signIn, signOut } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
 import {
   emailChangedEmail,
   passwordChangedEmail,
@@ -46,16 +46,6 @@ const OTP_RESEND_COOLDOWN_MS = 60_000;
 // limiter. Persisted per code so it survives restarts and works across
 // serverless instances.
 const OTP_MAX_ATTEMPTS = 5;
-
-export async function logoutAction() {
-  const session = await auth();
-  await logActivity({
-    userId: session?.user?.id,
-    action: "LOGOUT",
-    label: "Signed out",
-  });
-  await signOut({ redirectTo: "/" });
-}
 
 export type LoginActionState = {
   error?: string;

@@ -14,17 +14,17 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { SupportChatPanel } from "@/components/support/support-chat-panel";
 
 type WidgetState =
   | { kind: "checking" }
   | { kind: "unavailable" }
   | { kind: "anonymous" }
   | { kind: "agent" }
-  | { kind: "customer"; status: "OPEN" | "CLOSED"; unreadCount: number; hasActiveChat: boolean };
+  | { kind: "customer"; unreadCount: number; hasActiveChat: boolean };
 
 export function SupportWidgetClient() {
   const [state, setState] = useState<WidgetState>({ kind: "checking" });
+  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   const loadUnread = useCallback(async () => {
@@ -55,7 +55,6 @@ export function SupportWidgetClient() {
 
       setState({
         kind: "customer",
-        status: data.status === "CLOSED" ? "CLOSED" : "OPEN",
         unreadCount: typeof data.unreadCount === "number" ? data.unreadCount : 0,
         hasActiveChat: Boolean(data.hasActiveChat),
       });
@@ -88,9 +87,13 @@ export function SupportWidgetClient() {
   const unreadCount = state.kind === "customer" ? state.unreadCount : 0;
 
   return (
-    <Dialog onOpenChange={(open) => {
-      if (open) void loadUnread();
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) void loadUnread();
+      }}
+    >
       <DialogTrigger
         aria-label="Contact support"
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_14px_35px_-15px_rgba(0,0,0,0.6)] transition hover:scale-105 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -132,15 +135,26 @@ export function SupportWidgetClient() {
               size="sm"
               className="rounded-full"
               nativeButton={false}
-              render={<Link href="/support" />}
+              render={<Link href="/support" onClick={() => setOpen(false)} />}
             >
               <Headset className="size-4" />
               Open support board
             </Button>
           </div>
         ) : state.kind === "customer" ? (
-          <div className="mt-5">
-            <SupportChatPanel messages={[]} status={state.status} />
+          <div className="mt-5 flex flex-col items-start gap-4">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              View your conversation and send a message from your profile.
+            </p>
+            <Button
+              size="sm"
+              className="rounded-full"
+              nativeButton={false}
+              render={<Link href="/profile?tab=support" onClick={() => setOpen(false)} />}
+            >
+              <Headset className="size-4" />
+              Open chat
+            </Button>
           </div>
         ) : state.kind === "anonymous" ? (
           <div className="mt-5 flex flex-col items-start gap-4">
@@ -151,7 +165,12 @@ export function SupportWidgetClient() {
               size="sm"
               className="rounded-full"
               nativeButton={false}
-              render={<Link href="/login?callbackUrl=%2Fprofile%3Ftab%3Dsupport" />}
+              render={
+                <Link
+                  href="/login?callbackUrl=%2Fprofile%3Ftab%3Dsupport"
+                  onClick={() => setOpen(false)}
+                />
+              }
             >
               Log in to chat
             </Button>

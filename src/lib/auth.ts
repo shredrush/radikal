@@ -100,16 +100,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
-      async signIn({ user }) {
-        const userId = (user as { id?: string }).id;
-        if (userId) {
-          const { logActivity } = await import("@/lib/activity-log");
-          await logActivity({
+    async signIn({ user }) {
+      const userId = (user as { id?: string }).id;
+      if (userId) {
+        const { logActivity } = await import("@/lib/activity-log");
+        await logActivity({
           userId,
           action: "LOGIN_SUCCESS",
           label: "Signed in",
         });
       }
+    },
+    async signOut(message) {
+      const token = "token" in message ? (message.token as { id?: unknown; sub?: unknown }) : null;
+      const userId = typeof token?.id === "string" ? token.id : token?.sub;
+      if (typeof userId !== "string") return;
+
+      // Auth.js isolates event failures from cookie cleanup. The audit write is
+      // scheduled after the response, so it does not delay the sign-out.
+      const { recordActivity } = await import("@/lib/activity-log");
+      recordActivity({ userId, action: "LOGOUT", label: "Signed out" });
     },
   },
 });
