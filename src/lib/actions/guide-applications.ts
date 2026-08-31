@@ -13,6 +13,7 @@ import {
 import { notifyGuideApplicationStaff } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
+import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import {
@@ -376,6 +377,10 @@ export async function approveGuideApplicationAction(applicationId: string) {
   revalidatePath("/");
   revalidatePath(`/${username}`);
   updateTag("guides");
+  // The applicant's role just changed to GUIDE — clear the cached session
+  // lookup so their next request (header, profile, guide board) sees the new
+  // role without logging out and back in.
+  invalidateSessionVersion(application.userId);
 
   await logActivity({
     userId: application.userId,

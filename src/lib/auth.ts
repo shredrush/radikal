@@ -76,6 +76,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           delete token.role;
           delete token.username;
           delete token.sessionVersion;
+        } else {
+          // Re-sync the signed-in role with the database on every request so a
+          // role change (e.g. a guide application approved mid-session) is
+          // picked up without logging out and back in. The lookup above is the
+          // cached row, and the role-change actions invalidate its tag, so the
+          // upgrade is visible on the very next request.
+          token.role = account.role;
         }
       }
       return token;

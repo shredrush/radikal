@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
+import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
@@ -219,6 +220,10 @@ export async function createGuideAction(formData: FormData) {
 
   revalidateGuidePages(username);
 
+  // The linked account was promoted to GUIDE — make the new role visible to
+  // their existing session immediately instead of on next login.
+  invalidateSessionVersion(linkedUser.id);
+
   // Notify the newly added guide in the background — never block the action.
   sendEmailAfter(
     guideWelcomeEmail({ to: linkedUser.email, name: linkedUser.name }),
@@ -328,6 +333,10 @@ export async function deleteGuideAction(guideId: string) {
       });
     }
   });
+
+  // The user was demoted from GUIDE to USER — make the new role visible to
+  // their existing session immediately (hides the guide board, etc.).
+  invalidateSessionVersion(guide.userId);
 
   await logActivity({
     userId: guide.userId,

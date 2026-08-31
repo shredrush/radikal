@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
+import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { sanitizeText } from "@/lib/sanitize";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { removeStoredMedia } from "@/lib/media";
@@ -155,6 +156,9 @@ export async function updateUserAction(formData: FormData) {
   });
 
   if (target.role !== data.role) {
+    // The account's role changed mid-session — clear the cached session
+    // lookup so the next request reflects it immediately.
+    invalidateSessionVersion(data.userId);
     await logActivity({
       userId: data.userId,
       action: "USER_ROLE_CHANGED",
@@ -244,6 +248,11 @@ export async function deactivateUserAction(userId: string) {
       await deactivateGuide(tx, target.guide.id);
     }
   });
+
+  // The account no longer matches the session-version lookup — clear the
+  // cached row so their session is revoked immediately rather than on cache
+  // expiry.
+  invalidateSessionVersion(userId);
 
   await logActivity({
     userId,
