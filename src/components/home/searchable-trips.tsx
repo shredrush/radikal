@@ -454,7 +454,7 @@ export function SearchableTrips({
               </h4>
             </div>
 
-            <div className="mx-auto mt-5 grid w-full max-w-7xl grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+            <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
               {guides.slice(0, 5).map((guide, index) => (
                 <div key={guide.username} className={index > 3 ? "hidden md:block" : undefined}>
                   <GuideCard guide={guide} />
