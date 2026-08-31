@@ -104,10 +104,10 @@ export function SearchableTrips({
     const normalizedQuery = query.trim();
 
     if (!normalizedQuery) {
-      return rankedTrips.slice(0, 4);
+      return rankedTrips.slice(0, 5);
     }
 
-    return rankedTrips.filter((trip) => matchesSearchQuery(trip, normalizedQuery)).slice(0, 4);
+    return rankedTrips.filter((trip) => matchesSearchQuery(trip, normalizedQuery)).slice(0, 5);
   }, [query, rankedTrips]);
 
   const suggestions = useMemo(() => {
@@ -414,15 +414,15 @@ export function SearchableTrips({
               Curated, small group, sustainable adventures with certified expert guides
              </h4>
            </div>
-           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 lg:gap-3">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
              {visibleTrips.length === 0 ? (
                <p className="col-span-full rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
                  No trips match your search yet. Try a broader destination or trip name.
                </p>
              ) : null}
-              {visibleTrips.map((trip) => (
-                <TripCard key={trip.id} size="compact" trip={trip} />
-              ))}
+               {visibleTrips.map((trip) => (
+                 <TripCard key={trip.id} showPrice={false} trip={trip} />
+               ))}
             </div>
           </div>
          

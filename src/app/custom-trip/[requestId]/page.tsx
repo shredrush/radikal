@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Briefcase, CalendarDays, MapPin, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarDays, MapPin, MessageCircleHeart, Sparkles, Users, Wallet } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma, safeDb } from "@/lib/prisma";
@@ -58,11 +58,11 @@ export default async function CustomTripRequestPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <Button
           variant="ghost"
           size="sm"
-          className="w-fit rounded-full"
+          className="w-fit rounded-full border border-border/70 bg-background/80 hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-500/10 dark:hover:text-orange-300"
           nativeButton={false}
           render={<Link href="/profile?tab=bookings" />}
         >
@@ -70,12 +70,13 @@ export default async function CustomTripRequestPage({
           Back to my bookings
         </Button>
 
-        {/* Request summary */}
-        <div className="rounded-[1.5rem] border border-border/80 bg-background/90 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-8">
+        <div className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
+          <div className="bg-gradient-to-br from-orange-50/80 via-white to-emerald-50/70 p-6 dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10 sm:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Custom trip request
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-orange-700 dark:text-orange-300">
+                <Sparkles className="size-3.5" /> Your trip brief
               </p>
               <h1 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {CUSTOM_TRIP_GROUP_LABELS[request.groupType] ?? request.groupType}
@@ -99,9 +100,9 @@ export default async function CustomTripRequestPage({
             </div>
           </div>
 
-          <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-            <div className="flex items-start gap-2.5">
-              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
+            <div className="flex items-start gap-3 rounded-2xl border border-orange-100 bg-white/75 p-4 dark:border-orange-500/15 dark:bg-card/50">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"><CalendarDays className="size-4" /></span>
               <div>
                 <dt className="font-medium text-foreground">Dates</dt>
                 <dd className="text-muted-foreground">
@@ -109,15 +110,15 @@ export default async function CustomTripRequestPage({
                 </dd>
               </div>
             </div>
-            <div className="flex items-start gap-2.5">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white/75 p-4 dark:border-emerald-500/15 dark:bg-card/50">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><MapPin className="size-4" /></span>
               <div>
                 <dt className="font-medium text-foreground">Location</dt>
                 <dd className="text-muted-foreground">{request.location}</dd>
               </div>
             </div>
-            <div className="flex items-start gap-2.5">
-              <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white/75 p-4 dark:border-emerald-500/15 dark:bg-card/50">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><Users className="size-4" /></span>
               <div>
                 <dt className="font-medium text-foreground">Group size</dt>
                 <dd className="text-muted-foreground">
@@ -126,8 +127,8 @@ export default async function CustomTripRequestPage({
                 </dd>
               </div>
             </div>
-            <div className="flex items-start gap-2.5">
-              <Wallet className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="flex items-start gap-3 rounded-2xl border border-orange-100 bg-white/75 p-4 dark:border-orange-500/15 dark:bg-card/50">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"><Wallet className="size-4" /></span>
               <div>
                 <dt className="font-medium text-foreground">Budget</dt>
                 <dd className="text-muted-foreground">
@@ -144,7 +145,7 @@ export default async function CustomTripRequestPage({
               <Badge
                 key={sport}
                 variant="secondary"
-                className="rounded-full border border-border/70 bg-background/80 px-3 py-1"
+                className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-200"
               >
                 {sportLabel(sport)}
               </Badge>
@@ -158,8 +159,8 @@ export default async function CustomTripRequestPage({
           </div>
 
           {request.requirements ? (
-            <div className="mt-6 rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            <div className="mt-6 rounded-[1.2rem] border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-500/15 dark:bg-emerald-500/5">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">
                 Your requirements
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
@@ -167,17 +168,18 @@ export default async function CustomTripRequestPage({
               </p>
             </div>
           ) : null}
+          </div>
         </div>
 
-        {/* Chat */}
-        <div className="rounded-[1.5rem] border border-border/80 bg-background/90 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-          <h2 className="font-heading text-lg font-semibold text-foreground">
-            Chat with our team
-          </h2>
-          <p className="mb-4 mt-1 text-sm text-muted-foreground">
-            Discuss details, ask questions and finalise your itinerary here.
-          </p>
+        <div className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] sm:p-6">
+          <div className="rounded-[1.5rem] bg-gradient-to-br from-orange-50 via-white to-emerald-50/70 px-5 py-4 dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300"><MessageCircleHeart className="size-4" /> Your planning conversation</p>
+            <h2 className="mt-2 font-heading text-xl font-semibold text-foreground">Let&apos;s shape the details together</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Ask questions, share preferences and refine the itinerary with our team here.</p>
+          </div>
+          <div className="mt-4">
           <CustomTripChatPanel requestId={request.id} role="customer" messages={messages} />
+          </div>
         </div>
       </section>
     </div>

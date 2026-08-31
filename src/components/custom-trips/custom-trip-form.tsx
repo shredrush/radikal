@@ -4,11 +4,13 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Briefcase,
+  BriefcaseBusiness,
   CalendarDays,
   Check,
   MapPin,
-  MessageSquareText,
+  MessageCircleHeart,
+  Minus,
+  Plus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -16,26 +18,26 @@ import {
 import { createCustomTripRequestAction } from "@/lib/actions/custom-trips";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { CUSTOM_TRIP_GROUP_LABELS, MAX_OPEN_CUSTOM_TRIP_CHATS } from "@/lib/custom-trips";
-import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
-import { pluralize, toDateInput } from "@/lib/format";
+import { toDateInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { SportIcon, type SportId } from "@/components/trips/sport-icon";
+
+const SPORT_OPTIONS: { value: string; label: string; sport: SportId }[] = [
+  { value: "TREK", label: "Trekking", sport: "trek" },
+  { value: "BIKE", label: "Cycling", sport: "bike" },
+  { value: "ROCKCLIMB", label: "Rock climbing", sport: "rockclimb" },
+  { value: "EXPEDITION", label: "Expedition", sport: "expedition" },
+  { value: "SKI", label: "Skiing", sport: "ski" },
+  { value: "SNOWBOARD", label: "Snowboarding", sport: "snowboard" },
+  { value: "YOGA", label: "Yoga", sport: "yoga" },
+];
 
 const inputClassName =
-  `h-12 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
+  `h-12 w-full rounded-2xl border ${FORM_FIELD_BORDER} bg-background px-4 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 dark:focus:border-orange-400`;
 
 const errorInputClassName =
   "border-destructive/60 focus:border-destructive focus-visible:ring-destructive/10";
-
-function RequiredAsterisk() {
-  return (
-    <span aria-hidden="true" className="text-destructive">
-      *
-    </span>
-  );
-}
 
 export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean }) {
   const router = useRouter();
@@ -58,13 +60,22 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
   const endDateRef = useRef<HTMLInputElement>(null);
   const locationRef = useRef<HTMLInputElement>(null);
 
-  function toggleSport(value: string) {
+  function clearFieldError() {
     setErrorField(null);
+    setError(null);
+  }
+
+  function toggleSport(value: string) {
+    clearFieldError();
     setSports((current) =>
       current.includes(value)
         ? current.filter((sport) => sport !== value)
         : [...current, value],
     );
+  }
+
+  function updateParticipantCount(nextCount: number) {
+    setParticipantCount(Math.min(200, Math.max(1, nextCount)));
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -80,29 +91,28 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
     }
 
     if (sports.length === 0) {
-      setError("Select at least one sport.");
+      setError("Choose at least one activity so we can match the right guide.");
       setErrorField("sports");
       sportsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     if (!startDate || !endDate) {
-      setError("Choose both a start and an end date.");
+      setError("Choose a start and end date for your trip.");
       setErrorField(!startDate ? "startDate" : "endDate");
-      const target = !startDate ? startDateRef : endDateRef;
-      target.current?.focus();
+      (!startDate ? startDateRef : endDateRef).current?.focus();
       return;
     }
 
     if (endDate < startDate) {
-      setError("End date must be on or after the start date.");
+      setError("Your return date needs to be after your start date.");
       setErrorField("endDate");
       endDateRef.current?.focus();
       return;
     }
 
     if (!location.trim()) {
-      setError("Tell us where you'd like to go.");
+      setError("Tell us the place you have in mind.");
       setErrorField("location");
       locationRef.current?.focus();
       return;
@@ -134,74 +144,23 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="overflow-hidden rounded-[2rem] border border-border/80 bg-background/90 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]"
-    >
-      <div className="border-b border-border/70 bg-muted/20 px-6 py-5 sm:px-8">
-        <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground">
-          Tell us what you have in mind
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          We&apos;ll get back to you with a tailored plan and a quote.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-6 px-6 py-6 sm:px-8">
-        {/* Group type */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-muted-foreground">Who is this trip for?</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {(["PRIVATE", "CORPORATE"] as const).map((value) => {
-              const isOrange = value === "PRIVATE";
-              const selected = groupType === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setGroupType(value)}
-                  className={cn(
-                    "flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition-colors",
-                    selected
-                      ? isOrange
-                        ? "border-orange-500/60 bg-orange-50 text-foreground dark:border-orange-500/40 dark:bg-orange-500/10"
-                        : "border-emerald-500/60 bg-emerald-50 text-foreground dark:border-emerald-500/40 dark:bg-emerald-500/10"
-                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground",
-                  )}
-                >
-                  {isOrange ? (
-                    <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                  ) : (
-                    <Briefcase className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  )}
-                  <span className="text-sm font-semibold text-foreground">
-                    {CUSTOM_TRIP_GROUP_LABELS[value]}
-                  </span>
-                  <span className="text-xs leading-relaxed text-muted-foreground">
-                    {isOrange
-                      ? "Friends, family or a personal group"
-                      : "Offsites, team retreats and client events"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Sports */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-muted-foreground">
-            What sports would you like? <RequiredAsterisk />{" "}
-            <span className="font-normal normal-case">(choose one or more)</span>
-          </Label>
+    <form onSubmit={handleSubmit} className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] sm:p-6">
+      <div className="flex flex-col gap-6 sm:gap-8">
+        <section className="rounded-[1.6rem] bg-gradient-to-br from-orange-50 via-white to-emerald-50/70 p-5 dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-700 dark:text-orange-300">
+            Start with the spark
+          </p>
+          <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            What would make this trip unforgettable?
+          </h2>
           <div
             ref={sportsRef}
             className={cn(
-              "flex flex-wrap gap-2 rounded-lg border border-transparent",
-              errorField === "sports" && "border-destructive/50 bg-destructive/5",
+              "mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7",
+              errorField === "sports" && "rounded-2xl bg-destructive/5 p-2 ring-1 ring-destructive/30",
             )}
           >
-            {ACTIVITY_TYPE_OPTIONS.map((sport) => {
+            {SPORT_OPTIONS.map((sport) => {
               const selected = sports.includes(sport.value);
               return (
                 <button
@@ -210,163 +169,185 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
                   aria-pressed={selected}
                   onClick={() => toggleSport(sport.value)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                    "group relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40",
                     selected
-                      ? "border-orange-500/50 bg-orange-50 text-foreground dark:border-orange-500/40 dark:bg-orange-500/10"
-                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground",
+                      ? "border-orange-400 bg-orange-100/80 text-orange-950 shadow-sm dark:border-orange-400/60 dark:bg-orange-500/20 dark:text-orange-50"
+                      : "border-orange-100 bg-orange-100/65 text-foreground shadow-sm hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100/70 dark:border-orange-500/15 dark:bg-orange-500/10 dark:hover:border-emerald-500/35 dark:hover:bg-emerald-500/15",
                   )}
                 >
-                  {selected ? <Check className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" /> : null}
-                  {sport.label}
+                  {selected ? (
+                    <span className="absolute right-2 top-2 flex size-4 items-center justify-center rounded-full bg-orange-600 text-white">
+                      <Check className="size-3" strokeWidth={3} />
+                    </span>
+                  ) : null}
+                  <span className={cn("flex size-10 items-center justify-center rounded-full", selected ? "bg-white/70 dark:bg-black/15" : "bg-orange-200/80 dark:bg-orange-400/15")}>
+                    <SportIcon sport={sport.sport} className="size-6" iconClassName={selected ? "text-orange-700 dark:text-orange-200" : "text-foreground"} />
+                  </span>
+                  <span className="text-xs font-semibold leading-tight">{sport.label}</span>
                 </button>
               );
             })}
           </div>
-        </div>
-
-        {/* Dates */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="start-date" className="text-muted-foreground">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Start date <RequiredAsterisk />
-            </Label>
-            <input
-              id="start-date"
-              ref={startDateRef}
-              type="date"
-              min={toDateInput(new Date())}
-              value={startDate}
-              onChange={(event) => {
-                setStartDate(event.target.value);
-                setErrorField(null);
-              }}
-              className={cn(inputClassName, errorField === "startDate" && errorInputClassName)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="end-date" className="text-muted-foreground">
-              <CalendarDays className="h-3.5 w-3.5" />
-              End date <RequiredAsterisk />
-            </Label>
-            <input
-              id="end-date"
-              ref={endDateRef}
-              type="date"
-              min={startDate || toDateInput(new Date())}
-              value={endDate}
-              onChange={(event) => {
-                setEndDate(event.target.value);
-                setErrorField(null);
-              }}
-              className={cn(inputClassName, errorField === "endDate" && errorInputClassName)}
-            />
-          </div>
-        </div>
-
-        {/* Location */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="location" className="text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
-            Where would you like to go? <RequiredAsterisk />
-          </Label>
-          <input
-            id="location"
-            ref={locationRef}
-            type="text"
-            value={location}
-            onChange={(event) => {
-              setLocation(event.target.value);
-              setErrorField(null);
-            }}
-            placeholder="e.g. Manali, Ladakh, Kashmir, Lahaul-Spiti"
-            className={cn(inputClassName, errorField === "location" && errorInputClassName)}
-          />
-        </div>
-
-        {/* Group size + budget */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="participants" className="text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              Group size
-            </Label>
-            <input
-              id="participants"
-              type="number"
-              min={1}
-              max={200}
-              value={participantCount}
-              onChange={(event) => setParticipantCount(Number(event.target.value))}
-              className={inputClassName}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="budget" className="text-muted-foreground">
-              <Wallet className="h-3.5 w-3.5" />
-              Budget (₹, optional)
-            </Label>
-            <input
-              id="budget"
-              type="number"
-              min={0}
-              step={1000}
-              value={budget}
-              onChange={(event) => setBudget(event.target.value)}
-              placeholder="e.g. 120000"
-              className={inputClassName}
-            />
-          </div>
-        </div>
-
-        {/* Requirements */}
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="requirements" className="text-muted-foreground">
-            <MessageSquareText className="h-3.5 w-3.5" />
-            Anything else we should know?
-          </Label>
-          <textarea
-            id="requirements"
-            rows={4}
-            value={requirements}
-            onChange={(event) => setRequirements(event.target.value)}
-            placeholder="Accommodation preferences, fitness levels, special requests…"
-            className={`w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
-          />
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-border/70 pt-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="rounded-full px-3 py-1">
-              {CUSTOM_TRIP_GROUP_LABELS[groupType]}
-            </Badge>
-            <Badge variant="secondary" className="rounded-full px-3 py-1">
-              {participantCount} {participantCount === 1 ? "person" : "people"}
-            </Badge>
-            {sports.length > 0 ? (
-              <Badge variant="secondary" className="rounded-full px-3 py-1">
-                {pluralize(sports.length, "sport")} selected
-              </Badge>
-            ) : null}
-          </div>
-          {error ? (
+          <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+            Select every activity from above that belongs in the story. We&apos;ll shape the route, pacing and guide team around them.
+          </p>
+          {errorField === "sports" && error ? (
             <p
               role="alert"
-              className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
             >
-              {error}
+              Select at least one sport to continue.
             </p>
           ) : null}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={isPending || atChatLimit}
-            className="w-full rounded-xl bg-orange-700 text-white hover:bg-orange-800 disabled:opacity-60 sm:w-auto"
-          >
-            {isPending ? "Sending request…" : "Send trip request"}
-            <ArrowRight className="h-4 w-4" />
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">
+              Set the scene
+            </p>
+            <h3 className="mt-2 font-heading text-xl font-semibold text-foreground">Where are you drawn to?</h3>
+            <div className="relative mt-3">
+              <MapPin className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-emerald-600 dark:text-emerald-300" />
+              <input
+                id="location"
+                ref={locationRef}
+                type="text"
+                value={location}
+                onChange={(event) => {
+                  setLocation(event.target.value);
+                  clearFieldError();
+                }}
+                placeholder="A region, a trail, or simply 'somewhere wild'"
+                className={cn(inputClassName, "pl-10", errorField === "location" && errorInputClassName)}
+              />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-5 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200 sm:max-w-48">
+            Not set on a place? Tell us the feeling and we&apos;ll suggest a fit.
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[1.5rem] border border-orange-100 bg-orange-50/60 p-5 dark:border-orange-500/15 dark:bg-orange-500/5">
+            <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+              <CalendarDays className="size-4" />
+              <p className="text-xs font-semibold uppercase tracking-[0.2em]">Find your window</p>
+            </div>
+            <h3 className="mt-2 font-heading text-xl font-semibold text-foreground">When should we go?</h3>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="start-date" className="mb-1.5 block text-xs font-medium text-muted-foreground">Leave</label>
+                <input
+                  id="start-date"
+                  ref={startDateRef}
+                  type="date"
+                  min={toDateInput(new Date())}
+                  value={startDate}
+                  onChange={(event) => {
+                    setStartDate(event.target.value);
+                    clearFieldError();
+                  }}
+                  className={cn(inputClassName, errorField === "startDate" && errorInputClassName)}
+                />
+              </div>
+              <div>
+                <label htmlFor="end-date" className="mb-1.5 block text-xs font-medium text-muted-foreground">Return</label>
+                <input
+                  id="end-date"
+                  ref={endDateRef}
+                  type="date"
+                  min={startDate || toDateInput(new Date())}
+                  value={endDate}
+                  onChange={(event) => {
+                    setEndDate(event.target.value);
+                    clearFieldError();
+                  }}
+                  className={cn(inputClassName, errorField === "endDate" && errorInputClassName)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-5 dark:border-emerald-500/15 dark:bg-emerald-500/5">
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+              <Users className="size-4" />
+              <p className="text-xs font-semibold uppercase tracking-[0.2em]">Bring your people</p>
+            </div>
+            <h3 className="mt-2 font-heading text-xl font-semibold text-foreground">Who is this for?</h3>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {(["PRIVATE", "CORPORATE"] as const).map((value) => {
+                const selected = groupType === value;
+                const Icon = value === "PRIVATE" ? Users : BriefcaseBusiness;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setGroupType(value)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition",
+                      selected
+                        ? "border-emerald-400 bg-white text-emerald-800 shadow-sm dark:bg-card dark:text-emerald-200"
+                        : "border-transparent bg-white/60 text-muted-foreground hover:border-emerald-200 dark:bg-card/40 dark:hover:border-emerald-500/30",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {CUSTOM_TRIP_GROUP_LABELS[value]}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/75 px-3 py-2 dark:bg-card/60">
+              <span className="text-sm text-muted-foreground">How many are coming?</span>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => updateParticipantCount(participantCount - 1)} disabled={participantCount <= 1} aria-label="Remove one traveller" className="flex size-8 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:border-emerald-300 disabled:opacity-35"><Minus className="size-3.5" /></button>
+                <span className="w-7 text-center text-sm font-semibold text-foreground">{participantCount}</span>
+                <button type="button" onClick={() => updateParticipantCount(participantCount + 1)} disabled={participantCount >= 200} aria-label="Add one traveller" className="flex size-8 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:border-emerald-300 disabled:opacity-35"><Plus className="size-3.5" /></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.5rem] border border-border/70 bg-muted/20 p-5">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet className="size-4 text-orange-600 dark:text-orange-300" />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Make it yours</p>
+          </div>
+          <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+            <div>
+              <h3 className="font-heading text-xl font-semibold text-foreground">Have a group budget in mind?</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Optional. A ballpark helps us make thoughtful recommendations.</p>
+              <div className="relative mt-3">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">₹</span>
+                <input id="budget" type="number" min={0} step={1000} value={budget} onChange={(event) => setBudget(event.target.value)} placeholder="Leave open for a tailored quote" className={cn(inputClassName, "pl-8")} />
+              </div>
+            </div>
+            <div>
+              <h3 className="font-heading text-xl font-semibold text-foreground">What else should your guide know?</h3>
+              <textarea
+                id="requirements"
+                rows={3}
+                value={requirements}
+                onChange={(event) => setRequirements(event.target.value)}
+                placeholder="Your pace, comforts, experience level, a celebration, or the one thing you don't want to miss..."
+                className={`mt-3 w-full resize-none rounded-2xl border ${FORM_FIELD_BORDER} bg-background px-4 py-3 text-sm leading-6 shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 dark:focus:border-orange-400`}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4 rounded-[1.5rem] bg-foreground px-5 py-5 text-background sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-semibold"><MessageCircleHeart className="size-4 text-orange-300" /> Your trip brief is ready</p>
+            <p className="mt-1 text-sm text-background/65">We&apos;ll open a dedicated conversation to turn it into an itinerary and quote.</p>
+          </div>
+          <Button type="submit" size="lg" disabled={isPending || atChatLimit} className="shrink-0 rounded-full bg-orange-600 px-5 text-white hover:bg-orange-500 disabled:opacity-60">
+            {isPending ? "Sending your brief..." : "Start the conversation"}
+            <ArrowRight className="size-4" />
           </Button>
-        </div>
+        </section>
+
+        {error ? <p role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
       </div>
     </form>
   );

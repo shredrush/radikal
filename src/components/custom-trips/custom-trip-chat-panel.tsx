@@ -16,7 +16,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 
 const composerClassName =
-  `w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
+  `w-full resize-none rounded-2xl border ${FORM_FIELD_BORDER} bg-background px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 dark:focus:border-orange-400`;
 
 function sameThread(a: CustomTripMessageView[], b: CustomTripMessageView[]) {
   if (a.length !== b.length) return false;
@@ -91,13 +91,13 @@ export function CustomTripChatPanel({
     <div className="flex flex-col gap-4">
       <div
         ref={scrollRef}
-        className="flex max-h-[28rem] min-h-[16rem] flex-col gap-3 overflow-y-auto rounded-[1.2rem] border border-border/70 bg-muted/20 p-4"
+        className="flex max-h-[28rem] min-h-[16rem] flex-col gap-3 overflow-y-auto rounded-[1.5rem] border border-emerald-100 bg-gradient-to-br from-orange-50/50 via-white to-emerald-50/50 p-4 dark:border-emerald-500/15 dark:from-orange-500/5 dark:via-card dark:to-emerald-500/5"
       >
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-            <p className="text-sm font-medium text-foreground">No messages yet</p>
+            <p className="text-sm font-medium text-foreground">Your trip conversation is open</p>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Send a message to get the conversation about your trip started.
+              Share a detail, question or idea and our team will pick it up here.
             </p>
           </div>
         ) : (
@@ -110,14 +110,14 @@ export function CustomTripChatPanel({
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
                     message.isMine
-                      ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : "rounded-bl-sm border border-border/70 bg-background text-foreground"
+                      ? "rounded-br-sm bg-orange-600 text-white"
+                      : "rounded-bl-sm border border-emerald-100 bg-white text-foreground dark:border-emerald-500/15 dark:bg-card"
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{message.body}</p>
                   <p
                     className={`mt-1 text-[0.65rem] ${
-                      message.isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                      message.isMine ? "text-white/70" : "text-muted-foreground"
                     }`}
                   >
                     {formatMessageTime(message.createdAt)}
@@ -129,7 +129,7 @@ export function CustomTripChatPanel({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 rounded-[1.5rem] border border-orange-100 bg-orange-50/60 p-2 dark:border-orange-500/15 dark:bg-orange-500/5">
         <textarea
           name="body"
           placeholder={role === "support" ? "Write a reply…" : "Type your message…"}
@@ -142,7 +142,7 @@ export function CustomTripChatPanel({
             }
           }}
         />
-        <Button type="submit" size="lg" disabled={isPending} className="rounded-xl px-4">
+        <Button type="submit" size="lg" disabled={isPending} className="rounded-2xl bg-orange-600 px-4 text-white hover:bg-orange-500">
           <Send className="h-4 w-4" />
           {isPending ? "Sending…" : "Send"}
         </Button>

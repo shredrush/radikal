@@ -20,9 +20,11 @@ export type TripCardTrip = TripCardImageTrip & {
 export function TripCard({
   trip,
   size = "standard",
+  showPrice = true,
 }: {
   trip: TripCardTrip;
   size?: "standard" | "compact";
+  showPrice?: boolean;
 }) {
   const compact = size === "compact";
 
@@ -115,12 +117,14 @@ export function TripCard({
               <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
                 {formatDurationDays(trip.durationDays)}
               </span>
-              <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                <Price
-                  className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                  amount={trip.priceInRupees}
-                />
-              </div>
+              {showPrice ? (
+                <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
+                  <Price
+                    className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                    amount={trip.priceInRupees}
+                  />
+                </div>
+              ) : null}
             </div>
           )}
         </div>
