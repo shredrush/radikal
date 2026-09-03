@@ -58,7 +58,9 @@ export function AdminTripCard({ trip, guides }: AdminTripCardProps) {
           type="button"
           variant={editing ? "default" : "outline"}
           size="sm"
-          className="shrink-0 rounded-full"
+          className={editing
+            ? "shrink-0 rounded-full border-2 border-black bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
+            : "shrink-0 rounded-full"}
           onClick={() => setEditing((value) => !value)}
         >
           {editing ? (

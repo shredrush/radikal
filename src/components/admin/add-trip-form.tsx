@@ -25,7 +25,7 @@ export function AddTripForm({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => setOpen(false)}>
+        <Button variant="outline" size="sm" className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setOpen(false)}>
           <X className="h-3.5 w-3.5" />
           Close
         </Button>

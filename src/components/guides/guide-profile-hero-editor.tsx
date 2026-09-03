@@ -71,7 +71,7 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={isPending}><X className="h-4 w-4" /> Cancel</Button>
+            <Button type="button" variant="outline" size="sm" className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setEditing(false)} disabled={isPending}><X className="h-4 w-4" /> Cancel</Button>
             <Button type="submit" form={formId} size="sm" className="rounded-full" disabled={isPending}><Save className="h-3.5 w-3.5" /> {isPending ? "Saving..." : "Save"}</Button>
           </div>
         )}

@@ -13,6 +13,7 @@ export interface GuideCardGuide {
   location: string;
   photo?: string | null;
   photos?: string[] | null;
+  tripImage?: string | null;
   certifications: string[];
   bio?: string;
   languages?: string[];

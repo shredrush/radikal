@@ -32,7 +32,10 @@ export async function createBooking(
 ): Promise<CreateBookingResult> {
   const parsed = createBookingSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: "Invalid booking details." };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid booking details.",
+    };
   }
 
   const session = await auth();

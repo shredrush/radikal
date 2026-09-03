@@ -357,6 +357,9 @@ export type ChangeUsernameActionState = {
   fieldErrors?: Partial<Record<"username", string>>;
 };
 
+const USERNAME_CHANGE_LIMIT_MESSAGE =
+  "you can only change username once, for help contact support";
+
 export async function changeUsernameAction(
   _prevState: ChangeUsernameActionState,
   formData: FormData
@@ -367,7 +370,7 @@ export async function changeUsernameAction(
     return { error: "You must be logged in to change your username." };
   }
 
-  // Throttle username changes per user to curb rapid renames and enumeration.
+  // Throttle requests per user to curb rapid rename attempts and enumeration.
   const usernameLimit = rateLimit(`change-username:user:${userId}`, 10, 15 * 60_000);
   if (!usernameLimit.success) {
     return { error: rateLimitError(usernameLimit) };
@@ -384,7 +387,11 @@ export async function changeUsernameAction(
 
   const user = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null },
-    include: { guide: { select: { id: true, deletedAt: true } } },
+    select: {
+      username: true,
+      usernameChangeCount: true,
+      guide: { select: { id: true, deletedAt: true } },
+    },
   });
   if (!user) {
     return { error: "Account not found." };
@@ -395,6 +402,10 @@ export async function changeUsernameAction(
     return { success: true };
   }
 
+  if (user.usernameChangeCount >= 1) {
+    return { error: USERNAME_CHANGE_LIMIT_MESSAGE };
+  }
+
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
     return { fieldErrors: { username: "This username is already taken." } };
@@ -403,14 +414,18 @@ export async function changeUsernameAction(
   const previousUsername = user.username;
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const changed = await prisma.$transaction(async (tx) => {
+      // The conditional update is the concurrency guard: only one request can
+      // consume the account's single username change.
+      const update = await tx.user.updateMany({
+        where: { id: userId, deletedAt: null, usernameChangeCount: 0 },
+        data: { username, usernameChangeCount: { increment: 1 } },
+      });
+
+      if (update.count === 0) return false;
+
       // The handle is now live, so retire any alias that still points to it.
       await tx.usernameAlias.deleteMany({ where: { username } });
-
-      await tx.user.update({
-        where: { id: userId },
-        data: { username },
-      });
 
       // Keep the old handle resolving to this user's guide page.
       if (previousUsername) {
@@ -418,7 +433,13 @@ export async function changeUsernameAction(
           data: { username: previousUsername, userId },
         });
       }
+
+      return true;
     });
+
+    if (!changed) {
+      return { error: USERNAME_CHANGE_LIMIT_MESSAGE };
+    }
   } catch (error) {
     // The DB unique constraint is the final guard against a rename race.
     if (error instanceof Error && error.message.includes("Unique constraint failed")) {
@@ -433,6 +454,8 @@ export async function changeUsernameAction(
     label: "Changed username",
     metadata: { username },
   });
+
+  updateTag("profiles");
 
   // For guide accounts the username is the public URL, so a rename must
   // invalidate both the old and the new guide pages.

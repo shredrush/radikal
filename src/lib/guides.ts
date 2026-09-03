@@ -28,6 +28,19 @@ export function orderGuidesByFeaturedUsernames<T extends { user: { username: str
 
 const guideDetailInclude = {
   certifications: { orderBy: { yearIssued: "desc" } },
+  reviews: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      tripName: true,
+      tripDate: true,
+      createdAt: true,
+      user: { select: { name: true } },
+    },
+  },
   _count: { select: { trips: true } },
   user: { select: { username: true, id: true } },
 } satisfies Prisma.GuideInclude;

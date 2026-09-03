@@ -77,7 +77,7 @@ export function ConfirmPaymentButton({
           type="button"
           size="sm"
           variant="outline"
-          className="rounded-full"
+          className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive"
           disabled={isPending}
           onClick={() => setOpen(false)}
         >

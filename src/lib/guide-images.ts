@@ -4,6 +4,8 @@ export function getGuideImage(guide: {
   username?: string | null;
   photo?: string | null;
   photos?: string[] | null;
+  tripImage?: string | null;
 }) {
-  return guide.photos?.[0] ?? guide.photo ?? DEFAULT_GUIDE_IMAGE;
+  const profileImage = guide.photos?.find(Boolean) ?? guide.photo;
+  return profileImage || guide.tripImage || DEFAULT_GUIDE_IMAGE;
 }

@@ -55,9 +55,8 @@ const getGuideDetail = unstable_cache(
           },
         },
         reviews: {
-          // Reviews live with the guide, not the trip: only the guide being
-          // on the platform keeps them, so a deleted trip is no longer a
-          // reason to hide one.
+          // Aggregate every completed trip review attributed to this guide.
+          // Retired trips retain their snapshot title/date.
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
           take: 20,
@@ -68,7 +67,7 @@ const getGuideDetail = unstable_cache(
             tripName: true,
             tripDate: true,
             user: { select: { name: true } },
-            trip: { select: { slug: true, title: true, deletedAt: true } },
+            trip: { select: { title: true } },
           },
         },
       },
@@ -119,6 +118,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     username: guide.user?.username ?? "",
     photo: guide.photo,
     photos: guide.photos,
+    tripImage: guide.trips[0]?.images[0],
   });
   const guidePhotoSources =
     (guide.photos ?? []).length > 0
@@ -131,7 +131,6 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     id: review.id,
     name: getDisplayName(review.user.name),
     trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
-    slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
     quote: review.comment,
     date: formatShortDate(review.tripDate ?? review.createdAt),
   }));

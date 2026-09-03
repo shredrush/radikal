@@ -122,8 +122,11 @@ model User {
   // the guide's public URL segment (e.g. /tenzin). Uniqueness is enforced by a
   // DB constraint; the app layer additionally validates the format, length and
   // reserved-name rules (see lib/sanitize.ts).
-  username     String?   @unique
-  passwordHash String
+  username            String?   @unique
+  // Settings permits one user-initiated username rename. A persisted counter
+  // makes the rule reliable across requests and concurrent sessions.
+  usernameChangeCount Int       @default(0)
+  passwordHash        String
   // Incremented after a password reset or change. JWTs carry this value and
   // are rejected once it no longer matches the account record.
   sessionVersion Int      @default(0)
@@ -460,12 +463,12 @@ model WishlistItem {
 model Review {
   id        String    @id @default(cuid())
   userId    String
-  tripId    String?
-  guideId   String?
-  // Snapshot of the trip taken when the review was submitted. A review is
-  // tied to the guide (it lives as long as the guide is on the platform), so
-  // these copies keep the trip name and travel date meaningful even after the
-  // underlying trip has been deleted.
+  // A review describes one completed trip and is also attributed to the guide
+  // who led it. Both links are required so trip and guide views cannot diverge.
+  tripId    String
+  guideId   String
+  // These snapshots keep the trip name and travel date meaningful after the
+  // underlying trip has been retired.
   tripName  String?
   tripDate  DateTime?
   rating    Int
@@ -477,13 +480,13 @@ model Review {
   createdAt       DateTime  @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
-  trip  Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
-  guide Guide? @relation(fields: [guideId], references: [id], onDelete: SetNull)
+  trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Restrict)
 
   @@index([userId])
   @@index([userId, deletedAt])
-  @@index([tripId])
-  @@index([guideId, deletedAt])
+  @@index([tripId, deletedAt, createdAt])
+  @@index([guideId, deletedAt, createdAt])
   @@index([deletedAt])
   @@index([deletedAt, createdAt])
   @@map("reviews")

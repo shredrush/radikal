@@ -8,6 +8,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DeleteGuideButton } from "@/components/admin/delete-guide-button";
+import { AdminGuideReviews, type AdminGuideReviewData } from "@/components/admin/admin-guide-reviews";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { GuideSportsField } from "@/components/guides/guide-sports";
 
@@ -36,6 +37,7 @@ export type GuideFormData = {
   languages: string[];
   sports: string[];
   certifications: GuideCertification[];
+  reviews: AdminGuideReviewData[];
 };
 
 function serializeCertifications(certifications: GuideCertification[]) {
@@ -157,6 +159,7 @@ export function AdminGuideForm({
             </p>
           </div>
         )}
+        {isEditing ? <AdminGuideReviews reviews={guide!.reviews} /> : null}
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Profile media</p>
           <p className="text-xs text-muted-foreground">

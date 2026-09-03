@@ -46,7 +46,6 @@ type GuideProfile = {
 type Testimonial = {
   name: string;
   trip: string;
-  slug?: string;
   quote: string;
   date?: string;
 };
@@ -178,7 +177,7 @@ export function SearchableTrips({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleSearchKeyDown}
-              className="h-10 w-full min-w-0 border-0 bg-transparent px-0 text-sm text-foreground outline-none placeholder:text-muted-foreground sm:text-base"
+              className="h-10 w-full min-w-0 border-0 bg-transparent px-0 text-xs text-foreground outline-none placeholder:text-muted-foreground sm:text-base"
             />
             {query ? (
               <button

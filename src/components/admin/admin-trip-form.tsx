@@ -272,7 +272,12 @@ export function AdminTripForm({
         {isEditing ? (
           <DeleteTripButton tripId={trip?.id ?? ""} tripTitle={title} />
         ) : null}
-        <Button type="submit" form={`trip-form-${key}`} className="rounded-full" disabled={isPending}>
+        <Button
+          type="submit"
+          form={`trip-form-${key}`}
+          className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          disabled={isPending}
+        >
           {isPending ? (isEditing ? "Saving…" : "Creating…") : isEditing ? "Save changes" : "Create trip"}
         </Button>
       </div>

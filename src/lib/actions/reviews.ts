@@ -3,6 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
+import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
@@ -18,10 +19,10 @@ type ValidatedReview = {
   userId: string;
   bookingId: string;
   tripId: string;
-  guideId: string | null;
+  guideId: string;
   tripSlug: string;
-  // Snapshot taken at review time so the review stays meaningful even if the
-  // trip is later deleted — the review lives with the guide, not the trip.
+  // Snapshot taken at review time so the review stays meaningful if the trip
+  // is later retired.
   tripName: string;
   tripDate: Date;
   rating: number;
@@ -114,13 +115,20 @@ async function validateReviewSubmission(
     };
   }
 
+  if (!booking.trip.guideId) {
+    return {
+      ok: false,
+      state: { error: "This trip is not currently associated with a guide." },
+    };
+  }
+
   return {
     ok: true,
     data: {
       userId,
       bookingId,
       tripId: booking.tripId,
-      guideId: booking.trip.guideId ?? null,
+      guideId: booking.trip.guideId,
       tripSlug: booking.trip.slug,
       tripName: booking.trip.title,
       tripDate: booking.slot.date,
@@ -211,4 +219,38 @@ export async function updateReviewAction(
   revalidateReviewCaches(tripSlug);
 
   return { success: true };
+}
+
+/** Soft-delete a review from the staff guide-management panel. */
+export async function deleteReviewAction(reviewId: string): Promise<void> {
+  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+
+  if (!reviewId) {
+    throw new Error("Missing review id.");
+  }
+
+  const review = await prisma.review.findFirst({
+    where: { id: reviewId, deletedAt: null },
+    select: { id: true, guideId: true, tripId: true },
+  });
+  if (!review) {
+    throw new Error("Review not found.");
+  }
+
+  await prisma.review.update({
+    where: { id: review.id },
+    data: { deletedAt: new Date() },
+  });
+
+  await logActivity({
+    userId: session.user.id,
+    action: "REVIEW_DELETED",
+    label: "Deleted a traveller review",
+    metadata: { reviewId: review.id, guideId: review.guideId, tripId: review.tripId },
+  });
+
+  revalidatePath("/admin/guides");
+  revalidatePath("/");
+  updateTag("reviews");
+  updateTag("guides");
 }

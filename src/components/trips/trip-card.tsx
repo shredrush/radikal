@@ -98,7 +98,7 @@ export function TripCard({
                   className={
                     compact
                       ? "!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-center text-[0.72rem] font-medium leading-4 text-foreground/80 sm:text-[0.8rem]"
-                      : "rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]"
+                      : "max-w-full rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-foreground/80 sm:px-2 sm:text-[0.72rem]"
                   }
                 >
                   {TRIP_CATEGORY_LABELS[category] ?? category}

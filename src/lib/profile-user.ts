@@ -7,6 +7,7 @@ const profileUserSelect = {
   email: true,
   phone: true,
   image: true,
+  usernameChangeCount: true,
 } as const;
 
 /**

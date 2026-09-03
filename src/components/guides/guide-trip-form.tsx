@@ -259,7 +259,7 @@ export function GuideTripForm({
               ? `Draft — ${title || "untitled"}`
               : "New trip"}
         </p>
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => setOpen(false)}>
+        <Button variant="outline" size="sm" className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setOpen(false)}>
           <X className="h-3.5 w-3.5" />
           Close
         </Button>
@@ -403,7 +403,11 @@ export function GuideTripForm({
               {isPreviewing ? "Preparing…" : "Preview"}
             </Button>
           ) : null}
-          <Button type="submit" className="rounded-full bg-emerald-700 text-white hover:bg-emerald-800" disabled={isPending || isDeleting}>
+          <Button
+            type="submit"
+            className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+            disabled={isPending || isDeleting}
+          >
             {isPending ? "Publishing…" : "Publish"}
           </Button>
         </div>
@@ -441,7 +445,7 @@ export function GuideTripForm({
               type="button"
               size="sm"
               variant="outline"
-              className="rounded-full"
+              className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive"
               disabled={isDeleting}
               onClick={() => {
                 setDeleteOpen(false);

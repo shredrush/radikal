@@ -45,6 +45,12 @@ const getCommunityGuides = unstable_cache(
         _count: {
           select: { trips: true },
         },
+        trips: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { images: true },
+        },
       },
     });
 
@@ -292,6 +298,7 @@ export default async function CommunityPage() {
                     location: guide.location,
                     photo: guide.photo,
                     photos: guide.photos,
+                    tripImage: guide.trips[0]?.images[0],
                     bio: guide.bio,
                     experienceYears: guide.experienceYears,
                     certifications: guide.certifications.map((certification) => certification.title),

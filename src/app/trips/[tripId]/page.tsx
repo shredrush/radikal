@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import {
   Card,
@@ -248,6 +248,7 @@ export default async function TripDetailPage({
         username: guide.user?.username ?? "",
         photo: guide.photo,
         photos: guide.photos,
+        tripImage: trip.images[0],
       })
     : "/avatars/fox.svg");
   const guideMediaIsVideo = Boolean(
@@ -270,6 +271,14 @@ export default async function TripDetailPage({
   return (
     <div className="flex flex-1 flex-col">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
+        <Link
+          href="/trips"
+          className="flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          view all trips
+        </Link>
+
         {/* Trip header */}
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">

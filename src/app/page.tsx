@@ -1,5 +1,4 @@
 import { unstable_cache } from "next/cache";
-import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import { orderGuidesByFeaturedUsernames } from "@/lib/guides";
@@ -9,11 +8,11 @@ import { getDisplayName } from "@/lib/profile-initials";
 import { formatShortDate } from "@/lib/format";
 
 const FEATURED_TRIP_SLUGS = [
-  "miyar-valley-trek",
-  "lahaul-spiti-cycle",
-  "sethan-snowboarding-course",
-  "spiti-meditation-escape",
-  "ladakh-yoga-course",
+  "backcountry-snowboarding-expedition",
+  "lahaul-multi-day-hike",
+  "ghepan-lake-trek",
+  "kanamo-peak",
+  "deo-tibba",
 ] as const;
 
 // Cached like the /trips catalog query below: the home page is the most
@@ -62,6 +61,12 @@ const getHomeGuides = unstable_cache(
         location: true,
         photo: true,
         photos: true,
+        trips: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { images: true },
+        },
         certifications: {
           orderBy: { yearIssued: "desc" },
           take: 3,
@@ -79,53 +84,27 @@ const getHomeGuides = unstable_cache(
 
 // The home-page "Travellers love the Radikal Experiences" section is driven by
 // the reviews travellers leave on completed trips (seeded via the demo data).
-// Reviews live with the guide, not the trip: they survive trip deletion, so
-// pull the latest live reviews from guides still on the platform. Because any
-// particular trip's reviews can disappear with it, the query falls back to any
-// other available reviews instead of keying off a fixed set of trips.
+// Every review is linked to both its trip and guide, while snapshots preserve
+// historic trip context when that trip is retired.
 const getHomeReviews = unstable_cache(
   async () => {
-    const reviewScope: Prisma.ReviewWhereInput = {
-      deletedAt: null,
-      OR: [
-        // Guide-linked reviews stay live as long as the guide is active,
-        // even when the underlying trip was deleted.
-        { guide: { deletedAt: null, user: { deletedAt: null } } },
-        // Trip-only reviews (no guide linked) still require a live trip.
-        { guideId: null, trip: { deletedAt: null } },
-      ],
-    };
-
-    // Latest review per guide, capped to the 4 most-recently-reviewed guides,
-    // so the testimonials row always reaches 4 distinct guides when they exist
-    // (guide-less trip reviews group under null as one fallback slot).
-    const latestPerGuide = await prisma.review.groupBy({
-      by: ["guideId"],
-      where: reviewScope,
-      _max: { createdAt: true },
-      orderBy: { _max: { createdAt: "desc" } },
+    // Multiple reviews may belong to the same guide; newer reviews break ties.
+    return prisma.review.findMany({
+      where: {
+        deletedAt: null,
+        guide: { deletedAt: null, user: { deletedAt: null } },
+      },
+      orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
       take: 4,
+      select: {
+        tripName: true,
+        tripDate: true,
+        createdAt: true,
+        comment: true,
+        user: { select: { name: true } },
+        trip: { select: { title: true } },
+      },
     });
-
-    const reviews = await Promise.all(
-      latestPerGuide.map((entry) =>
-        prisma.review.findFirst({
-          where: { ...reviewScope, guideId: entry.guideId },
-          orderBy: { createdAt: "desc" },
-          select: {
-            guideId: true,
-            tripId: true,
-            tripName: true,
-            tripDate: true,
-            createdAt: true,
-            comment: true,
-            user: { select: { name: true } },
-            trip: { select: { title: true, slug: true, deletedAt: true } },
-          },
-        }),
-      ),
-    );
-    return reviews.filter((review): review is NonNullable<typeof review> => review !== null);
   },
   ["home-reviews"],
   { tags: ["reviews"], revalidate: 300 },
@@ -166,13 +145,13 @@ export default async function Home() {
             username: guide.user?.username ?? "",
             photo: guide.photo,
             photos: guide.photos,
+            tripImage: guide.trips[0]?.images[0],
           }),
           certifications: guide.certifications.map((certification) => certification.title),
         }))}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
           trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
-          slug: review.trip && !review.trip.deletedAt ? review.trip.slug : undefined,
           quote: review.comment,
           date: formatShortDate(review.tripDate ?? review.createdAt),
         }))}

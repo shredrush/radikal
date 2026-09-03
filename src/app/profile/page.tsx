@@ -438,19 +438,6 @@ export default async function ProfilePage({
                   Change password
                 </Link>
                 <Link
-                  href="/profile?tab=settings&section=username"
-                  prefetch={false}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
-                    activeSection === "username"
-                      ? "border-primary/40 bg-primary/5 text-foreground"
-                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
-                  )}
-                >
-                  <AtSign className="h-4 w-4" />
-                  Change username
-                </Link>
-                <Link
                   href="/profile?tab=settings&section=email"
                   prefetch={false}
                   className={cn(
@@ -476,6 +463,19 @@ export default async function ProfilePage({
                   <Phone className="h-4 w-4" />
                   Change phone
                 </Link>
+                <Link
+                  href="/profile?tab=settings&section=username"
+                  prefetch={false}
+                  className={cn(
+                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    activeSection === "username"
+                      ? "border-primary/40 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <AtSign className="h-4 w-4" />
+                  Change username
+                </Link>
               </nav>
             </aside>
           ) : null}
@@ -497,7 +497,10 @@ export default async function ProfilePage({
                 </CardHeader>
                 <CardContent>
                   {activeSection === "username" ? (
-                    <ChangeUsernameForm currentUsername={user.username ?? null} />
+                    <ChangeUsernameForm
+                      currentUsername={user.username ?? null}
+                      hasChangedUsername={(currentUser?.usernameChangeCount ?? 0) >= 1}
+                    />
                   ) : activeSection === "email" ? (
                     <ChangeEmailForm currentEmail={currentEmail} />
                   ) : activeSection === "phone" ? (

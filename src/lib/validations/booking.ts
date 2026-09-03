@@ -28,8 +28,7 @@ export const createBookingSchema = z.object({
     .regex(
       TRANSACTION_ID_PATTERN,
       "Transaction ID can only contain letters, numbers and hyphens."
-    )
-    .optional(),
+    ),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

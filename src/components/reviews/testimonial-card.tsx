@@ -1,19 +1,16 @@
-import Link from "next/link";
-
 import { Card, CardContent } from "@/components/ui/card";
 import { CARD_SURFACE } from "@/lib/card-styles";
 
 export interface TestimonialCardData {
   name: string;
   trip: string;
-  slug?: string;
   quote: string;
   date?: string;
 }
 
 export function TestimonialCard({ testimonial }: { testimonial: TestimonialCardData }) {
-  const card = (
-    <Card className={`flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] p-2.5 ${CARD_SURFACE} transition-transform duration-200 hover:-translate-y-1 sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4`}>
+  return (
+    <Card className={`flex h-full min-h-[80px] flex-col justify-between overflow-hidden rounded-[0.95rem] p-2.5 ${CARD_SURFACE} sm:min-h-[120px] sm:p-3 lg:min-h-[120px] lg:p-4`}>
       <CardContent className="flex flex-1 flex-col justify-between gap-0 p-0">
         <p className="text-[clamp(0.74rem,0.95vw,1rem)] font-semibold leading-5 text-foreground sm:leading-6 lg:leading-7">
           “{testimonial.quote}”
@@ -33,19 +30,5 @@ export function TestimonialCard({ testimonial }: { testimonial: TestimonialCardD
         </div>
       </CardContent>
     </Card>
-  );
-
-  if (!testimonial.slug) {
-    return <div className="h-full">{card}</div>;
-  }
-
-  return (
-    <Link
-      href={`/trips/${testimonial.slug}`}
-      aria-label={`Read reviews for ${testimonial.trip}`}
-      className="block"
-    >
-      {card}
-    </Link>
   );
 }

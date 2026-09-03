@@ -72,7 +72,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
 
   return (
     <section aria-label="Guide moments" className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-muted/30 p-1 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.45)]">
-      <div className="grid h-[28rem] grid-cols-7 grid-rows-2 gap-1 sm:h-[36rem] lg:h-[40rem]">
+      <div className="grid h-[28rem] grid-cols-4 grid-rows-2 gap-1 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] lg:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];
           const isSliding = activeSlot === slot;
@@ -84,7 +84,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
               key={`${slot}-${isSliding ? cycle : 0}`}
               href={`/${item.username}`}
               aria-label={`View ${item.alt}'s public profile`}
-              className={`${slotLayouts[slot]} group relative overflow-hidden bg-muted/60`}
+              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} group relative overflow-hidden bg-muted/60`}
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass} motion-reduce:animate-none`}>

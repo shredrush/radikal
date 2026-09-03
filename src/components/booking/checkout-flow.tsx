@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  AlertTriangle,
   Check,
   Minus,
   Plus,
@@ -73,6 +74,19 @@ function SectionHeading({ number, children }: { number: number; children: ReactN
   );
 }
 
+function CheckoutError({ children, id }: { children: ReactNode; id?: string }) {
+  return (
+    <div
+      id={id}
+      role="alert"
+      className="flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+    >
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+      <p>{children}</p>
+    </div>
+  );
+}
+
 export function CheckoutFlow({
   trip,
   availableSlots,
@@ -120,11 +134,22 @@ export function CheckoutFlow({
     : 0;
   const totalPrice = basePrice + insuranceRupees;
   const stepIndex = STEPS.findIndex((item) => item.key === step);
-  const canContinue = Boolean(
-    selectedSlot && selectedSlot.spotsLeft > 0 && participantCount <= selectedSlot.spotsLeft
-  );
+  const transactionIdError = Boolean(error?.toLowerCase().includes("transaction id"));
 
   function handleReserve() {
+    if (!selectedSlot) {
+      setError("Please select an available trip date.");
+      return;
+    }
+    if (selectedSlot.spotsLeft <= 0) {
+      setError("The selected trip date is full. Please choose another date.");
+      return;
+    }
+    if (participantCount > selectedSlot.spotsLeft) {
+      setError(`Only ${selectedSlot.spotsLeft} spots are left for the selected trip date.`);
+      return;
+    }
+
     setError(null);
     setStep("review");
   }
@@ -172,7 +197,10 @@ export function CheckoutFlow({
   }
 
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+    <>
+      {error ? <CheckoutError id="checkout-error-summary">{error}</CheckoutError> : null}
+
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       {/* Main booking card */}
       <div className="overflow-hidden rounded-[2rem] border border-border/80 bg-background/90 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
         <div className="border-b border-border/70 bg-muted/20 px-6 py-5 sm:px-8">
@@ -220,15 +248,6 @@ export function CheckoutFlow({
         </div>
 
         <div className="flex flex-col gap-8 px-6 py-6 sm:px-8">
-          {error ? (
-            <p
-              role="alert"
-              className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {error}
-            </p>
-          ) : null}
-
           {/* Date and group size */}
           <section className="space-y-5">
             <SectionHeading number={1}>Date and group size</SectionHeading>
@@ -244,7 +263,10 @@ export function CheckoutFlow({
                     role="radio"
                     aria-checked={selected}
                     disabled={full || step !== "select"}
-                    onClick={() => setSlotId(slot.id)}
+                    onClick={() => {
+                      setSlotId(slot.id);
+                      setError(null);
+                    }}
                     className={cn(
                       "flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50",
                       selected
@@ -292,7 +314,10 @@ export function CheckoutFlow({
                   type="button"
                   aria-label="Remove person"
                   disabled={participantCount <= 1 || step !== "select"}
-                  onClick={() => setParticipantCount((count) => Math.max(1, count - 1))}
+                  onClick={() => {
+                    setParticipantCount((count) => Math.max(1, count - 1));
+                    setError(null);
+                  }}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Minus className="h-4 w-4" />
@@ -308,7 +333,10 @@ export function CheckoutFlow({
                     participantCount >=
                       Math.min(selectedSlot?.spotsLeft ?? trip.maxGroupSize, trip.maxGroupSize)
                   }
-                  onClick={() => setParticipantCount((count) => count + 1)}
+                  onClick={() => {
+                    setParticipantCount((count) => count + 1);
+                    setError(null);
+                  }}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Plus className="h-4 w-4" />
@@ -404,9 +432,14 @@ export function CheckoutFlow({
                 <input
                   id="transaction-id"
                   value={transactionId}
-                  onChange={(event) => setTransactionId(event.target.value)}
+                  onChange={(event) => {
+                    setTransactionId(event.target.value);
+                    setError(null);
+                  }}
                   placeholder="e.g. UTR / reference number"
-                  className={`h-12 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
+                  aria-invalid={transactionIdError}
+                  aria-describedby={transactionIdError ? "checkout-error-summary" : undefined}
+                  className={`h-12 w-full rounded-xl border ${transactionIdError ? "border-destructive focus:border-destructive focus-visible:ring-destructive/30" : FORM_FIELD_BORDER} bg-background/80 px-3 text-sm shadow-sm outline-none transition focus-visible:ring-2`}
                 />
               </div>
             </section>
@@ -522,7 +555,7 @@ export function CheckoutFlow({
               {step === "select" ? (
                 <Button
                   className="h-12 w-full rounded-full text-sm"
-                  disabled={isPending || !canContinue}
+                  disabled={isPending}
                   onClick={handleReserve}
                 >
                   {isPending ? "Reserving…" : "Reserve your spot"}
@@ -530,7 +563,7 @@ export function CheckoutFlow({
               ) : step === "review" ? (
                 <Button
                   className="h-12 w-full rounded-full text-sm"
-                  disabled={isPending || !transactionId.trim()}
+                  disabled={isPending}
                   onClick={handleSubmitPayment}
                 >
                   {isPending ? "Submitting…" : "I have paid"}
@@ -544,6 +577,9 @@ export function CheckoutFlow({
           </div>
         </div>
       </aside>
-    </div>
+      </div>
+
+      {error ? <CheckoutError>{error}</CheckoutError> : null}
+    </>
   );
 }
