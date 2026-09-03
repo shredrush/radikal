@@ -13,6 +13,8 @@ import {
   customTripMessageSchema,
 } from "@/lib/validations/custom-trip";
 import { MAX_OPEN_CUSTOM_TRIP_CHATS } from "@/lib/custom-trips";
+import { createGuestAccount } from "@/lib/guest-account";
+import { guestAccountCreatedEmail, sendEmailAfter } from "@/lib/email";
 
 export type CreateCustomTripResult =
   | { success: true; requestId: string }
@@ -23,7 +25,8 @@ function asString(value: FormDataEntryValue | null) {
 }
 
 /**
- * Creates a custom trip request for the logged-in user. The request starts as
+ * Creates a custom trip request. Guests receive an account so the request can
+ * be followed in its dedicated chat.
  * NEW and a dedicated chat thread is opened in the same transaction so the
  * support team can quote and confirm it.
  */
@@ -31,16 +34,6 @@ export async function createCustomTripRequestAction(
   input: unknown,
 ): Promise<CreateCustomTripResult> {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) {
-    return { success: false, error: "You must be logged in to request a custom trip." };
-  }
-
-  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
-  if (!requestLimit.success) {
-    return { success: false, error: rateLimitError(requestLimit) };
-  }
-
   const parsed = createCustomTripSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -59,6 +52,25 @@ export async function createCustomTripRequestAction(
     budgetRupees,
     requirements,
   } = parsed.data;
+
+  let userId = session?.user?.id;
+  if (!userId) {
+    const account = await createGuestAccount({
+      name: parsed.data.contactName,
+      email: parsed.data.contactEmail,
+      phone: parsed.data.contactPhone,
+    });
+    if (!account.success) return { success: false, error: account.error };
+    userId = account.user.id;
+    sendEmailAfter(guestAccountCreatedEmail({
+      to: account.user.email,
+      name: account.user.name,
+      password: account.password,
+    }));
+  }
+
+  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
+  if (!requestLimit.success) return { success: false, error: rateLimitError(requestLimit) };
 
   let request;
   try {

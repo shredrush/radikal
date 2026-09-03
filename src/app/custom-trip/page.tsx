@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { MessageCircle, WandSparkles } from "lucide-react";
 
@@ -21,11 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CustomTripPage() {
   const session = await auth();
-  if (!session?.user) {
-    redirect(`/login?callbackUrl=${encodeURIComponent("/custom-trip")}`);
-  }
-
-  const openRequests = await safeDb(
+  const openRequests = session?.user ? await safeDb(
     "custom-trip.open-requests",
     () =>
       prisma.customTripRequest.findMany({
@@ -41,7 +36,7 @@ export default async function CustomTripPage() {
         },
       }),
     [],
-  );
+  ) : [];
   const openRequestItems = openRequests.map(toCustomTripRequestListItem);
   const atChatLimit = openRequestItems.length >= MAX_OPEN_CUSTOM_TRIP_CHATS;
 
@@ -58,7 +53,7 @@ export default async function CustomTripPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <CustomTripForm atChatLimit={atChatLimit} />
+          <CustomTripForm atChatLimit={atChatLimit} isGuest={!session?.user} />
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
             <OpenCustomTripRequests requests={openRequestItems} />

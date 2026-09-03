@@ -77,6 +77,9 @@ export const createCustomTripSchema = z
         }),
       )
       .optional(),
+    contactName: z.string().optional(),
+    contactEmail: z.string().optional(),
+    contactPhone: z.string().optional(),
   })
   .refine(
     (data) => {

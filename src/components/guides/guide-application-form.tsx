@@ -2,13 +2,15 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Loader2 } from "lucide-react";
 
 import { submitGuideApplicationAction, type GuideApplicationState } from "@/lib/actions/guide-applications";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
+import { PhoneNumberField } from "@/components/forms/phone-number-field";
+import { useUsernameAvailability } from "@/hooks/use-username-availability";
 
 const initialState: GuideApplicationState = {};
 
@@ -23,13 +25,22 @@ export function GuideApplicationForm({
   username,
   phone,
   userId,
+  isGuest = false,
 }: {
   fullName?: string | null;
   username?: string | null;
   phone?: string | null;
   userId?: string | null;
+  isGuest?: boolean;
 }) {
   const [state, formAction, isPending] = useActionState(submitGuideApplicationAction, initialState);
+  const {
+    availability: usernameStatus,
+    isChecking: isCheckingUsername,
+    check: checkUsername,
+  } = useUsernameAvailability({
+    isCurrentUsername: (value) => value === username?.toLowerCase(),
+  });
 
   if (state.success) {
     return (
@@ -38,8 +49,7 @@ export function GuideApplicationForm({
           <CheckCircle2 className="size-12 text-primary" />
           <h2 className="font-heading text-2xl font-semibold tracking-wide">Application submitted</h2>
           <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-            Thanks! Your guide application is now under review. Our team will verify your details and
-            get back to you soon.
+            Thanks! Your guide application is now under review. {isGuest ? "We created your account and emailed a temporary password so you can sign in and follow updates." : "Our team will verify your details and get back to you soon."}
           </p>
         </div>
 
@@ -61,8 +71,8 @@ export function GuideApplicationForm({
           </ul>
         </div>
 
-        <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
-          Go to profile
+        <Button className="rounded-full" nativeButton={false} render={<Link href={isGuest ? "/login" : "/profile"} />}>
+          {isGuest ? "Sign in" : "Go to profile"}
         </Button>
       </div>
     );
@@ -93,35 +103,62 @@ export function GuideApplicationForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="application-username">Username</Label>
-          <input
-            id="application-username"
-            name="username"
-            defaultValue={username ?? ""}
-            required
-            minLength={3}
-            maxLength={30}
-            pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
-            title="3–30 lowercase letters or numbers, with single -, _, or . separators"
-            className={inputClassName}
-          />
+          <div className="relative">
+            <input
+              id="application-username"
+              name="username"
+              defaultValue={username ?? ""}
+              minLength={3}
+              maxLength={30}
+              pattern="[a-z0-9]([a-z0-9._-]*[a-z0-9])?"
+              title="3–30 lowercase letters or numbers, with single -, _, or . separators"
+              className={`${inputClassName} pr-9`}
+              aria-invalid={usernameStatus ? usernameStatus.status !== "available" : undefined}
+              onChange={(event) => checkUsername(event.target.value)}
+            />
+            {isCheckingUsername ? (
+              <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            ) : usernameStatus?.status === "available" ? (
+              <Check className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-green-500" />
+            ) : usernameStatus ? (
+              <AlertTriangle className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-destructive" />
+            ) : null}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This becomes your public guide URL.
+            Optional. Lowercase letters, numbers, or single <code>-</code>, <code>_</code>, <code>.</code> separators. This becomes your public guide URL and can be changed later in Settings.
           </p>
+          {usernameStatus?.message ? (
+            <p className={`text-xs ${usernameStatus.status === "available" ? "text-green-500" : "text-destructive"}`}>
+              {usernameStatus.message}
+            </p>
+          ) : null}
         </div>
         <div className="space-y-2">
           <Label htmlFor="application-phone">Phone</Label>
-          <input
+          <PhoneNumberField
             id="application-phone"
             name="phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder="+91 …"
             defaultValue={phone ?? ""}
-            maxLength={40}
+            required={isGuest}
             className={inputClassName}
           />
-          <p className="text-xs text-muted-foreground">Optional, but helps us reach you faster.</p>
+          <p className="text-xs text-muted-foreground">{isGuest ? "Include country code so we can create your account." : "Optional, but helps us reach you faster."}</p>
         </div>
+        {isGuest ? (
+          <div className="space-y-2">
+            <Label htmlFor="application-email">Email</Label>
+            <input
+              id="application-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={254}
+              className={inputClassName}
+            />
+            <p className="text-xs text-muted-foreground">We&apos;ll create your account and email a temporary password.</p>
+          </div>
+        ) : null}
         <div className="space-y-2">
           <Label htmlFor="application-location">Location</Label>
           <input
@@ -252,7 +289,7 @@ export function GuideApplicationForm({
         <p className="text-sm text-muted-foreground">
           {username ? `Signed in as @${username}.` : ""} Your details are reviewed by our team before you appear publicly.
         </p>
-        <Button type="submit" className="rounded-full" disabled={isPending}>
+        <Button type="submit" className="rounded-full" disabled={isPending || (usernameStatus != null && usernameStatus.status !== "available")}>
           {isPending ? "Submitting…" : "Submit application"}
           <ArrowRight />
         </Button>

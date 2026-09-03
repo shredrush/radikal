@@ -210,6 +210,30 @@ export function welcomeEmail({ to, name }: { to: string; name: string }): EmailI
   };
 }
 
+export function guestAccountCreatedEmail({
+  to,
+  name,
+  password,
+}: {
+  to: string;
+  name: string;
+  password: string;
+}): EmailInput {
+  return {
+    to,
+    subject: `Your ${SITE_NAME} account is ready`,
+    html: layout(
+      "Your account is ready",
+      heading(`Welcome, ${escapeHtml(name || "there")}!`) +
+        paragraph(
+          `We created an account so you can follow your request and hear from our team. Use the temporary password below to sign in, then change it from your profile.`,
+        ) +
+        `<p style="margin:0 0 16px;padding:16px 20px;background:#f4f4f5;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;text-align:center;color:${BRAND};">${escapeHtml(password)}</p>` +
+        button(siteUrl("/login"), "Sign in to Radikal"),
+    ),
+  };
+}
+
 export function paymentReferenceReceivedEmail({
   to,
   name,

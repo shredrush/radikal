@@ -1,5 +1,7 @@
 "use server";
 
+import crypto from "node:crypto";
+
 import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
@@ -8,8 +10,10 @@ import {
   guideApplicationAdminEmail,
   guideApplicationDecisionEmail,
   guideApplicationReceivedEmail,
+  guestAccountCreatedEmail,
   sendEmailAfter,
 } from "@/lib/email";
+import { createGuestAccount } from "@/lib/guest-account";
 import { notifyGuideApplicationStaff } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
@@ -22,6 +26,7 @@ import {
 } from "@/lib/media";
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
+import { generateUsername } from "@/lib/username-generator";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -50,6 +55,15 @@ function parseSocialUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return isSafeHttpUrl(trimmed) ? trimmed : null;
+}
+
+async function generateAvailableUsername(): Promise<string> {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const candidate = generateUsername();
+    const existing = await prisma.user.findUnique({ where: { username: candidate } });
+    if (!existing) return candidate;
+  }
+  return `guide-${crypto.randomInt(0, 1_000_000)}`;
 }
 
 type CertificationInput = {
@@ -110,11 +124,7 @@ export async function submitGuideApplicationAction(
   formData: FormData,
 ): Promise<GuideApplicationState> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "You must be logged in to apply. Please log in and try again." };
-  }
-
-  if (session.user.role === "GUIDE") {
+  if (session?.user?.role === "GUIDE") {
     return { error: "Your account is already registered as a guide." };
   }
 
@@ -150,8 +160,26 @@ export async function submitGuideApplicationAction(
     return { error: error instanceof Error ? error.message : "Media could not be validated." };
   }
 
+  let userId = session?.user?.id;
+  let accountEmail = session?.user?.email ?? "";
+  if (!userId) {
+    const account = await createGuestAccount({
+      name: fields.name,
+      email: asString(formData.get("email")),
+      phone: fields.phone,
+    });
+    if (!account.success) return { error: account.error };
+    userId = account.user.id;
+    accountEmail = account.user.email;
+    sendEmailAfter(guestAccountCreatedEmail({
+      to: account.user.email,
+      name: account.user.name,
+      password: account.password,
+    }));
+  }
+
   const existingUser = await prisma.user.findFirst({
-    where: { id: session.user.id, deletedAt: null },
+    where: { id: userId, deletedAt: null },
     select: { username: true },
   });
   if (!existingUser) {
@@ -159,34 +187,32 @@ export async function submitGuideApplicationAction(
   }
 
   const existing = await prisma.guideApplication.findFirst({
-    where: { userId: session.user.id, status: "PENDING" },
+    where: { userId, status: "PENDING" },
     select: { id: true },
   });
   if (existing) {
     return { error: "You already have an application under review." };
   }
 
-  // The username is mandatory for guides: it becomes the public guide URL
-  // (e.g. /username) once the application is approved.
+  // Every guide needs a public URL, so an available handle is generated when
+  // the applicant leaves this optional field blank.
   const username = normalizeUsername(asString(formData.get("username")));
 
-  if (!username) {
-    return { error: "Username is required — it becomes your public guide URL." };
-  }
-
-  if (!isValidUsername(username)) {
+  if (username && !isValidUsername(username)) {
     return {
       error: "Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.",
     };
   }
 
-  if (existingUser.username !== username) {
+  const resolvedUsername = username ?? existingUser.username ?? (await generateAvailableUsername());
+
+  if (existingUser.username !== resolvedUsername) {
     const usernameTaken = await prisma.user.findFirst({
-      where: { username, deletedAt: null },
+      where: { username: resolvedUsername, deletedAt: null },
       select: { id: true },
     });
     if (usernameTaken) {
-      return { error: "This username is already taken." };
+        return { error: "This username is already taken." };
     }
   }
 
@@ -195,17 +221,17 @@ export async function submitGuideApplicationAction(
   try {
     await prisma.$transaction(async (tx) => {
       // The handle is now live, so retire any alias that still points to it.
-      await tx.usernameAlias.deleteMany({ where: { username } });
+        await tx.usernameAlias.deleteMany({ where: { username: resolvedUsername } });
 
       await tx.user.update({
-        where: { id: session.user.id },
-        data: { username },
+        where: { id: userId },
+        data: { username: resolvedUsername },
       });
 
       await tx.guideApplication.create({
         data: {
           ...applicationData,
-          userId: session.user.id,
+          userId,
           certifications: { create: certifications },
         },
       });
@@ -218,7 +244,7 @@ export async function submitGuideApplicationAction(
   }
 
   await logActivity({
-    userId: session.user.id,
+    userId,
     action: "GUIDE_APPLICATION_SUBMITTED",
     label: "Submitted a guide application",
   });
@@ -226,8 +252,8 @@ export async function submitGuideApplicationAction(
   // Acknowledge receipt in the background — never block submission on email.
   sendEmailAfter(
     guideApplicationReceivedEmail({
-      to: session.user.email ?? "",
-      name: session.user.name ?? fields.name,
+      to: accountEmail,
+      name: session?.user?.name ?? fields.name,
     }),
   );
 
@@ -235,7 +261,7 @@ export async function submitGuideApplicationAction(
   try {
     await prisma.notification.create({
       data: {
-        userId: session.user.id,
+        userId,
         type: "GUIDE_APPLICATION_SUBMITTED",
         title: "Application under review",
         body: "Your guide application is under review. We'll email you once a decision is made.",
@@ -253,7 +279,7 @@ export async function submitGuideApplicationAction(
     const staff = await notifyGuideApplicationStaff({
       type: "GUIDE_APPLICATION_NEW",
       title: "New guide application",
-      body: `${fields.name} (${username ? `@${username}` : "no username"}) applied to become a guide.`,
+      body: `${fields.name} (@${resolvedUsername}) applied to become a guide.`,
       href: "/admin/guide-applications",
     });
 
@@ -264,7 +290,7 @@ export async function submitGuideApplicationAction(
           name: user.name ?? "",
           applicant: {
             name: fields.name,
-            username,
+            username: resolvedUsername,
             location: fields.location,
             experienceYears: fields.experienceYears,
             languages: fields.languages,

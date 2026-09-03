@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, Clock3, Sparkles } from "lucide-react";
@@ -19,16 +18,12 @@ export const dynamic = "force-dynamic";
 
 export default async function BecomeAGuidePage() {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login?callbackUrl=/become-a-guide");
-  }
-
-  const user = session.user;
+  const user = session?.user;
 
   // Read the account's role and guide linkage from the database (not the
   // possibly-stale JWT) so a demotion or guide removal takes effect
   // immediately instead of leaving the "already a guide" wall up.
-  const account = await safeDb(
+  const account = user ? await safeDb(
     "become-a-guide.account",
     () =>
       prisma.user.findFirst({
@@ -41,22 +36,19 @@ export default async function BecomeAGuidePage() {
         },
       }),
     null,
-  );
-  if (!account) {
-    redirect("/login?callbackUrl=/become-a-guide");
-  }
+  ) : null;
 
   // The linked guide profile is the ground truth — a GUIDE role without one is
   // an orphan that must be allowed to re-apply.
-  const isAlreadyGuide = !!account.guide && !account.guide.deletedAt;
+  const isAlreadyGuide = !!account?.guide && !account.guide.deletedAt;
 
-  const application = isAlreadyGuide
+  const application = isAlreadyGuide || !user
     ? null
     : await safeDb(
         "become-a-guide.application",
         () =>
           prisma.guideApplication.findFirst({
-            where: { userId: user.id },
+            where: { userId: user!.id },
             orderBy: { submittedAt: "desc" },
           }),
         null,
@@ -141,10 +133,11 @@ export default async function BecomeAGuidePage() {
             </CardHeader>
             <CardContent className="pt-6">
               <GuideApplicationForm
-                fullName={user.name}
-                username={account.username}
-                phone={account.phone}
-                userId={user.id}
+                fullName={user?.name}
+                username={account?.username}
+                phone={account?.phone}
+                userId={user?.id}
+                isGuest={!user}
               />
             </CardContent>
           </Card>

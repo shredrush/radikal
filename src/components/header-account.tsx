@@ -40,7 +40,7 @@ export function HeaderAccount({ variant }: { variant: "mobile" | "desktop" }) {
   const adminBoardHref = getAdminBoardHref(account?.role);
 
   return <>
-    <div className={isMobile ? "flex shrink-0 items-center gap-1" : "contents"}>
+    <div className={isMobile ? "flex basis-full items-center justify-end gap-1" : "contents"}>
       <ThemeToggle compact={isMobile} />
       <CurrencySelector compact={isMobile} />
     </div>

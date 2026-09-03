@@ -22,6 +22,7 @@ import { toDateInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SportIcon, type SportId } from "@/components/trips/sport-icon";
+import { PhoneNumberField } from "@/components/forms/phone-number-field";
 
 const SPORT_OPTIONS: { value: string; label: string; sport: SportId }[] = [
   { value: "TREK", label: "Trekking", sport: "trek" },
@@ -39,7 +40,7 @@ const inputClassName =
 const errorInputClassName =
   "border-destructive/60 focus:border-destructive focus-visible:ring-destructive/10";
 
-export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean }) {
+export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atChatLimit?: boolean; isGuest?: boolean }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [groupType, setGroupType] = useState<"PRIVATE" | "CORPORATE">("PRIVATE");
@@ -50,7 +51,11 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
   const [participantCount, setParticipantCount] = useState(6);
   const [budget, setBudget] = useState("");
   const [requirements, setRequirements] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<
     "sports" | "startDate" | "endDate" | "location" | null
   >(null);
@@ -63,6 +68,7 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
   function clearFieldError() {
     setErrorField(null);
     setError(null);
+    setSuccessMessage(null);
   }
 
   function toggleSport(value: string) {
@@ -129,6 +135,9 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
           participantCount,
           budgetRupees: budget === "" ? undefined : Number(budget),
           requirements,
+          contactName,
+          contactEmail,
+          contactPhone,
         });
 
         if (!result.success) {
@@ -136,7 +145,11 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
           return;
         }
 
-        router.push(`/custom-trip/${result.requestId}`);
+        if (isGuest) {
+          setSuccessMessage("Your request is in. We created your account and emailed a temporary password so you can sign in to follow the conversation.");
+        } else {
+          router.push(`/custom-trip/${result.requestId}`);
+        }
       } catch {
         setError("Could not send your trip request. Please try again.");
       }
@@ -171,17 +184,17 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
                   className={cn(
                     "group relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40",
                     selected
-                      ? "border-orange-400 bg-orange-100/80 text-orange-950 shadow-sm dark:border-orange-400/60 dark:bg-orange-500/20 dark:text-orange-50"
+                      ? "border-emerald-300 bg-emerald-100/70 text-foreground shadow-sm dark:border-emerald-500/35 dark:bg-emerald-500/15"
                       : "border-orange-100 bg-orange-100/65 text-foreground shadow-sm hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100/70 dark:border-orange-500/15 dark:bg-orange-500/10 dark:hover:border-emerald-500/35 dark:hover:bg-emerald-500/15",
                   )}
                 >
                   {selected ? (
-                    <span className="absolute right-2 top-2 flex size-4 items-center justify-center rounded-full bg-orange-600 text-white">
+                      <span className="absolute right-2 top-2 flex size-4 items-center justify-center rounded-full bg-emerald-600 text-white">
                       <Check className="size-3" strokeWidth={3} />
                     </span>
                   ) : null}
                   <span className={cn("flex size-10 items-center justify-center rounded-full", selected ? "bg-white/70 dark:bg-black/15" : "bg-orange-200/80 dark:bg-orange-400/15")}>
-                    <SportIcon sport={sport.sport} className="size-6" iconClassName={selected ? "text-orange-700 dark:text-orange-200" : "text-foreground"} />
+                    <SportIcon sport={sport.sport} className="size-6" iconClassName={selected ? "text-emerald-700 dark:text-emerald-200" : "text-foreground"} />
                   </span>
                   <span className="text-xs font-semibold leading-tight">{sport.label}</span>
                 </button>
@@ -200,6 +213,19 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
             </p>
           ) : null}
         </section>
+
+        {isGuest ? (
+          <section className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-5 dark:border-emerald-500/15 dark:bg-emerald-500/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Keep in touch</p>
+            <h3 className="mt-2 font-heading text-xl font-semibold text-foreground">Where should we send your trip details?</h3>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">We&apos;ll create your account and email a temporary password after you submit.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <input required maxLength={100} value={contactName} onChange={(event) => setContactName(event.target.value)} placeholder="Full name" autoComplete="name" className={inputClassName} />
+              <input required type="email" maxLength={254} value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} placeholder="Email address" autoComplete="email" className={inputClassName} />
+              <PhoneNumberField id="custom-trip-phone" required className={inputClassName} onValueChange={setContactPhone} />
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
@@ -350,6 +376,7 @@ export function CustomTripForm({ atChatLimit = false }: { atChatLimit?: boolean 
         </section>
 
         {error ? <p role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p> : null}
+        {successMessage ? <p role="status" className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100">{successMessage}</p> : null}
       </div>
     </form>
   );
