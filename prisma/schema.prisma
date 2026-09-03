@@ -4,8 +4,9 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -247,7 +248,7 @@ model Certification {
 // A user's application to become a vetted guide, reviewed by an admin.
 model GuideApplication {
   id              String                 @id @default(cuid())
-  userId          String
+  userId          String                 @unique(map: "guide_applications_one_pending_per_user", where: raw("(status = 'PENDING'::\"GuideApplicationStatus\")"))
   name            String
   phone           String?
   location        String
@@ -489,6 +490,7 @@ model Review {
   @@index([guideId, deletedAt, createdAt])
   @@index([deletedAt])
   @@index([deletedAt, createdAt])
+  @@unique([userId, tripId], map: "reviews_one_per_user_trip", where: raw("(\"tripId\" IS NOT NULL)"))
   @@map("reviews")
 }
 

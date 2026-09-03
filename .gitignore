@@ -45,10 +45,5 @@ yarn-error.log*
 copilot-instructions.md
 
 /src/generated/prisma
-/prisma/migrations/*
-!/prisma/migrations/20260831200000_trip_guide_photo/
-!/prisma/migrations/20260831200000_trip_guide_photo/migration.sql
-!/prisma/migrations/20260831192500_reviews_require_trip_and_guide/
-!/prisma/migrations/20260831192500_reviews_require_trip_and_guide/migration.sql
 /prisma/seed-dummy-data.ts
 /prisma/seed-data.json
