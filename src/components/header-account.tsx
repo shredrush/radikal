@@ -40,8 +40,10 @@ export function HeaderAccount({ variant }: { variant: "mobile" | "desktop" }) {
   const adminBoardHref = getAdminBoardHref(account?.role);
 
   return <>
-    <ThemeToggle />
-    <CurrencySelector />
+    <div className={isMobile ? "flex shrink-0 items-center gap-1" : "contents"}>
+      <ThemeToggle compact={isMobile} />
+      <CurrencySelector compact={isMobile} />
+    </div>
     {account ? <div className={`group relative${isMobile ? " order-first shrink-0" : ""}`}>
       <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
         {account.image ? <Image src={account.image} alt="Profile" width={isMobile ? 32 : 40} height={isMobile ? 32 : 40} unoptimized className={isMobile ? "h-8 w-8 rounded-full object-cover" : "h-10 w-10 rounded-full object-cover"} /> : <span className={isMobile ? "flex h-8 w-8 items-center justify-center rounded-full bg-foreground font-heading text-xs font-semibold text-background" : "flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background"}>{getProfileInitials(displayName)}</span>}

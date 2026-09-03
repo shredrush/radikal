@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { useCurrency } from "./currency-provider";
 
-export function CurrencySelector({ className }: { className?: string }) {
+export function CurrencySelector({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { currency, setCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -47,16 +47,17 @@ export function CurrencySelector({ className }: { className?: string }) {
         aria-expanded={open}
         aria-label="Select currency"
         className={cn(
-          "group relative inline-flex h-9 items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-3 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground",
+          "group relative inline-flex items-center rounded-full border border-border/70 bg-background/60 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground",
+          compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-3",
           open && "border-primary/40 text-foreground",
           className,
         )}
       >
-        <span className="font-heading text-base leading-none tracking-wide">{current.symbol}</span>
-        <span className="text-base leading-none">{current.flag}</span>
+        <span className={cn("font-heading leading-none tracking-wide", compact ? "text-sm" : "text-base")}>{current.symbol}</span>
+        <span className={cn("leading-none", compact ? "text-sm" : "text-base")}>{current.flag}</span>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+            compact ? "h-3 w-3 text-muted-foreground transition-transform duration-200" : "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
           )}
         />
