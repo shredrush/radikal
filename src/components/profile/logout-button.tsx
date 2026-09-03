@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const VARIANTS = {
   sidebar: {
-    base: "rounded-xl border-2 px-4 py-2.5 text-sm font-semibold",
+    base: "rounded-xl border-2 px-3 py-3 text-xs font-semibold sm:px-4 sm:text-sm lg:py-2.5",
     idle: "border-border/70 text-muted-foreground hover:border-border hover:text-foreground",
   },
   menu: {

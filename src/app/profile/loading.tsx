@@ -16,8 +16,8 @@ export default function ProfileLoading() {
           </div>
         </div>
         <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-          <aside className="flex animate-pulse gap-2 overflow-hidden lg:flex-col">
-            {Array.from({ length: 5 }).map((_, index) => (
+          <aside className="grid animate-pulse grid-cols-2 gap-2 lg:flex lg:flex-col">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="h-11 rounded-xl border border-border/70 bg-muted/50" />
             ))}
           </aside>

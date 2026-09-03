@@ -341,45 +341,45 @@ export default async function ProfilePage({
         >
           {/* Sidebar */}
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <nav className="flex gap-2 overflow-x-auto lg:flex-col">
+            <nav className="grid grid-cols-2 gap-2 lg:flex lg:flex-col">
               <Link
                 href="/profile?tab=bookings"
                 prefetch={false}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                   activeTab === "bookings"
                     ? "border-primary/40 bg-primary/5 text-foreground"
                     : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
                 <Ticket className="h-4 w-4" />
-                Bookings
+                <span className="truncate">Bookings</span>
               </Link>
               <Link
                 href="/profile?tab=wishlist"
                 prefetch={false}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                   activeTab === "wishlist"
                     ? "border-primary/40 bg-primary/5 text-foreground"
                     : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
                 <Heart className="h-4 w-4" />
-                Wishlist
+                <span className="truncate">Wishlist</span>
               </Link>
               <Link
                 href="/profile?tab=notifications"
                 prefetch={false}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                   activeTab === "notifications"
                     ? "border-primary/40 bg-primary/5 text-foreground"
                     : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
                 <Bell className="h-4 w-4" />
-                Notifications
+                <span className="truncate">Notifications</span>
                 {unreadNotificationsCount > 0 ? (
                   <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">
                     {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
@@ -390,27 +390,27 @@ export default async function ProfilePage({
                 href="/profile?tab=settings"
                 prefetch={false}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                   activeTab === "settings"
                     ? "border-primary/40 bg-primary/5 text-foreground"
                     : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
                 <Settings2 className="h-4 w-4" />
-                Settings
+                <span className="truncate">Settings</span>
               </Link>
               <Link
                 href="/profile?tab=support"
                 prefetch={false}
                 className={cn(
-                  "flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                   activeTab === "support"
                     ? "border-primary/40 bg-primary/5 text-foreground"
                     : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
                 <MessageSquare className="h-4 w-4" />
-                Support
+                <span className="truncate">Support</span>
                 {supportUnreadCount > 0 ? (
                   <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">
                     {supportUnreadCount > 9 ? "9+" : supportUnreadCount}
@@ -423,58 +423,58 @@ export default async function ProfilePage({
 
           {activeTab === "settings" ? (
             <aside className="lg:sticky lg:top-6 lg:self-start">
-              <nav className="flex gap-2 overflow-x-auto lg:flex-col">
+              <nav className="grid grid-cols-2 gap-2 lg:flex lg:flex-col">
                 <Link
                   href="/profile?tab=settings&section=password"
                   prefetch={false}
                   className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                     activeSection === "password"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
                   <KeyRound className="h-4 w-4" />
-                  Change password
+                  <span className="truncate">Change password</span>
                 </Link>
                 <Link
                   href="/profile?tab=settings&section=email"
                   prefetch={false}
                   className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                     activeSection === "email"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
                   <Mail className="h-4 w-4" />
-                  Change email
+                  <span className="truncate">Change email</span>
                 </Link>
                 <Link
                   href="/profile?tab=settings&section=phone"
                   prefetch={false}
                   className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                     activeSection === "phone"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
                   <Phone className="h-4 w-4" />
-                  Change phone
+                  <span className="truncate">Change phone</span>
                 </Link>
                 <Link
                   href="/profile?tab=settings&section=username"
                   prefetch={false}
                   className={cn(
-                    "flex items-center gap-2 whitespace-nowrap rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
                     activeSection === "username"
                       ? "border-primary/40 bg-primary/5 text-foreground"
                       : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
                   <AtSign className="h-4 w-4" />
-                  Change username
+                  <span className="truncate">Change username</span>
                 </Link>
               </nav>
             </aside>
