@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { revalidatePath, updateTag } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -21,6 +22,10 @@ import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { generateUsername } from "@/lib/username-generator";
 import { logActivity } from "@/lib/activity-log";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
+import {
+  parseReferralAttribution,
+  REFERRAL_COOKIE_NAME,
+} from "@/lib/referrals";
 import {
   isReservedUsername,
   isValidUsername,
@@ -205,10 +210,38 @@ export async function signupAction(
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  // The cookie is signed and short-lived, but the guide is checked again at
+  // signup so deleted guides can never receive new referral credit.
+  const cookieStore = await cookies();
+  const attribution = parseReferralAttribution(cookieStore.get(REFERRAL_COOKIE_NAME)?.value);
+  const referralGuide = attribution
+    ? await prisma.guide.findFirst({
+        where: {
+          id: attribution.guideId,
+          referralCode: attribution.code,
+          deletedAt: null,
+          user: { deletedAt: null },
+        },
+        select: { id: true },
+      })
+    : null;
+
   let newUserId = "";
   try {
-    const createdUser = await prisma.user.create({
-      data: { name, email, username: resolvedUsername, passwordHash, phone },
+    const createdUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, username: resolvedUsername, passwordHash, phone },
+      });
+      if (referralGuide && attribution) {
+        await tx.referral.create({
+          data: {
+            guideId: referralGuide.id,
+            referredId: user.id,
+            code: attribution.code,
+          },
+        });
+      }
+      return user;
     });
     newUserId = createdUser.id;
   } catch (error) {
@@ -219,6 +252,10 @@ export async function signupAction(
     }
     throw error;
   }
+
+  // The attribution is one-time and should not persist after its associated
+  // account is created. It remains untouched when signup validation fails.
+  cookieStore.delete(REFERRAL_COOKIE_NAME);
 
   await logActivity({
     userId: newUserId,

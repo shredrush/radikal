@@ -16,7 +16,9 @@ import {
   MessageSquare,
   Phone,
   Settings2,
+  Star,
   Ticket,
+  UsersRound,
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
@@ -45,6 +47,7 @@ import { ChangeUsernameForm } from "@/components/profile/change-username-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { ChangeEmailForm } from "@/components/profile/change-email-form";
 import { ChangePhoneForm } from "@/components/profile/change-phone-form";
+import { ReferralPanel } from "@/components/profile/referral-panel";
 import {
   toSupportMessageViews,
   type SupportMessageView,
@@ -55,6 +58,7 @@ import {
   markAllNotificationsReadAction,
 } from "@/lib/actions/notifications";
 import { cn } from "@/lib/utils";
+import { ensureGuideReferralCode } from "@/lib/referrals";
 export const metadata: Metadata = {
   title: "Profile — Radikal",
 };
@@ -89,6 +93,8 @@ export default async function ProfilePage({
   const activeTab =
     tab === "settings"
       ? "settings"
+      : tab === "referrals" && isGuide
+        ? "referrals"
       : tab === "support"
         ? "support"
         : tab === "notifications"
@@ -119,7 +125,7 @@ export default async function ProfilePage({
           () =>
             prisma.guide.findFirst({
               where: { userId: user.id, deletedAt: null },
-              select: { id: true, user: { select: { username: true } } },
+              select: { id: true, referralCode: true, user: { select: { username: true } } },
             }),
           null,
         )
@@ -197,6 +203,38 @@ export default async function ProfilePage({
   // even right after an email/phone change in the same session.
   const currentEmail = currentUser?.email ?? user.email ?? "";
   const currentPhone = currentUser?.phone ?? null;
+
+  // Existing guides receive their permanent code on their first profile visit;
+  // new guides use the same path before they can share a referral link.
+  const referralCode =
+    isGuide && guide
+      ? (guide.referralCode ?? await safeDb("profile.referral-code", () => ensureGuideReferralCode(guide.id), null))
+      : null;
+  const referralOverview =
+    activeTab === "referrals" && guide
+      ? await safeDb(
+          "profile.referrals",
+          async () => {
+            const [signups, qualified, referrals] = await Promise.all([
+              prisma.referral.count({ where: { guideId: guide.id } }),
+              prisma.referral.count({ where: { guideId: guide.id, status: "QUALIFIED" } }),
+              prisma.referral.findMany({
+                where: { guideId: guide.id },
+                orderBy: { signedUpAt: "desc" },
+                take: 20,
+                select: {
+                  id: true,
+                  status: true,
+                  signedUpAt: true,
+                  referred: { select: { name: true } },
+                },
+              }),
+            ]);
+            return { signups, qualified, referrals };
+          },
+          { signups: 0, qualified: 0, referrals: [] },
+        )
+      : { signups: 0, qualified: 0, referrals: [] };
 
   const notificationList = notifications;
   const unreadNotificationsCount =
@@ -399,6 +437,31 @@ export default async function ProfilePage({
                 <Settings2 className="h-4 w-4" />
                 <span className="truncate">Settings</span>
               </Link>
+              <div
+                aria-disabled="true"
+                className="flex min-w-0 cursor-not-allowed items-center gap-2 rounded-xl border-2 border-border/50 px-3 py-3 text-xs font-semibold text-muted-foreground/50 sm:px-4 sm:text-sm lg:py-2.5"
+              >
+                <Star className="h-4 w-4" />
+                <span className="truncate">Vibe Tokens</span>
+                <span className="ml-auto shrink-0 text-[0.65rem] font-bold text-yellow-500">
+                  Coming soon
+                </span>
+              </div>
+              {isGuide && guide ? (
+                <Link
+                  href="/profile?tab=referrals"
+                  prefetch={false}
+                  className={cn(
+                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
+                    activeTab === "referrals"
+                      ? "border-primary/40 bg-primary/5 text-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <UsersRound className="h-4 w-4" />
+                  <span className="truncate">Referrals</span>
+                </Link>
+              ) : null}
               <Link
                 href="/profile?tab=support"
                 prefetch={false}
@@ -508,6 +571,28 @@ export default async function ProfilePage({
                   ) : (
                     <ChangePasswordForm />
                   )}
+                </CardContent>
+              </Card>
+            ) : activeTab === "referrals" && referralCode ? (
+              <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+                <CardHeader>
+                  <CardTitle>Referrals</CardTitle>
+                  <CardDescription>
+                    Share your link to invite travellers to Radikal.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReferralPanel
+                    code={referralCode}
+                    signups={referralOverview.signups}
+                    qualified={referralOverview.qualified}
+                    referrals={referralOverview.referrals.map((referral) => ({
+                      id: referral.id,
+                      name: `${referral.referred.name.trim().slice(0, 1) || "T"}. Traveller`,
+                      signedUpAtLabel: formatDateTime(referral.signedUpAt),
+                      qualified: referral.status === "QUALIFIED",
+                    }))}
+                  />
                 </CardContent>
               </Card>
             ) : activeTab === "wishlist" ? (

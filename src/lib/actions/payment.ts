@@ -246,6 +246,13 @@ export async function confirmBookingPayment(
         data: { status: "CONFIRMED" },
       });
 
+      // Referral credit is only qualified by a first confirmed booking, never
+      // by a raw signup. updateMany makes confirmation retries idempotent.
+      await tx.referral.updateMany({
+        where: { referredId: booking.userId, status: "SIGNED_UP" },
+        data: { status: "QUALIFIED", qualifiedAt: new Date() },
+      });
+
       confirmationUserId = booking.userId;
       confirmationEmail = {
         to: booking.user.email,

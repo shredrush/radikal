@@ -19,7 +19,7 @@ export function AdminBookingActions({
   const [openAction, setOpenAction] = useState<"confirm" | "cancel" | null>(null);
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-2">
       {canConfirm && status === "PENDING" && openAction !== "cancel" ? (
         <ConfirmPaymentButton
           bookingId={bookingId}

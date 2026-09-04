@@ -108,6 +108,13 @@ enum TripChangeStatus {
   REJECTED
 }
 
+// Referral credit is created when a traveller signs up and becomes qualified
+// after their first confirmed booking.
+enum ReferralStatus {
+  SIGNED_UP
+  QUALIFIED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -155,6 +162,7 @@ model User {
   tripChangesSubmitted      TripChangeRequest[] @relation("TripChangeSubmittedBy")
   tripChangesReviewed       TripChangeRequest[] @relation("TripChangeReviewedBy")
   usernameAliases           UsernameAlias[]
+  referredBy                Referral?          @relation("ReferredUser")
 
   // Role-based lookups: admin user filtering and the guide-orphan checks
   // (users with the GUIDE role but no linked guide profile).
@@ -225,9 +233,31 @@ model Guide {
   reviews        Review[]
   tripChanges    TripChangeRequest[]
   tripDrafts     TripDraft[]
+  referrals      Referral[]
+  // Four public, case-insensitive (normalized to uppercase) characters. This
+  // is an identifier for a share link, never an authorization credential.
+  referralCode   String?     @unique @db.VarChar(4)
 
   @@index([deletedAt])
   @@map("guides")
+}
+
+model Referral {
+  id          String         @id @default(cuid())
+  guideId     String
+  referredId  String         @unique
+  code        String         @db.VarChar(4)
+  status      ReferralStatus @default(SIGNED_UP)
+  signedUpAt  DateTime       @default(now())
+  qualifiedAt DateTime?
+  createdAt   DateTime       @default(now())
+
+  guide    Guide @relation(fields: [guideId], references: [id], onDelete: Restrict)
+  referred User  @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([guideId, signedUpAt])
+  @@index([guideId, qualifiedAt])
+  @@map("referrals")
 }
 
 // Certifications by IMF (Indian Mountaineering Foundation) and other bodies.

@@ -442,7 +442,7 @@ export function BookingsBoard({
                                           {client.participantCount === 1 ? "guest" : "guests"}
                                         </span>
                                         {adminActions && client.bookingId ? (
-                                          <span className="flex shrink-0 items-center gap-2">
+                                          <span className="ml-auto flex shrink-0 items-center gap-2">
                                             <AdminBookingActions
                                               bookingId={client.bookingId}
                                               status={client.status}

@@ -18,7 +18,7 @@ export function DeleteGuideButton({
 
   function handleDelete() {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${guideName}"? Their trips will be unlinked (not deleted). This action cannot be undone.`,
+      `Are you sure you want to delete "${guideName}"? Their profile, trips, slots, bookings, wishlists, reviews, and drafts will be removed from active views. This cannot be undone, and deletion is blocked while their trips have pending or confirmed bookings.`,
     );
 
     if (!confirmed) return;

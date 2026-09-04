@@ -49,13 +49,9 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       {/* Sliding knob carrying the active icon */}
       <span
         className={cn(
-          "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-background text-foreground shadow-sm transition-transform duration-300 ease-in-out",
+          "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-background text-foreground shadow-sm transition-all duration-300 ease-in-out",
           compact ? "h-5 w-5" : "h-7 w-7",
-          mounted && isDark
-            ? compact
-              ? "translate-x-[calc(100%+0.25rem)]"
-              : "translate-x-[calc(100%+0.5rem)]"
-            : "translate-x-1",
+          mounted && isDark ? "right-1" : "left-1",
         )}
       >
         {mounted ? (
