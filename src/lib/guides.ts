@@ -27,7 +27,10 @@ export function orderGuidesByFeaturedUsernames<T extends { user: { username: str
 }
 
 const guideDetailInclude = {
-  certifications: { orderBy: { createdAt: "desc" } },
+  certifications: {
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true },
+  },
   reviews: {
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },

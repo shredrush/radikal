@@ -40,6 +40,7 @@ const getCommunityGuides = unstable_cache(
         certifications: {
           orderBy: { createdAt: "desc" },
           take: 3,
+          select: { id: true, title: true },
         },
         user: { select: { username: true } },
         _count: {

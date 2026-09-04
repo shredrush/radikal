@@ -25,7 +25,10 @@ export default async function AdminGuideApplicationsPage() {
           orderBy: { submittedAt: "desc" },
           include: {
             user: { select: { id: true, name: true, username: true, email: true } },
-            certifications: { orderBy: { createdAt: "desc" } },
+            certifications: {
+              orderBy: { createdAt: "desc" },
+              select: { id: true, title: true },
+            },
             reviewedBy: { select: { name: true } },
           },
         }),

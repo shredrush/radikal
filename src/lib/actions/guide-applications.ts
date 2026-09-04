@@ -305,7 +305,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
   const application = await prisma.guideApplication.findUnique({
     where: { id: applicationId },
     include: {
-      certifications: true,
+      certifications: { select: { title: true } },
       user: { select: { email: true, name: true, username: true } },
     },
   });
