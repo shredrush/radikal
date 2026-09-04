@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Search, ShieldCheck, Users as UsersIcon } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +75,7 @@ export default async function AdminUsersPage({
   };
 
   const [users, roleCounts, totalMatches] = await Promise.all([
-    safeDb(
+    loadDb(
       "admin.users.list",
       () =>
         prisma.user.findMany({
@@ -94,10 +94,9 @@ export default async function AdminUsersPage({
             _count: { select: { bookings: true, activityLogs: true } },
           },
         }),
-      [],
     ),
-    safeDb("admin.users.role-counts", () => prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }), []),
-    safeDb("admin.users.total-matches", () => prisma.user.count({ where }), 0),
+    loadDb("admin.users.role-counts", () => prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } })),
+    loadDb("admin.users.total-matches", () => prisma.user.count({ where })),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE));

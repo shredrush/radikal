@@ -22,10 +22,10 @@ import {
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
 import { getProfileUser } from "@/lib/profile-user";
-import { getProfileSummary, type ProfileSummary } from "@/lib/profile-summary";
+import { getProfileSummary } from "@/lib/profile-summary";
 import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,20 +118,19 @@ export default async function ProfilePage({
     profileSummary,
   ] = await Promise.all([
     // Deduped with the site header via React cache() — one row per request.
-    safeDb("profile.user", () => getProfileUser(user.id), null),
+    loadDb("profile.user", () => getProfileUser(user.id)),
     isGuide
-      ? safeDb(
+      ? loadDb(
           "profile.guide",
           () =>
             prisma.guide.findFirst({
               where: { userId: user.id, deletedAt: null },
                select: { id: true, user: { select: { username: true } } },
             }),
-          null,
         )
       : Promise.resolve(null),
     activeTab === "wishlist"
-      ? safeDb(
+      ? loadDb(
           "profile.wishlist",
           () =>
             prisma.wishlistItem.findMany({
@@ -155,13 +154,12 @@ export default async function ProfilePage({
                 },
               },
             }),
-          [],
         )
       : Promise.resolve([]),
     // Full notification content is only loaded when the tab is open. The
     // sidebar count is served by the cached profile summary below.
     activeTab === "notifications"
-      ? safeDb(
+      ? loadDb(
           "profile.notifications",
           () =>
             prisma.notification.findMany({
@@ -169,29 +167,21 @@ export default async function ProfilePage({
               orderBy: { createdAt: "desc" },
               take: 50,
             }),
-          [],
         )
       : Promise.resolve([]),
     !canAccessSupportDesk && activeTab === "support"
-      ? safeDb(
+      ? loadDb(
           "profile.support-chat",
           () =>
             prisma.supportChat.findUnique({
               where: { userId: user.id, deletedAt: null },
               include: { messages: { orderBy: { createdAt: "desc" }, take: 100 } },
             }),
-          null,
         )
       : Promise.resolve(null),
-    safeDb(
+    loadDb(
       "profile.summary",
       () => getProfileSummary(user.id),
-      {
-        unreadNotifications: 0,
-        bookingTotal: 0,
-        upcomingBookings: 0,
-        supportUnread: 0,
-      } satisfies ProfileSummary,
     ),
   ]);
 
@@ -207,11 +197,11 @@ export default async function ProfilePage({
   // Every account receives a permanent code on its first referrals page visit.
   const referralCode =
     activeTab === "referrals"
-      ? (currentUser?.referralCode ?? await safeDb("profile.referral-code", () => ensureUserReferralCode(user.id), null))
+      ? (currentUser?.referralCode ?? await loadDb("profile.referral-code", () => ensureUserReferralCode(user.id)))
       : null;
   const referralOverview =
     activeTab === "referrals"
-      ? await safeDb(
+      ? await loadDb(
           "profile.referrals",
           async () => {
             const [signups, qualified, referrals] = await Promise.all([
@@ -231,7 +221,6 @@ export default async function ProfilePage({
             ]);
             return { signups, qualified, referrals };
           },
-          { signups: 0, qualified: 0, referrals: [] },
         )
       : { signups: 0, qualified: 0, referrals: [] };
 

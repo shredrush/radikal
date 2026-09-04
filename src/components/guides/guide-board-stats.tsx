@@ -1,6 +1,6 @@
 import { Compass, Globe, Ticket } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 type GuideStats = {
@@ -20,7 +20,7 @@ const emptyStats: GuideStats = {
 };
 
 export async function GuideBoardStats({ guideId }: { guideId: string }) {
-  const stats = await safeDb(
+  const stats = await loadDb(
     "guide.board-stats",
     async () => {
       const rows = await prisma.$queryRaw<GuideStats[]>`
@@ -40,7 +40,6 @@ export async function GuideBoardStats({ guideId }: { guideId: string }) {
       `;
       return rows[0] ?? emptyStats;
     },
-    emptyStats,
   );
 
   const { confirmedBookings, completedBookings, confirmedTrips, completedTrips, liveTrips } = stats;

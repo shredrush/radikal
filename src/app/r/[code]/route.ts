@@ -7,7 +7,7 @@ import {
   REFERRAL_COOKIE_NAME,
   normalizeReferralCode,
 } from "@/lib/referrals";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export async function GET(
     return signupRedirect(request);
   }
 
-  const referrer = await safeDb(
+  const referrer = await loadDb(
     "referral.redirect",
     () =>
       prisma.user.findFirst({
@@ -52,7 +52,6 @@ export async function GET(
         },
         select: { id: true },
       }),
-    null,
   );
   if (!referrer) {
     rateLimit(`referral:invalid:${ip}`, 20, 60_000);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/authz";
-import { prisma } from "@/lib/prisma";
+import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 import { countUnreadSupportMessages, toSupportMessageViews } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +61,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[api/support/messages] failed to load messages", error);
-    return NextResponse.json({ error: "Failed to load messages" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load messages" }, { status: getDatabaseErrorStatus(error) });
   }
 }

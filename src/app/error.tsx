@@ -7,10 +7,10 @@ import Link from "next/link";
 // etc.) renders this friendly fallback instead of a raw 500 crash.
 export default function ErrorPage({
   error,
-  reset,
+  unstable_retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  unstable_retry: () => void;
 }) {
   useEffect(() => {
     console.error("Unhandled page error", error);
@@ -31,7 +31,7 @@ export default function ErrorPage({
       <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
-          onClick={reset}
+          onClick={unstable_retry}
           className="rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
         >
           Try again

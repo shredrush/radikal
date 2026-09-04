@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { bookingCardSelect, toBookingCardData } from "@/lib/booking-card";
 
@@ -80,6 +80,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[api/profile/bookings] failed to load bookings", error);
-    return NextResponse.json({ error: "Failed to load bookings" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load bookings" }, { status: getDatabaseErrorStatus(error) });
   }
 }

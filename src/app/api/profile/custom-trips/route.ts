@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 import { toCustomTripRequestListItem } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +40,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[api/profile/custom-trips] failed to load requests", error);
-    return NextResponse.json({ error: "Failed to load requests" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load requests" }, { status: getDatabaseErrorStatus(error) });
   }
 }

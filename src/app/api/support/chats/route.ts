@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 
 import { getAuthorizedUser } from "@/lib/authz";
-import { prisma } from "@/lib/prisma";
+import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 import { toSupportChatListItem } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 const MAX_CHATS = 100;
 
 export async function GET() {
-  const user = await getAuthorizedUser("support.manage");
+  let user;
+  try {
+    user = await getAuthorizedUser("support.manage");
+  } catch (error) {
+    console.error("[api/support/chats] failed to authorize request", error);
+    return NextResponse.json({ error: "Service unavailable" }, { status: getDatabaseErrorStatus(error) });
+  }
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -41,6 +47,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[api/support/chats] failed to load conversations", error);
-    return NextResponse.json({ error: "Failed to load conversations" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load conversations" }, { status: getDatabaseErrorStatus(error) });
   }
 }

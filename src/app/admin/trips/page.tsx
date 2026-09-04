@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Button } from "@/components/ui/button";
 import { AdminTripsManager } from "@/components/admin/admin-trips-manager";
@@ -34,7 +34,7 @@ export default async function AdminTripsPage({
   );
 
   const [guides, totalTrips, totalSlots, draftRows] = await Promise.all([
-    safeDb(
+    loadDb(
       "admin.trips.guide-filter",
       () =>
         prisma.guide.findMany({
@@ -42,11 +42,10 @@ export default async function AdminTripsPage({
           orderBy: { name: "asc" },
           select: { id: true, name: true, photo: true, photos: true, videos: true },
         }),
-      [],
     ),
-    safeDb("admin.trips.trips-count", () => prisma.trip.count({ where: { deletedAt: null } }), 0),
-    safeDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } }), 0),
-    safeDb(
+    loadDb("admin.trips.trips-count", () => prisma.trip.count({ where: { deletedAt: null } })),
+    loadDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } })),
+    loadDb(
       "admin.trips.drafts",
       () =>
         prisma.tripDraft.findMany({
@@ -54,7 +53,6 @@ export default async function AdminTripsPage({
           orderBy: { updatedAt: "desc" },
           include: { guide: { select: { name: true } } },
         }),
-      [],
     ),
   ]);
 

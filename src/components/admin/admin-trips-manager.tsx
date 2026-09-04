@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Compass, Trash2 } from "lucide-react";
 import type { TripType } from "@/generated/prisma/client";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { fetchDeletedTripsWithDetails, fetchTripsWithDetails } from "@/lib/trips";
 import { Button } from "@/components/ui/button";
 import { AddTripForm } from "@/components/admin/add-trip-form";
@@ -33,9 +33,9 @@ export async function AdminTripsManager({
   };
 
   const [trips, totalTrips, deletedTrips] = await Promise.all([
-    safeDb("admin.trips-manager.trips", () => fetchTripsWithDetails(where, { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }), []),
-    safeDb("admin.trips-manager.trips-count", () => prisma.trip.count({ where: { deletedAt: null, ...where } }), 0),
-    safeDb("admin.trips-manager.deleted-trips", () => fetchDeletedTripsWithDetails(where, { take: 50 }), []),
+    loadDb("admin.trips-manager.trips", () => fetchTripsWithDetails(where, { skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE })),
+    loadDb("admin.trips-manager.trips-count", () => prisma.trip.count({ where: { deletedAt: null, ...where } })),
+    loadDb("admin.trips-manager.deleted-trips", () => fetchDeletedTripsWithDetails(where, { take: 50 })),
   ]);
   const deletedByIds = [
     ...new Set(
@@ -45,14 +45,13 @@ export async function AdminTripsManager({
     ),
   ];
   const deletedByUsers = deletedByIds.length
-    ? await safeDb(
+    ? await loadDb(
         "admin.trips-manager.deleted-by-users",
         () =>
           prisma.user.findMany({
             where: { id: { in: deletedByIds } },
             select: { id: true, name: true, email: true },
           }),
-        [],
       )
     : [];
   const deletedByNameById = new Map(

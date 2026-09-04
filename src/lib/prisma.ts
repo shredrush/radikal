@@ -1,4 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { unstable_rethrow } from "next/navigation";
 import { PrismaClient } from "@/generated/prisma/client";
 import { getDatabaseCaCert, getDatabaseConnectionLogInfo, getDatabaseUrl } from "@/lib/database-url";
 
@@ -60,15 +61,64 @@ export const prisma = basePrisma;
 // globally prevents each bundle from creating a separate session-pool client.
 globalForPrisma.prisma = basePrisma;
 
+const TRANSIENT_DATABASE_ERROR_CODES = new Set([
+  "P1001", // Cannot reach database server.
+  "P1002", // Database server connection timed out.
+  "P1008", // Database operation timed out.
+  "P1017", // Server closed the connection.
+  "P2024", // Timed out waiting for a connection from the pool.
+  "EAI_AGAIN",
+  "ECONNABORTED",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ETIMEDOUT",
+]);
+
+function getDatabaseErrorCode(error: unknown) {
+  if (!error || typeof error !== "object" || !("code" in error)) return null;
+  const { code } = error as { code?: unknown };
+  return typeof code === "string" ? code : null;
+}
+
+export function isTransientDatabaseError(error: unknown) {
+  return TRANSIENT_DATABASE_ERROR_CODES.has(getDatabaseErrorCode(error) ?? "");
+}
+
+export function getDatabaseErrorStatus(error: unknown) {
+  return isTransientDatabaseError(error) ? 503 : 500;
+}
+
+function logDatabaseError(label: string, error: unknown, outcome: "serving fallback" | "propagating") {
+  const err = error as { message?: string };
+  console.error(`[db] "${label}" query failed; ${outcome}`, {
+    code: getDatabaseErrorCode(error),
+    error: err.message ?? String(error),
+    connection: getDatabaseConnectionLogInfo(),
+  });
+}
+
+/**
+ * Run a primary database query. A missing row is returned as null, but query
+ * failures are rethrown so routes cannot mistake them for a 404 or redirect.
+ */
+export async function loadDb<T>(label: string, query: () => Promise<T>): Promise<T> {
+  try {
+    return await query();
+  } catch (error) {
+    unstable_rethrow(error);
+    logDatabaseError(label, error, "propagating");
+    throw error;
+  }
+}
+
 /**
  * Run a database query and never let a database failure take the page down.
  *
- * If the query throws (e.g. a TLS/connection error, a provider outage, or an
- * exhausted pool), the error is logged with connection diagnostics — source
- * env var, host, port, database and effective sslmode — so issues like the
- * production P1011 "self-signed certificate in certificate chain" failure are
- * visible in Vercel function logs. The caller receives `fallback` (usually an
- * empty array) and the page renders degraded instead of 500ing.
+ * Only transient connectivity failures receive the caller's fallback. Schema
+ * mismatches and other query failures are rethrown as server errors rather
+ * than silently rendering empty or missing data.
  *
  * Because the fallback is returned by this helper rather than inside an
  * `unstable_cache` callback, a failure is never cached: the next request
@@ -83,15 +133,12 @@ export async function safeDb<T>(
   try {
     return await query();
   } catch (error) {
-    const err = error as { code?: string; message?: string };
-    console.error(
-      `[db] "${label}" query failed; serving fallback instead of crashing`,
-      {
-        code: err.code ?? null,
-        error: err.message ?? String(error),
-        connection: getDatabaseConnectionLogInfo(),
-      },
-    );
+    unstable_rethrow(error);
+    if (!isTransientDatabaseError(error)) {
+      logDatabaseError(label, error, "propagating");
+      throw error;
+    }
+    logDatabaseError(label, error, "serving fallback");
     return fallback;
   }
 }

@@ -1,6 +1,6 @@
 import { Eye } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { authorizeTripPreviewAction } from "@/lib/actions/trip-previews";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
@@ -22,7 +22,7 @@ export default async function TripPreviewPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const preview = await safeDb(
+  const preview = await loadDb(
     "preview.token",
     () =>
       prisma.tripPreview.findUnique({
@@ -33,7 +33,6 @@ export default async function TripPreviewPage({
           expiresAt: { gt: new Date() },
         },
       }),
-    null,
   );
 
   if (

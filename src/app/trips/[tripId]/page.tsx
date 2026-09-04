@@ -18,7 +18,7 @@ import {
 } from "@/components/trips/trip-detail-feature";
 import { BookingBar } from "@/components/trips/booking-bar";
 import { TripGallery } from "@/components/trips/trip-gallery";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma, safeDb } from "@/lib/prisma";
 import type { TripCategory } from "@/generated/prisma/client";
 import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
@@ -217,7 +217,7 @@ export default async function TripDetailPage({
   const { tripId } = await params;
 
   const [tripDetail, tripMedia] = await Promise.all([
-    safeDb("trip.detail", () => getTripDetail(tripId), null),
+    loadDb("trip.detail", () => getTripDetail(tripId)),
     safeDb("trip.media", () => getTripMedia(tripId), EMPTY_TRIP_MEDIA),
   ]);
 

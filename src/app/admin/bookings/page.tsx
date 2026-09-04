@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { hasPermission, requirePermission } from "@/lib/authz";
 import { fetchBookingsWithDetails } from "@/lib/bookings";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { BookingsBoard } from "@/components/bookings/bookings-board";
 import { BookingsStats } from "@/components/bookings/bookings-stats";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -34,7 +34,7 @@ export default async function AdminBookingsPage({
     )?.value ?? "";
   const selectedGuideId = typeof guide === "string" ? guide : "";
 
-  const guides = await safeDb(
+  const guides = await loadDb(
     "admin.bookings.guide-filter",
     () =>
       prisma.guide.findMany({
@@ -42,12 +42,11 @@ export default async function AdminBookingsPage({
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       }),
-    [],
   );
   const activeGuideId = guides.some((item) => item.id === selectedGuideId)
     ? selectedGuideId
     : "";
-  const items = await safeDb(
+  const items = await loadDb(
     "admin.bookings.items",
     () =>
       fetchBookingsWithDetails(
@@ -59,7 +58,6 @@ export default async function AdminBookingsPage({
         },
         { completePast: true, includeBookingIds: true, includePaymentDetails: true },
       ),
-    [],
   );
 
   return (

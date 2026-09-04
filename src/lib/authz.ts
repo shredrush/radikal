@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 export { hasPermission, PERMISSIONS, ROLE_PERMISSIONS, ROLES, type Permission, type Role } from "@/lib/access-control";
 import { hasPermission, type Permission } from "@/lib/access-control";
 
@@ -23,14 +23,13 @@ export async function getAuthorizedUser(permission: Permission) {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const user = await safeDb(
+  const user = await loadDb(
     "authz.authorized-user",
     () =>
       prisma.user.findFirst({
         where: { id: session.user.id, deletedAt: null },
         select: { role: true },
       }),
-    null,
   );
 
   const role = user?.role;
@@ -57,14 +56,13 @@ export async function requirePermission(
   // caches the role from sign-in and is not invalidated when the DB changes, so
   // trusting the token alone would leave a demoted account privileged until the
   // session expires.
-  const user = await safeDb(
+  const user = await loadDb(
     "authz.require-permission",
     () =>
       prisma.user.findFirst({
         where: { id: session.user.id, deletedAt: null },
         select: { role: true },
       }),
-    null,
   );
 
   // Fail closed when the account no longer exists or no longer holds the role.

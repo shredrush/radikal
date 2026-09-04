@@ -1,4 +1,4 @@
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import {
   fetchBookingsWithDetails,
@@ -28,7 +28,7 @@ const MAX_SUPPORT_LIST_ITEMS = 100;
 const MAX_SELECTED_MESSAGES = 100;
 
 async function loadChats(): Promise<SupportChatListItem[]> {
-  return safeDb("support.chats", async () => {
+  return loadDb("support.chats", async () => {
     const rows = await prisma.supportChat.findMany({
       where: { deletedAt: null },
       orderBy: { updatedAt: "desc" },
@@ -39,11 +39,11 @@ async function loadChats(): Promise<SupportChatListItem[]> {
       },
     });
     return rows.map(toSupportChatListItem);
-  }, []);
+  });
 }
 
 async function loadResolvedChats(): Promise<SupportChatListItem[]> {
-  return safeDb("support.resolved-chats", async () => {
+  return loadDb("support.resolved-chats", async () => {
     const rows = await prisma.supportChat.findMany({
       where: { deletedAt: { not: null } },
       orderBy: { deletedAt: "desc" },
@@ -54,7 +54,7 @@ async function loadResolvedChats(): Promise<SupportChatListItem[]> {
       },
     });
     return rows.map(toSupportChatListItem);
-  }, []);
+  });
 }
 
 /**
@@ -65,7 +65,7 @@ async function loadResolvedChats(): Promise<SupportChatListItem[]> {
  * find its latest message instead of scanning the whole message table.
  */
 async function countOpenChatsAwaitingReply(): Promise<number> {
-  return safeDb("support.awaiting-reply-count", async () => {
+  return loadDb("support.awaiting-reply-count", async () => {
     const rows = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int AS "count"
       FROM support_chats sc
@@ -78,11 +78,11 @@ async function countOpenChatsAwaitingReply(): Promise<number> {
              LIMIT 1) = sc."userId"
     `;
     return rows[0]?.count ?? 0;
-  }, 0);
+  });
 }
 
 async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
-  return safeDb("support.custom-requests", async () => {
+  return loadDb("support.custom-requests", async () => {
     const rows = await prisma.customTripRequest.findMany({
       where: { deletedAt: null },
       orderBy: { updatedAt: "desc" },
@@ -93,11 +93,11 @@ async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
       },
     });
     return rows.map(toCustomTripRequestListItem);
-  }, []);
+  });
 }
 
 async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]> {
-  return safeDb("support.deleted-custom-requests", async () => {
+  return loadDb("support.deleted-custom-requests", async () => {
     const rows = await prisma.customTripRequest.findMany({
       where: { deletedAt: { not: null } },
       orderBy: { deletedAt: "desc" },
@@ -108,7 +108,7 @@ async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]>
       },
     });
     return rows.map(toCustomTripRequestListItem);
-  }, []);
+  });
 }
 
 export default async function SupportBoardPage({
@@ -132,7 +132,7 @@ export default async function SupportBoardPage({
   const selectedGuideId = typeof guide === "string" ? guide : "";
   const bookingGuides =
     tab === "bookings"
-      ? await safeDb(
+      ? await loadDb(
           "support.bookings.guide-filter",
           () =>
             prisma.guide.findMany({
@@ -140,7 +140,6 @@ export default async function SupportBoardPage({
               orderBy: { name: "asc" },
               select: { id: true, name: true },
             }),
-          [],
         )
       : [];
   const activeGuideId = bookingGuides.some((item) => item.id === selectedGuideId)
@@ -164,7 +163,7 @@ export default async function SupportBoardPage({
         ? loadResolvedChats()
         : Promise.resolve([] as SupportChatListItem[]),
       tab === "bookings"
-        ? safeDb(
+        ? loadDb(
             "support.bookings",
             () =>
               fetchBookingsWithDetails(
@@ -176,15 +175,13 @@ export default async function SupportBoardPage({
                 },
                 { completePast: true, includeBookingIds: true, includePaymentDetails: true },
               ),
-            [],
           )
         : Promise.resolve([] as BookingBoardItem[]),
       tab === "bookings"
         ? Promise.resolve(0)
-        : safeDb(
+        : loadDb(
             "support.pending-bookings-count",
             () => prisma.booking.count({ where: { status: "PENDING", deletedAt: null, trip: { deletedAt: null } } }),
-            0,
           ),
       tab === "custom"
         ? loadCustomRequests()
@@ -194,13 +191,12 @@ export default async function SupportBoardPage({
         : Promise.resolve([] as CustomTripRequestListItem[]),
       tab === "custom"
         ? Promise.resolve(0)
-        : safeDb(
+        : loadDb(
             "support.new-custom-requests-count",
             () => prisma.customTripRequest.count({ where: { status: "NEW", deletedAt: null } }),
-            0,
           ),
       chatId && tab === "conversations"
-        ? safeDb(
+        ? loadDb(
             "support.selected-chat",
             () =>
               prisma.supportChat.findUnique({
@@ -210,11 +206,10 @@ export default async function SupportBoardPage({
                   messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES },
                 },
               }),
-            null,
           )
         : Promise.resolve(null),
       requestId && tab === "custom"
-        ? safeDb(
+        ? loadDb(
             "support.selected-custom-request",
             () =>
               prisma.customTripRequest.findUnique({
@@ -224,7 +219,6 @@ export default async function SupportBoardPage({
                   chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_SELECTED_MESSAGES } } },
                 },
               }),
-            null,
           )
         : Promise.resolve(null),
     ]);

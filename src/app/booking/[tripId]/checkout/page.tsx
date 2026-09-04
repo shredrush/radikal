@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { CheckoutFlow } from "@/components/booking/checkout-flow";
 import { FaqSection, type FaqItem } from "@/components/trips/faq-section";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ export default async function CheckoutPage({
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
-  const trip = await safeDb(
+  const trip = await loadDb(
     "checkout.trip",
     () =>
       prisma.trip.findFirst({
@@ -107,7 +107,6 @@ export default async function CheckoutPage({
           },
         },
       }),
-    null,
   );
 
   if (!trip) {

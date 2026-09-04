@@ -1,6 +1,6 @@
 import { CalendarDays, Clock3, History, Inbox } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ export default async function AdminGuideApplicationsPage() {
   const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
 
   const [applications] = await Promise.all([
-    safeDb(
+    loadDb(
       "admin.guide-applications.list",
       () =>
         prisma.guideApplication.findMany({
@@ -32,7 +32,6 @@ export default async function AdminGuideApplicationsPage() {
             reviewedBy: { select: { name: true } },
           },
         }),
-      [],
     ),
   ]);
 

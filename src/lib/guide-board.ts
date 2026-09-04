@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 
 /**
  * Require a signed-in guide with a linked guide profile. Redirects otherwise.
@@ -15,14 +15,13 @@ export async function requireGuide(redirectTo = "/profile") {
   if (!session?.user?.id) {
     redirect("/login?callbackUrl=/guide-board/trips");
   }
-  const guide = await safeDb(
+  const guide = await loadDb(
     "guide-board.require-guide",
     () =>
       prisma.guide.findFirst({
         where: { userId: session.user.id, deletedAt: null, user: { deletedAt: null } },
         select: { id: true, name: true, userId: true, user: { select: { username: true, role: true } } },
       }),
-    null,
   );
   if (!guide || guide.user.role !== "GUIDE") {
     redirect(redirectTo);
@@ -40,14 +39,13 @@ export async function requireGuideAction() {
   if (!session?.user?.id) {
     throw new Error("You must be logged in to manage trips.");
   }
-  const guide = await safeDb(
+  const guide = await loadDb(
     "guide-board.require-guide-action",
     () =>
       prisma.guide.findFirst({
         where: { userId: session.user.id, deletedAt: null, user: { deletedAt: null } },
         select: { id: true, name: true, userId: true, user: { select: { role: true } } },
       }),
-    null,
   );
   if (!guide || guide.user.role !== "GUIDE") {
     throw new Error("Only guides can manage trips.");

@@ -9,7 +9,7 @@ import { GuideReviewsSection, type GuideReviewData } from "@/components/guides/g
 import { GuideProfileHeroEditor } from "@/components/guides/guide-profile-hero-editor";
 import { GuideProfileBackButton } from "@/components/guides/guide-profile-back-button";
 import { GuideSports } from "@/components/guides/guide-sports";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
@@ -78,12 +78,12 @@ const getGuideDetail = unstable_cache(
 );
 
 async function getResolvedGuide(username: string) {
-  return safeDb("guide.detail", async () => {
+  return loadDb("guide.detail", async () => {
     const guide = await getGuideDetail(username);
     if (guide) return guide;
     await resolveGuideAlias(username);
     return null;
-  }, null);
+  });
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ guideId: string }> }): Promise<Metadata> {

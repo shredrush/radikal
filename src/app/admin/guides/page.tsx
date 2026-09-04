@@ -1,4 +1,4 @@
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { GuidesManager } from "@/components/admin/guides-manager";
@@ -10,12 +10,12 @@ export default async function AdminGuidesPage() {
 
   const [guidesLive, totalLinkedTrips, roleGuideWithoutProfile, guidesWithNonGuideUser] =
     await Promise.all([
-      safeDb("admin.guides.live-count", () => prisma.guide.count({ where: { deletedAt: null, user: { deletedAt: null } } }), 0),
-      safeDb("admin.guides.linked-trips-count", () => prisma.trip.count({ where: { guideId: { not: null }, deletedAt: null, guide: { deletedAt: null, user: { deletedAt: null } } } }), 0),
+      loadDb("admin.guides.live-count", () => prisma.guide.count({ where: { deletedAt: null, user: { deletedAt: null } } })),
+      loadDb("admin.guides.linked-trips-count", () => prisma.trip.count({ where: { guideId: { not: null }, deletedAt: null, guide: { deletedAt: null, user: { deletedAt: null } } } })),
       // Orphan check 1: a GUIDE role must always have a linked guide profile.
-      safeDb("admin.guides.orphan-role-count", () => prisma.user.count({ where: { role: "GUIDE", deletedAt: null, OR: [{ guide: { is: null } }, { guide: { deletedAt: { not: null } } }] } }), 0),
+      loadDb("admin.guides.orphan-role-count", () => prisma.user.count({ where: { role: "GUIDE", deletedAt: null, OR: [{ guide: { is: null } }, { guide: { deletedAt: { not: null } } }] } })),
       // Orphan check 2: a guide profile's linked user must hold the GUIDE role.
-      safeDb("admin.guides.orphan-profile-count", () => prisma.guide.count({ where: { deletedAt: null, user: { role: { not: "GUIDE" }, deletedAt: null } } }), 0),
+      loadDb("admin.guides.orphan-profile-count", () => prisma.guide.count({ where: { deletedAt: null, user: { role: { not: "GUIDE" }, deletedAt: null } } })),
     ]);
 
   const orphanCount = roleGuideWithoutProfile + guidesWithNonGuideUser;

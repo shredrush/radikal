@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminTripChangesPage() {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
 
-  const changes = await safeDb(
+  const changes = await loadDb(
     "admin.trip-changes.list",
     () =>
       prisma.$queryRaw<AdminTripChangeSummary[]>`
@@ -53,7 +53,6 @@ export default async function AdminTripChangesPage() {
       WHERE al.action = 'TRIP_DELETED'
       ORDER BY "createdAt" DESC
     `,
-    [],
   );
 
   const publishedCount = changes.filter((change) => change.status === "APPROVED").length;

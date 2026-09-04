@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, MapPin, Monitor, UserX } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +112,7 @@ export default async function AdminUserDetailPage({
   const { userId } = await params;
 
   const [user, activityLogs] = await Promise.all([
-    safeDb(
+    loadDb(
       "admin.user-detail.user",
       () =>
         prisma.user.findUnique({
@@ -122,7 +122,6 @@ export default async function AdminUserDetailPage({
             _count: { select: { bookings: true, reviews: true, guideApplications: true, activityLogs: true } },
           },
         }),
-      null,
     ),
     safeDb(
       "admin.user-detail.activity-log",

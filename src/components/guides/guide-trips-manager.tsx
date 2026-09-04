@@ -1,6 +1,6 @@
 import { Compass } from "lucide-react";
 
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
 import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
 import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
@@ -52,25 +52,23 @@ function toGuideTripData(trip: {
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
   const [trips, guideProfile] = await Promise.all([
-    safeDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId }), []),
-    safeDb(
+    loadDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId })),
+    loadDb(
       "guide.trips-manager.guide-profile",
       () => prisma.guide.findUnique({ where: { id: guideId }, select: { photo: true, photos: true, videos: true } }),
-      null,
     ),
   ]);
   const guideMedia: GuideMediaItem[] = [
     ...Array.from(new Set([...(guideProfile?.photos ?? []), guideProfile?.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
     ...guideProfile?.videos.map((url) => ({ url, type: "video" as const })) ?? [],
   ];
-  const draftRows = await safeDb(
+  const draftRows = await loadDb(
     "guide.trips-manager.drafts",
     () =>
       prisma.tripDraft.findMany({
         where: { guideId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
       }),
-    [],
   );
 
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({

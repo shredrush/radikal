@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/authz";
-import { prisma } from "@/lib/prisma";
+import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -20,18 +20,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Users with support access don't have their own customer thread, so there
-  // is nothing to surface as "unread" for them.
-  if (await getAuthorizedUser("support.manage")) {
-    return NextResponse.json({
-      unreadCount: 0,
-      status: "OPEN",
-      isSupportAgent: true,
-      hasActiveChat: false,
-    });
-  }
-
   try {
+    // Users with support access don't have their own customer thread, so there
+    // is nothing to surface as "unread" for them.
+    if (await getAuthorizedUser("support.manage")) {
+      return NextResponse.json({
+        unreadCount: 0,
+        status: "OPEN",
+        isSupportAgent: true,
+        hasActiveChat: false,
+      });
+    }
+
     const rows = await prisma.$queryRaw<Array<{ status: "OPEN" | "CLOSED"; unreadCount: number }>>`
       SELECT sc.status, COUNT(sm.id)::int AS "unreadCount"
       FROM support_chats sc
@@ -61,6 +61,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[api/support/unread] failed to load notifications", error);
-    return NextResponse.json({ error: "Failed to load notifications" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to load notifications" }, { status: getDatabaseErrorStatus(error) });
   }
 }

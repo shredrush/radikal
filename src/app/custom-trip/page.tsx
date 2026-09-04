@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MessageCircle, WandSparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import {
   MAX_OPEN_CUSTOM_TRIP_CHATS,
   toCustomTripRequestListItem,
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CustomTripPage() {
   const session = await auth();
-  const openRequests = session?.user ? await safeDb(
+  const openRequests = session?.user ? await loadDb(
     "custom-trip.open-requests",
     () =>
       prisma.customTripRequest.findMany({
@@ -35,7 +35,6 @@ export default async function CustomTripPage() {
           chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
         },
       }),
-    [],
   ) : [];
   const openRequestItems = openRequests.map(toCustomTripRequestListItem);
   const atChatLimit = openRequestItems.length >= MAX_OPEN_CUSTOM_TRIP_CHATS;

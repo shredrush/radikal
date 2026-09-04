@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock3, Sparkles } from "lucide-react";
 
 import { auth } from "@/lib/auth";
-import { prisma, safeDb } from "@/lib/prisma";
+import { loadDb, prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GuideApplicationForm } from "@/components/guides/guide-application-form";
@@ -23,7 +23,7 @@ export default async function BecomeAGuidePage() {
   // Read the account's role and guide linkage from the database (not the
   // possibly-stale JWT) so a demotion or guide removal takes effect
   // immediately instead of leaving the "already a guide" wall up.
-  const account = user ? await safeDb(
+  const account = user ? await loadDb(
     "become-a-guide.account",
     () =>
       prisma.user.findFirst({
@@ -35,7 +35,6 @@ export default async function BecomeAGuidePage() {
           guide: { select: { id: true, deletedAt: true } },
         },
       }),
-    null,
   ) : null;
 
   // The linked guide profile is the ground truth — a GUIDE role without one is
@@ -44,14 +43,13 @@ export default async function BecomeAGuidePage() {
 
   const application = isAlreadyGuide || !user
     ? null
-    : await safeDb(
+    : await loadDb(
         "become-a-guide.application",
         () =>
           prisma.guideApplication.findFirst({
             where: { userId: user!.id },
             orderBy: { submittedAt: "desc" },
           }),
-        null,
       );
 
   const pendingApplication =
