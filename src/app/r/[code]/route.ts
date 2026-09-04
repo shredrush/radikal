@@ -42,25 +42,24 @@ export async function GET(
     return signupRedirect(request);
   }
 
-  const guide = await safeDb(
+  const referrer = await safeDb(
     "referral.redirect",
     () =>
-      prisma.guide.findFirst({
+      prisma.user.findFirst({
         where: {
           referralCode: code,
           deletedAt: null,
-          user: { deletedAt: null },
         },
         select: { id: true },
       }),
     null,
   );
-  if (!guide) {
+  if (!referrer) {
     rateLimit(`referral:invalid:${ip}`, 20, 60_000);
     return signupRedirect(request);
   }
 
-  const attribution = createReferralAttribution(guide.id, code);
+  const attribution = createReferralAttribution(referrer.id, code);
   const response = signupRedirect(request);
   if (attribution) {
     response.cookies.set(REFERRAL_COOKIE_NAME, attribution, {

@@ -58,7 +58,7 @@ import {
   markAllNotificationsReadAction,
 } from "@/lib/actions/notifications";
 import { cn } from "@/lib/utils";
-import { ensureGuideReferralCode } from "@/lib/referrals";
+import { ensureUserReferralCode } from "@/lib/referrals";
 export const metadata: Metadata = {
   title: "Profile — Radikal",
 };
@@ -93,7 +93,7 @@ export default async function ProfilePage({
   const activeTab =
     tab === "settings"
       ? "settings"
-      : tab === "referrals" && isGuide
+      : tab === "referrals"
         ? "referrals"
       : tab === "support"
         ? "support"
@@ -125,7 +125,7 @@ export default async function ProfilePage({
           () =>
             prisma.guide.findFirst({
               where: { userId: user.id, deletedAt: null },
-              select: { id: true, referralCode: true, user: { select: { username: true } } },
+               select: { id: true, user: { select: { username: true } } },
             }),
           null,
         )
@@ -204,22 +204,21 @@ export default async function ProfilePage({
   const currentEmail = currentUser?.email ?? user.email ?? "";
   const currentPhone = currentUser?.phone ?? null;
 
-  // Existing guides receive their permanent code on their first profile visit;
-  // new guides use the same path before they can share a referral link.
+  // Every account receives a permanent code on its first referrals page visit.
   const referralCode =
-    isGuide && guide
-      ? (guide.referralCode ?? await safeDb("profile.referral-code", () => ensureGuideReferralCode(guide.id), null))
+    activeTab === "referrals"
+      ? (currentUser?.referralCode ?? await safeDb("profile.referral-code", () => ensureUserReferralCode(user.id), null))
       : null;
   const referralOverview =
-    activeTab === "referrals" && guide
+    activeTab === "referrals"
       ? await safeDb(
           "profile.referrals",
           async () => {
             const [signups, qualified, referrals] = await Promise.all([
-              prisma.referral.count({ where: { guideId: guide.id } }),
-              prisma.referral.count({ where: { guideId: guide.id, status: "QUALIFIED" } }),
-              prisma.referral.findMany({
-                where: { guideId: guide.id },
+               prisma.referral.count({ where: { referrerId: user.id } }),
+               prisma.referral.count({ where: { referrerId: user.id, status: "QUALIFIED" } }),
+               prisma.referral.findMany({
+                 where: { referrerId: user.id },
                 orderBy: { signedUpAt: "desc" },
                 take: 20,
                 select: {
@@ -447,21 +446,19 @@ export default async function ProfilePage({
                   Coming soon
                 </span>
               </div>
-              {isGuide && guide ? (
-                <Link
-                  href="/profile?tab=referrals"
-                  prefetch={false}
-                  className={cn(
-                    "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
-                    activeTab === "referrals"
-                      ? "border-primary/40 bg-primary/5 text-foreground"
-                      : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
-                  )}
-                >
-                  <UsersRound className="h-4 w-4" />
-                  <span className="truncate">Referrals</span>
-                </Link>
-              ) : null}
+              <Link
+                href="/profile?tab=referrals"
+                prefetch={false}
+                className={cn(
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
+                  activeTab === "referrals"
+                    ? "border-primary/40 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <UsersRound className="h-4 w-4" />
+                <span className="truncate">Referrals</span>
+              </Link>
               <Link
                 href="/profile?tab=support"
                 prefetch={false}

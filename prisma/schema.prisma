@@ -120,12 +120,12 @@ enum ReferralStatus {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
   // Full phone number in E.164 format (e.g. +917217217678), collected at
   // signup with a per-country dial-code dropdown.
-  phone        String?
+  phone               String?
   // Public, lowercase-alphanumeric handle. For guide accounts it doubles as
   // the guide's public URL segment (e.g. /tenzin). Uniqueness is enforced by a
   // DB constraint; the app layer additionally validates the format, length and
@@ -137,12 +137,16 @@ model User {
   passwordHash        String
   // Incremented after a password reset or change. JWTs carry this value and
   // are rejected once it no longer matches the account record.
-  sessionVersion Int      @default(0)
-  role         UserRole  @default(USER)
-  image        String?
-  deletedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  sessionVersion      Int       @default(0)
+  role                UserRole  @default(USER)
+  image               String?
+  // A public, case-insensitive (normalized to uppercase) identifier used only
+  // for referral links. It is assigned lazily so existing accounts receive one
+  // when they first open their referrals page.
+  referralCode        String?   @unique @db.VarChar(4)
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   bookings                  Booking[]
   wishlistItems             WishlistItem[]
@@ -162,7 +166,8 @@ model User {
   tripChangesSubmitted      TripChangeRequest[] @relation("TripChangeSubmittedBy")
   tripChangesReviewed       TripChangeRequest[] @relation("TripChangeReviewedBy")
   usernameAliases           UsernameAlias[]
-  referredBy                Referral?          @relation("ReferredUser")
+  referredBy                Referral?           @relation("ReferredUser")
+  referrals                 Referral[]          @relation("ReferralReferrer")
 
   // Role-based lookups: admin user filtering and the guide-orphan checks
   // (users with the GUIDE role but no linked guide profile).
@@ -233,10 +238,6 @@ model Guide {
   reviews        Review[]
   tripChanges    TripChangeRequest[]
   tripDrafts     TripDraft[]
-  referrals      Referral[]
-  // Four public, case-insensitive (normalized to uppercase) characters. This
-  // is an identifier for a share link, never an authorization credential.
-  referralCode   String?     @unique @db.VarChar(4)
 
   @@index([deletedAt])
   @@map("guides")
@@ -244,7 +245,7 @@ model Guide {
 
 model Referral {
   id          String         @id @default(cuid())
-  guideId     String
+  referrerId  String
   referredId  String         @unique
   code        String         @db.VarChar(4)
   status      ReferralStatus @default(SIGNED_UP)
@@ -252,11 +253,11 @@ model Referral {
   qualifiedAt DateTime?
   createdAt   DateTime       @default(now())
 
-  guide    Guide @relation(fields: [guideId], references: [id], onDelete: Restrict)
-  referred User  @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
+  referrer User @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Restrict)
+  referred User @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
 
-  @@index([guideId, signedUpAt])
-  @@index([guideId, qualifiedAt])
+  @@index([referrerId, signedUpAt])
+  @@index([referrerId, qualifiedAt])
   @@map("referrals")
 }
 
@@ -492,35 +493,35 @@ model WishlistItem {
 }
 
 model Review {
-  id        String    @id @default(cuid())
-  userId    String
+  id               String    @id @default(cuid())
+  userId           String
   // A review describes one completed trip and is also attributed to the guide
   // who led it. Both links are required so trip and guide views cannot diverge.
-  tripId    String
-  guideId   String
+  tripId           String
+  guideId          String
   // These snapshots keep the trip name and travel date meaningful after the
   // underlying trip has been retired.
-  tripName  String?
-  tripDate  DateTime?
-  rating    Int
-  comment   String
-  deletedAt DateTime?
+  tripName         String?
+  tripDate         DateTime?
+  rating           Int
+  comment          String
+  deletedAt        DateTime?
   // Set when the review is retired together with its guide (guide deleted or
   // demoted). Trip deletion alone never hides a review.
   deletedWithGuide Boolean   @default(false)
-  createdAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
   trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Restrict)
   guide Guide @relation(fields: [guideId], references: [id], onDelete: Restrict)
 
+  @@unique([userId, tripId], map: "reviews_one_per_user_trip", where: raw("(\"tripId\" IS NOT NULL)"))
   @@index([userId])
   @@index([userId, deletedAt])
   @@index([tripId, deletedAt, createdAt])
   @@index([guideId, deletedAt, createdAt])
   @@index([deletedAt])
   @@index([deletedAt, createdAt])
-  @@unique([userId, tripId], map: "reviews_one_per_user_trip", where: raw("(\"tripId\" IS NOT NULL)"))
   @@map("reviews")
 }
 

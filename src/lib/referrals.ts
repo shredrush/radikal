@@ -6,11 +6,19 @@ export const REFERRAL_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const REFERRAL_CODE_PATTERN = /^[A-Z0-9]{4}$/;
 const REFERRAL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-type ReferralAttribution = {
-  guideId: string;
-  code: string;
-  expiresAt: number;
-};
+type ReferralAttribution =
+  | {
+      referrerId: string;
+      code: string;
+      expiresAt: number;
+    }
+  | {
+      // Guide-based attribution was issued before referrals were opened to all
+      // users. Accept it until the existing 30-day cookies have expired.
+      guideId: string;
+      code: string;
+      expiresAt: number;
+    };
 
 export function normalizeReferralCode(value: string) {
   const code = value.trim().toUpperCase();
@@ -34,13 +42,13 @@ function sign(value: string, secret: string) {
   return crypto.createHmac("sha256", secret).update(value).digest("base64url");
 }
 
-/** The cookie contains only a signed guide/code/expiry attribution payload. */
-export function createReferralAttribution(guideId: string, code: string) {
+/** The cookie contains only a signed referrer/code/expiry attribution payload. */
+export function createReferralAttribution(referrerId: string, code: string) {
   const secret = getSigningSecret();
   if (!secret) return null;
 
   const payload: ReferralAttribution = {
-    guideId,
+    referrerId,
     code,
     expiresAt: Date.now() + REFERRAL_COOKIE_MAX_AGE_SECONDS * 1000,
   };
@@ -66,49 +74,61 @@ export function parseReferralAttribution(value: string | undefined): ReferralAtt
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as ReferralAttribution;
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as {
+      referrerId?: unknown;
+      guideId?: unknown;
+      code?: unknown;
+      expiresAt?: unknown;
+    };
+    const referrerId = typeof payload.referrerId === "string" ? payload.referrerId : null;
+    const guideId = typeof payload.guideId === "string" ? payload.guideId : null;
+    const expiresAt = typeof payload.expiresAt === "number" ? payload.expiresAt : null;
     if (
-      typeof payload.guideId !== "string" ||
-      payload.guideId.length === 0 ||
-      payload.guideId.length > 100 ||
+      (referrerId === null && guideId === null) ||
+      (referrerId !== null && guideId !== null) ||
+      (referrerId !== null && (referrerId.length === 0 || referrerId.length > 100)) ||
+      (guideId !== null && (guideId.length === 0 || guideId.length > 100)) ||
       typeof payload.code !== "string" ||
       !normalizeReferralCode(payload.code) ||
       payload.code !== payload.code.toUpperCase() ||
-      !Number.isSafeInteger(payload.expiresAt) ||
-      payload.expiresAt <= Date.now()
+      expiresAt === null ||
+      !Number.isSafeInteger(expiresAt) ||
+      expiresAt <= Date.now()
     ) {
       return null;
     }
-    return payload;
+    return referrerId
+      ? { referrerId, code: payload.code, expiresAt }
+      : { guideId: guideId!, code: payload.code, expiresAt };
   } catch {
     return null;
   }
 }
 
 /**
- * Assign a code lazily for guides created before referrals existed. The unique
+ * Assign a code lazily for users created before referrals existed. The unique
  * index is the final collision guard across concurrent requests and instances.
  */
-export async function ensureGuideReferralCode(guideId: string) {
+export async function ensureUserReferralCode(userId: string) {
   const { prisma } = await import("@/lib/prisma");
-  const guide = await prisma.guide.findUnique({
-    where: { id: guideId },
-    select: { referralCode: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { referralCode: true, deletedAt: true },
   });
-  if (!guide) return null;
-  if (guide.referralCode) return guide.referralCode;
+  if (!user || user.deletedAt) return null;
+  if (user.referralCode) return user.referralCode;
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const code = generateReferralCode();
     try {
-      const updated = await prisma.guide.updateMany({
-        where: { id: guideId, referralCode: null },
+      const updated = await prisma.user.updateMany({
+        where: { id: userId, deletedAt: null, referralCode: null },
         data: { referralCode: code },
       });
       if (updated.count === 1) return code;
 
-      const current = await prisma.guide.findUnique({
-        where: { id: guideId },
+      const current = await prisma.user.findUnique({
+        where: { id: userId },
         select: { referralCode: true },
       });
       return current?.referralCode ?? null;

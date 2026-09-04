@@ -8,7 +8,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { auth, signIn } from "@/lib/auth";
 import {
   emailChangedEmail,
@@ -210,38 +210,32 @@ export async function signupAction(
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // The cookie is signed and short-lived, but the guide is checked again at
-  // signup so deleted guides can never receive new referral credit.
+  // The cookie is signed and short-lived, but the referrer is checked again at
+  // signup so deleted accounts can never receive new referral credit.
   const cookieStore = await cookies();
   const attribution = parseReferralAttribution(cookieStore.get(REFERRAL_COOKIE_NAME)?.value);
-  const referralGuide = attribution
-    ? await prisma.guide.findFirst({
-        where: {
-          id: attribution.guideId,
-          referralCode: attribution.code,
-          deletedAt: null,
-          user: { deletedAt: null },
-        },
-        select: { id: true },
-      })
+  const referrer = attribution
+    ? await safeDb(
+        "signup.referrer",
+        () =>
+          prisma.user.findFirst({
+            where: {
+              ...("referrerId" in attribution
+                ? { id: attribution.referrerId }
+                : { guide: { id: attribution.guideId, deletedAt: null } }),
+              referralCode: attribution.code,
+              deletedAt: null,
+            },
+            select: { id: true },
+          }),
+        null,
+      )
     : null;
 
   let newUserId = "";
   try {
-    const createdUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { name, email, username: resolvedUsername, passwordHash, phone },
-      });
-      if (referralGuide && attribution) {
-        await tx.referral.create({
-          data: {
-            guideId: referralGuide.id,
-            referredId: user.id,
-            code: attribution.code,
-          },
-        });
-      }
-      return user;
+    const createdUser = await prisma.user.create({
+      data: { name, email, username: resolvedUsername, passwordHash, phone },
     });
     newUserId = createdUser.id;
   } catch (error) {
@@ -251,6 +245,24 @@ export async function signupAction(
       return { fieldErrors: { username: "This username is already taken." }, values };
     }
     throw error;
+  }
+
+  // Referral attribution must never prevent account creation. This is kept
+  // outside the account insert so a temporarily unavailable referral schema
+  // cannot abort the user's transaction.
+  if (referrer && attribution) {
+    await safeDb(
+      "signup.referral",
+      () =>
+        prisma.referral.create({
+          data: {
+            referrerId: referrer.id,
+            referredId: newUserId,
+            code: attribution.code,
+          },
+        }),
+      null,
+    );
   }
 
   // The attribution is one-time and should not persist after its associated

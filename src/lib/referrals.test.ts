@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -28,18 +30,18 @@ describe("referral codes", () => {
 describe("referral attribution", () => {
   it("accepts an untampered, unexpired signed attribution", () => {
     process.env.AUTH_SECRET = "test-referral-secret";
-    const token = createReferralAttribution("guide-id", "A7K9");
+    const token = createReferralAttribution("referrer-id", "A7K9");
 
     expect(token).not.toBeNull();
     expect(parseReferralAttribution(token ?? undefined)).toMatchObject({
-      guideId: "guide-id",
+      referrerId: "referrer-id",
       code: "A7K9",
     });
   });
 
   it("rejects a tampered attribution", () => {
     process.env.AUTH_SECRET = "test-referral-secret";
-    const token = createReferralAttribution("guide-id", "A7K9");
+    const token = createReferralAttribution("referrer-id", "A7K9");
 
     expect(parseReferralAttribution(`${token}x`)).toBeNull();
   });
@@ -48,9 +50,25 @@ describe("referral attribution", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
     process.env.AUTH_SECRET = "test-referral-secret";
-    const token = createReferralAttribution("guide-id", "A7K9");
+    const token = createReferralAttribution("referrer-id", "A7K9");
     vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000);
 
     expect(parseReferralAttribution(token ?? undefined)).toBeNull();
+  });
+
+  it("accepts legacy guide attribution until existing cookies expire", () => {
+    process.env.AUTH_SECRET = "test-referral-secret";
+    const legacyPayload = Buffer.from(
+      JSON.stringify({ guideId: "guide-id", code: "A7K9", expiresAt: Date.now() + 60_000 })
+    ).toString("base64url");
+    const signature = crypto
+      .createHmac("sha256", process.env.AUTH_SECRET)
+      .update(legacyPayload)
+      .digest("base64url");
+
+    expect(parseReferralAttribution(`${legacyPayload}.${signature}`)).toMatchObject({
+      guideId: "guide-id",
+      code: "A7K9",
+    });
   });
 });
