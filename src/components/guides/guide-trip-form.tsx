@@ -355,9 +355,9 @@ export function GuideTripForm({
           <p className="text-xs text-muted-foreground">Choose the photo or video shown in this trip&apos;s public guide section.</p>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-border/70 pt-4">
-          <p className="mr-auto text-xs text-muted-foreground">
-            Changes publish immediately and are logged for staff visibility.
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/70 pt-4">
+          <p className="w-full text-xs text-muted-foreground sm:mr-auto sm:w-auto">
+            Changes publish immediately
           </p>
           {!isEditing ? (
             <Button
@@ -382,7 +382,7 @@ export function GuideTripForm({
               type="button"
               variant="outline"
               size="sm"
-              className="rounded-full border-destructive/40 text-destructive hover:border-destructive hover:bg-destructive/10"
+              className="rounded-full border-2 border-destructive/40 text-destructive hover:border-destructive hover:bg-destructive/10"
               disabled={isDeleting || isPending}
               onClick={handleDeleteTrip}
             >

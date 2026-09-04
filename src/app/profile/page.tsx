@@ -257,15 +257,15 @@ export default async function ProfilePage({
         {/* Hero */}
         <div className="rounded-[1.5rem] border border-border/80 p-5 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 sm:-my-6 sm:-ml-6 sm:w-56 sm:self-stretch">
+            <div className="flex items-stretch gap-4 pb-5 sm:pb-0">
+              <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 self-stretch sm:-my-6 sm:-ml-6 sm:w-56">
                 <LazyProfilePhotoForm
                   currentImage={currentUser?.image ?? null}
                   userId={user.id}
                   trigger={
                     <button
                       type="button"
-                      className="group relative h-full w-full cursor-pointer overflow-hidden rounded-l-[1.5rem] ring-1 ring-border/70"
+                      className="group relative h-full w-full cursor-pointer overflow-hidden rounded-[1.5rem] ring-1 ring-border/70"
                     >
                       {profileImage ? (
                         <Image
@@ -273,10 +273,10 @@ export default async function ProfilePage({
                           alt={name}
                           width={224}
                           height={224}
-                          className="aspect-square h-44 w-full object-cover sm:aspect-auto sm:h-full sm:min-h-56"
+                          className="h-full min-h-44 w-full object-cover sm:min-h-56"
                         />
                       ) : (
-                        <div className="flex aspect-square h-44 w-full items-center justify-center bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] font-heading text-5xl font-semibold text-white sm:aspect-auto sm:h-full sm:min-h-56">
+                          <div className="flex h-full min-h-44 w-full items-center justify-center bg-gradient-to-br from-[#3a3a3a] to-[#5a5a5a] font-heading text-5xl font-semibold text-white sm:min-h-56">
                           {profileInitials}
                         </div>
                       )}
@@ -289,7 +289,7 @@ export default async function ProfilePage({
                 />
               </div>
               <div className="flex min-w-0 flex-col self-stretch pt-1">
-                <h1 className="truncate font-heading text-lg font-semibold tracking-wide sm:text-xl">
+                <h1 className="truncate font-heading text-base font-semibold tracking-normal sm:text-xl sm:tracking-wide">
                   Welcome back, {firstName}
                 </h1>
                 <div className="space-y-0.5 text-sm text-muted-foreground">
@@ -306,9 +306,9 @@ export default async function ProfilePage({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-4 rounded-full"
+                    className="mt-4 h-auto min-h-9 max-w-full justify-start whitespace-normal break-words rounded-full py-2 text-left"
                     nativeButton={false}
-                    render={<Link href={`/${guide.user?.username}`} target="_blank" rel="noopener noreferrer" />}
+                    render={<Link href={`/${guide.user?.username}`} />}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                     View public profile
@@ -338,7 +338,7 @@ export default async function ProfilePage({
                   render={<Link href="/guide-board/trips" />}
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
-                  Guide board
+                  <span className="text-sm font-bold tracking-wide">Guide board</span>
                 </Button>
               ) : null}
               {adminBoardHref ? (

@@ -111,11 +111,11 @@ function AddSlotForm({
       return;
     }
     if (reserved === null) {
-      toast.error("Reserve must be a whole number of 0 or more.");
+      toast.error("Reserved must be a whole number of 0 or more.");
       return;
     }
     if (reserved > capacity) {
-      toast.error("Reserve cannot be greater than the slot capacity.");
+      toast.error("Reserved cannot be greater than the slot capacity.");
       return;
     }
 
@@ -137,7 +137,7 @@ function AddSlotForm({
         <input id="new-slot-date" name="date" type="date" required className={inputClassName} />
       </div>
       <div className="w-full space-y-1.5 sm:w-40">
-        <Label htmlFor="new-slot-reserved">Reserve</Label>
+        <Label htmlFor="new-slot-reserved">Reserved</Label>
         <input id="new-slot-reserved" name="reserved" type="number" min="0" max={MAX_SLOT_CAPACITY} defaultValue="0" required className={inputClassName} />
       </div>
       <div className="w-full space-y-1.5 sm:w-40">
@@ -186,11 +186,11 @@ function SlotRow({
       return;
     }
     if (reserved === null) {
-      toast.error("Reserve must be a whole number of 0 or more.");
+      toast.error("Reserved must be a whole number of 0 or more.");
       return;
     }
     if (reserved > capacity - slot.booked) {
-      toast.error(`Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
+      toast.error(`Reserved cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
       return;
     }
 
@@ -202,7 +202,7 @@ function SlotRow({
       changes.push(`capacity changed from ${slot.capacity} to ${capacity}`);
     }
     if (reserved !== slot.reserved) {
-      changes.push(`reserve changed from ${slot.reserved} to ${reserved}`);
+      changes.push(`reserved changed from ${slot.reserved} to ${reserved}`);
     }
 
     startTransition(async () => {
@@ -248,7 +248,7 @@ function SlotRow({
             <input id={`slot-date-${slot.id}`} name="date" type="date" defaultValue={slot.dateInput} required className={inputClassName} />
           </div>
           <div className="w-full space-y-1.5 sm:w-40">
-            <Label htmlFor={`slot-reserved-${slot.id}`}>Reserve</Label>
+            <Label htmlFor={`slot-reserved-${slot.id}`}>Reserved</Label>
             <input
               id={`slot-reserved-${slot.id}`}
               name="reserved"

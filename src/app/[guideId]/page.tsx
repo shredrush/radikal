@@ -7,6 +7,7 @@ import { TripGallery } from "@/components/trips/trip-gallery";
 import { TripCard } from "@/components/trips/trip-card";
 import { GuideReviewsSection, type GuideReviewData } from "@/components/guides/guide-reviews-section";
 import { GuideProfileHeroEditor } from "@/components/guides/guide-profile-hero-editor";
+import { GuideProfileBackButton } from "@/components/guides/guide-profile-back-button";
 import { GuideSports } from "@/components/guides/guide-sports";
 import { prisma, safeDb } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -137,11 +138,14 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
   return (
     <div className="flex-1">
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-
         {isOwnGuide ? (
           <GuideProfileHeroEditor guide={guide} fallbackImage={fallbackImage} />
         ) : (
-        <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
+        <>
+          <div className="mb-4">
+            <GuideProfileBackButton />
+          </div>
+          <article className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
           <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
               <TripGallery
@@ -154,23 +158,23 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               />
             </div>
 
-            <div className="flex flex-col justify-start p-6 sm:p-8 lg:p-8">
+            <div className="flex min-w-0 flex-col justify-start p-6 sm:p-8 lg:p-8">
               <div className="space-y-3">
                 <div>
-                  <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                  <h1 className="break-words font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     {guide.name}
                   </h1>
-                  <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
+                  <p className="mt-2 break-words text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">{guide.location}</p>
                   <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-foreground">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     Vetted guide
                   </div>
                 </div>
 
-                <p className="text-base leading-7 text-muted-foreground">
+                <p className="break-words text-base leading-7 text-muted-foreground">
                   <span className="font-heading text-lg font-semibold text-emerald-700 dark:text-emerald-400">{guide.experienceYears}+</span> years experience
                 </p>
-                <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
+                <p className="break-words text-sm leading-6 text-muted-foreground">{guide.bio}</p>
               </div>
 
               <div className="mt-6 space-y-5">
@@ -180,7 +184,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     {guide.certifications.map((certification) => (
                       <span
                         key={certification.id}
-                        className={`rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}
+                        className={`max-w-full break-words rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}
                       >
                         {certification.title}
                       </span>
@@ -195,7 +199,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
                     {guide.languages.map((language) => (
                       <span
                         key={`${guide.id}-${language}`}
-                        className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+                        className="max-w-full break-words rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
                       >
                         {language}
                       </span>
@@ -205,7 +209,8 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               </div>
             </div>
           </div>
-        </article>
+          </article>
+        </>
         )}
 
         <section className="mt-10 rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
@@ -220,7 +225,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               No trips have been organised by {guide.name} yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
               {guide.trips.map((trip) => (
                 <TripCard key={trip.id} trip={trip} />
               ))}

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { updateOwnGuideProfileAction } from "@/lib/actions/guides";
 import { ACCENT_PILL } from "@/lib/card-styles";
 import { GuideSports, GuideSportsField } from "@/components/guides/guide-sports";
+import { GuideProfileBackButton } from "@/components/guides/guide-profile-back-button";
 
 type GuideHeroData = {
   userId: string;
@@ -64,7 +65,8 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <GuideProfileBackButton />
         {!editing ? (
           <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)} className="rounded-full">
             <Pencil className="h-3.5 w-3.5" /> Edit

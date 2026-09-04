@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Loader2, Play, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Loader2, Play, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,8 @@ export function MediaUploader({
     normalizeMediaOrder(initialImages, initialVideos, initialMediaOrder),
   );
   const [uploading, setUploading] = useState(0);
+  const [draggedUrl, setDraggedUrl] = useState<string | null>(null);
+  const [dragOverUrl, setDragOverUrl] = useState<string | null>(null);
   // Upload progress as a percentage (0..100). Represents bytes uploaded across
   // all in-flight files in the current batch, weighted by file size.
   const [progress, setProgress] = useState(0);
@@ -249,6 +251,33 @@ export function MediaUploader({
     setOrderedUrls(next);
   }
 
+  function reorderMedia(sourceUrl: string, targetUrl: string) {
+    if (sourceUrl === targetUrl) return;
+
+    const next = orderedItems.map((item) => item.url);
+    const sourceIndex = next.indexOf(sourceUrl);
+    const targetIndex = next.indexOf(targetUrl);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    next.splice(sourceIndex, 1);
+    next.splice(targetIndex, 0, sourceUrl);
+    setOrderedUrls(next);
+  }
+
+  function handleDragStart(event: React.DragEvent<HTMLDivElement>, url: string) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", url);
+    setDraggedUrl(url);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLDivElement>, targetUrl: string) {
+    event.preventDefault();
+    const sourceUrl = event.dataTransfer.getData("text/plain") || draggedUrl;
+    if (sourceUrl) reorderMedia(sourceUrl, targetUrl);
+    setDraggedUrl(null);
+    setDragOverUrl(null);
+  }
+
   return (
     <div className="space-y-5">
       <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
@@ -256,7 +285,7 @@ export function MediaUploader({
           <div>
             <Label>Gallery order</Label>
             <p className="mt-1 text-xs text-muted-foreground">
-              The first four cards are shown on the page as 1 large, 2 top, 3 bottom, and 4 tall right. Move cards to choose the hero layout.
+              Drag cards to rearrange them. The first four are shown as 1 large, 2 top, 3 bottom, and 4 tall right.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -307,7 +336,24 @@ export function MediaUploader({
             {orderedItems.map((item, index) => (
               <div
                 key={item.url}
-                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border/70 bg-black"
+                draggable
+                onDragStart={(event) => handleDragStart(event, item.url)}
+                onDragEnter={() => {
+                  if (draggedUrl && draggedUrl !== item.url) setDragOverUrl(item.url);
+                }}
+                onDragOver={(event) => {
+                  if (draggedUrl && draggedUrl !== item.url) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }
+                }}
+                onDrop={(event) => handleDrop(event, item.url)}
+                onDragEnd={() => {
+                  setDraggedUrl(null);
+                  setDragOverUrl(null);
+                }}
+                aria-label={`Drag to move ${item.kind === "images" ? "photo" : "video"} ${index + 1}`}
+                className={`group relative aspect-[4/3] overflow-hidden rounded-xl border bg-black transition ${draggedUrl === item.url ? "cursor-grabbing border-primary/70 opacity-50" : "cursor-grab border-border/70"} ${dragOverUrl === item.url ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
               >
                 {item.kind === "images" ? (
                   <Image
@@ -342,6 +388,10 @@ export function MediaUploader({
 
                 <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/80">
                   {item.kind === "images" ? "Photo" : "Video"}
+                </span>
+
+                <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 p-1 text-white/80">
+                  <GripVertical className="h-3.5 w-3.5" />
                 </span>
 
                 <div className="absolute right-1.5 top-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">

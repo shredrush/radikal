@@ -11,10 +11,10 @@ export type CommunityGuideMediaItem = {
 };
 
 const slotLayouts = [
-  "col-span-2 row-span-2",
-  "col-start-3 row-start-1",
-  "col-start-3 row-start-2",
-  "col-start-4 row-span-2",
+  "col-start-1 row-start-1 row-span-3 sm:col-span-2 sm:row-span-2",
+  "col-start-1 row-start-4 row-span-2 sm:col-start-3 sm:row-start-1 sm:row-span-1",
+  "col-start-2 row-start-1 row-span-2 sm:col-start-3 sm:row-start-2 sm:row-span-1",
+  "col-start-2 row-start-3 row-span-3 sm:col-start-4 sm:row-start-1 sm:row-span-2",
   "col-start-5 row-start-1",
   "col-start-5 row-start-2",
   "col-start-6 col-span-2 row-span-2",
@@ -72,7 +72,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
 
   return (
     <section aria-label="Guide moments" className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-muted/30 p-1 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.45)]">
-      <div className="grid h-[28rem] grid-cols-4 grid-rows-2 gap-1 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] lg:h-[40rem]">
+      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-1 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] sm:grid-rows-2 lg:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];
           const isSliding = activeSlot === slot;

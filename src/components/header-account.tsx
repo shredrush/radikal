@@ -44,9 +44,19 @@ export function HeaderAccount({ variant }: { variant: "mobile" | "desktop" }) {
       <ThemeToggle compact={isMobile} />
       <CurrencySelector compact={isMobile} />
     </div>
-    {account ? <div className={`group relative${isMobile ? " order-first shrink-0" : ""}`}>
-      <Link href="/profile" className="flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary">
-        {account.image ? <Image src={account.image} alt="Profile" width={isMobile ? 32 : 40} height={isMobile ? 32 : 40} unoptimized className={isMobile ? "h-8 w-8 rounded-full object-cover" : "h-10 w-10 rounded-full object-cover"} /> : <span className={isMobile ? "flex h-8 w-8 items-center justify-center rounded-full bg-foreground font-heading text-xs font-semibold text-background" : "flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background"}>{getProfileInitials(displayName)}</span>}
+    {account ? <div className={`group relative${isMobile ? " shrink-0" : ""}`}>
+      <Link
+        href="/profile"
+        className={isMobile
+          ? "flex h-7 items-center gap-1.5 overflow-hidden rounded-full border border-border/70 bg-background/60 pl-2.5 pr-0 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground"
+          : "flex items-center rounded-full ring-1 ring-border/70 transition hover:ring-primary"}
+      >
+        {isMobile ? <span>Profile</span> : null}
+        {account.image ? (
+          <span className={isMobile ? "mr-px shrink-0 overflow-hidden rounded-full" : undefined}>
+            <Image src={account.image} alt="Profile" width={isMobile ? 26 : 40} height={isMobile ? 26 : 40} unoptimized className={isMobile ? "block h-[26px] w-[26px] object-cover" : "h-10 w-10 rounded-full object-cover"} />
+          </span>
+        ) : <span className={isMobile ? "mr-px flex h-[26px] w-[26px] items-center justify-center rounded-full bg-foreground font-heading text-[0.6rem] font-semibold text-background" : "flex h-10 w-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background"}>{getProfileInitials(displayName)}</span>}
       </Link>
       {!isMobile ? <div className="invisible absolute right-0 top-full z-10 mt-2 flex min-w-[220px] flex-col rounded-xl border border-border/70 bg-background/95 p-1.5 opacity-0 shadow-[0_12px_30px_-16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
         <Link href="/profile" className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-base font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><User className="h-4 w-4" />Profile</Link>

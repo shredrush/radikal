@@ -420,7 +420,7 @@ export function SearchableTrips({
                </p>
              ) : null}
                 {visibleTrips.map((trip, index) => (
-                  <div key={trip.id} className={index > 3 ? "hidden md:block" : undefined}>
+                  <div key={trip.id} className={index > 3 ? "hidden md:flex" : "flex"}>
                     <TripCard showPrice={false} trip={trip} />
                   </div>
                 ))}
@@ -453,13 +453,15 @@ export function SearchableTrips({
               </h4>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
-              {guides.slice(0, 5).map((guide, index) => (
-                <div key={guide.username} className={index > 3 ? "hidden md:block" : undefined}>
-                  <GuideCard guide={guide} />
-                </div>
-              ))}
-            </div>
+              <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
+                {guides.slice(0, 5).map((guide, index) => (
+                  <GuideCard
+                    key={guide.username}
+                    guide={guide}
+                    className={index > 3 ? "hidden md:block" : undefined}
+                  />
+                ))}
+              </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button

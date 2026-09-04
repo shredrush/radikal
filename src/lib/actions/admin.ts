@@ -423,10 +423,10 @@ export async function createSlotAction(formData: FormData) {
     throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
   }
   if (reserved === null) {
-    throw new Error("Reserve must be a whole number of 0 or more.");
+    throw new Error("Reserved must be a whole number of 0 or more.");
   }
   if (reserved > capacity) {
-    throw new Error("Reserve cannot be greater than the slot capacity.");
+    throw new Error("Reserved cannot be greater than the slot capacity.");
   }
 
   const date = parseSlotDate(dateValue);
@@ -475,7 +475,7 @@ export async function updateSlotAction(formData: FormData) {
     throw new Error(`Capacity must be between 1 and ${MAX_SLOT_CAPACITY}.`);
   }
   if (reserved === null) {
-    throw new Error("Reserve must be a whole number of 0 or more.");
+    throw new Error("Reserved must be a whole number of 0 or more.");
   }
 
   const date = parseSlotDate(dateValue);
@@ -499,7 +499,7 @@ export async function updateSlotAction(formData: FormData) {
     // Never shrink capacity below the number of already-booked spots.
     if (reserved > capacity - slot.booked) {
       throw new Error(
-        `Reserve cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`
+        `Reserved cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`
       );
     }
 

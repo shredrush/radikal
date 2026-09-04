@@ -384,7 +384,7 @@ export function BookingsBoard({
                                     {slot.clients.map((client, index) => (
                                       <li
                                         key={client.bookingId ?? `${slot.slotId}-${index}`}
-                                        className="flex flex-wrap items-center gap-3 px-3 py-2"
+                                        className="grid grid-cols-[2rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-3 py-2 sm:flex sm:flex-wrap sm:gap-3"
                                       >
                                         <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted/60 ring-1 ring-border/60">
                                           {client.image ? (
@@ -401,18 +401,50 @@ export function BookingsBoard({
                                             </span>
                                           )}
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                          <p className="break-words text-sm font-medium text-foreground">
+                                        <div className="flex min-w-0 items-baseline gap-1.5 sm:block sm:flex-1">
+                                          <p className="min-w-0 truncate text-sm font-medium text-foreground">
                                             {client.name}
                                           </p>
-                                          <p className="break-words text-xs text-muted-foreground">
+                                          <p className="min-w-0 truncate text-xs text-muted-foreground">
                                             {client.username
                                               ? `@${client.username}`
                                               : client.email}
                                           </p>
                                         </div>
+                                        <div className="col-span-2 flex flex-wrap items-center gap-2 sm:contents">
+                                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            {client.bookedAt}
+                                          </span>
+                                          {section.key === "DELETED" && client.deletedAt ? (
+                                            <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              Deleted{client.deletedByText ? ` by ${client.deletedByText}` : ""} on {client.deletedAt}
+                                            </span>
+                                          ) : null}
+                                          {section.key === "CANCELLED" && client.cancelledAt ? (
+                                            <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                                              <Clock className="h-3.5 w-3.5" />
+                                              Cancelled {client.cancelledAt}
+                                            </span>
+                                          ) : null}
+                                          <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                            {client.participantCount}{" "}
+                                            {client.participantCount === 1 ? "guest" : "guests"}
+                                          </span>
+                                          {adminActions && client.bookingId ? (
+                                            <span className="ml-auto flex shrink-0 items-center gap-2">
+                                              <AdminBookingActions
+                                                bookingId={client.bookingId}
+                                                status={client.status}
+                                                canConfirm={adminActions.canConfirm}
+                                                canCancel={adminActions.canCancel}
+                                              />
+                                            </span>
+                                          ) : null}
+                                        </div>
                                         {client.specialRequests ? (
-                                          <p className="w-full border-t border-border/40 pt-1.5 text-xs leading-5 text-muted-foreground">
+                                          <p className="col-span-2 border-t border-border/40 pt-1.5 text-xs leading-5 text-muted-foreground sm:w-full">
                                             <span className="font-semibold text-foreground">
                                               Special needs:
                                             </span>{" "}
@@ -420,36 +452,6 @@ export function BookingsBoard({
                                               {client.specialRequests}
                                             </span>
                                           </p>
-                                        ) : null}
-                                        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                                          <Clock className="h-3.5 w-3.5" />
-                                          {client.bookedAt}
-                                        </span>
-                                        {section.key === "DELETED" && client.deletedAt ? (
-                                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                                            <Clock className="h-3.5 w-3.5" />
-                                            Deleted{client.deletedByText ? ` by ${client.deletedByText}` : ""} on {client.deletedAt}
-                                          </span>
-                                        ) : null}
-                                        {section.key === "CANCELLED" && client.cancelledAt ? (
-                                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                                            <Clock className="h-3.5 w-3.5" />
-                                            Cancelled {client.cancelledAt}
-                                          </span>
-                                        ) : null}
-                                        <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                                          {client.participantCount}{" "}
-                                          {client.participantCount === 1 ? "guest" : "guests"}
-                                        </span>
-                                        {adminActions && client.bookingId ? (
-                                          <span className="ml-auto flex shrink-0 items-center gap-2">
-                                            <AdminBookingActions
-                                              bookingId={client.bookingId}
-                                              status={client.status}
-                                              canConfirm={adminActions.canConfirm}
-                                              canCancel={adminActions.canCancel}
-                                            />
-                                          </span>
                                         ) : null}
                                       </li>
                                     ))}

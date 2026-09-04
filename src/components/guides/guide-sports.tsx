@@ -17,7 +17,7 @@ export function GuideSports({ sports = [] }: { sports?: string[] }) {
   return (
     <div>
       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Sports</p>
-      <div className="mt-3 flex flex-nowrap gap-3 overflow-x-auto pb-1">
+      <div className="mt-3 flex flex-wrap gap-3">
         {selectedSports.map(({ value, sport, label }) => (
           <div key={value} className="flex min-w-20 flex-col items-center gap-1 text-center text-[0.65rem] font-semibold text-foreground">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-500/10"><SportIcon sport={sport} className="h-4 w-4" iconClassName="text-sky-700 dark:text-sky-300" /></span>

@@ -103,7 +103,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Your trips
             </h3>
             <p className="text-sm text-muted-foreground">
-              Add a new trip or edit an existing one. Changes publish immediately and are logged for staff visibility.
+              Add a new trip or edit an existing one
             </p>
           </div>
           <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} drafts={drafts} />

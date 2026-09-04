@@ -214,7 +214,7 @@ export default async function CommunityPage() {
               </div>
             </div>
 
-            <div className="mt-7 grid w-full gap-3 md:grid-cols-3 lg:mt-8">
+            <div className="mt-7 grid w-full grid-cols-3 gap-2 sm:gap-3 lg:mt-8">
               {pillars.map((pillar) => {
                 const Icon = pillar.icon;
                 const tone = pillarToneStyles[pillar.tone];
@@ -222,37 +222,37 @@ export default async function CommunityPage() {
                 return (
                   <div
                     key={pillar.title}
-                    className={`relative flex flex-col overflow-hidden rounded-[1.75rem] p-6 transition-transform duration-200 hover:-translate-y-1 sm:p-6 ${tone.card}`}
+                    className={`relative flex min-w-0 flex-col overflow-hidden rounded-[1.25rem] p-3 transition-transform duration-200 hover:-translate-y-1 sm:rounded-[1.75rem] sm:p-6 ${tone.card}`}
                   >
                     <div className={`absolute inset-x-0 top-0 h-1 ${tone.topBar}`} />
 
-                    <div className="flex items-center gap-4">
-                      <div className={`rounded-2xl p-3 ${tone.iconBadge}`}>
-                        <Icon size={22} />
+                    <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
+                      <div className={`rounded-xl p-2 sm:rounded-2xl sm:p-3 ${tone.iconBadge}`}>
+                        <Icon className="h-4 w-4 sm:h-[22px] sm:w-[22px]" />
                       </div>
-                      <div>
-                        <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${tone.tagline}`}>
+                      <div className="min-w-0">
+                        <p className={`text-[0.55rem] font-semibold uppercase leading-3 tracking-[0.08em] sm:text-xs sm:leading-normal sm:tracking-[0.2em] ${tone.tagline}`}>
                           {pillar.tagline}
                         </p>
-                        <h3 className="font-heading text-2xl font-semibold text-foreground">
+                        <h3 className="font-heading text-sm font-semibold leading-4 text-foreground sm:text-2xl sm:leading-normal">
                           {pillar.title}
                         </h3>
                       </div>
                     </div>
 
-                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                    <p className="mt-3 text-[0.65rem] leading-4 text-muted-foreground sm:mt-4 sm:text-sm sm:leading-7">
                       {pillar.description}
                     </p>
 
-                    <ul className={`mt-6 flex flex-col gap-3 border-t pt-6 ${tone.divider}`}>
+                    <ul className={`mt-4 flex flex-col gap-2 border-t pt-4 sm:mt-6 sm:gap-3 sm:pt-6 ${tone.divider}`}>
                       {pillar.points.map((point) => {
                         const PointIcon = point.icon;
                         return (
-                          <li key={point.text} className="flex items-start gap-3">
-                            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tone.pointIcon}`}>
-                              <PointIcon size={13} />
+                          <li key={point.text} className="flex items-start gap-1.5 sm:gap-3">
+                            <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.pointIcon}`}>
+                              <PointIcon className="h-2.5 w-2.5 sm:h-[13px] sm:w-[13px]" />
                             </span>
-                            <span className="text-sm leading-6 text-foreground/80">{point.text}</span>
+                            <span className="min-w-0 break-words text-[0.6rem] leading-3.5 text-foreground/80 sm:text-sm sm:leading-6">{point.text}</span>
                           </li>
                         );
                       })}
@@ -282,16 +282,17 @@ export default async function CommunityPage() {
             </div>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-5">
             {guides.length === 0 ? (
               <p className="col-span-full rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
                 Our guide roster is taking a short break — check back in a few minutes.
               </p>
             ) : (
-              guides.map((guide) => (
+              guides.map((guide, index) => (
                 <GuideCard
                   key={guide.id}
                   variant="community"
+                  className={index >= 4 ? "hidden sm:block" : undefined}
                   guide={{
                     username: guide.user?.username ?? "",
                     name: guide.name,
