@@ -29,7 +29,7 @@ export function TripCard({
   const compact = size === "compact";
 
   return (
-    <Link href={`/trips/${trip.slug}`} className="block h-full">
+    <Link href={`/trips/${trip.slug}`} className="block h-full w-full">
       <Card
         className={`flex flex-col gap-0 overflow-hidden py-0 transition-transform duration-200 hover:-translate-y-1 ${CARD_SURFACE} ${
           compact

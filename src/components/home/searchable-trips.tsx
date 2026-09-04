@@ -419,11 +419,11 @@ export function SearchableTrips({
                  No trips match your search yet. Try a broader destination or trip name.
                </p>
              ) : null}
-                {visibleTrips.map((trip, index) => (
-                  <div key={trip.id} className={index > 3 ? "hidden md:flex" : "flex"}>
-                    <TripCard showPrice={false} trip={trip} />
-                  </div>
-                ))}
+                 {visibleTrips.map((trip, index) => (
+                   <div key={trip.id} className={index > 3 ? "hidden w-full min-w-0 md:flex" : "flex w-full min-w-0"}>
+                     <TripCard showPrice={false} trip={trip} />
+                   </div>
+                 ))}
             </div>
           </div>
          
