@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/rate-limit";
 import { getGeoInfo, hasGeoInfo } from "@/lib/geo";
+import type { GeoInfo } from "@/lib/geo";
 import { Prisma } from "@/generated/prisma/client";
 
 /**
@@ -36,6 +37,12 @@ export type ActivityAction =
   | "CUSTOM_TRIP_REPLY_SENT"
   | "TRIP_CHANGE_SUBMITTED"
   | "TRIP_DELETED"
+  | "TRIP_RESTORED"
+  | "SLOT_ADDED"
+  | "SLOT_EDITED"
+  | "SLOT_CANCELLED"
+  | "GUIDE_PROFILE_UPDATED"
+  | "GUIDE_PROFILE_REMOVED"
   | "USER_PROFILE_UPDATED"
   | "USER_ROLE_CHANGED"
   | "REVIEW_SUBMITTED"
@@ -48,6 +55,12 @@ export type ActivityLogInput = {
   ip?: string | null;
   userAgent?: string | null;
   metadata?: unknown;
+};
+
+export type ActivityLogContext = {
+  ip: string | null;
+  userAgent: string | null;
+  geo?: GeoInfo;
 };
 
 function truncate(value: string, maxLength: number): string {
@@ -76,6 +89,72 @@ function persistActivity(input: ActivityLogInput): void {
 }
 
 /**
+ * Captures request-scoped audit attributes before a database transaction starts.
+ * The resulting context can then be used to insert the audit row atomically with
+ * the mutation that it describes.
+ */
+export async function getActivityLogContext(): Promise<ActivityLogContext> {
+  let ip: string | null = null;
+  let userAgent: string | null = null;
+  let geo: GeoInfo | undefined;
+
+  try {
+    const rawIp = await getClientIp();
+    if (rawIp && rawIp !== "unknown") ip = rawIp;
+  } catch {
+    // Ignore — IP is best-effort.
+  }
+
+  try {
+    const headerList = await headers();
+    userAgent = headerList.get("user-agent") ?? null;
+  } catch {
+    // Ignore — user agent is best-effort.
+  }
+
+  try {
+    const value = await getGeoInfo();
+    if (hasGeoInfo(value)) geo = value;
+  } catch {
+    // Ignore — geolocation is best-effort.
+  }
+
+  return { ip, userAgent, geo };
+}
+
+function activityLogData(
+  input: ActivityLogInput,
+  context: ActivityLogContext,
+): Prisma.ActivityLogCreateArgs["data"] | null {
+  const { userId, action, label, metadata } = input;
+  if (!userId || !action) return null;
+
+  const base =
+    metadata && typeof metadata === "object" && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : {};
+
+  return {
+    userId,
+    action: truncate(action, 100),
+    label: truncate(label, 500),
+    ip: context.ip ? truncate(context.ip, 64) : null,
+    userAgent: context.userAgent ? truncate(context.userAgent, 500) : null,
+    metadata: (context.geo ? { ...base, geo: context.geo } : metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+  };
+}
+
+/** Inserts an activity row using the caller's transaction client. */
+export async function logActivityInTransaction(
+  tx: Prisma.TransactionClient,
+  input: ActivityLogInput,
+  context: ActivityLogContext,
+): Promise<void> {
+  const data = activityLogData(input, context);
+  if (data) await tx.activityLog.create({ data });
+}
+
+/**
  * Records an audit entry after the current response finishes, so logging never
  * blocks the user-facing action. Safe to call outside a request scope (e.g.
  * scripts) — it degrades to a fire-and-forget write.
@@ -92,47 +171,15 @@ export function recordActivity(input: ActivityLogInput): void {
 }
 
 /**
- * Captures the client IP + user agent, then records an audit entry. Use this
- * from Server Actions and route handlers where the request context is live.
+ * Captures request metadata and writes an audit entry synchronously. Use this
+ * from Server Actions and route handlers when the mutation is not transactional.
  */
 export async function logActivity(
   input: Omit<ActivityLogInput, "ip" | "userAgent">,
 ): Promise<void> {
   if (!input.userId) return;
 
-  let ip: string | null = null;
-  let userAgent: string | null = null;
-
-  try {
-    const rawIp = await getClientIp();
-    if (rawIp && rawIp !== "unknown") ip = rawIp;
-  } catch {
-    // Ignore — IP is best-effort.
-  }
-
-  try {
-    const headerList = await headers();
-    userAgent = headerList.get("user-agent") ?? null;
-  } catch {
-    // Ignore — user agent is best-effort.
-  }
-
-  // Enrich the metadata with the full Vercel geolocation (country, region,
-  // city, latitude, longitude, timezone) so the admin activity log shows where
-  // each action was performed. All fields are validated upstream in getGeoInfo.
-  let metadata = input.metadata;
-  try {
-    const geo = await getGeoInfo();
-    if (hasGeoInfo(geo)) {
-      const base =
-        metadata && typeof metadata === "object" && !Array.isArray(metadata)
-          ? (metadata as Record<string, unknown>)
-          : {};
-      metadata = { ...base, geo };
-    }
-  } catch {
-    // Ignore — geolocation is best-effort.
-  }
-
-  recordActivity({ ...input, metadata, ip, userAgent });
+  const context = await getActivityLogContext();
+  const data = activityLogData(input, context);
+  if (data) await prisma.activityLog.create({ data });
 }

@@ -6,7 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/authz";
 import { requireGuideAction } from "@/lib/guide-board";
 import { prisma } from "@/lib/prisma";
-import { logActivity } from "@/lib/activity-log";
+import { getActivityLogContext, logActivityInTransaction } from "@/lib/activity-log";
 import { isValidSlug, sanitizeText } from "@/lib/sanitize";
 import { notifyBookingStaff } from "@/lib/notifications";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
@@ -72,6 +72,20 @@ type TripFields = {
   exclusions: string[];
   highlights: string[];
 };
+
+function changedValues(before: object, after: object) {
+  const previous = before as Record<string, unknown>;
+  const next = after as Record<string, unknown>;
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+
+  for (const [field, value] of Object.entries(next)) {
+    if (JSON.stringify(previous[field]) !== JSON.stringify(value)) {
+      changes[field] = { from: previous[field], to: value };
+    }
+  }
+
+  return changes;
+}
 
 function readTripFields(formData: FormData): TripFields {
   const images = parseMediaList(formData.getAll("images"));
@@ -183,10 +197,10 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
   const slug = await uniqueTripSlug(fields.title);
 
   const proposal: TripProposal = { slug, ...fields };
+  const activityContext = await getActivityLogContext();
 
-  let change;
   try {
-    change = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const trip = await tx.trip.create({
         data: {
           slug: proposal.slug,
@@ -206,7 +220,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
         },
       });
       await applySupplemental(tx, trip.id, proposal);
-      return tx.tripChangeRequest.create({
+      const change = await tx.tripChangeRequest.create({
         data: {
           type: "CREATE",
           guideId: guide.id,
@@ -217,6 +231,19 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           reviewedAt: new Date(),
         },
       });
+
+      await logActivityInTransaction(
+        tx,
+        {
+          userId,
+          action: "TRIP_CHANGE_SUBMITTED",
+          label: "Published a new trip",
+          metadata: { changeId: change.id, tripId: trip.id, title: proposal.title },
+        },
+        activityContext,
+      );
+
+      return change;
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint failed")) {
@@ -224,13 +251,6 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
     }
     throw error;
   }
-
-  await logActivity({
-    userId,
-    action: "TRIP_CHANGE_SUBMITTED",
-    label: "Published a new trip",
-    metadata: { changeId: change.id, title: proposal.title },
-  });
 
   revalidatePath("/profile");
   revalidatePath("/guide-board/trips");
@@ -298,8 +318,10 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   };
 
   const proposal: TripProposal = { ...fields, slug: trip.slug };
+  const changes = changedValues(original, proposal);
+  const activityContext = await getActivityLogContext();
 
-  const change = await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const updated = await tx.trip.updateMany({
       where: { id: tripId, deletedAt: null, guideId: guide.id },
       data: {
@@ -319,7 +341,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     });
     if (updated.count === 0) throw new Error("This trip is no longer available to edit.");
     await applySupplemental(tx, tripId, proposal);
-    return tx.tripChangeRequest.create({
+    const change = await tx.tripChangeRequest.create({
       data: {
         type: "UPDATE",
         guideId: guide.id,
@@ -331,13 +353,19 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
         reviewedAt: new Date(),
       },
     });
-  });
 
-  await logActivity({
-    userId,
-    action: "TRIP_CHANGE_SUBMITTED",
-    label: "Published trip changes",
-    metadata: { changeId: change.id, title: proposal.title },
+    await logActivityInTransaction(
+      tx,
+      {
+        userId,
+        action: "TRIP_CHANGE_SUBMITTED",
+        label: "Published trip changes",
+        metadata: { changeId: change.id, tripId, title: proposal.title, changes },
+      },
+      activityContext,
+    );
+
+    return change;
   });
 
   revalidatePath("/profile");
@@ -399,12 +427,19 @@ export async function createGuideSlotAction(formData: FormData): Promise<void> {
 
   const { userId } = await requireGuide();
   const trip = await requireGuideTrip(tripId);
-  await prisma.slot.create({ data: { tripId: trip.id, date, capacity, reserved } });
-  await logActivity({
-    userId,
-    action: "SLOT_ADDED",
-    label: "Added a trip date",
-    metadata: { tripId: trip.id, date: date.toISOString(), capacity, reserved },
+  const activityContext = await getActivityLogContext();
+  await prisma.$transaction(async (tx) => {
+    await tx.slot.create({ data: { tripId: trip.id, date, capacity, reserved } });
+    await logActivityInTransaction(
+      tx,
+      {
+        userId,
+        action: "SLOT_ADDED",
+        label: "Added a trip date",
+        metadata: { tripId: trip.id, date: date.toISOString(), capacity, reserved },
+      },
+      activityContext,
+    );
   });
   revalidateGuideSlotPages(trip.slug);
 }
@@ -443,12 +478,23 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
     throw new Error(`Reserved cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
   }
 
-  await prisma.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
-  await logActivity({
-    userId,
-    action: "SLOT_EDITED",
-    label: "Updated a trip date",
-    metadata: { slotId, tripId: slot.tripId, date: date.toISOString(), capacity, reserved, booked: slot.booked },
+  const changes = changedValues(
+    { date: slot.date.toISOString(), capacity: slot.capacity, reserved: slot.reserved },
+    { date: date.toISOString(), capacity, reserved },
+  );
+  const activityContext = await getActivityLogContext();
+  await prisma.$transaction(async (tx) => {
+    await tx.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
+    await logActivityInTransaction(
+      tx,
+      {
+        userId,
+        action: "SLOT_EDITED",
+        label: "Updated a trip date",
+        metadata: { slotId, tripId: slot.tripId, date: date.toISOString(), capacity, reserved, booked: slot.booked, changes },
+      },
+      activityContext,
+    );
   });
   revalidateGuideSlotPages(slot.trip.slug);
 }
@@ -458,6 +504,7 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
 
   const { guide, userId } = await requireGuide();
   const cleanReason = sanitizeText(reason ?? "", { maxLength: 500 });
+  const activityContext = await getActivityLogContext();
   const now = new Date();
   let emails: CancellationEmail[] = [];
   let tripSlug = "";
@@ -521,6 +568,41 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
       where: { id: slotId },
       data: { deletedAt: now, deletedWithTrip: false },
     });
+
+    await logActivityInTransaction(
+      tx,
+      emails.length > 0
+        ? {
+            userId,
+            action: "BOOKING_CANCELLED",
+            label: "Cancelled a trip date and its bookings",
+            metadata: {
+              slotId,
+              tripId: slot.tripId,
+              title: tripTitle,
+              date: slotDate,
+              capacity: slotCapacity,
+              reserved: slotReserved,
+              booked: emails.length,
+              reason: cleanReason,
+            },
+          }
+        : {
+            userId,
+            action: "SLOT_CANCELLED",
+            label: "Cancelled an empty trip date",
+            metadata: {
+              slotId,
+              tripId: slot.tripId,
+              title: tripTitle,
+              date: slotDate,
+              capacity: slotCapacity,
+              reserved: slotReserved,
+              booked: 0,
+            },
+          },
+      activityContext,
+    );
   });
 
   for (const email of emails) {
@@ -549,33 +631,6 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
     } catch (error) {
       console.error("[payment] failed to notify staff of guide slot cancellation", error);
     }
-
-    await logActivity({
-      userId,
-      action: "BOOKING_CANCELLED",
-      label: "Cancelled a trip date and its bookings",
-      metadata: {
-        slotId,
-        date: slotDate,
-        capacity: slotCapacity,
-        reserved: slotReserved,
-        booked: emails.length,
-        reason: cleanReason,
-      },
-    });
-  } else {
-    await logActivity({
-      userId,
-      action: "SLOT_CANCELLED",
-      label: "Cancelled an empty trip date",
-      metadata: {
-        slotId,
-        date: slotDate,
-        capacity: slotCapacity,
-        reserved: slotReserved,
-        booked: 0,
-      },
-    });
   }
 
   revalidateGuideSlotPages(tripSlug);
@@ -592,6 +647,7 @@ export async function deleteGuideTripAction(tripId: string, reason?: string): Pr
   if (!cleanReason) throw new Error("Please provide a reason for deleting this trip.");
 
   const { guide, userId } = await requireGuide();
+  const activityContext = await getActivityLogContext();
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
     select: { id: true, slug: true, title: true, guideId: true, deletedAt: true },
@@ -628,13 +684,17 @@ export async function deleteGuideTripAction(tripId: string, reason?: string): Pr
         data: { status: "REJECTED", reviewedAt: deletedAt, reviewedById: userId },
       }),
     ]);
-  });
 
-  await logActivity({
-    userId,
-    action: "TRIP_DELETED",
-    label: "Guide deleted a trip",
-    metadata: { tripId, title: trip.title, reason: cleanReason },
+    await logActivityInTransaction(
+      tx,
+      {
+        userId,
+        action: "TRIP_DELETED",
+        label: "Guide deleted a trip",
+        metadata: { tripId, title: trip.title, reason: cleanReason },
+      },
+      activityContext,
+    );
   });
 
   revalidatePath("/profile");
@@ -750,6 +810,7 @@ export type GuideActivityEntry = {
 const GUIDE_ACTIVITY_ACTIONS = [
   "TRIP_CHANGE_SUBMITTED",
   "TRIP_DELETED",
+  "GUIDE_PROFILE_UPDATED",
   "SLOT_ADDED",
   "SLOT_EDITED",
   "SLOT_CANCELLED",

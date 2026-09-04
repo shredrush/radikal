@@ -17,6 +17,9 @@ function actionBadgeClass(action: string) {
   if (action.startsWith("TRIP_CHANGE")) {
     return "border-blue-500/40 bg-blue-500/10 text-blue-600";
   }
+  if (action.startsWith("GUIDE_PROFILE")) {
+    return "border-violet-500/40 bg-violet-500/10 text-violet-600";
+  }
   if (action === "TRIP_DELETED") {
     return "border-destructive/40 bg-destructive/10 text-destructive";
   }

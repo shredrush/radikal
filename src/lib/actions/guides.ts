@@ -5,7 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { requireGuideAction } from "@/lib/guide-board";
-import { logActivity } from "@/lib/activity-log";
+import { getActivityLogContext, logActivityInTransaction } from "@/lib/activity-log";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
@@ -150,6 +150,20 @@ function isUniqueConstraint(error: unknown) {
   return error instanceof Error && error.message.includes("Unique constraint failed");
 }
 
+function changedValues(before: object, after: object) {
+  const previous = before as Record<string, unknown>;
+  const next = after as Record<string, unknown>;
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+
+  for (const [field, value] of Object.entries(next)) {
+    if (JSON.stringify(previous[field]) !== JSON.stringify(value)) {
+      changes[field] = { from: previous[field], to: value };
+    }
+  }
+
+  return changes;
+}
+
 export async function createGuideAction(formData: FormData) {
   await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
@@ -242,12 +256,13 @@ export async function createGuideAction(formData: FormData) {
 }
 
 export async function updateGuideAction(formData: FormData) {
-  await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   const guideId = asString(formData.get("guideId"));
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
   await assertValidGuideMedia(fields.photos, fields.videos);
+  const activityContext = await getActivityLogContext();
 
   if (!guideId) {
     throw new Error("Missing guide id.");
@@ -259,7 +274,22 @@ export async function updateGuideAction(formData: FormData) {
     await prisma.$transaction(async (tx) => {
       const currentGuide = await tx.guide.findUnique({
         where: { id: guideId },
-        select: { deletedAt: true, user: { select: { username: true } } },
+        select: {
+          userId: true,
+          deletedAt: true,
+          name: true,
+          bio: true,
+          photo: true,
+          photos: true,
+          videos: true,
+          mediaOrder: true,
+          location: true,
+          experienceYears: true,
+          languages: true,
+          sports: true,
+          user: { select: { username: true } },
+          certifications: { select: { title: true }, orderBy: { createdAt: "asc" } },
+        },
       });
 
       if (!currentGuide || currentGuide.deletedAt) {
@@ -267,6 +297,26 @@ export async function updateGuideAction(formData: FormData) {
       }
 
       username = currentGuide.user.username ?? "";
+
+      const changes = changedValues(
+        {
+          name: currentGuide.name,
+          bio: currentGuide.bio,
+          photo: currentGuide.photo,
+          photos: currentGuide.photos,
+          videos: currentGuide.videos,
+          mediaOrder: currentGuide.mediaOrder,
+          location: currentGuide.location,
+          experienceYears: currentGuide.experienceYears,
+          languages: currentGuide.languages,
+          sports: currentGuide.sports,
+          certifications: currentGuide.certifications.map((certification) => certification.title),
+        },
+        {
+          ...guideData,
+          certifications: certifications.map((certification) => certification.title),
+        },
+      );
 
       await tx.guide.update({
         where: { id: guideId },
@@ -279,6 +329,19 @@ export async function updateGuideAction(formData: FormData) {
         await tx.certification.createMany({
           data: certifications.map((cert) => ({ guideId, ...cert })),
         });
+      }
+
+      if (Object.keys(changes).length > 0) {
+        await logActivityInTransaction(
+          tx,
+          {
+            userId: session.user.id,
+            action: "GUIDE_PROFILE_UPDATED",
+            label: "Updated a guide profile",
+            metadata: { guideId, guideUserId: currentGuide.userId, changes },
+          },
+          activityContext,
+        );
       }
     });
   } catch (error) {
@@ -304,6 +367,7 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
   await assertValidGuideMedia(fields.photos, fields.videos);
+  const activityContext = await getActivityLogContext();
 
   let username = "";
 
@@ -315,7 +379,20 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
         deletedAt: null,
         user: { deletedAt: null, role: "GUIDE" },
       },
-      select: { user: { select: { username: true } } },
+      select: {
+        name: true,
+        bio: true,
+        photo: true,
+        photos: true,
+        videos: true,
+        mediaOrder: true,
+        location: true,
+        experienceYears: true,
+        languages: true,
+        sports: true,
+        user: { select: { username: true } },
+        certifications: { select: { title: true }, orderBy: { createdAt: "asc" } },
+      },
     });
 
     if (!currentGuide) {
@@ -323,6 +400,26 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
     }
 
     username = currentGuide.user.username ?? "";
+
+    const changes = changedValues(
+      {
+        name: currentGuide.name,
+        bio: currentGuide.bio,
+        photo: currentGuide.photo,
+        photos: currentGuide.photos,
+        videos: currentGuide.videos,
+        mediaOrder: currentGuide.mediaOrder,
+        location: currentGuide.location,
+        experienceYears: currentGuide.experienceYears,
+        languages: currentGuide.languages,
+        sports: currentGuide.sports,
+        certifications: currentGuide.certifications.map((certification) => certification.title),
+      },
+      {
+        ...guideData,
+        certifications: certifications.map((certification) => certification.title),
+      },
+    );
 
     await tx.guide.update({
       where: { id: guide.id },
@@ -337,6 +434,19 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
         data: certifications.map((cert) => ({ guideId: guide.id, ...cert })),
       });
     }
+
+    if (Object.keys(changes).length > 0) {
+      await logActivityInTransaction(
+        tx,
+        {
+          userId,
+          action: "GUIDE_PROFILE_UPDATED",
+          label: "Updated guide profile",
+          metadata: { guideId: guide.id, changes },
+        },
+        activityContext,
+      );
+    }
   });
 
   revalidateGuidePages(username);
@@ -344,7 +454,7 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
 }
 
 export async function deleteGuideAction(guideId: string) {
-  await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
 
   if (!guideId) {
     throw new Error("Missing guide id.");
@@ -367,6 +477,7 @@ export async function deleteGuideAction(guideId: string) {
   }
 
   const username = guide.user.username ?? "";
+  const activityContext = await getActivityLogContext();
 
   // The teardown unlinks the guide's trips but leaves them live and bookable,
   // so refuse to remove the guide while any of their trips has an active
@@ -395,18 +506,22 @@ export async function deleteGuideAction(guideId: string) {
         data: { role: "USER" },
       });
     }
+
+    await logActivityInTransaction(
+      tx,
+      {
+        userId: session.user.id,
+        action: "GUIDE_PROFILE_REMOVED",
+        label: "Removed a guide profile",
+        metadata: { guideId: guide.id, guideUserId: guide.userId, roleReset: guide.user.role === "GUIDE" },
+      },
+      activityContext,
+    );
   });
 
   // The user was demoted from GUIDE to USER — make the new role visible to
   // their existing session immediately (hides the guide board, etc.).
   invalidateSessionVersion(guide.userId);
-
-  await logActivity({
-    userId: guide.userId,
-    action: "GUIDE_PROFILE_REMOVED",
-    label: "Guide profile removed by an admin",
-    metadata: { guideId: guide.id, roleReset: guide.user.role === "GUIDE" },
-  });
 
   // Storage objects are not cascaded by the DB delete — remove the guide's
   // media best-effort after the transaction commits.
