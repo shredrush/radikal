@@ -226,7 +226,11 @@ export function AdminGuideForm({
         </p>
         <div className="flex items-center gap-3">
           {isEditing ? <DeleteGuideButton guideId={guide!.id} guideName={guide!.name} /> : null}
-          <Button type="submit" className="rounded-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className={isEditing ? "rounded-full bg-emerald-600 text-white hover:bg-emerald-700" : "rounded-full"}
+            disabled={isPending}
+          >
             {isPending ? "Saving…" : isEditing ? "Save changes" : "Create guide"}
           </Button>
         </div>

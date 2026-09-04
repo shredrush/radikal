@@ -6,11 +6,19 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pluralize } from "@/lib/format";
 import { AdminGuideForm, type GuideFormData } from "@/components/admin/admin-guide-form";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export type GuideCardData = GuideFormData & { tripsCount: number };
 
 export function GuideCard({ guide }: { guide: GuideCardData }) {
   const [open, setOpen] = useState(false);
+  const initials = guide.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <li className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 shadow-sm">
@@ -20,11 +28,17 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
         aria-expanded={open}
         className="flex w-full items-start justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/10"
       >
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">{guide.name}</p>
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {guide.location} · {guide.tripsCount} {pluralize(guide.tripsCount, "trip")} linked · /{guide.username ?? "no username"}
-          </p>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Avatar size="lg">
+            {guide.photo ? <AvatarImage src={guide.photo} alt={`${guide.name}'s profile picture`} /> : null}
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-foreground">{guide.name}</p>
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {guide.location} · {guide.tripsCount} {pluralize(guide.tripsCount, "trip")} linked · /{guide.username ?? "no username"}
+            </p>
+          </div>
         </div>
         <ChevronDown
           className={cn(

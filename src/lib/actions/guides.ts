@@ -61,16 +61,7 @@ function parseSports(formData: FormData) {
   return Array.from(new Set(formData.getAll("sports").map((value) => value.toString()))).filter((sport) => guideSportValues.has(sport));
 }
 
-type CertificationInput = {
-  title: string;
-  issuingBody: string;
-  yearIssued: number | null;
-  credentialUrl: string | null;
-};
-
-// Certifications are simple comma- or newline-separated labels. The legacy
-// structured columns remain populated for database compatibility only.
-function parseCertifications(value: string): CertificationInput[] {
+function parseCertifications(value: string) {
   return Array.from(
     new Set(
       value
@@ -78,12 +69,7 @@ function parseCertifications(value: string): CertificationInput[] {
         .map((item) => sanitizeText(item, { maxLength: 200 }))
         .filter(Boolean),
     ),
-  ).map((title) => ({
-    title,
-    issuingBody: "Not specified",
-    yearIssued: null,
-    credentialUrl: null,
-  }));
+  ).map((title) => ({ title }));
 }
 
 function readGuideFields(formData: FormData) {

@@ -261,15 +261,12 @@ model Referral {
   @@map("referrals")
 }
 
-// Certifications by IMF (Indian Mountaineering Foundation) and other bodies.
+// Certifications are stored as a single descriptive title.
 model Certification {
-  id            String   @id @default(cuid())
-  guideId       String
-  issuingBody   String // e.g. "Indian Mountaineering Foundation (IMF)", "ABVIMAS"
-  title         String
-  yearIssued    Int?
-  credentialUrl String?
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  guideId   String
+  title     String
+  createdAt DateTime @default(now())
 
   guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
@@ -310,15 +307,12 @@ model GuideApplication {
   @@map("guide_applications")
 }
 
-// Certifications listed on a guide application, stored as structured rows so an
-// approving admin can promote them straight onto the new Guide record.
+// Certifications listed on a guide application, promoted to the Guide record
+// when the application is approved.
 model GuideApplicationCertification {
   id            String   @id @default(cuid())
   applicationId String
-  issuingBody   String
   title         String
-  yearIssued    Int?
-  credentialUrl String?
   createdAt     DateTime @default(now())
 
   application GuideApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)

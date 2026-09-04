@@ -10,10 +10,14 @@ export function AdminGuideFilter({
   guides,
   selectedGuideId,
   type,
+  pathname = "/admin/trips",
+  params: initialParams,
 }: {
   guides: Array<{ id: string; name: string }>;
   selectedGuideId: string;
   type?: string;
+  pathname?: string;
+  params?: Record<string, string | undefined>;
 }) {
   const router = useRouter();
 
@@ -27,12 +31,14 @@ export function AdminGuideFilter({
         id="guide-filter"
         value={selectedGuideId}
         onChange={(event) => {
-          const params = new URLSearchParams();
+          const params = new URLSearchParams(
+            Object.entries(initialParams ?? {}).filter((entry): entry is [string, string] => Boolean(entry[1])),
+          );
           if (type) params.set("type", type);
           const guideId = event.target.value;
           if (guideId) params.set("guide", guideId);
           const query = params.toString();
-          router.push(`/admin/trips${query ? `?${query}` : ""}`);
+          router.push(`${pathname}${query ? `?${query}` : ""}`);
         }}
         className={`h-10 min-w-56 rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
       >

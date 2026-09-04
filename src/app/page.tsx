@@ -68,7 +68,7 @@ const getHomeGuides = unstable_cache(
           select: { images: true },
         },
         certifications: {
-          orderBy: { yearIssued: "desc" },
+          orderBy: { createdAt: "desc" },
           take: 3,
           select: { title: true },
         },

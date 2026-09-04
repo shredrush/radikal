@@ -37,7 +37,7 @@ const getGuideDetail = unstable_cache(
         sports: true,
         user: { select: { username: true } },
         certifications: {
-          orderBy: { yearIssued: "desc" },
+          orderBy: { createdAt: "desc" },
           select: { id: true, title: true },
         },
         trips: {
@@ -59,7 +59,6 @@ const getGuideDetail = unstable_cache(
           // Retired trips retain their snapshot title/date.
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
-          take: 20,
           select: {
             id: true,
             comment: true,

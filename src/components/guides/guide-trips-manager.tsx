@@ -127,8 +127,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               return (
                 <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-foreground">{trip.title}</p>
-                    <p className="truncate text-sm text-muted-foreground">
+                    <p className="break-words font-semibold text-foreground">{trip.title}</p>
+                    <p className="break-words text-sm text-muted-foreground">
                       {trip.location} · {formatDurationDays(trip.durationDays)}
                     </p>
                   </div>

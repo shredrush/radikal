@@ -21,6 +21,7 @@ import {
   type SupportBoardSelectedChat,
   type SupportBoardTab,
 } from "@/components/support/support-board";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 export const dynamic = "force-dynamic";
 const MAX_SUPPORT_LIST_ITEMS = 100;
@@ -113,13 +114,38 @@ async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]>
 export default async function SupportBoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ chat?: string; tab?: string; request?: string }>;
+  searchParams: Promise<{
+    chat?: string;
+    tab?: string;
+    request?: string;
+    type?: string;
+    guide?: string;
+  }>;
 }) {
   const session = await requirePermission("support.manage", "/login?callbackUrl=/support");
 
-  const { chat: chatId, tab: tabParam, request: requestId } = await searchParams;
+  const { chat: chatId, tab: tabParam, request: requestId, type, guide } = await searchParams;
   const tab: SupportBoardTab =
     tabParam === "bookings" ? "bookings" : tabParam === "custom" ? "custom" : "conversations";
+  const selectedType =
+    ACTIVITY_TYPE_OPTIONS.find((option) => option.value === type)?.value ?? "";
+  const selectedGuideId = typeof guide === "string" ? guide : "";
+  const bookingGuides =
+    tab === "bookings"
+      ? await safeDb(
+          "support.bookings.guide-filter",
+          () =>
+            prisma.guide.findMany({
+              where: { deletedAt: null },
+              orderBy: { name: "asc" },
+              select: { id: true, name: true },
+            }),
+          [],
+        )
+      : [];
+  const activeGuideId = bookingGuides.some((item) => item.id === selectedGuideId)
+    ? selectedGuideId
+    : "";
 
   // Only load the dataset the active tab renders. The conversations tab is the
   // default landing, and it previously paid for the platform-wide bookings
@@ -142,7 +168,12 @@ export default async function SupportBoardPage({
             "support.bookings",
             () =>
               fetchBookingsWithDetails(
-                {},
+                {
+                  trip: {
+                    ...(activeGuideId ? { guideId: activeGuideId } : {}),
+                    ...(selectedType ? { type: selectedType } : {}),
+                  },
+                },
                 { completePast: true, includeBookingIds: true, includePaymentDetails: true },
               ),
             [],
@@ -228,6 +259,9 @@ export default async function SupportBoardPage({
           : awaitingReplyCount
       }
       initialBookings={bookings}
+      bookingGuides={bookingGuides}
+      selectedBookingGuideId={activeGuideId}
+      selectedBookingType={selectedType}
       pendingBookingsCount={
         tab === "bookings"
           ? bookings.filter((booking) => booking.status === "PENDING").length

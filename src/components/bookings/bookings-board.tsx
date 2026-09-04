@@ -163,8 +163,8 @@ export function BookingsBoard({
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     CONFIRMED: true,
     PENDING: true,
-    COMPLETED: false,
-    CANCELLED: false,
+    COMPLETED: true,
+    CANCELLED: true,
     DELETED: false,
   });
 
@@ -290,13 +290,13 @@ export function BookingsBoard({
                                   sizes="96px"
                                 />
                               </div>
-                              <div className="min-w-0">
-                                <p className="font-heading text-base font-semibold leading-snug text-foreground">
+                              <div className="min-w-0 flex-1">
+                                <p className="break-words font-heading text-base font-semibold leading-snug text-foreground">
                                   {trip.title}
                                 </p>
                                 <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
                                   <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                  <span className="truncate">{trip.location}</span>
+                                  <span className="break-words">{trip.location}</span>
                                 </p>
                               </div>
                             </div>
@@ -308,7 +308,7 @@ export function BookingsBoard({
                                   className="overflow-hidden rounded-xl border border-border/60 bg-muted/10 dark:bg-muted/20"
                                 >
                                   <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/30 px-3 py-2 dark:bg-muted/40">
-                                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
+                                    <span className="inline-flex min-w-0 items-center gap-1.5 break-words text-sm font-semibold text-orange-600 dark:text-orange-400">
                                       <CalendarDays className="h-4 w-4 text-orange-500" />
                                       {slot.slotLabel}
                                     </span>
@@ -402,10 +402,10 @@ export function BookingsBoard({
                                           )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                          <p className="truncate text-sm font-medium text-foreground">
+                                          <p className="break-words text-sm font-medium text-foreground">
                                             {client.name}
                                           </p>
-                                          <p className="truncate text-xs text-muted-foreground">
+                                          <p className="break-words text-xs text-muted-foreground">
                                             {client.username
                                               ? `@${client.username}`
                                               : client.email}
@@ -416,7 +416,7 @@ export function BookingsBoard({
                                             <span className="font-semibold text-foreground">
                                               Special needs:
                                             </span>{" "}
-                                            <span className="whitespace-pre-line">
+                                            <span className="whitespace-pre-line break-words">
                                               {client.specialRequests}
                                             </span>
                                           </p>

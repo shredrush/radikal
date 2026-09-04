@@ -38,7 +38,7 @@ const getCommunityGuides = unstable_cache(
       orderBy: { name: "asc" },
       include: {
         certifications: {
-          orderBy: { yearIssued: "desc" },
+          orderBy: { createdAt: "desc" },
           take: 3,
         },
         user: { select: { username: true } },

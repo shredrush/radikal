@@ -114,7 +114,6 @@ export async function fetchBookingsWithDetails(
     prisma.booking.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 500,
       include: bookingDetailInclude,
     }),
     prisma.slot.findMany({
@@ -126,7 +125,6 @@ export async function fetchBookingsWithDetails(
         bookings: { none: {} },
       },
       orderBy: { date: "asc" },
-      take: 200,
       include: {
         trip: {
           select: {

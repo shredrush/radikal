@@ -15,6 +15,8 @@ import type { BookingBoardItem } from "@/lib/bookings";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 const BookingsStats = dynamic(
   () => import("@/components/bookings/bookings-stats").then((module) => module.BookingsStats),
@@ -98,6 +100,9 @@ export function SupportBoard({
   initialResolvedChats,
   pendingConversationsCount,
   initialBookings,
+  bookingGuides,
+  selectedBookingGuideId,
+  selectedBookingType,
   pendingBookingsCount,
   initialCustomRequests,
   deletedCustomRequests,
@@ -112,6 +117,9 @@ export function SupportBoard({
   initialResolvedChats: SupportChatListItem[];
   pendingConversationsCount: number;
   initialBookings: BookingBoardItem[];
+  bookingGuides: Array<{ id: string; name: string }>;
+  selectedBookingGuideId: string;
+  selectedBookingType: string;
   pendingBookingsCount: number;
   initialCustomRequests: CustomTripRequestListItem[];
   deletedCustomRequests: CustomTripRequestListItem[];
@@ -285,9 +293,53 @@ export function SupportBoard({
         )}
 
         {tab === "bookings" ? (
-          <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-            <BookingsBoard items={initialBookings} />
-          </section>
+          <>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <AdminGuideFilter
+                guides={bookingGuides}
+                selectedGuideId={selectedBookingGuideId}
+                type={selectedBookingType || undefined}
+                pathname="/support"
+                params={{ tab: "bookings" }}
+              />
+
+              <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
+                <Button
+                  variant={selectedBookingType === "" ? "default" : "outline"}
+                  size="xs"
+                  className="rounded-full border-2 border-black dark:border-white"
+                  nativeButton={false}
+                  render={<Link href={selectedBookingGuideId ? `/support?tab=bookings&guide=${selectedBookingGuideId}` : "/support?tab=bookings"} />}
+                >
+                  All
+                </Button>
+                {ACTIVITY_TYPE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={selectedBookingType === option.value ? "default" : "outline"}
+                    size="xs"
+                    className="rounded-full border-2 border-black dark:border-white"
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href={`/support?${new URLSearchParams({
+                          tab: "bookings",
+                          ...(selectedBookingGuideId ? { guide: selectedBookingGuideId } : {}),
+                          type: option.value,
+                        }).toString()}`}
+                      />
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+              <BookingsBoard items={initialBookings} />
+            </section>
+          </>
         ) : tab === "custom" ? (
           <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <CustomTripsView

@@ -66,16 +66,7 @@ async function generateAvailableUsername(): Promise<string> {
   return `guide-${crypto.randomInt(0, 1_000_000)}`;
 }
 
-type CertificationInput = {
-  title: string;
-  issuingBody: string;
-  yearIssued: number | null;
-  credentialUrl: string | null;
-};
-
-// Certifications are simple comma- or newline-separated labels. The legacy
-// structured columns remain populated for database compatibility only.
-function parseCertifications(value: string): CertificationInput[] {
+function parseCertifications(value: string) {
   return Array.from(
     new Set(
       value
@@ -83,12 +74,7 @@ function parseCertifications(value: string): CertificationInput[] {
         .map((item) => sanitizeText(item, { maxLength: 200 }))
         .filter(Boolean),
     ),
-  ).map((title) => ({
-    title,
-    issuingBody: "Not specified",
-    yearIssued: null,
-    credentialUrl: null,
-  }));
+  ).map((title) => ({ title }));
 }
 
 function readApplicationFields(formData: FormData) {
@@ -361,9 +347,6 @@ export async function approveGuideApplicationAction(applicationId: string) {
           certifications: {
             create: application.certifications.map((cert) => ({
               title: cert.title,
-              issuingBody: cert.issuingBody,
-              yearIssued: cert.yearIssued,
-              credentialUrl: cert.credentialUrl,
             })),
           },
         },
