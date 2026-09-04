@@ -1,13 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export type CommunityGuideMediaItem = {
   src: string;
   alt: string;
-  username: string;
 };
 
 const slotLayouts = [
@@ -80,11 +78,9 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
           const slideClass = slideDirections[slot % slideDirections.length];
 
           return (
-            <Link
+            <div
               key={`${slot}-${isSliding ? cycle : 0}`}
-              href={`/${item.username}`}
-              aria-label={`View ${item.alt}'s public profile`}
-              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} group relative overflow-hidden bg-muted/60`}
+              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} relative overflow-hidden bg-muted/60`}
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass} motion-reduce:animate-none`}>
@@ -104,12 +100,11 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
                   src={item.src}
                   alt={item.alt}
                   fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="object-cover"
                   sizes="(max-width: 640px) 35vw, 18vw"
                 />
               </div>
-              <span className="absolute inset-0 z-20 bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
-            </Link>
+            </div>
           );
         })}
       </div>

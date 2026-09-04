@@ -19,45 +19,24 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { orderGuidesByFeaturedUsernames } from "@/lib/guides";
-import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
-import { GuideCard } from "@/components/guides/guide-card";
+import { ACCENT_PILL } from "@/lib/card-styles";
 import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
-import { AuthenticatedLink } from "@/components/authenticated-link";
 
 export const metadata: Metadata = {
   title: "Community | Radikal",
-  description: "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
+  description:
+    "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
 };
 
-// Guide roster changes rarely; avoid a DB round-trip on every request.
-const getCommunityGuides = unstable_cache(
-  async () => {
-    const guides = await prisma.guide.findMany({
+// Guide media changes rarely; avoid a DB round-trip on every request.
+const getCommunityGuideMedia = unstable_cache(
+  async () =>
+    prisma.guide.findMany({
       where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
-      include: {
-        certifications: {
-          orderBy: { createdAt: "desc" },
-          take: 3,
-          select: { id: true, title: true },
-        },
-        user: { select: { username: true } },
-        _count: {
-          select: { trips: true },
-        },
-        trips: {
-          where: { deletedAt: null },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { images: true },
-        },
-      },
-    });
-
-    return orderGuidesByFeaturedUsernames(guides);
-  },
-  ["community-guides"],
+      select: { name: true, photos: true },
+    }),
+  ["community-guide-media"],
   { tags: ["guides"], revalidate: 3600 },
 );
 
@@ -86,7 +65,7 @@ const pillars: {
     ],
   },
   {
-    title: "Learning based approach",
+    title: "Learn by doing",
     tagline: "Learn by doing",
     description:
       "Every journey is a chance to pick up real outdoor skills from certified experts — hands-on practice, personal coaching and knowledge you'll carry far beyond the trail.",
@@ -117,14 +96,7 @@ const pillars: {
 
 const pillarToneStyles: Record<
   PillarTone,
-  {
-    card: string;
-    iconBadge: string;
-    tagline: string;
-    pointIcon: string;
-    divider: string;
-    topBar: string;
-  }
+  { card: string; iconBadge: string; tagline: string; pointIcon: string; divider: string; topBar: string }
 > = {
   orange: {
     card: "bg-gradient-to-br from-orange-50/80 via-white to-white shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:from-orange-500/10 dark:via-card dark:to-card dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]",
@@ -153,177 +125,102 @@ const pillarToneStyles: Record<
 };
 
 export default async function CommunityPage() {
-  const guides = await safeDb("community.guides", () => getCommunityGuides(), []);
-  const guideMedia = guides.flatMap((guide) =>
-    (guide.photos ?? []).filter(Boolean).map((src, index) => ({
-      src,
-      alt: `${guide.name} photo ${index + 1}`,
-      username: guide.user?.username ?? "",
-    })).filter((guide) => guide.username),
+  const mediaGuides = await safeDb("community.guide-media", () => getCommunityGuideMedia(), []);
+  const guideMedia = mediaGuides.flatMap((guide) =>
+    (guide.photos ?? [])
+      .filter(Boolean)
+      .map((src, index) => ({
+        src,
+        alt: `${guide.name} photo ${index + 1}`,
+      })),
   );
-
   return (
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
-        <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-orange-50/70 via-background to-emerald-50/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10">
           <div className="p-6 sm:p-8 lg:p-10">
-            <div className="flex w-full flex-col items-center gap-4 text-center">
+            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
               <div className={`inline-flex items-center gap-2 rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>
                 <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
               </div>
 
-              <div className="space-y-3">
-                <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  Meaningful adventures, made responsibly
-                </h1>
-                <p className="mx-auto max-w-2xl text-base leading-7 text-muted-foreground">
-                  We bring together adventure seekers and local experts to create journeys that are personal, responsible and deeply rooted in place. Small groups, sustainable choices, and a community that cares.
-                </p>
-              </div>
+              <h1 className="mt-5 max-w-3xl font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                Adventures crafted and led by experts
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+                We bring together adventure seekers and experts to create journeys that are personal, responsible and deeply rooted in place.
+              </p>
 
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  href="/become-a-guide"
+                  className="inline-flex items-center gap-2 rounded-full bg-orange-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-800"
+                >
+                  Become a Guide
+                  <ArrowRight size={16} />
+                </Link>
                 <Link
                   href="/trips"
-                  className="inline-flex items-center gap-2 rounded-full bg-orange-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-800"
+                  className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/80 px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
                 >
                   Explore trips
                   <ArrowRight size={16} />
                 </Link>
-                <AuthenticatedLink
-                  authenticatedHref="/trips"
-                  unauthenticatedHref="/login"
-                  className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-500/40 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-500/10"
-                >
-                  Join the community
-                </AuthenticatedLink>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                  Vetted  guides
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Small group sizes
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                  Leave-no-trace travel
-                </span>
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" />Vetted guides</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Small group sizes</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />Leave-no-trace travel</span>
               </div>
             </div>
 
-            <div className="mt-7 grid w-full grid-cols-3 gap-2 sm:gap-3 lg:mt-8">
-              {pillars.map((pillar) => {
-                const Icon = pillar.icon;
-                const tone = pillarToneStyles[pillar.tone];
+          </div>
+        </section>
 
-                return (
-                  <div
-                    key={pillar.title}
-                    className={`relative flex min-w-0 flex-col overflow-hidden rounded-[1.25rem] p-3 transition-transform duration-200 hover:-translate-y-1 sm:rounded-[1.75rem] sm:p-6 ${tone.card}`}
-                  >
-                    <div className={`absolute inset-x-0 top-0 h-1 ${tone.topBar}`} />
+        <section className="rounded-[2rem] border border-border/70 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] sm:p-8 lg:p-10">
+          <div className="max-w-2xl">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Why we travel this way</p>
+            <h2 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">A community built for better time outside.</h2>
+          </div>
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            {pillars.map((pillar) => {
+              const Icon = pillar.icon;
+              const tone = pillarToneStyles[pillar.tone];
 
-                    <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
-                      <div className={`rounded-xl p-2 sm:rounded-2xl sm:p-3 ${tone.iconBadge}`}>
-                        <Icon className="h-4 w-4 sm:h-[22px] sm:w-[22px]" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={`text-[0.55rem] font-semibold uppercase leading-3 tracking-[0.08em] sm:text-xs sm:leading-normal sm:tracking-[0.2em] ${tone.tagline}`}>
-                          {pillar.tagline}
-                        </p>
-                        <h3 className="font-heading text-sm font-semibold leading-4 text-foreground sm:text-2xl sm:leading-normal">
-                          {pillar.title}
-                        </h3>
-                      </div>
+              return (
+                <article key={pillar.title} className={`relative flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] p-5 sm:p-6 ${tone.card}`}>
+                  <div className={`absolute inset-x-0 top-0 h-1 ${tone.topBar}`} />
+                  <div className="flex items-center gap-4">
+                    <div className={`rounded-2xl p-3 ${tone.iconBadge}`}><Icon className="size-5" /></div>
+                    <div>
+                      <p className={`text-[0.65rem] font-semibold uppercase tracking-[0.18em] ${tone.tagline}`}>{pillar.tagline}</p>
+                      <h3 className="mt-1 font-heading text-xl font-semibold text-foreground">{pillar.title}</h3>
                     </div>
-
-                    <p className="mt-3 text-[0.65rem] leading-4 text-muted-foreground sm:mt-4 sm:text-sm sm:leading-7">
-                      {pillar.description}
-                    </p>
-
-                    <ul className={`mt-4 flex flex-col gap-2 border-t pt-4 sm:mt-6 sm:gap-3 sm:pt-6 ${tone.divider}`}>
-                      {pillar.points.map((point) => {
-                        const PointIcon = point.icon;
-                        return (
-                          <li key={point.text} className="flex items-start gap-1.5 sm:gap-3">
-                            <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.pointIcon}`}>
-                              <PointIcon className="h-2.5 w-2.5 sm:h-[13px] sm:w-[13px]" />
-                            </span>
-                            <span className="min-w-0 break-words text-[0.6rem] leading-3.5 text-foreground/80 sm:text-sm sm:leading-6">{point.text}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
                   </div>
-                );
-              })}
-            </div>
+                  <p className="mt-5 text-sm leading-6 text-muted-foreground">{pillar.description}</p>
+                  <ul className={`mt-5 flex flex-col gap-3 border-t pt-5 ${tone.divider}`}>
+                    {pillar.points.map((point) => {
+                      const PointIcon = point.icon;
+                      return <li key={point.text} className="flex items-start gap-3"><span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${tone.pointIcon}`}><PointIcon className="size-3" /></span><span className="text-sm leading-5 text-foreground/80">{point.text}</span></li>;
+                    })}
+                  </ul>
+                </article>
+              );
+            })}
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">
-          <div className="h-1 bg-gradient-to-r from-orange-500 via-emerald-500 to-orange-400" />
-          <div className="p-6 sm:p-8 lg:p-10">
-          <div className="flex flex-col gap-4 pb-6 sm:pb-8">
-            <div className={`inline-flex w-fit items-center gap-2 rounded-full border ${ACCENT_PILL_EMERALD} px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.25em]`}>
-              <Leaf className="h-3.5 w-3.5" />
-              Meet the guides
-            </div>
-            <div className="flex flex-col gap-3">
-              <h2 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                Experienced leaders behind every journey
-              </h2>
-              <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                Our guides bring deep regional knowledge, safety expertise and a personal connection to the places you travel.
-              </p>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Out in the field</p>
+              <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">The places and people behind the plans.</h2>
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-5">
-            {guides.length === 0 ? (
-              <p className="col-span-full rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 px-4 py-10 text-center text-sm text-muted-foreground">
-                Our guide roster is taking a short break — check back in a few minutes.
-              </p>
-            ) : (
-              guides.map((guide, index) => (
-                <GuideCard
-                  key={guide.id}
-                  variant="community"
-                  className={index >= 4 ? "hidden sm:block" : undefined}
-                  guide={{
-                    username: guide.user?.username ?? "",
-                    name: guide.name,
-                    location: guide.location,
-                    photo: guide.photo,
-                    photos: guide.photos,
-                    tripImage: guide.trips[0]?.images[0],
-                    bio: guide.bio,
-                    experienceYears: guide.experienceYears,
-                    certifications: guide.certifications.map((certification) => certification.title),
-                    languages: guide.languages,
-                  }}
-                />
-              ))
-            )}
-          </div>
-
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/become-a-guide"
-              className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
-            >
-              Become a Guide
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-          </div>
-        </section>
-
-        <CommunityGuideMedia items={guideMedia} />
+          <CommunityGuideMedia items={guideMedia} />
+        </div>
       </div>
     </div>
   );

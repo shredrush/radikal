@@ -19,7 +19,10 @@ import { CTA_PILL } from "@/lib/card-styles";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { TripCard } from "@/components/trips/trip-card";
-import { GuideCard } from "@/components/guides/guide-card";
+import {
+  CommunityGuideMedia,
+  type CommunityGuideMediaItem,
+} from "@/components/guides/community-guide-media";
 
 type TripCardItem = {
   id: string;
@@ -33,14 +36,6 @@ type TripCardItem = {
   images?: string[];
   type?: string;
   guide: { name: string } | null;
-};
-
-type GuideProfile = {
-  username: string;
-  name: string;
-  location: string;
-  photo: string;
-  certifications: string[];
 };
 
 type Testimonial = {
@@ -79,12 +74,12 @@ function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: reado
 export function SearchableTrips({
   trips,
   featuredTripSlugs = [],
-  guides = [],
+  guideMedia = [],
   testimonials = [],
 }: {
   trips: TripCardItem[];
   featuredTripSlugs?: readonly string[];
-  guides?: GuideProfile[];
+  guideMedia?: CommunityGuideMediaItem[];
   testimonials?: Testimonial[];
 }) {
   const router = useRouter();
@@ -407,10 +402,10 @@ export function SearchableTrips({
          <div className="mx-auto max-w-8xl">
            <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-               Featured Trips
+               More than a booking platform — a home for guides
              </p>
              <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-              Curated, small group, sustainable adventures with certified expert guides
+              Small group, sustainable adventures crafted by certified experts
              </h4>
            </div>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
@@ -444,24 +439,18 @@ export function SearchableTrips({
  
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
-            <div className="mb-4">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                More than a booking platform — a home for guides
+                Out in the field
               </p>
               <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-                Tours crafted by certified professional guides, with a commitment to sustainable travel
+                The places and people behind the plans.
               </h4>
+              </div>
             </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
-                {guides.slice(0, 5).map((guide, index) => (
-                  <GuideCard
-                    key={guide.username}
-                    guide={guide}
-                    className={index > 3 ? "hidden md:block" : undefined}
-                  />
-                ))}
-              </div>
+            <CommunityGuideMedia items={guideMedia} />
 
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button

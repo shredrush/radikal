@@ -38,7 +38,7 @@ export function ReferralPanel({ code, signups, qualified, referrals }: ReferralP
     const url = referralUrl(code);
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Join me on Radikal", text: "Explore your next adventure with Radikal.", url });
+        await navigator.share({ title: "Join me on Radikal", text: "Explore your next adventure with Radikal", url });
         return;
       } catch {
         // A dismissed share sheet is not an error that needs to interrupt use.

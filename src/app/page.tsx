@@ -1,9 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { orderGuidesByFeaturedUsernames } from "@/lib/guides";
 import { SearchableTrips } from "@/components/home/searchable-trips";
-import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatShortDate } from "@/lib/format";
 
@@ -46,37 +44,18 @@ const getHomeTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-// Guide cards on the home page are data-driven so every guide gets a public
-// profile link; guides rarely change, so cache like the community roster.
-// `select` keeps the cached payload to just the columns the cards render
-// (the previous `include` pulled every guide column — bio, experience,
-// media arrays, … — for a section that only shows name/location/photo).
+// The home gallery uses the same guide media as the community page. Keep its
+// payload narrow because the gallery only needs photos and guide names.
 const getHomeGuides = unstable_cache(
   async () => {
-    const guides = await prisma.guide.findMany({
+    return prisma.guide.findMany({
       where: { deletedAt: null, user: { deletedAt: null } },
       orderBy: { name: "asc" },
       select: {
         name: true,
-        location: true,
-        photo: true,
         photos: true,
-        trips: {
-          where: { deletedAt: null },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { images: true },
-        },
-        certifications: {
-          orderBy: { createdAt: "desc" },
-          take: 3,
-          select: { title: true },
-        },
-        user: { select: { username: true } },
       },
     });
-
-    return orderGuidesByFeaturedUsernames(guides);
   },
   ["home-guides"],
   { tags: ["guides"], revalidate: 3600 },
@@ -137,18 +116,14 @@ export default async function Home() {
           images: trip.images,
           guide: trip.guide ? { name: trip.guide.name } : null,
         }))}
-        guides={guides.map((guide) => ({
-          username: guide.user?.username ?? "",
-          name: guide.name,
-          location: guide.location,
-          photo: getGuideImage({
-            username: guide.user?.username ?? "",
-            photo: guide.photo,
-            photos: guide.photos,
-            tripImage: guide.trips[0]?.images[0],
-          }),
-          certifications: guide.certifications.map((certification) => certification.title),
-        }))}
+        guideMedia={guides.flatMap((guide) =>
+          (guide.photos ?? [])
+            .filter(Boolean)
+            .map((src, index) => ({
+              src,
+              alt: `${guide.name} photo ${index + 1}`,
+            })),
+        )}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
           trip: review.tripName ?? review.trip?.title ?? "Radikal experience",
