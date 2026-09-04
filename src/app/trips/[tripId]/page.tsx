@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import {
@@ -31,27 +32,6 @@ import { normalizeTripImagePath } from "@/lib/trip-card-image";
 // Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
 const MAX_REVIEWS = 4;
-
-export const revalidate = 300;
-
-// Pre-render currently published trip URLs. New trips remain supported through
-// ISR, while the catalog's existing detail pages avoid a server cold start.
-export async function generateStaticParams() {
-  const trips = await safeDb(
-    "trip.static-params",
-    () =>
-      prisma.trip.findMany({
-        where: {
-          deletedAt: null,
-          OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
-        },
-        select: { slug: true },
-      }),
-    [],
-  );
-
-  return trips.map(({ slug }) => ({ tripId: slug }));
-}
 
 // Cache compact render metadata only. Media may contain large data URLs, which
 // exceed Next's 2 MB Data Cache entry limit and cause cache writes to be rejected.
@@ -214,6 +194,9 @@ export default async function TripDetailPage({
 }: {
   params: Promise<{ tripId: string }>;
 }) {
+  // Trip data is database-backed, so defer it until a request arrives rather
+  // than requiring the database during Vercel's build prerendering.
+  await connection();
   const { tripId } = await params;
 
   const [tripDetail, tripMedia] = await Promise.all([
