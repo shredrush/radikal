@@ -66,7 +66,7 @@ const pillars: {
   },
   {
     title: "Learn by doing",
-    tagline: "Learn by doing",
+    tagline: "Grow with every step",
     description:
       "Every journey is a chance to pick up real outdoor skills from certified experts — hands-on practice, personal coaching and knowledge you'll carry far beyond the trail.",
     icon: GraduationCap,

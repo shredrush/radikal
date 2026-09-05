@@ -5,6 +5,7 @@ import type { IconWeight } from "@phosphor-icons/react";
 import {
   BicycleIcon,
   MountainsIcon,
+  MoonStarsIcon,
   PersonSimpleHikeIcon,
   PersonSimpleSkiIcon,
   PersonSimpleSnowboardIcon,
@@ -28,7 +29,8 @@ export type SportId =
   | "snowboard"
   | "trek"
   | "yoga"
-  | "expedition";
+  | "expedition"
+  | "stargazing";
 
 type SportMeta = {
   label: string;
@@ -85,6 +87,12 @@ export const SPORT_META: Record<SportId, SportMeta> = {
   expedition: {
     label: "Summit Expedition",
     icon: MountainsIcon,
+    iconClassName: "text-black dark:text-white",
+    chipClassName: "bg-black/5 dark:bg-white/10",
+  },
+  stargazing: {
+    label: "Stargazing",
+    icon: MoonStarsIcon,
     iconClassName: "text-black dark:text-white",
     chipClassName: "bg-black/5 dark:bg-white/10",
   },

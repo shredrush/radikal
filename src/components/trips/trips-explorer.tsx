@@ -200,7 +200,9 @@ export function TripsExplorer({
         <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
           No trips match your search yet. Try another sport, destination, or keyword.
         </div>
-      ) : (
+      ) : null}
+
+      {filteredTrips.length > 0 ? (
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedActivities.map((group) => {
@@ -228,44 +230,44 @@ export function TripsExplorer({
               );
             })}
           </div>
-
-          {hasActiveFilters && (
-            <div className="flex flex-col gap-6 border-t border-border/70 pt-2">
-              <div className="space-y-1">
-                <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-emerald-700 sm:text-2xl">
-                  explore other adventures ...
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-                {groupedOtherActivities.map((group) => {
-                  if (group.trips.length === 0) {
-                    return null;
-                  }
-
-                  const columnCount = Math.min(group.trips.length, 4);
-
-                  return (
-                    <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h3 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
-                            <SportGroupHeading sport={group.id} label={group.label} />
-                          </h3>
-                        </div>
-                      </div>
-                      <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                        {group.trips.map((trip) => (
-                      <TripCard key={trip.id} trip={trip} />
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
-      )}
+      ) : null}
+
+      {hasActiveFilters && otherActivities.length > 0 ? (
+        <div className="flex flex-col gap-6 border-t border-border/70 pt-2">
+          <div className="space-y-1">
+            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-emerald-700 sm:text-2xl">
+              explore other adventures ...
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
+            {groupedOtherActivities.map((group) => {
+              if (group.trips.length === 0) {
+                return null;
+              }
+
+              const columnCount = Math.min(group.trips.length, 4);
+
+              return (
+                <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
+                        <SportGroupHeading sport={group.id} label={group.label} />
+                      </h3>
+                    </div>
+                  </div>
+                  <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
+                    {group.trips.map((trip) => (
+                      <TripCard key={trip.id} trip={trip} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

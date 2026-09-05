@@ -5,6 +5,13 @@ import { SiteLogoLink } from "@/components/site-logo-link";
 import { SportIcon } from "@/components/trips/sport-icon";
 import { HeaderAccount } from "@/components/header-account";
 
+type RetreatItem = {
+  label: string;
+  href?: string;
+  sport: string;
+  comingSoon?: boolean;
+};
+
 export function SiteHeader() {
 
   const sportGroups = [
@@ -32,10 +39,14 @@ export function SiteHeader() {
     },
   ];
 
-  const wellnessGroups = [
+  const wellnessGroups: { heading: string; items: RetreatItem[] }[] = [
     {
       heading: "Wellness",
-      items: [{ label: "Yoga and Meditation", href: "/trips?sport=yoga", sport: "yoga" }],
+      items: [{ label: "Yoga and Meditation", sport: "yoga", comingSoon: true }],
+    },
+    {
+      heading: "Astro",
+      items: [{ label: "Stargazing", sport: "stargazing", comingSoon: true }],
     },
   ];
 
@@ -100,20 +111,30 @@ export function SiteHeader() {
                   nativeButton={false}
                   render={<Link href="/trips?sport=yoga" />}
                 >
-                  Wellness Retreats
+                  Retreats
                 </Button>
-                <div className="invisible absolute left-1/2 top-full z-50 mt-2 w-[min(92vw,260px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <div className="space-y-2">
+                <div className="invisible absolute left-1/2 top-full z-50 mt-2 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                  <div className="grid grid-cols-2 gap-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                         <div className="flex flex-col gap-1.5">
-                          {group.items.map((item) => (
-                            <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                              <SportIcon sport={item.sport} className="size-8" />
-                              {item.label}
-                            </Link>
-                          ))}
+                          {group.items.map((item) =>
+                            item.comingSoon ? (
+                              <div key={item.label} aria-disabled="true" className="flex cursor-not-allowed items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground/60">
+                                <SportIcon sport={item.sport} className="size-8 opacity-60" />
+                                <span className="flex flex-col">
+                                  <span>{item.label}</span>
+                                  <span className="text-xs text-amber-600 dark:text-amber-400">Coming soon</span>
+                                </span>
+                              </div>
+                            ) : (
+                              <Link key={item.label} href={item.href!} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                                <SportIcon sport={item.sport} className="size-8" />
+                                {item.label}
+                              </Link>
+                            ),
+                          )}
                         </div>
                       </div>
                     ))}
@@ -201,20 +222,30 @@ export function SiteHeader() {
                 nativeButton={false}
                 render={<Link href="/trips?sport=yoga" />}
               >
-                Wellness Retreats
+                Retreats
               </Button>
-              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,260px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                <div className="space-y-2">
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
-                        {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-8" />
-                            {item.label}
-                          </Link>
-                        ))}
+                        {group.items.map((item) =>
+                          item.comingSoon ? (
+                            <div key={item.label} aria-disabled="true" className="flex cursor-not-allowed items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground/60">
+                              <SportIcon sport={item.sport} className="size-8 opacity-60" />
+                              <span className="flex flex-col">
+                                <span>{item.label}</span>
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Coming soon</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <Link key={item.label} href={item.href!} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                              <SportIcon sport={item.sport} className="size-8" />
+                              {item.label}
+                            </Link>
+                          ),
+                        )}
                       </div>
                     </div>
                   ))}
@@ -293,20 +324,30 @@ export function SiteHeader() {
                 nativeButton={false}
                 render={<Link href="/trips?sport=yoga" />}
               >
-                Wellness Retreats
+                Retreats
               </Button>
-              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,260px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                <div className="space-y-2">
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
                       <div className="flex flex-col gap-1.5">
-                        {group.items.map((item) => (
-                          <Link key={item.label} href={item.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
-                            <SportIcon sport={item.sport} className="size-8" />
-                            {item.label}
-                          </Link>
-                        ))}
+                        {group.items.map((item) =>
+                          item.comingSoon ? (
+                            <div key={item.label} aria-disabled="true" className="flex cursor-not-allowed items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground/60">
+                              <SportIcon sport={item.sport} className="size-8 opacity-60" />
+                              <span className="flex flex-col">
+                                <span>{item.label}</span>
+                                <span className="text-xs text-amber-600 dark:text-amber-400">Coming soon</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <Link key={item.label} href={item.href!} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition hover:bg-primary/10 hover:text-primary">
+                              <SportIcon sport={item.sport} className="size-8" />
+                              {item.label}
+                            </Link>
+                          ),
+                        )}
                       </div>
                     </div>
                   ))}
