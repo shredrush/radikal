@@ -69,8 +69,8 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
   if (visibleCount === 0) return null;
 
   return (
-    <section aria-label="Guide moments" className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-muted/30 p-1 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.45)]">
-      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-1 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] sm:grid-rows-2 lg:h-[40rem]">
+    <section aria-label="Guide moments">
+      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] sm:grid-rows-2 lg:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];
           const isSliding = activeSlot === slot;
@@ -80,7 +80,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
           return (
             <div
               key={`${slot}-${isSliding ? cycle : 0}`}
-              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} relative overflow-hidden bg-muted/60`}
+              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} relative overflow-hidden rounded-[0.9rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]`}
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass} motion-reduce:animate-none`}>

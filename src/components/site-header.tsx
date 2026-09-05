@@ -52,9 +52,10 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
-      <div className="mx-auto w-full max-w-8xl px-4 py-2 sm:px-6 sm:py-2.5 md:px-6 md:py-4 lg:px-10">
+      <div className="w-full px-4 sm:px-6 md:px-6 lg:px-10">
+        <div className="mx-auto w-full max-w-8xl py-2 sm:py-2.5 md:py-4">
         <div className="flex items-center justify-between md:hidden">
-          <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 sm:gap-3 sm:py-1">
+          <SiteLogoLink className="-ml-2 flex items-center gap-2 rounded-full py-0.5 sm:gap-3 sm:py-1">
             <Image
               src="/logo.svg"
               alt="Radikal logo"
@@ -167,7 +168,7 @@ export function SiteHeader() {
 
         <div className="hidden md:flex md:flex-col md:gap-2 xl:hidden">
           <div className="flex items-center justify-between gap-3">
-            <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
+            <SiteLogoLink className="-ml-2 flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
               <Image
                 src="/logo.svg"
                 alt="Radikal logo"
@@ -274,7 +275,7 @@ export function SiteHeader() {
         </div>
 
         <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
-          <SiteLogoLink className="flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
+          <SiteLogoLink className="-ml-2 flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
             <Image
               src="/logo.svg"
               alt="Radikal logo"
@@ -377,6 +378,7 @@ export function SiteHeader() {
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
             <HeaderAccount variant="desktop" />
           </div>
+        </div>
         </div>
       </div>
     </header>

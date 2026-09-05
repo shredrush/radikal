@@ -41,7 +41,7 @@ export default async function CustomTripPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+      <section className="mx-auto flex w-full max-w-8xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className="max-w-3xl font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
             An adventure that starts with your idea.

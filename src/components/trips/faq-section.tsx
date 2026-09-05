@@ -120,7 +120,7 @@ export function FaqSection({
   const [openIndex, setOpenIndex] = useState<number>(0);
 
   return (
-    <section className="mt-12">
+    <section className="mt-6 sm:mt-8">
       <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-background/90 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-8 lg:p-10">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">

@@ -21,10 +21,12 @@ export function TripCard({
   trip,
   size = "standard",
   showPrice = true,
+  imageOnly = false,
 }: {
   trip: TripCardTrip;
   size?: "standard" | "compact";
   showPrice?: boolean;
+  imageOnly?: boolean;
 }) {
   const compact = size === "compact";
 
@@ -38,8 +40,12 @@ export function TripCard({
         }`}
       >
         <div
-          className={`relative -m-[1px] flex-[0_0_48%] min-h-[180px] overflow-hidden bg-muted/60 sm:flex-[0_0_52%] ${
-            compact ? "sm:min-h-[200px]" : "sm:min-h-[220px]"
+          className={`relative -m-[1px] overflow-hidden bg-muted/60 ${
+            imageOnly
+              ? "flex-1"
+              : `flex-[0_0_48%] min-h-[180px] sm:flex-[0_0_52%] ${
+                  compact ? "sm:min-h-[200px]" : "sm:min-h-[220px]"
+                }`
           }`}
         >
           <Image
@@ -56,78 +62,87 @@ export function TripCard({
           />
           <div
             className={`absolute inset-0 bg-gradient-to-t ${
-              compact
+              imageOnly
+                ? "from-black/70 via-black/10 to-transparent"
+                : compact
                 ? "from-black/12 via-black/24 to-black/24"
                 : "from-black/70 via-black/15 to-transparent"
             }`}
           />
+          {imageOnly ? (
+            <h3 className="absolute inset-x-0 bottom-0 p-4 text-base font-semibold tracking-tight text-white sm:text-lg">
+              {trip.title}
+            </h3>
+          ) : null}
         </div>
-        <div
-          className={`flex flex-1 flex-col justify-between ${
-            compact ? "gap-1 p-2.5 sm:p-3" : "gap-2 p-4"
-          }`}
-        >
-          <div className="space-y-1.5">
-            <div className={compact ? "space-y-1" : undefined}>
-              <h3
-                className={
-                  compact
-                    ? "text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground"
-                    : "text-base font-semibold tracking-tight text-foreground"
-                }
-              >
-                {trip.title}
-              </h3>
-              <p
-                className={
-                  compact
-                    ? "text-sm text-muted-foreground"
-                    : "truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5"
-                }
-              >
-                {trip.location}
-              </p>
-            </div>
-            <div
-              className={`${compact ? "" : "mt-1 "}flex min-h-[1.35rem] flex-wrap content-start gap-1`}
-            >
-              {trip.categories.map((category) => (
-                <Badge
-                  key={category}
-                  variant="secondary"
+        {imageOnly ? null : (
+          <div
+            className={`flex flex-1 flex-col justify-between ${
+              compact ? "gap-1 p-2.5 sm:p-3" : "gap-2 p-4"
+            }`}
+          >
+            <div className="space-y-1.5">
+              <div className={compact ? "space-y-1" : undefined}>
+                <h3
                   className={
                     compact
-                      ? "!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-center text-[0.72rem] font-medium leading-4 text-foreground/80 sm:text-[0.8rem]"
-                      : "max-w-full rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-foreground/80 sm:px-2 sm:text-[0.72rem]"
+                      ? "text-[clamp(0.9rem,1.05vw,1.02rem)] font-semibold leading-5 text-foreground"
+                      : "text-base font-semibold tracking-tight text-foreground"
                   }
                 >
-                  {TRIP_CATEGORY_LABELS[category] ?? category}
-                </Badge>
-              ))}
+                  {trip.title}
+                </h3>
+                <p
+                  className={
+                    compact
+                      ? "text-sm text-muted-foreground"
+                      : "truncate text-[0.7rem] leading-4 text-muted-foreground sm:text-sm sm:leading-5"
+                  }
+                >
+                  {trip.location}
+                </p>
+              </div>
+              <div
+                className={`${compact ? "" : "mt-1 "}flex min-h-[1.35rem] flex-wrap content-start gap-1`}
+              >
+                {trip.categories.map((category) => (
+                  <Badge
+                    key={category}
+                    variant="secondary"
+                    className={
+                      compact
+                        ? "!w-auto !max-w-full !whitespace-normal !normal-case !tracking-normal rounded-full border border-border/70 bg-background/80 px-2.5 py-1 text-center text-[0.72rem] font-medium leading-4 text-foreground/80 sm:text-[0.8rem]"
+                        : "max-w-full rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-foreground/80 sm:px-2 sm:text-[0.72rem]"
+                    }
+                  >
+                    {TRIP_CATEGORY_LABELS[category] ?? category}
+                  </Badge>
+                ))}
+              </div>
             </div>
+            {compact ? (
+              <div className="mt-auto flex justify-end">
+                <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
+                  {formatDurationDays(trip.durationDays)}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
+                <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
+                  {formatDurationDays(trip.durationDays)}
+                </span>
+                {showPrice ? (
+                  <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
+                    <Price
+                      className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
+                      amount={trip.priceInRupees}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
-          {compact ? (
-            <div className="mt-auto flex justify-end">
-              <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.6rem] font-medium leading-4 text-foreground/80 sm:text-xs">
-                {formatDurationDays(trip.durationDays)}
-              </span>
-            </div>
-          ) : (
-            <div className="mt-auto flex items-center justify-between gap-1 border-t border-border/70 pt-2">
-              <span className="shrink-0 rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.6rem] font-medium leading-none text-foreground/80 sm:text-sm">
-                {formatDurationDays(trip.durationDays)}
-              </span>
-              {showPrice ? (
-                <div className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-center justify-end gap-0.5">
-                  <Price
-                    className="shrink-0 font-heading text-sm font-semibold leading-none text-foreground sm:text-base"
-                    amount={trip.priceInRupees}
-                  />
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
+        )}
       </Card>
     </Link>
   );

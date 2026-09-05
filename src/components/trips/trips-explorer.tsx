@@ -223,7 +223,7 @@ export function TripsExplorer({
                   </div>
                   <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
                     {group.trips.map((trip) => (
-                          <TripCard key={trip.id} trip={trip} />
+                      <TripCard imageOnly key={trip.id} trip={trip} />
                     ))}
                   </div>
                 </section>
@@ -257,10 +257,10 @@ export function TripsExplorer({
                       </h3>
                     </div>
                   </div>
-                  <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                    {group.trips.map((trip) => (
-                      <TripCard key={trip.id} trip={trip} />
-                    ))}
+                    <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
+                      {group.trips.map((trip) => (
+                        <TripCard imageOnly key={trip.id} trip={trip} />
+                      ))}
                   </div>
                 </section>
               );

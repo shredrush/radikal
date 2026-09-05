@@ -19,6 +19,7 @@ import { CTA_PILL } from "@/lib/card-styles";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { TestimonialCard } from "@/components/reviews/testimonial-card";
 import { TripCard } from "@/components/trips/trip-card";
+import { SportIcon } from "@/components/trips/sport-icon";
 import {
   CommunityGuideMedia,
   type CommunityGuideMediaItem,
@@ -153,7 +154,7 @@ export function SearchableTrips({
         <p className="text-lg text-muted-foreground">
           Small groups, led by certified experts
         </p>
-        <div className="mt-1 mx-auto flex w-full max-w-xl flex-col gap-2 p-1 sm:mt-2 sm:p-2">
+        <div className="mt-1 mx-auto flex w-[90%] max-w-[53.7rem] flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <form
             onSubmit={handleSearchSubmit}
             className={`relative flex items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1.5 pl-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_30px_55px_-25px_rgba(0,0,0,0.3)] sm:pl-5`}
@@ -253,144 +254,120 @@ export function SearchableTrips({
           </form>
         </div>
 
-        <div className="mt-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-5 grid w-[94%] max-w-[57rem] grid-cols-3 gap-3 p-1 sm:p-2 lg:grid-cols-6">
           {[
-            {
-              title: "Hiking and Trekking",
-              filter: "trek",
-              image:
-                "https://plus.unsplash.com/premium_photo-1692976236758-817620ab62ba??auto=format&fit=crop&w=900&q=80",
-              position: "center 40%",
-            },
-            {
-              title: "Cycling",
-              filter: "bike",
-              image:
-                "https://images.unsplash.com/photo-1604748954134-457791b2ce9b?auto=format&fit=crop&w=900&q=80",
-              position: "center 75%",
-            },
-            {
-              title: "Snowboarding",
-              filter: "winter",
-              image:
-                "https://plus.unsplash.com/premium_photo-1708612612949-b2eaa75af46d?auto=format&fit=crop&w=900&q=80",
-              position: "center 65%",
-            },
-            {
-              title: "Yoga and Meditation",
-              filter: "yoga",
-              image:
-                "https://images.unsplash.com/photo-1554245120-94a6fc6feb96?auto=format&fit=crop&w=900&q=80",
-              position: "center 80%",
-            },
-            {
-              title: "Summit Expedition",
-              filter: "expedition",
-              image:
-                "https://images.unsplash.com/photo-1643903096045-07741be1f245?auto=format&fit=crop&w=900&q=80",
-              position: "center 50%",
-            },
-            {
-              title: "Rock Climbing",
-              filter: "rockclimb",
-              image:
-                "https://images.unsplash.com/photo-1522163182402-834f871fd851?auto=format&fit=crop&w=900&q=80",
-              position: "center 30%",
-            },
-            {
-              title: "Skiing",
-              filter: "winter",
-              image:
-                "https://images.unsplash.com/photo-1586356415056-bd7a5c2bbef7?auto=format&fit=crop&w=900&q=80",
-              position: "center bottom",
-            },
-            {
-              title: "Mix it up!",
-              filter: undefined,
-              image:
-                "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80",
-              position: "center 70%",
-            },
-          ].map((item) => (
-            <Link
-              key={item.title}
-              href={item.filter ? `/trips?sport=${item.filter}` : "/custom-trip"}
-              className="relative flex h-[120px] min-w-0 items-end overflow-hidden rounded-[1.1rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_24px_44px_-20px_rgba(0,0,0,0.4)] sm:h-[130px] lg:h-[140px]"
-            >
-              <Image
-                src={item.image}
-                alt={item.title}
-                fill
-                className="object-cover"
-                style={{ objectPosition: item.position }}
-                sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 50vw, 25vw"
-                loading="lazy"
-              />
-              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-              <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
-                <p className="text-[clamp(0.8rem,1vw,1rem)] font-semibold text-white">{item.title}</p>
-              </div>
-            </Link>
-          ))}
+              {
+                title: "Hiking and Trekking",
+                filter: "trek",
+                sport: "trek",
+              },
+              {
+                title: "Cycling",
+                filter: "bike",
+                sport: "bike",
+              },
+              {
+                title: "Rock Climbing",
+                filter: "rockclimb",
+                sport: "rockclimb",
+              },
+              {
+                title: "Summit Expedition",
+                filter: "expedition",
+                sport: "expedition",
+              },
+              {
+                title: "Skiing",
+                filter: "winter",
+                sport: "ski",
+              },
+              {
+                title: "Snowboarding",
+                filter: "winter",
+                sport: "snowboard",
+              },
+            ].map((item) => (
+              <Link key={item.title} href={`/trips?sport=${item.filter}`} className="group flex min-w-0 flex-col items-center gap-2 rounded-[1rem] px-2 py-3 text-center transition hover:-translate-y-1 hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:py-4">
+                <span className="flex size-14 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 group-hover:border-orange-500/60 group-hover:text-orange-700 group-hover:shadow-[0_18px_30px_-20px_rgba(194,65,12,0.7)] dark:group-hover:text-orange-300 sm:size-16">
+                  <SportIcon sport={item.sport} className="size-6 sm:size-7" />
+                </span>
+                <span className="font-heading text-xs font-semibold tracking-wide text-foreground sm:text-sm">
+                  {item.title}
+                </span>
+              </Link>
+            ))}
         </div>
       </div>
 
-      <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="mx-auto flex w-full max-w-8xl flex-col gap-8">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
-              Travel styles
-            </p>
+      <div className="-mt-4 px-3 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-7 lg:px-8">
+        <div className="mx-auto w-full max-w-8xl">
+          <div className="mb-6 flex items-end justify-between gap-4 sm:mb-7">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                Travel styles
+              </p>
+            </div>
+            <Link
+              href="/trips"
+              className="hidden items-center gap-1 text-sm font-semibold text-foreground underline-offset-4 transition hover:text-orange-700 hover:underline sm:flex"
+            >
+              Browse all trips
+              <ArrowRight className="size-4" />
+            </Link>
           </div>
-          <div className="grid w-full grid-cols-3 gap-3 lg:grid-cols-6">
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
             {[
-            {
-              title: "Beginner Friendly",
-              image:
-                "https://plus.unsplash.com/premium_photo-1676982098817-844e52754258?auto=format&fit=crop&w=900&q=80",
-            },
-            {
-              title: "Women Only",
-              image:
-                "https://plus.unsplash.com/premium_photo-1732538263622-a8f2501e3a82?auto=format&fit=crop&w=900&q=80",
-            },
-            {
-              title: "For Family",
-              image:
-                "https://images.unsplash.com/photo-1503431153573-96e959f4d9b7?auto=format&fit=crop&w=900&q=80",
-            },
-            {
-              title: "Adventure Enthusiast",
-              image:
-                "https://images.unsplash.com/photo-1676823648066-01a3e8db31c2?auto=format&fit=crop&w=900&q=80",
-            },
-            {
-              title: "Courses",
-              image:
-                "https://plus.unsplash.com/premium_photo-1661963517045-f3ad4911bf4b?auto=format&fit=crop&w=900&q=80",
-            },
-            {
-              title: "Self Guided",
-              image:
-                "https://plus.unsplash.com/premium_photo-1709311446331-fbc1800fd833?auto=format&fit=crop&w=900&q=80",
-            },
+              {
+                title: "Beginner Friendly",
+                image:
+                  "https://plus.unsplash.com/premium_photo-1676982098817-844e52754258?auto=format&fit=crop&w=900&q=80",
+              },
+              {
+                title: "Adventure Enthusiast",
+                image:
+                  "https://images.unsplash.com/photo-1676823648066-01a3e8db31c2?auto=format&fit=crop&w=900&q=80",
+              },
+              {
+                title: "Courses",
+                image:
+                  "https://plus.unsplash.com/premium_photo-1661963517045-f3ad4911bf4b?auto=format&fit=crop&w=900&q=80",
+              },
+              {
+                title: "For Families",
+                image:
+                  "https://images.unsplash.com/photo-1503431153573-96e959f4d9b7?auto=format&fit=crop&w=900&q=80",
+              },
+              {
+                title: "Women Only",
+                image:
+                  "https://plus.unsplash.com/premium_photo-1732538263622-a8f2501e3a82?auto=format&fit=crop&w=900&q=80",
+              },
+              {
+                title: "Self Guided",
+                image:
+                  "https://plus.unsplash.com/premium_photo-1709311446331-fbc1800fd833?auto=format&fit=crop&w=900&q=80",
+              },
+              
             ].map((item) => (
               <Link
                 key={item.title}
                 href="/trips"
-                className="relative flex min-h-[140px] items-end overflow-hidden rounded-[1.25rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_24px_44px_-20px_rgba(0,0,0,0.4)] sm:min-h-[190px]"
+                className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-[1rem] bg-muted shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_38px_-20px_rgba(0,0,0,0.7)]"
               >
                 <Image
                   src={item.image}
-                  alt={item.title}
+                  alt=""
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) 33vw, 16vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(max-width: 1023px) calc(33vw - 16px), 16vw"
                   loading="lazy"
                 />
-                <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
-                <div className="relative z-10 flex w-full items-end p-2.5 sm:p-3">
-                  <p className="text-[clamp(0.7rem,1.8vw,1rem)] font-semibold leading-4 text-white sm:text-lg">{item.title}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
+                  <p className="font-heading text-[0.875rem] font-semibold tracking-wide text-white sm:text-base">
+                    {item.title}
+                  </p>
                 </div>
               </Link>
             ))}
@@ -398,14 +375,11 @@ export function SearchableTrips({
         </div>
       </div>
 
-      <div className="border-b border-border/60 px-3 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
+      <div className="border-b border-border/60 px-3 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-6 lg:px-8">
          <div className="mx-auto max-w-8xl">
            <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
-             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-               More than a booking platform — a home for guides
-             </p>
              <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-              Small group, sustainable adventures crafted by certified experts
+              Curated trips crafted by expert guides. Book your next adventure with confidence.
              </h4>
            </div>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
@@ -416,7 +390,7 @@ export function SearchableTrips({
              ) : null}
                  {visibleTrips.map((trip, index) => (
                    <div key={trip.id} className={index > 3 ? "hidden w-full min-w-0 md:flex" : "flex w-full min-w-0"}>
-                     <TripCard showPrice={false} trip={trip} />
+                      <TripCard imageOnly showPrice={false} trip={trip} />
                    </div>
                  ))}
             </div>
@@ -442,10 +416,10 @@ export function SearchableTrips({
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Out in the field
+                The places and people behind the plans
               </p>
               <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-                The places and people behind the plans.
+                More than a booking platform — a home for guides
               </h4>
               </div>
             </div>

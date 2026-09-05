@@ -253,7 +253,7 @@ export default async function TripDetailPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
+      <section className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <Link
           href="/trips"
           className="flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
