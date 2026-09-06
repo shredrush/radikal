@@ -471,19 +471,6 @@ export default async function ProfilePage({
                 </span>
               </div>
               <Link
-                href="/profile?tab=referrals"
-                prefetch={false}
-                className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
-                  activeTab === "referrals"
-                    ? "border-primary/40 bg-primary/5 text-foreground"
-                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
-                )}
-              >
-                <UsersRound className="h-4 w-4" />
-                <span className="truncate">Referrals</span>
-              </Link>
-              <Link
                 href="/profile?tab=custom-trips"
                 prefetch={false}
                 className={cn(
@@ -513,6 +500,19 @@ export default async function ProfilePage({
                     {supportUnreadCount > 9 ? "9+" : supportUnreadCount}
                   </span>
                 ) : null}
+              </Link>
+              <Link
+                href="/profile?tab=referrals"
+                prefetch={false}
+                className={cn(
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
+                  activeTab === "referrals"
+                    ? "border-primary/40 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <UsersRound className="h-4 w-4" />
+                <span className="truncate">Referrals</span>
               </Link>
               <LogoutButton />
             </nav>

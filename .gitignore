@@ -47,3 +47,4 @@ copilot-instructions.md
 /src/generated/prisma
 /prisma/seed-dummy-data.ts
 /prisma/seed-data.json
+/prisma/dump-data.ts

@@ -38,7 +38,7 @@ export function FaqSection({
                 <details className="group" open={index === 0}>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/30 dark:hover:bg-emerald-500/5 sm:px-6">
                     <span className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-xs font-bold text-white transition-colors group-open:bg-emerald-600 dark:bg-white dark:text-black dark:group-open:text-white">{index + 1}</span>
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-xs font-bold text-white transition-colors group-open:bg-emerald-600 dark:bg-white dark:text-black dark:group-open:bg-emerald-600 dark:group-open:text-white">{index + 1}</span>
                       <span className="text-sm font-medium text-foreground sm:text-base">{item.question}</span>
                     </span>
                     <span aria-hidden className="h-2.5 w-2.5 shrink-0 -translate-y-0.5 rotate-45 border-b-2 border-r-2 border-muted-foreground transition-transform duration-200 group-open:translate-y-0.5 group-open:rotate-[225deg] group-open:border-emerald-600" />

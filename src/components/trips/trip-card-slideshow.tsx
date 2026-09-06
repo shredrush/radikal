@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAnimationActivity } from "@/hooks/use-animation-activity";
 
@@ -14,6 +14,46 @@ const slideDirectionClasses = [
   "gallery-media-slide-from-right",
   "gallery-media-slide-from-bottom",
 ] as const;
+
+type AdvanceFn = () => void;
+
+const slideshowRegistry = new Set<AdvanceFn>();
+let slideshowCursor = 0;
+let slideshowTimer: ReturnType<typeof setInterval> | null = null;
+
+function stopSlideshowTimer() {
+  if (slideshowTimer !== null) {
+    clearInterval(slideshowTimer);
+    slideshowTimer = null;
+  }
+}
+
+function ensureSlideshowTimer() {
+  if (slideshowTimer !== null) return;
+
+  slideshowTimer = setInterval(() => {
+    if (slideshowRegistry.size === 0) {
+      stopSlideshowTimer();
+      return;
+    }
+
+    const advances = Array.from(slideshowRegistry);
+    const advance = advances[slideshowCursor % advances.length];
+    slideshowCursor = (slideshowCursor + 1) % advances.length;
+    advance();
+  }, SLIDE_INTERVAL_MS);
+}
+
+function registerSlideshow(advance: AdvanceFn) {
+  slideshowRegistry.add(advance);
+  slideshowCursor = 0;
+  ensureSlideshowTimer();
+
+  return () => {
+    slideshowRegistry.delete(advance);
+    if (slideshowRegistry.size === 0) stopSlideshowTimer();
+  };
+}
 
 export function TripCardSlideshow({
   slides,
@@ -35,19 +75,35 @@ export function TripCardSlideshow({
   const slideCount = slides.length;
   const directionClass = slideDirectionClasses[direction % slideDirectionClasses.length];
 
+  const indexRef = useRef(0);
+  const hoveringRef = useRef(false);
+  const cyclingRef = useRef(false);
+
   useEffect(() => {
-    if (!animationActive || cycling || hovering || slideCount < 2) return;
+    hoveringRef.current = hovering;
+  }, [hovering]);
 
-    const timer = window.setTimeout(() => {
-      setDirection(index + 1);
-      setOutgoing(index);
-      setIndex((index + 1) % slideCount);
-      setCycle((current) => current + 1);
-      setCycling(true);
-    }, SLIDE_INTERVAL_MS);
+  useEffect(() => {
+    cyclingRef.current = cycling;
+  }, [cycling]);
 
-    return () => window.clearTimeout(timer);
-  }, [animationActive, cycling, hovering, index, slideCount]);
+  const advance = useCallback(() => {
+    if (slideCount < 2 || hoveringRef.current || cyclingRef.current) return;
+
+    const current = indexRef.current;
+    const next = (current + 1) % slideCount;
+    setDirection(current + 1);
+    setOutgoing(current);
+    setIndex(next);
+    indexRef.current = next;
+    setCycle((value) => value + 1);
+    setCycling(true);
+  }, [slideCount]);
+
+  useEffect(() => {
+    if (!animationActive || slideCount < 2) return;
+    return registerSlideshow(advance);
+  }, [animationActive, slideCount, advance]);
 
   useEffect(() => {
     if (!cycling) return;

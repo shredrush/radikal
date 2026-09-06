@@ -275,7 +275,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
                     setStartDate(event.target.value);
                     clearFieldError();
                   }}
-                  className={cn(inputClassName, errorField === "startDate" && errorInputClassName)}
+                  className={cn(inputClassName, "min-w-0 px-2 text-xs sm:px-4 sm:text-sm", errorField === "startDate" && errorInputClassName)}
                 />
               </div>
               <div>
@@ -290,7 +290,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
                     setEndDate(event.target.value);
                     clearFieldError();
                   }}
-                  className={cn(inputClassName, errorField === "endDate" && errorInputClassName)}
+                  className={cn(inputClassName, "min-w-0 px-2 text-xs sm:px-4 sm:text-sm", errorField === "endDate" && errorInputClassName)}
                 />
               </div>
             </div>

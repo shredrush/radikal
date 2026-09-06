@@ -11,10 +11,10 @@ import {
 } from "@/lib/public-trip-catalog";
 
 const FEATURED_TRIP_SLUGS = [
-  "backcountry-snowboarding-expedition",
+  "sethan-snowboarding-course",
+  "lahaul-spiti-cycle",
   "lahaul-multi-day-hike",
-  "ghepan-lake-trek",
-  "kanamo-peak",
+  "backcountry-snowboarding-expedition",
   "deo-tibba",
 ] as const;
 
