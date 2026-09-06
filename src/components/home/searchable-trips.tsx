@@ -320,7 +320,7 @@ export function SearchableTrips({
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 sm:gap-4">
             {[
               {
                 title: "Beginner Friendly",
@@ -369,7 +369,7 @@ export function SearchableTrips({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
                 <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
-                  <p className="font-heading text-[0.69rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
+                  <p className="font-heading text-[0.85rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
                     {item.title}
                   </p>
                 </div>
@@ -415,7 +415,7 @@ export function SearchableTrips({
           </div>
         </div>
  
-        <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
