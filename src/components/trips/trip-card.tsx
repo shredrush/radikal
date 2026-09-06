@@ -4,7 +4,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/currency/price";
-import { getTripCardImage, type TripCardImageTrip } from "@/lib/trip-card-image";
+import {
+  getTripCardImage,
+  normalizeTripImagePath,
+  type TripCardImageTrip,
+} from "@/lib/trip-card-image";
+import { TripCardSlideshow } from "@/components/trips/trip-card-slideshow";
 import { CARD_SURFACE } from "@/lib/card-styles";
 import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
@@ -24,6 +29,7 @@ export function TripCard({
   imageOnly = false,
   showTravelStyles = false,
   showImageSummary = false,
+  slideshow = false,
 }: {
   trip: TripCardTrip;
   size?: "standard" | "compact";
@@ -31,9 +37,26 @@ export function TripCard({
   imageOnly?: boolean;
   showTravelStyles?: boolean;
   showImageSummary?: boolean;
+  slideshow?: boolean;
 }) {
   const compact = size === "compact";
   const imageCardWithSummary = imageOnly && showImageSummary;
+
+  let slideSources: string[] = [];
+  if (slideshow) {
+    const images = Array.from(
+      new Set(
+        (trip.images ?? [])
+          .map((image) => normalizeTripImagePath(image, trip.slug))
+          .filter(Boolean),
+      ),
+    );
+    slideSources = images.length > 0 ? images : [getTripCardImage(trip)].filter(Boolean);
+  }
+  const hasSlideshow = slideSources.length > 0;
+  const imageSizes = compact
+    ? "(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
+    : "(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw";
 
   return (
     <Link
@@ -60,20 +83,20 @@ export function TripCard({
                 }`
           }`}
         >
-          <Image
-            src={getTripCardImage(trip)}
-            alt={trip.title}
-            fill
-            className="object-cover"
-            sizes={
-              compact
-                ? "(max-width: 640px) calc(50vw - 8px), (max-width: 1024px) 50vw, 25vw"
-                : "(max-width: 640px) calc(50vw - 12px), (max-width: 1024px) calc(50vw - 12px), 25vw"
-            }
-            loading={compact ? "lazy" : undefined}
-          />
+          {hasSlideshow ? (
+            <TripCardSlideshow slides={slideSources} alt={trip.title} sizes={imageSizes} />
+          ) : (
+            <Image
+              src={getTripCardImage(trip)}
+              alt={trip.title}
+              fill
+              className="object-cover"
+              sizes={imageSizes}
+              loading={compact ? "lazy" : undefined}
+            />
+          )}
           <div
-            className={`absolute inset-0 bg-gradient-to-t ${
+            className={`${hasSlideshow ? "pointer-events-none " : ""}absolute inset-0 bg-gradient-to-t ${
               imageOnly
                 ? "from-black/70 via-black/10 to-transparent"
                 : compact
@@ -82,8 +105,10 @@ export function TripCard({
             }`}
           />
           {imageOnly ? (
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <h3 className="text-base font-semibold tracking-tight text-white sm:text-lg">{trip.title}</h3>
+            <div className={`${hasSlideshow ? "pointer-events-none " : ""}absolute inset-x-0 bottom-0 p-4`}>
+              {!imageCardWithSummary ? (
+                <h3 className="text-base font-semibold tracking-tight text-white sm:text-lg">{trip.title}</h3>
+              ) : null}
               {showTravelStyles && trip.categories.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {trip.categories.map((category) => (
@@ -170,9 +195,14 @@ export function TripCard({
         )}
       </Card>
       {imageCardWithSummary ? (
-        <div className="flex items-center justify-between gap-3 px-1 text-sm font-medium text-foreground">
-          <span>{formatDurationDays(trip.durationDays)}</span>
-          <Price className="font-heading text-base font-semibold text-foreground" amount={trip.priceInRupees} />
+        <div className="flex flex-col gap-1.5 px-1">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-5 tracking-tight text-foreground sm:text-base sm:leading-6">
+            {trip.title}
+          </h3>
+          <div className="flex items-center justify-between gap-3 text-sm font-medium text-foreground">
+            <span>{formatDurationDays(trip.durationDays)}</span>
+            <Price className="font-heading text-base font-semibold text-foreground" amount={trip.priceInRupees} />
+          </div>
         </div>
       ) : null}
     </Link>

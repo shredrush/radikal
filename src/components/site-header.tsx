@@ -115,7 +115,7 @@ export function SiteHeader() {
                 >
                   Retreats
                 </Button>
-                <div className="invisible absolute left-1/2 top-full z-50 mt-2 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
                   <div className="grid grid-cols-2 gap-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">

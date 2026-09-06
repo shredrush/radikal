@@ -211,7 +211,7 @@ export function TripsExplorer({
                 <span className={`flex size-8 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 sm:size-11 ${
                   isSelected
                     ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-400 dark:bg-emerald-400"
-                    : "group-hover:border-orange-500/60 group-hover:text-orange-700 group-hover:shadow-[0_18px_30px_-20px_rgba(194,65,12,0.7)] dark:group-hover:text-orange-300"
+                    : "group-hover:border-black group-hover:text-orange-700 group-hover:shadow-[0_18px_30px_-20px_rgba(194,65,12,0.7)] dark:group-hover:border-white dark:group-hover:text-orange-300"
                 }`}>
                   <SportIcon
                     sport={item.sport}

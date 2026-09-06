@@ -138,7 +138,7 @@ export default async function CommunityPage() {
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-orange-50/70 via-background to-emerald-50/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10">
-          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:items-center lg:gap-12 lg:p-10">
+          <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] md:items-center md:gap-12 md:p-10">
             <div className="flex max-w-3xl flex-col items-start text-left">
               <div className={`inline-flex items-center gap-2 rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>
                 <Sparkles className="h-3.5 w-3.5" />
@@ -224,7 +224,7 @@ export default async function CommunityPage() {
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Why we travel this way</p>
             <h2 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">A community built for better time outside.</h2>
           </div>
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
             {pillars.map((pillar) => {
               const Icon = pillar.icon;
               const tone = pillarToneStyles[pillar.tone];

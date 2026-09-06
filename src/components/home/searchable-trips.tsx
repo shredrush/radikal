@@ -313,7 +313,7 @@ export function SearchableTrips({
             </div>
             <Link
               href="/trips"
-              className="hidden items-center gap-1 text-sm font-semibold text-foreground underline-offset-4 transition hover:text-orange-700 hover:underline sm:flex"
+              className="flex shrink-0 items-center gap-1 text-sm font-semibold text-foreground underline-offset-4 transition hover:text-orange-700 hover:underline"
             >
               Browse all trips
               <ArrowRight className="size-4" />
@@ -393,8 +393,8 @@ export function SearchableTrips({
                </p>
              ) : null}
                  {visibleTrips.map((trip, index) => (
-                   <div key={trip.id} className={index > 3 ? "hidden w-full min-w-0 md:flex" : "flex w-full min-w-0"}>
-                      <TripCard imageOnly showPrice={false} trip={trip} />
+                    <div key={trip.id} className={index > 3 ? "hidden w-full min-w-0 xl:flex" : "flex w-full min-w-0"}>
+                       <TripCard imageOnly showPrice={false} slideshow trip={trip} />
                    </div>
                  ))}
             </div>
@@ -408,7 +408,7 @@ export function SearchableTrips({
               render={<Link href="/trips" />}
             >
               <span className="flex items-center gap-2">
-                <span>Explore More Adventures</span>
+                <span>Browse All Trips</span>
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Button>

@@ -124,6 +124,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Prevent off-screen elements (e.g. absolutely-positioned header menus) from
+     widening the document and creating a white band on the right when zoomed
+     out on mobile. `clip` avoids turning html/body into scroll containers, so
+     position:sticky and internal overflow-x-auto scrollers keep working. */
+  html,
+  body {
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground;
     background-image: none;

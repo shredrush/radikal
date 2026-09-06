@@ -10,10 +10,10 @@ export type CommunityGuideMediaItem = {
 };
 
 const slotLayouts = [
-  "col-start-1 row-start-1 row-span-3 sm:col-span-2 sm:row-span-2",
-  "col-start-1 row-start-4 row-span-2 sm:col-start-3 sm:row-start-1 sm:row-span-1",
-  "col-start-2 row-start-1 row-span-2 sm:col-start-3 sm:row-start-2 sm:row-span-1",
-  "col-start-2 row-start-3 row-span-3 sm:col-start-4 sm:row-start-1 sm:row-span-2",
+  "col-start-1 row-start-1 row-span-3 lg:col-span-2 lg:row-span-2",
+  "col-start-1 row-start-4 row-span-2 lg:col-start-3 lg:row-start-1 lg:row-span-1",
+  "col-start-2 row-start-1 row-span-2 lg:col-start-3 lg:row-start-2 lg:row-span-1",
+  "col-start-2 row-start-3 row-span-3 lg:col-start-4 lg:row-start-1 lg:row-span-2",
   "col-start-5 row-start-1",
   "col-start-5 row-start-2",
   "col-start-6 col-span-2 row-span-2",
@@ -72,7 +72,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
 
   return (
     <section ref={sectionRef} aria-label="Guide moments">
-      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] sm:grid-rows-2 lg:h-[40rem]">
+      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 lg:h-[36rem] lg:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] lg:grid-rows-2 xl:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];
           const isSliding = activeSlot === slot;
@@ -82,11 +82,11 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
           return (
             <div
               key={`${slot}-${isSliding ? cycle : 0}`}
-              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden sm:block" : ""} relative overflow-hidden rounded-[0.9rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]`}
+              className={`${slotLayouts[slot]} ${slot >= 4 ? "hidden lg:block" : ""} relative overflow-hidden rounded-[0.9rem] bg-muted/60 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_12px_32px_-18px_rgba(0,0,0,0.75)]`}
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass} motion-reduce:animate-none`}>
-                  <Image src={previousItem.src} alt="" fill className="object-cover" sizes="(max-width: 640px) 35vw, 18vw" />
+                  <Image src={previousItem.src} alt="" fill className="object-cover" sizes="(max-width: 1024px) 45vw, 18vw" />
                 </div>
               )}
               <div
@@ -103,7 +103,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
                   alt={item.alt}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 35vw, 18vw"
+                  sizes="(max-width: 1024px) 45vw, 18vw"
                 />
               </div>
             </div>
