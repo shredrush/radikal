@@ -273,6 +273,22 @@ export default async function CommunityPage() {
             </div>
           </div>
           <CommunityGuideMedia items={guideMedia} />
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/become-a-guide"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-orange-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-800"
+            >
+              Become a Guide
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/trips"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-black bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-neutral-100 dark:border-white dark:bg-black dark:text-white dark:hover:bg-neutral-900"
+            >
+              Browse All Trips
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

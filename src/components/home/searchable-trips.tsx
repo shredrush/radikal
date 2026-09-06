@@ -258,7 +258,7 @@ export function SearchableTrips({
           </form>
         </div>
 
-        <div className="mt-5 grid w-[94%] max-w-[57rem] grid-cols-6 gap-1 p-0.5 sm:gap-2 sm:p-1">
+        <div className="mt-3 grid w-[94%] max-w-[57rem] grid-cols-6 gap-1 p-0.5 sm:gap-2 sm:p-1">
           {[
               {
                 title: "Hiking and Trekking",
@@ -295,7 +295,7 @@ export function SearchableTrips({
                 <span className="flex size-10 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 group-hover:border-black/60 group-hover:text-black group-hover:shadow-[0_18px_30px_-20px_rgba(0,0,0,0.7)] dark:group-hover:border-white/60 dark:group-hover:text-white sm:size-14">
                   <SportIcon sport={item.sport} className="size-5 sm:size-6" />
                 </span>
-                <span className="font-heading text-[0.6rem] leading-tight font-semibold tracking-normal text-foreground sm:text-xs sm:tracking-wide">
+                <span className="font-heading text-[0.66rem] leading-tight font-bold tracking-normal text-foreground sm:text-[0.825rem] sm:tracking-wide">
                   {item.title}
                 </span>
               </Link>
@@ -369,7 +369,7 @@ export function SearchableTrips({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
                 <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
-                  <p className="font-heading text-[0.6rem] font-semibold tracking-wide text-white sm:text-base">
+                  <p className="font-heading text-[0.69rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
                     {item.title}
                   </p>
                 </div>
