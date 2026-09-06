@@ -291,7 +291,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                     muted
                     loop={rotation.waitingForVideoSlot !== slot}
                     playsInline
-                    preload={animationActive && (isActiveTile || isSliding) ? "auto" : "metadata"}
+                    preload={animationActive && (isActiveTile || isSliding) ? "auto" : "none"}
                     onEnded={
                       rotation.waitingForVideoSlot === slot
                         ? () => setRotation((current) => advanceGalleryRotation(current, slot, true))

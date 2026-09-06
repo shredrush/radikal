@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
@@ -17,6 +17,7 @@ import {
   CompletedDatesCard,
   TripDetailsCard,
   WhatsIncludedCard,
+  type TripDetailFeatureTrip,
 } from "@/components/trips/trip-detail-feature";
 import { BookingBar } from "@/components/trips/booking-bar";
 import { TripGallery } from "@/components/trips/trip-gallery";
@@ -27,6 +28,7 @@ import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
 import { getDisplayName } from "@/lib/profile-initials";
 import { TripCard } from "@/components/trips/trip-card";
+import { GuideProfileSummary } from "@/components/guides/guide-profile-summary";
 import { formatMonthYear } from "@/lib/format";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { isSlotCompleted } from "@/lib/trip-dates";
@@ -65,6 +67,7 @@ const getTripDetail = unstable_cache(
             location: true,
             experienceYears: true,
             languages: true,
+            sports: true,
             certifications: { select: { id: true, title: true } },
             user: {
               select: {
@@ -97,12 +100,12 @@ const getTripDetail = unstable_cache(
     });
   },
   ["trip-detail"],
-  { tags: ["trips"], revalidate: 300 },
+  { tags: ["trips", "guides"], revalidate: 300 },
 );
 
 // Large media is intentionally outside the Data Cache. It remains available
 // on the page, while the metadata above retains the common-case cache hit.
-function getTripMedia(slug: string) {
+const getTripMedia = cache(async (slug: string) => {
   return prisma.trip.findFirst({
     where: {
       slug,
@@ -117,7 +120,7 @@ function getTripMedia(slug: string) {
       guide: { select: { photo: true, photos: true, videos: true } },
     },
   });
-}
+});
 
 const EMPTY_TRIP_MEDIA = {
   images: [] as string[],
@@ -127,7 +130,7 @@ const EMPTY_TRIP_MEDIA = {
   guide: null,
 };
 
-async function getTripSlots(slug: string) {
+async function getTripSlots(tripId: string) {
   const now = new Date();
   const select = {
     id: true,
@@ -138,11 +141,7 @@ async function getTripSlots(slug: string) {
   } as const;
   const where = {
     deletedAt: null,
-    trip: {
-      slug,
-      deletedAt: null,
-      OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
-    },
+    tripId,
   };
 
   const [upcomingSlots, completedSlots] = await Promise.all([
@@ -232,7 +231,116 @@ async function SimilarTrips({ categories, excludeId }: { categories: TripCategor
 }
 
 function SimilarTripsFallback() {
-  return <div className="h-[18rem] animate-pulse rounded-[1.5rem] bg-muted/40" />;
+  return (
+    <div className="grid animate-pulse grid-cols-2 gap-4 xl:grid-cols-4" aria-label="Loading similar trips" role="status">
+      {Array.from({ length: SIMILAR_TRIPS_COUNT }).map((_, index) => (
+        <div key={index} className="flex flex-col gap-3">
+          <div className="h-[220px] rounded-[0.9rem] border border-border/70 bg-muted/40 sm:h-[300px]" />
+          <div className="h-5 w-3/4 rounded bg-muted/40" />
+          <div className="h-4 w-full rounded bg-muted/40" />
+        </div>
+      ))}
+      <span className="sr-only">Loading similar trips</span>
+    </div>
+  );
+}
+
+function TripGalleryFallback() {
+  return <div className="h-full animate-pulse bg-muted/60" aria-label="Loading trip photos" role="status" />;
+}
+
+function TripAvailabilityFallback() {
+  return (
+    <div className="flex flex-col gap-6" aria-label="Loading trip availability" role="status">
+      <div className="h-40 animate-pulse rounded-[1.5rem] border border-border/80 bg-muted/40" />
+      <div className="h-52 animate-pulse rounded-[1.5rem] border border-border/80 bg-muted/40" />
+      <div className="h-44 animate-pulse rounded-[1.5rem] border border-border/80 bg-muted/40" />
+      <span className="sr-only">Loading trip availability</span>
+    </div>
+  );
+}
+
+async function TripMediaGallery({ slug, title }: { slug: string; title: string }) {
+  const media = await safeDb("trip.media", () => getTripMedia(slug), EMPTY_TRIP_MEDIA);
+  const resolvedMedia = media ?? EMPTY_TRIP_MEDIA;
+  const images = resolvedMedia.images
+    .map((image) => normalizeTripImagePath(image, slug))
+    .filter(Boolean);
+  const mediaOrder = resolvedMedia.mediaOrder
+    .map((item) => (resolvedMedia.images.includes(item) ? normalizeTripImagePath(item, slug) : item))
+    .filter(Boolean);
+
+  return (
+    <TripGallery
+      images={images}
+      videos={resolvedMedia.videos}
+      mediaOrder={mediaOrder}
+      fallbackImage={`/activities/${slug}/cover.png`}
+      alt={title}
+      compact
+    />
+  );
+}
+
+async function TripAvailability({ trip }: { trip: TripDetailFeatureTrip }) {
+  const slots = await safeDb("trip.slots", () => getTripSlots(trip.id), []);
+  const tripWithSlots = { ...trip, slots };
+  const hasUpcomingSlots = slots.some((slot) => !isSlotCompleted(slot.date, new Date()));
+
+  return (
+    <>
+      <BookingBar
+        tripId={trip.id}
+        pricePerPerson={trip.priceInRupees}
+        durationDays={trip.durationDays}
+        maxGroupSize={trip.maxGroupSize}
+        hasUpcomingSlots={hasUpcomingSlots}
+      />
+      <AvailableDatesCard trip={tripWithSlots} />
+      <CompletedDatesCard trip={tripWithSlots} />
+      <WhatsIncludedCard trip={tripWithSlots} />
+    </>
+  );
+}
+
+async function GuideProfileMedia({
+  slug,
+  guide,
+}: {
+  slug: string;
+  guide: { name: string; user: { username: string | null } | null };
+}) {
+  const media = await safeDb("trip.media", () => getTripMedia(slug), EMPTY_TRIP_MEDIA);
+  const resolvedMedia = media ?? EMPTY_TRIP_MEDIA;
+  const guideProfileImage = resolvedMedia.guidePhoto ?? getGuideImage({
+    username: guide.user?.username ?? "",
+    photo: resolvedMedia.guide?.photo ?? null,
+    photos: resolvedMedia.guide?.photos ?? [],
+    tripImage: resolvedMedia.images[0],
+  });
+  const guideMediaIsVideo = Boolean(
+    resolvedMedia.guidePhoto && resolvedMedia.guide?.videos.includes(resolvedMedia.guidePhoto),
+  );
+
+  return guideMediaIsVideo ? (
+    <video
+      src={resolvedMedia.guidePhoto ?? undefined}
+      muted
+      autoPlay
+      loop
+      playsInline
+      preload="metadata"
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <Image
+      src={guideProfileImage}
+      alt={guide.name}
+      fill
+      className="object-cover"
+      sizes="(max-width: 1024px) 100vw, 24vw"
+    />
+  );
 }
 
 export default async function TripDetailPage({
@@ -245,57 +353,25 @@ export default async function TripDetailPage({
   await connection();
   const { tripId } = await params;
 
-  const [tripDetail, tripMedia, slots] = await Promise.all([
-    loadDb("trip.detail", () => getTripDetail(tripId)),
-    safeDb("trip.media", () => getTripMedia(tripId), EMPTY_TRIP_MEDIA),
-    safeDb("trip.slots", () => getTripSlots(tripId), []),
-  ]);
+  const tripDetail = await loadDb("trip.detail", () => getTripDetail(tripId));
 
   if (!tripDetail) {
     notFound();
   }
 
-  const media = tripMedia ?? EMPTY_TRIP_MEDIA;
   const trip = {
     ...tripDetail,
-    images: media.images,
-    videos: media.videos,
-    mediaOrder: media.mediaOrder,
-    slots,
-    guidePhoto: media.guidePhoto,
-    guide: tripDetail.guide
-      ? {
-          ...tripDetail.guide,
-          photo: media.guide?.photo ?? null,
-          photos: media.guide?.photos ?? [],
-          videos: media.guide?.videos ?? [],
-        }
-      : null,
+    images: [] as string[],
+    videos: [] as string[],
+    mediaOrder: [] as string[],
+    slots: [],
   };
 
   const guide = trip.guide;
-  const guideProfileImage = trip.guidePhoto ?? (guide
-    ? getGuideImage({
-        username: guide.user?.username ?? "",
-        photo: guide.photo,
-        photos: guide.photos,
-        tripImage: trip.images[0],
-      })
-    : "/avatars/fox.svg");
-  const guideMediaIsVideo = Boolean(
-    guide && trip.guidePhoto && guide.videos.includes(trip.guidePhoto),
-  );
 
   // Always render four review rows so the guide section keeps a consistent
   // height across trips, padding any missing reviews with placeholders.
   const reviewSlots = Array.from({ length: MAX_REVIEWS }, (_, index) => trip.reviews[index] ?? null);
-
-  const normalizedTripImages = trip.images
-    .map((image) => normalizeTripImagePath(image, trip.slug))
-    .filter(Boolean);
-  const normalizedMediaOrder = trip.mediaOrder
-    .map((item) => (trip.images.includes(item) ? normalizeTripImagePath(item, trip.slug) : item))
-    .filter(Boolean);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -318,30 +394,18 @@ export default async function TripDetailPage({
 
         {/* Trip photos */}
         <div className="relative h-[320px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] bg-muted/60 sm:h-[400px] lg:h-[480px]">
-          <TripGallery
-            images={normalizedTripImages}
-            videos={trip.videos}
-            mediaOrder={normalizedMediaOrder}
-            fallbackImage={`/activities/${trip.slug}/cover.png`}
-            alt={trip.title}
-            compact
-          />
+          <Suspense fallback={<TripGalleryFallback />}>
+            <TripMediaGallery slug={trip.slug} title={trip.title} />
+          </Suspense>
         </div>
 
         {/* Trip details + booking */}
         <div className="grid items-stretch gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <TripDetailsCard trip={trip} travelStyleTags={trip.categories} />
           <div className="flex flex-col gap-6">
-            <BookingBar
-              tripId={trip.id}
-                pricePerPerson={trip.priceInRupees}
-                durationDays={trip.durationDays}
-                maxGroupSize={trip.maxGroupSize}
-                hasUpcomingSlots={trip.slots.some((slot) => !isSlotCompleted(slot.date, new Date()))}
-              />
-            <AvailableDatesCard trip={trip} />
-            <CompletedDatesCard trip={trip} />
-            <WhatsIncludedCard trip={trip} />
+            <Suspense fallback={<TripAvailabilityFallback />}>
+              <TripAvailability trip={trip} />
+            </Suspense>
           </div>
         </div>
 
@@ -351,95 +415,32 @@ export default async function TripDetailPage({
           </CardHeader>
           <CardContent className="space-y-5 text-sm leading-6 text-muted-foreground">
             {guide ? (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div className="relative min-h-[288px] overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60 lg:min-h-0">
-                  {guideMediaIsVideo ? (
-                    <video
-                      src={trip.guidePhoto ?? undefined}
-                      muted
-                      autoPlay
-                      loop
-                      playsInline
-                      preload="metadata"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Image
-                      src={guideProfileImage}
-                      alt={guide.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 24vw"
-                    />
-                  )}
-                </div>
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+                  <div className="relative min-h-[288px] overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60 lg:min-h-0">
+                    <Suspense fallback={<div className="h-full animate-pulse bg-muted/60" aria-label="Loading guide photo" role="status" />}>
+                      <GuideProfileMedia slug={trip.slug} guide={guide} />
+                    </Suspense>
+                  </div>
 
-                <div className="flex flex-col justify-start">
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                          {guide.name}
-                        </h3>
-                        <Link
-                          href={`/${guide.user?.username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900"
-                        >
-                          View public profile
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                        {guide.location}
-                      </p>
+                <GuideProfileSummary
+                  guide={guide}
+                  heading={
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                        {guide.name}
+                      </h3>
+                      <Link
+                        href={`/${guide.user?.username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900"
+                      >
+                        View public profile
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
-
-                    <p className="text-base leading-7 text-muted-foreground">
-                      {guide.experienceYears}+ years experience
-                    </p>
-                    <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
-                  </div>
-
-                  <div className="mt-6 space-y-5">
-                    {guide.certifications.length > 0 ? (
-                      <div>
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                          Certifications
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {guide.certifications.map((certification) => (
-                            <span
-                              key={certification.id}
-                              className="rounded-full border border-border/70 bg-background px-3 py-1.5 text-sm font-medium text-foreground/80"
-                            >
-                              {certification.title}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {guide.languages.length > 0 ? (
-                      <div>
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-                          Languages
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {guide.languages.map((language) => (
-                            <span
-                              key={`${guide.id}-${language}`}
-                              className="rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-foreground"
-                            >
-                              {language}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
+                  }
+                />
 
                 <div className="lg:border-l lg:border-border/60 lg:pl-6">
                   <p className="text-sm font-semibold text-foreground">

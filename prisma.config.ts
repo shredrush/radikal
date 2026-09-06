@@ -11,6 +11,11 @@ export default defineConfig({
   },
   datasource: {
     // Migrations must connect directly rather than through the runtime pooler.
-    url: env("MIGRATION_DATABASE_URL"),
+    // In development, CLI commands (db push, migrate dev, etc.) target the
+    // local database (prisma dev) instead of the production migration URL.
+    url:
+      process.env.NODE_ENV === "production"
+        ? env("MIGRATION_DATABASE_URL")
+        : env("DATABASE_URL"),
   },
 });

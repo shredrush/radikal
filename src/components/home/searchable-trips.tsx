@@ -195,7 +195,7 @@ export function SearchableTrips({
               className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-black px-4 text-sm font-semibold text-white transition hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-white/90 sm:px-5"
             >
               <Search className="size-3.5" />
-              <span>Search</span>
+              <span className="hidden sm:inline">Search</span>
             </button>
             {isFocused && query.trim() ? (
               <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-border bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur">
@@ -369,7 +369,7 @@ export function SearchableTrips({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
                 <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
-                  <p className="font-heading text-[0.875rem] font-semibold tracking-wide text-white sm:text-base">
+                  <p className="font-heading text-[0.6rem] font-semibold tracking-wide text-white sm:text-base">
                     {item.title}
                   </p>
                 </div>
@@ -394,7 +394,7 @@ export function SearchableTrips({
              ) : null}
                  {visibleTrips.map((trip, index) => (
                     <div key={trip.id} className={index > 3 ? "hidden w-full min-w-0 xl:flex" : "flex w-full min-w-0"}>
-                       <TripCard imageOnly showPrice={false} slideshow trip={trip} />
+                        <TripCard imageOnly showPrice={false} slideshow reducedMobileHeight trip={trip} />
                    </div>
                  ))}
             </div>

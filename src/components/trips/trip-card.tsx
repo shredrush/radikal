@@ -30,6 +30,7 @@ export function TripCard({
   showTravelStyles = false,
   showImageSummary = false,
   slideshow = false,
+  reducedMobileHeight = false,
 }: {
   trip: TripCardTrip;
   size?: "standard" | "compact";
@@ -38,6 +39,7 @@ export function TripCard({
   showTravelStyles?: boolean;
   showImageSummary?: boolean;
   slideshow?: boolean;
+  reducedMobileHeight?: boolean;
 }) {
   const compact = size === "compact";
   const imageCardWithSummary = imageOnly && showImageSummary;
@@ -69,7 +71,7 @@ export function TripCard({
             ? "h-auto min-h-0 flex-none rounded-[0.9rem]"
             : compact
             ? "h-[360px] min-w-0 rounded-[0.9rem] sm:h-[400px]"
-            : "h-full min-h-[320px] rounded-[0.9rem] sm:min-h-[420px]"
+            : `h-full ${reducedMobileHeight ? "min-h-[256px]" : "min-h-[320px]"} rounded-[0.9rem] sm:min-h-[420px]`
         }`}
       >
         <div
