@@ -12,7 +12,7 @@ export function SiteFooter() {
             Crafted in the Himalayas for unforgettable experiences
           </h4>
           <p className="mt-3 max-w-[640px] text-[clamp(0.9rem,1.08vw,1.08rem)] leading-7 text-muted-foreground">
-            Discover curated, small-group adventures with certified experienced guides, flexible custom itineraries, and meaningful sustainable travel design.
+            Discover curated, small-group adventures with certified experienced experts, flexible custom itineraries, and meaningful sustainable and safe travel design
           </p>
         </div>
 
@@ -34,6 +34,9 @@ export function SiteFooter() {
               </Link>
               <Link href="/become-a-guide" className="transition hover:text-orange-600">
                 Become a Guide
+              </Link>
+              <Link href="/community#about-us" className="transition hover:text-orange-600">
+                About Us
               </Link>
               <Link href="/signup" className="transition hover:text-orange-600">
                 Create account
