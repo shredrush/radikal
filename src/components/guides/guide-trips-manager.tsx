@@ -2,7 +2,8 @@ import { Compass } from "lucide-react";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
-import { GuideTripForm, type GuideTripData, type GuideDraftData } from "@/components/guides/guide-trip-form";
+import { GuideTripFormTrigger } from "@/components/guides/guide-trip-form-trigger";
+import type { GuideTripData, GuideDraftData } from "@/components/guides/guide-trip-form";
 import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
@@ -51,26 +52,25 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, guideProfile] = await Promise.all([
+  const [trips, guideProfile, draftRows] = await Promise.all([
     loadDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId })),
     loadDb(
       "guide.trips-manager.guide-profile",
       () => prisma.guide.findUnique({ where: { id: guideId }, select: { photo: true, photos: true, videos: true } }),
+    ),
+    loadDb(
+      "guide.trips-manager.drafts",
+      () =>
+        prisma.tripDraft.findMany({
+          where: { guideId, deletedAt: null },
+          orderBy: { updatedAt: "desc" },
+        }),
     ),
   ]);
   const guideMedia: GuideMediaItem[] = [
     ...Array.from(new Set([...(guideProfile?.photos ?? []), guideProfile?.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
     ...guideProfile?.videos.map((url) => ({ url, type: "video" as const })) ?? [],
   ];
-  const draftRows = await loadDb(
-    "guide.trips-manager.drafts",
-    () =>
-      prisma.tripDraft.findMany({
-        where: { guideId, deletedAt: null },
-        orderBy: { updatedAt: "desc" },
-      }),
-  );
-
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({
     draftId: draft.id,
     title: draft.title ?? "",
@@ -105,7 +105,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
             </p>
           </div>
           <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} drafts={drafts} />
-          <GuideTripForm guideId={guideId} guideMedia={guideMedia} />
+          <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} />
         </div>
 
         {trips.length === 0 ? (
@@ -131,7 +131,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col items-end gap-3">
-                    <GuideTripForm guideId={guideId} guideMedia={guideMedia} trip={data} />
+                    <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} trip={data} />
                     <GuideTripSlotsToggle
                       tripId={trip.id}
                       slots={trip.slots.map(toSlotItem)}

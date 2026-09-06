@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, X } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useState,
   type FormEvent,
@@ -13,7 +14,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useEllipsisPlaceholder } from "@/hooks/use-ellipsis-placeholder";
-import { matchesSearchQuery } from "@/components/trips/sport-filters";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { CTA_PILL } from "@/lib/card-styles";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
@@ -29,14 +29,12 @@ type TripCardItem = {
   id: string;
   slug: string;
   title: string;
-  description: string;
   location: string;
   priceInRupees: number;
   durationDays: number;
   categories: string[];
   images?: string[];
   type?: string;
-  guide: { name: string } | null;
 };
 
 type Testimonial = {
@@ -87,6 +85,7 @@ export function SearchableTrips({
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [searchTrips, setSearchTrips] = useState<TripCardItem[] | null>(null);
 
   const placeholder = useEllipsisPlaceholder(
     "Search trips, sports, or destinations",
@@ -95,29 +94,30 @@ export function SearchableTrips({
 
   const rankedTrips = useMemo(() => prioritizeFeaturedTrips(trips, featuredTripSlugs), [trips, featuredTripSlugs]);
 
-  const filteredTrips = useMemo(() => {
-    const normalizedQuery = query.trim();
+  const normalizedQuery = query.trim().slice(0, 200);
 
+  useEffect(() => {
     if (!normalizedQuery) {
-      return rankedTrips.slice(0, 5);
+      return;
     }
 
-    return rankedTrips.filter((trip) => matchesSearchQuery(trip, normalizedQuery)).slice(0, 5);
-  }, [query, rankedTrips]);
+    const controller = new AbortController();
 
-  const suggestions = useMemo(() => {
-    const normalizedQuery = query.trim();
+    void fetch(`/api/trips/search?q=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Trip search failed");
+        const data = (await response.json()) as { trips: TripCardItem[] };
+        if (!controller.signal.aborted) setSearchTrips(data.trips);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setSearchTrips([]);
+      });
 
-    if (!normalizedQuery) {
-      return [];
-    }
+    return () => controller.abort();
+  }, [normalizedQuery]);
 
-    return rankedTrips
-      .filter((trip) => matchesSearchQuery(trip, normalizedQuery))
-      .slice(0, 6);
-  }, [query, rankedTrips]);
-
-  const visibleTrips = filteredTrips;
+  const suggestions = normalizedQuery ? (searchTrips ?? []) : [];
+  const visibleTrips = normalizedQuery ? (searchTrips ?? rankedTrips).slice(0, 5) : rankedTrips.slice(0, 5);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -166,6 +166,7 @@ export function SearchableTrips({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setActiveIndex(-1);
+                setSearchTrips(null);
               }}
               placeholder={placeholder}
               aria-label="Search trips, sports, or destinations"
@@ -181,6 +182,7 @@ export function SearchableTrips({
                 onClick={() => {
                   setQuery("");
                   setActiveIndex(-1);
+                  setSearchTrips(null);
                 }}
                 aria-label="Clear search"
                 className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
@@ -197,7 +199,9 @@ export function SearchableTrips({
             </button>
             {isFocused && query.trim() ? (
               <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-border bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur">
-                {suggestions.length > 0 ? (
+                {searchTrips === null ? (
+                  <p className="px-4 py-6 text-center text-sm text-muted-foreground">Searching trips...</p>
+                ) : suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">
                     {suggestions.map((trip, index) => (
                       <li key={trip.id}>
@@ -254,7 +258,7 @@ export function SearchableTrips({
           </form>
         </div>
 
-        <div className="mt-5 grid w-[94%] max-w-[57rem] grid-cols-3 gap-3 p-1 sm:p-2 lg:grid-cols-6">
+        <div className="mt-5 grid w-[94%] max-w-[57rem] grid-cols-6 gap-1 p-0.5 sm:gap-2 sm:p-1">
           {[
               {
                 title: "Hiking and Trekking",
@@ -287,11 +291,11 @@ export function SearchableTrips({
                 sport: "snowboard",
               },
             ].map((item) => (
-              <Link key={item.title} href={`/trips?sport=${item.filter}`} className="group flex min-w-0 flex-col items-center gap-2 rounded-[1rem] px-2 py-3 text-center transition hover:-translate-y-1 hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:py-4">
-                <span className="flex size-14 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 group-hover:border-orange-500/60 group-hover:text-orange-700 group-hover:shadow-[0_18px_30px_-20px_rgba(194,65,12,0.7)] dark:group-hover:text-orange-300 sm:size-16">
-                  <SportIcon sport={item.sport} className="size-6 sm:size-7" />
+              <Link key={item.title} href={`/trips?sport=${item.filter}`} className="group flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 text-center transition hover:-translate-y-1 hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:gap-2 sm:px-2 sm:py-3">
+                <span className="flex size-10 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 group-hover:border-black/60 group-hover:text-black group-hover:shadow-[0_18px_30px_-20px_rgba(0,0,0,0.7)] dark:group-hover:border-white/60 dark:group-hover:text-white sm:size-14">
+                  <SportIcon sport={item.sport} className="size-5 sm:size-6" />
                 </span>
-                <span className="font-heading text-xs font-semibold tracking-wide text-foreground sm:text-sm">
+                <span className="font-heading text-[0.6rem] leading-tight font-semibold tracking-normal text-foreground sm:text-xs sm:tracking-wide">
                   {item.title}
                 </span>
               </Link>
@@ -316,7 +320,7 @@ export function SearchableTrips({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
+          <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
             {[
               {
                 title: "Beginner Friendly",

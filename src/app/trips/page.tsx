@@ -2,52 +2,85 @@ import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 
 import { prisma, safeDb } from "@/lib/prisma";
+import {
+  getPublicTripFilterWhere,
+  getPublicTripFilters,
+  getPublicTripWhere,
+  hasPublicTripFilters,
+  PUBLIC_CATALOG_OTHER_TRIPS_LIMIT,
+  PUBLIC_CATALOG_PAGE_SIZE,
+  publicTripVisibilityWhere,
+  publicTripCardSelect,
+  type PublicTripFilters,
+  type PublicTripSearchParams,
+} from "@/lib/public-trip-catalog";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { FaqSection } from "@/components/trips/faq-section";
 
-// The filter UI (sport/travel style/location/date) is applied in memory below,
-// so every filter combination reuses this single cached query instead of
-// hitting Postgres on each click. `select` also trims the payload to only the
-// fields this page actually renders/filters on (the previous `include` pulled
-// every scalar column plus every slot row for every trip).
-const getTripsPageTrips = unstable_cache(
-  async () => {
-    return prisma.trip.findMany({
-      where: {
-        deletedAt: null,
-        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        type: true,
-        categories: true,
-        location: true,
-        description: true,
-        priceInRupees: true,
-        durationDays: true,
-        images: true,
-        guide: { select: { name: true } },
-        slots: { where: { deletedAt: null }, select: { date: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+const getCatalogPage = unstable_cache(
+  async (filters: PublicTripFilters) => {
+    const where = getPublicTripWhere(filters);
+    const otherWhere = getPublicTripFilterWhere(filters);
+
+    const [trips, totalTrips, otherTrips] = await Promise.all([
+      prisma.trip.findMany({
+        where,
+        select: publicTripCardSelect,
+        orderBy: { createdAt: "asc" },
+        skip: (filters.page - 1) * PUBLIC_CATALOG_PAGE_SIZE,
+        take: PUBLIC_CATALOG_PAGE_SIZE,
+      }),
+      prisma.trip.count({ where }),
+      hasPublicTripFilters(filters)
+        ? prisma.trip.findMany({
+            where: { AND: [publicTripVisibilityWhere, { NOT: otherWhere }] },
+            select: publicTripCardSelect,
+            orderBy: { createdAt: "asc" },
+            take: PUBLIC_CATALOG_OTHER_TRIPS_LIMIT,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    return { trips, totalTrips, otherTrips };
   },
-  ["trips-page-trips"],
-  // Admin create/update actions already call revalidatePath("/trips"), which
-  // invalidates this cache on-demand; `revalidate` is just a safety net.
+  ["public-catalog-page"],
   { tags: ["trips"], revalidate: 300 },
 );
 
-export default async function TripsPage() {
-  const trips = await safeDb("trips.catalog", () => getTripsPageTrips(), []);
+async function CatalogContent({
+  searchParams,
+}: {
+  searchParams: Promise<PublicTripSearchParams>;
+}) {
+  const filters = getPublicTripFilters(await searchParams);
+  const fallback = {
+    trips: [],
+    totalTrips: 0,
+    otherTrips: [],
+  };
+  const initialCatalog = await safeDb("trips.catalog", () => getCatalogPage(filters), fallback);
+  const totalPages = Math.max(1, Math.ceil(initialCatalog.totalTrips / PUBLIC_CATALOG_PAGE_SIZE));
+  const page = Math.min(filters.page, totalPages);
+  const catalog =
+    page === filters.page
+      ? initialCatalog
+      : await safeDb("trips.catalog", () => getCatalogPage({ ...filters, page }), fallback);
 
-  const serializedTrips = trips.map((trip) => ({
-    ...trip,
-    slots: trip.slots.map((slot) => ({ date: slot.date instanceof Date ? slot.date.toISOString() : slot.date })),
-  }));
+  return (
+    <TripsExplorer
+      trips={catalog.trips}
+      otherTrips={catalog.otherTrips}
+      page={page}
+      totalPages={totalPages}
+    />
+  );
+}
 
+export default function TripsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PublicTripSearchParams>;
+}) {
   return (
     <div className="flex flex-1 flex-col">
       <section className="mx-auto flex w-full max-w-8xl flex-col gap-4 px-4 pb-10 pt-4 sm:px-6 sm:pb-16 sm:pt-6 lg:px-10">
@@ -67,7 +100,7 @@ export default async function TripsPage() {
             </div>
           }
         >
-          <TripsExplorer trips={serializedTrips} />
+          <CatalogContent searchParams={searchParams} />
         </Suspense>
 
         <FaqSection />

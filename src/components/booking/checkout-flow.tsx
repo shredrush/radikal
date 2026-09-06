@@ -463,24 +463,14 @@ export function CheckoutFlow({
             <div className="flex flex-col gap-3">
               {tripImages.length > 0 ? (
                 <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border/70 bg-muted/60">
-                  {tripImages.map((src, index) => (
-                    <div
-                      key={src}
-                      aria-hidden={index !== imageIndex}
-                      className={cn(
-                        "absolute inset-0 transition-opacity duration-1000 ease-out",
-                        index === imageIndex ? "opacity-100" : "opacity-0"
-                      )}
-                    >
-                      <Image
-                        src={src}
-                        alt={index === imageIndex ? trip.title : ""}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 1024px) 100vw, 22rem"
-                      />
-                    </div>
-                  ))}
+                  <Image
+                    key={tripImages[imageIndex]}
+                    src={tripImages[imageIndex]}
+                    alt={trip.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 22rem"
+                  />
                 </div>
               ) : null}
               <p className="text-base font-semibold text-foreground">{trip.title}</p>

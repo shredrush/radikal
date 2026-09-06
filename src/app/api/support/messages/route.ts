@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getAuthorizedUser } from "@/lib/authz";
 import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
+import { revalidateProfileSummary } from "@/lib/profile-summary";
 import { countUnreadSupportMessages, toSupportMessageViews } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 
 // Cap the number of messages loaded per request so long-running threads don't
-// grow the response (and the 3s poll) without bound. The newest messages are
-// fetched and re-sorted to chronological order for display.
+// grow the response without bound. The newest messages are fetched and
+// re-sorted to chronological order for display.
 const MAX_MESSAGES = 100;
 
 export async function GET(request: Request) {
@@ -28,7 +29,14 @@ export async function GET(request: Request) {
     if (supportUser && chatId) {
       const chat = await prisma.supportChat.findUnique({
         where: { id: chatId },
-        include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
+        select: {
+          status: true,
+          messages: {
+            select: { id: true, body: true, senderId: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: MAX_MESSAGES,
+          },
+        },
       });
 
       if (!chat) {
@@ -43,7 +51,17 @@ export async function GET(request: Request) {
 
     const chat = await prisma.supportChat.findUnique({
       where: { userId: session.user.id, deletedAt: null },
-      include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        customerLastReadAt: true,
+        messages: {
+          select: { id: true, body: true, senderId: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: MAX_MESSAGES,
+        },
+      },
     });
 
     // Viewing the thread marks any pending agent replies as read for the
@@ -53,6 +71,7 @@ export async function GET(request: Request) {
         where: { id: chat.id },
         data: { customerLastReadAt: new Date() },
       });
+      revalidateProfileSummary(session.user.id);
     }
 
     return NextResponse.json({

@@ -56,7 +56,7 @@ export default async function AdminBookingsPage({
             ...(selectedType ? { type: selectedType } : {}),
           },
         },
-        { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+        { includeBookingIds: true },
       ),
   );
 

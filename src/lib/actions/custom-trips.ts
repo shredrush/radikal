@@ -9,6 +9,7 @@ import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
+  createCustomDateEnquirySchema,
   createCustomTripSchema,
   customTripMessageSchema,
 } from "@/lib/validations/custom-trip";
@@ -19,6 +20,10 @@ import { guestAccountCreatedEmail, sendEmailAfter } from "@/lib/email";
 export type CreateCustomTripResult =
   | { success: true; requestId: string }
   | { success: false; error: string };
+
+export type CreateCustomDateEnquiryResult =
+  | { success: true; requestId: string }
+  | { success: false; error: string; loginRequired?: boolean };
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -129,6 +134,106 @@ export async function createCustomTripRequestAction(
   revalidatePath("/profile");
   revalidatePath("/support");
 
+  return { success: true, requestId: request.id };
+}
+
+/**
+ * Opens a custom-trip chat from a scheduled trip when a traveller needs a
+ * different departure date. Trip details come from the database, never from
+ * the browser, so support receives an accurate brief.
+ */
+export async function createCustomDateEnquiryAction(
+  input: unknown,
+): Promise<CreateCustomDateEnquiryResult> {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Sign in to send a custom date enquiry.", loginRequired: true };
+  }
+
+  const parsed = createCustomDateEnquirySchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid enquiry details." };
+  }
+
+  const { tripId, startDate } = parsed.data;
+  if (startDate < new Date().toISOString().slice(0, 10)) {
+    return { success: false, error: "Choose a start date in the future." };
+  }
+
+  const trip = await prisma.trip.findFirst({
+    where: {
+      id: tripId,
+      deletedAt: null,
+      OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+    },
+    select: { title: true, type: true, location: true, durationDays: true },
+  });
+  if (!trip) {
+    return { success: false, error: "This trip is no longer available." };
+  }
+
+  const start = new Date(`${startDate}T00:00:00.000Z`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + Math.max(trip.durationDays - 1, 0));
+  const endDate = end.toISOString().slice(0, 10);
+  const userId = session.user.id;
+  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
+  if (!requestLimit.success) return { success: false, error: rateLimitError(requestLimit) };
+
+  let request;
+  try {
+    request = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      const openRequestCount = await tx.customTripRequest.count({
+        where: { userId, status: { notIn: ["CONFIRMED", "CANCELLED"] }, deletedAt: null },
+      });
+      if (openRequestCount >= MAX_OPEN_CUSTOM_TRIP_CHATS) {
+        throw new Error("OPEN_REQUEST_LIMIT");
+      }
+
+      return tx.customTripRequest.create({
+        data: {
+          userId,
+          groupType: "PRIVATE",
+          sports: [trip.type],
+          startDate: start,
+          endDate: new Date(`${endDate}T00:00:00.000Z`),
+          location: trip.location,
+          participantCount: 1,
+          requirements: `Custom date enquiry for ${trip.title}.`,
+          status: "NEW",
+          chat: {
+            create: {
+              messages: {
+                create: {
+                  senderId: userId,
+                  body: `I'd like to enquire about ${trip.title} starting on ${startDate}.`,
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "OPEN_REQUEST_LIMIT") {
+      return {
+        success: false,
+        error: `You can have up to ${MAX_OPEN_CUSTOM_TRIP_CHATS} open custom trip chats at a time. Close an existing request before starting a new one.`,
+      };
+    }
+    throw error;
+  }
+
+  await logActivity({
+    userId,
+    action: "CUSTOM_TRIP_REQUESTED",
+    label: "Requested a custom trip date",
+    metadata: { requestId: request.id, tripId, startDate },
+  });
+
+  revalidatePath("/profile");
+  revalidatePath("/support");
   return { success: true, requestId: request.id };
 }
 

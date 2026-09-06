@@ -7,6 +7,7 @@ import {
   Bell,
   Camera,
   CalendarDays,
+  Compass,
   ExternalLink,
   Headset,
   Heart,
@@ -26,6 +27,7 @@ import { loadDb, prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/authz";
 import { getProfileUser } from "@/lib/profile-user";
 import { getProfileSummary } from "@/lib/profile-summary";
+import { toProfileCustomTripRequest } from "@/lib/custom-trips";
 import { getAdminBoardHref } from "@/lib/admin-sections";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +66,7 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+const PROFILE_CUSTOM_TRIPS_PAGE_SIZE = 10;
 
 export default async function ProfilePage({
   searchParams,
@@ -97,6 +100,8 @@ export default async function ProfilePage({
         ? "referrals"
       : tab === "support"
         ? "support"
+        : tab === "custom-trips"
+          ? "custom-trips"
         : tab === "notifications"
           ? "notifications"
           : tab === "wishlist"
@@ -106,9 +111,39 @@ export default async function ProfilePage({
   const canReadAllBookings = hasPermission(user.role, "bookings.read");
   const adminBoardHref = getAdminBoardHref(user.role);
 
-  // Keep the first profile response light. Full tab lists lazy-load via API
-  // endpoints after user interaction, so the route can stream an interactive
-  // shell without waiting on booking/custom-trip/review queries.
+  // Allocate a permanent code and load its overview concurrently on the
+  // referrals tab; ensureUserReferralCode safely returns an existing code.
+  const referralCodePromise =
+    activeTab === "referrals"
+      ? loadDb("profile.referral-code", () => ensureUserReferralCode(user.id))
+      : Promise.resolve(null);
+  const referralOverviewPromise =
+    activeTab === "referrals"
+      ? loadDb(
+          "profile.referrals",
+          async () => {
+            const [signups, qualified, referrals] = await Promise.all([
+              prisma.referral.count({ where: { referrerId: user.id } }),
+              prisma.referral.count({ where: { referrerId: user.id, status: "QUALIFIED" } }),
+              prisma.referral.findMany({
+                where: { referrerId: user.id },
+                orderBy: { signedUpAt: "desc" },
+                take: 20,
+                select: {
+                  id: true,
+                  status: true,
+                  signedUpAt: true,
+                  referred: { select: { name: true } },
+                },
+              }),
+            ]);
+            return { signups, qualified, referrals };
+          },
+        )
+      : Promise.resolve({ signups: 0, qualified: 0, referrals: [] });
+
+  // Keep inactive profile tabs light. Their full lists load only after the
+  // user opens them, while the active custom-trip tab is rendered with data.
   const [
     currentUser,
     guide,
@@ -116,6 +151,9 @@ export default async function ProfilePage({
     notifications,
     supportChat,
     profileSummary,
+    customTrips,
+    referralCode,
+    referralOverview,
   ] = await Promise.all([
     // Deduped with the site header via React cache() — one row per request.
     loadDb("profile.user", () => getProfileUser(user.id)),
@@ -183,6 +221,33 @@ export default async function ProfilePage({
       "profile.summary",
       () => getProfileSummary(user.id),
     ),
+    activeTab === "custom-trips"
+      ? loadDb("profile.custom-trips", async () => {
+          const requests = await prisma.customTripRequest.findMany({
+            where: { userId: user.id, deletedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: PROFILE_CUSTOM_TRIPS_PAGE_SIZE + 1,
+            select: {
+              id: true,
+              status: true,
+              groupType: true,
+              sports: true,
+              location: true,
+              startDate: true,
+              endDate: true,
+              participantCount: true,
+              budgetRupees: true,
+            },
+          });
+          const page = requests.slice(0, PROFILE_CUSTOM_TRIPS_PAGE_SIZE);
+          return {
+            requests: page.map(toProfileCustomTripRequest),
+            nextCursor: requests.length > PROFILE_CUSTOM_TRIPS_PAGE_SIZE ? page.at(-1)?.id ?? null : null,
+          };
+        })
+      : Promise.resolve({ requests: [], nextCursor: null }),
+    referralCodePromise,
+    referralOverviewPromise,
   ]);
 
   // This is the private account photo edited below. A guide's public gallery is
@@ -193,36 +258,6 @@ export default async function ProfilePage({
   // even right after an email/phone change in the same session.
   const currentEmail = currentUser?.email ?? user.email ?? "";
   const currentPhone = currentUser?.phone ?? null;
-
-  // Every account receives a permanent code on its first referrals page visit.
-  const referralCode =
-    activeTab === "referrals"
-      ? (currentUser?.referralCode ?? await loadDb("profile.referral-code", () => ensureUserReferralCode(user.id)))
-      : null;
-  const referralOverview =
-    activeTab === "referrals"
-      ? await loadDb(
-          "profile.referrals",
-          async () => {
-            const [signups, qualified, referrals] = await Promise.all([
-               prisma.referral.count({ where: { referrerId: user.id } }),
-               prisma.referral.count({ where: { referrerId: user.id, status: "QUALIFIED" } }),
-               prisma.referral.findMany({
-                 where: { referrerId: user.id },
-                orderBy: { signedUpAt: "desc" },
-                take: 20,
-                select: {
-                  id: true,
-                  status: true,
-                  signedUpAt: true,
-                  referred: { select: { name: true } },
-                },
-              }),
-            ]);
-            return { signups, qualified, referrals };
-          },
-        )
-      : { signups: 0, qualified: 0, referrals: [] };
 
   const notificationList = notifications;
   const unreadNotificationsCount =
@@ -447,6 +482,19 @@ export default async function ProfilePage({
               >
                 <UsersRound className="h-4 w-4" />
                 <span className="truncate">Referrals</span>
+              </Link>
+              <Link
+                href="/profile?tab=custom-trips"
+                prefetch={false}
+                className={cn(
+                  "flex min-w-0 items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm lg:py-2.5",
+                  activeTab === "custom-trips"
+                    ? "border-primary/40 bg-primary/5 text-foreground"
+                    : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground"
+                )}
+              >
+                <Compass className="h-4 w-4" />
+                <span className="truncate">Custom trip enquiry</span>
               </Link>
               <Link
                 href="/profile?tab=support"
@@ -720,6 +768,14 @@ export default async function ProfilePage({
                   </CardContent>
                 </Card>
               )
+            ) : activeTab === "custom-trips" ? (
+              <div className="flex flex-col gap-6">
+                <LazyCustomTripsSection
+                  defaultOpen
+                  initialRequests={customTrips.requests}
+                  initialNextCursor={customTrips.nextCursor}
+                />
+              </div>
             ) : activeTab === "bookings" ? (
               <div className="flex flex-col gap-6">
                 <LazyBookingsSection
@@ -748,7 +804,6 @@ export default async function ProfilePage({
                   emptyTitle="No cancelled trips"
                   emptyDescription="Trips you cancel will appear here so you can still see the details."
                 />
-                {!canReadAllBookings ? <LazyCustomTripsSection /> : null}
               </div>
             ) : null}
           </div>

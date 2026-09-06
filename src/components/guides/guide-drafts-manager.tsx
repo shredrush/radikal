@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ChevronDown, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { GuideTripForm, type GuideDraftData } from "@/components/guides/guide-trip-form";
+import type { GuideDraftData } from "@/components/guides/guide-trip-form";
 import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { deleteTripDraftAction } from "@/lib/actions/trip-drafts";
 import { cn } from "@/lib/utils";
+
+const GuideTripForm = dynamic(
+  () => import("@/components/guides/guide-trip-form").then((module) => module.GuideTripForm),
+  { ssr: false, loading: () => null },
+);
 
 export function GuideDraftsManager({
   guideId,
@@ -20,7 +25,6 @@ export function GuideDraftsManager({
   guideMedia: GuideMediaItem[];
   drafts: GuideDraftData[];
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,7 +37,6 @@ export function GuideDraftsManager({
         if (expandedId === draftId) {
           setExpandedId(null);
         }
-        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not delete draft.";

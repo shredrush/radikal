@@ -6,15 +6,16 @@ import {
 } from "@/lib/bookings";
 import {
   isAwaitingReply,
-  toSupportChatListItem,
+  toSupportChatBoardListItem,
   toSupportMessageViews,
-  type SupportChatListItem,
+  type SupportChatBoardListItem,
 } from "@/lib/support";
 import {
   toCustomTripMessageViews,
+  toCustomTripRequestBoardListItem,
   toCustomTripRequestListItem,
+  type CustomTripRequestBoardListItem,
   type CustomTripRequestDetail,
-  type CustomTripRequestListItem,
 } from "@/lib/custom-trips";
 import {
   SupportBoard,
@@ -27,33 +28,36 @@ export const dynamic = "force-dynamic";
 const MAX_SUPPORT_LIST_ITEMS = 100;
 const MAX_SELECTED_MESSAGES = 100;
 
-async function loadChats(): Promise<SupportChatListItem[]> {
+async function loadChats(): Promise<SupportChatBoardListItem[]> {
   return loadDb("support.chats", async () => {
     const rows = await prisma.supportChat.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, status: "OPEN" },
       orderBy: { updatedAt: "desc" },
       take: MAX_SUPPORT_LIST_ITEMS,
-      include: {
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+        deletedAt: true,
         user: { select: { id: true, name: true, email: true } },
-        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+        messages: {
+          select: { senderId: true, body: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
-    return rows.map(toSupportChatListItem);
+    return rows.map(toSupportChatBoardListItem);
   });
 }
 
-async function loadResolvedChats(): Promise<SupportChatListItem[]> {
-  return loadDb("support.resolved-chats", async () => {
-    const rows = await prisma.supportChat.findMany({
-      where: { deletedAt: { not: null } },
-      orderBy: { deletedAt: "desc" },
-      take: MAX_SUPPORT_LIST_ITEMS,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        messages: { orderBy: { createdAt: "desc" }, take: 1 },
-      },
-    });
-    return rows.map(toSupportChatListItem);
+async function loadConversationSectionCounts() {
+  return loadDb("support.conversation-section-counts", async () => {
+    const [closed, resolved] = await Promise.all([
+      prisma.supportChat.count({ where: { deletedAt: null, status: "CLOSED" } }),
+      prisma.supportChat.count({ where: { deletedAt: { not: null } } }),
+    ]);
+    return { closed, resolved };
   });
 }
 
@@ -81,33 +85,44 @@ async function countOpenChatsAwaitingReply(): Promise<number> {
   });
 }
 
-async function loadCustomRequests(): Promise<CustomTripRequestListItem[]> {
+async function loadCustomRequests(): Promise<CustomTripRequestBoardListItem[]> {
   return loadDb("support.custom-requests", async () => {
     const rows = await prisma.customTripRequest.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, status: { notIn: ["CONFIRMED", "CANCELLED"] } },
       orderBy: { updatedAt: "desc" },
       take: MAX_SUPPORT_LIST_ITEMS,
-      include: {
-        user: { select: { id: true, name: true, email: true, username: true } },
-        chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      select: {
+        id: true,
+        status: true,
+        groupType: true,
+        startDate: true,
+        endDate: true,
+        updatedAt: true,
+        deletedAt: true,
+        user: { select: { name: true, email: true } },
+        chat: {
+          select: {
+            messages: {
+              select: { senderId: true, body: true },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
+          },
+        },
       },
     });
-    return rows.map(toCustomTripRequestListItem);
+    return rows.map(toCustomTripRequestBoardListItem);
   });
 }
 
-async function loadDeletedCustomRequests(): Promise<CustomTripRequestListItem[]> {
-  return loadDb("support.deleted-custom-requests", async () => {
-    const rows = await prisma.customTripRequest.findMany({
-      where: { deletedAt: { not: null } },
-      orderBy: { deletedAt: "desc" },
-      take: MAX_SUPPORT_LIST_ITEMS,
-      include: {
-        user: { select: { id: true, name: true, email: true, username: true } },
-        chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-      },
-    });
-    return rows.map(toCustomTripRequestListItem);
+async function loadCustomSectionCounts() {
+  return loadDb("support.custom-section-counts", async () => {
+    const [confirmed, cancelled, deleted] = await Promise.all([
+      prisma.customTripRequest.count({ where: { deletedAt: null, status: "CONFIRMED" } }),
+      prisma.customTripRequest.count({ where: { deletedAt: null, status: "CANCELLED" } }),
+      prisma.customTripRequest.count({ where: { deletedAt: { not: null } } }),
+    ]);
+    return { confirmed, cancelled, deleted };
   });
 }
 
@@ -151,17 +166,17 @@ export default async function SupportBoardPage({
   // query, the global past-booking completion sweep, and every custom trip
   // request on every visit. Inactive tabs now contribute a single cheap count
   // (indexed by status) for their tab badge instead.
-  const [chats, awaitingReplyCount, resolvedChats, bookings, pendingBookingsCount, customRequests, deletedCustomRequests, newCustomRequestsCount, selectedChat, selectedCustomRequest] =
+  const [chats, awaitingReplyCount, conversationSectionCounts, bookings, pendingBookingsCount, customRequests, customSectionCounts, newCustomRequestsCount, selectedChat, selectedCustomRequest] =
     await Promise.all([
       tab === "conversations"
         ? loadChats()
-        : Promise.resolve([] as SupportChatListItem[]),
+        : Promise.resolve([] as SupportChatBoardListItem[]),
       tab === "conversations"
         ? Promise.resolve(0)
         : countOpenChatsAwaitingReply(),
       tab === "conversations"
-        ? loadResolvedChats()
-        : Promise.resolve([] as SupportChatListItem[]),
+        ? loadConversationSectionCounts()
+        : Promise.resolve({ closed: 0, resolved: 0 }),
       tab === "bookings"
         ? loadDb(
             "support.bookings",
@@ -173,7 +188,7 @@ export default async function SupportBoardPage({
                     ...(selectedType ? { type: selectedType } : {}),
                   },
                 },
-                { completePast: true, includeBookingIds: true, includePaymentDetails: true },
+                { includeBookingIds: true },
               ),
           )
         : Promise.resolve([] as BookingBoardItem[]),
@@ -185,10 +200,10 @@ export default async function SupportBoardPage({
           ),
       tab === "custom"
         ? loadCustomRequests()
-        : Promise.resolve([] as CustomTripRequestListItem[]),
+        : Promise.resolve([] as CustomTripRequestBoardListItem[]),
       tab === "custom"
-        ? loadDeletedCustomRequests()
-        : Promise.resolve([] as CustomTripRequestListItem[]),
+        ? loadCustomSectionCounts()
+        : Promise.resolve({ confirmed: 0, cancelled: 0, deleted: 0 }),
       tab === "custom"
         ? Promise.resolve(0)
         : loadDb(
@@ -246,7 +261,10 @@ export default async function SupportBoardPage({
   return (
     <SupportBoard
       initialChats={chats}
-      initialResolvedChats={resolvedChats}
+      initialClosedChats={[]}
+      closedChatsCount={conversationSectionCounts.closed}
+      initialResolvedChats={[]}
+      resolvedChatsCount={conversationSectionCounts.resolved}
       pendingConversationsCount={
         tab === "conversations"
           ? chats.filter(isAwaitingReply).length
@@ -262,7 +280,12 @@ export default async function SupportBoardPage({
           : pendingBookingsCount
       }
       initialCustomRequests={customRequests}
-      deletedCustomRequests={deletedCustomRequests}
+      confirmedCustomRequests={[]}
+      confirmedCustomRequestsCount={customSectionCounts.confirmed}
+      cancelledCustomRequests={[]}
+      cancelledCustomRequestsCount={customSectionCounts.cancelled}
+      deletedCustomRequests={[]}
+      deletedCustomRequestsCount={customSectionCounts.deleted}
       newCustomRequestsCount={
         tab === "custom"
           ? customRequests.filter((request) => request.status === "NEW").length

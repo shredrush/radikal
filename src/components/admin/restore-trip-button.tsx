@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +8,6 @@ import { restoreTripAction } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
 
 export function RestoreTripButton({ tripId, tripTitle }: { tripId: string; tripTitle: string }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleRestore() {
@@ -17,7 +15,6 @@ export function RestoreTripButton({ tripId, tripTitle }: { tripId: string; tripT
       try {
         await restoreTripAction(tripId);
         toast.success(`"${tripTitle}" has been restored.`);
-        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to restore trip.";
         toast.error(message);

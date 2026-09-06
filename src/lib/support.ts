@@ -63,6 +63,8 @@ export type SupportChatListItem = {
   lastMessageBody: string | null;
 };
 
+export type SupportChatBoardListItem = Omit<SupportChatListItem, "userEmail">;
+
 /**
  * Convert a Prisma SupportChat (with its user + latest message) into a
  * serializable shape for the support board. Dates are serialized to ISO
@@ -76,6 +78,21 @@ export function toSupportChatListItem(chat: {
   user: { id: string; name: string | null; email: string };
   messages: Array<{ senderId: string; body: string }>;
 }): SupportChatListItem {
+  return {
+    ...toSupportChatBoardListItem(chat),
+    userEmail: chat.user.email,
+  };
+}
+
+/** A minimal DTO for support-board conversation rows. */
+export function toSupportChatBoardListItem(chat: {
+  id: string;
+  status: "OPEN" | "CLOSED";
+  updatedAt: Date;
+  deletedAt: Date | null;
+  user: { id: string; name: string | null; email: string };
+  messages: Array<{ senderId: string; body: string }>;
+}): SupportChatBoardListItem {
   const lastMessage = chat.messages[0];
   return {
     id: chat.id,
@@ -84,7 +101,6 @@ export function toSupportChatListItem(chat: {
     deletedAt: chat.deletedAt ? chat.deletedAt.toISOString() : null,
     userId: chat.user.id,
     userName: chat.user.name || chat.user.email,
-    userEmail: chat.user.email,
     lastMessageSenderId: lastMessage?.senderId ?? null,
     lastMessageBody: lastMessage?.body ?? null,
   };

@@ -56,19 +56,24 @@ export function fetchDeletedTripsWithDetails(
     where: { deletedAt: { not: null }, ...where },
     orderBy: { deletedAt: "desc" },
     take: options.take,
-    include: {
-      ...tripDetailInclude,
-      slots: { orderBy: { date: "asc" } },
-      guide: { select: { id: true, name: true } },
+    select: {
+      id: true,
+      title: true,
+      location: true,
+      deletedAt: true,
+      deletedById: true,
+      guide: { select: { name: true } },
+      slots: { select: { deletedAt: true } },
       bookings: {
         orderBy: { createdAt: "desc" },
-        include: {
-          user: { select: { id: true, name: true, email: true, username: true } },
-          slot: { select: { id: true, date: true } },
+        select: {
+          deletedAt: true,
+          participantCount: true,
+          totalPriceRupees: true,
+          user: { select: { name: true, email: true } },
         },
       },
-      wishlistItems: { include: { user: { select: { id: true, name: true, email: true, username: true } } } },
-      reviews: { include: { user: { select: { id: true, name: true, email: true, username: true } } } },
+      wishlistItems: { select: { deletedAt: true } },
     },
   });
 }

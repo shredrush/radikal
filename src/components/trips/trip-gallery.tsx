@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import { pluralize } from "@/lib/format";
 import { getOrderedMediaItems, type OrderedMediaItem } from "@/lib/media-order";
+import { useAnimationActivity } from "@/hooks/use-animation-activity";
 
 interface TripGalleryProps {
   images: string[];
@@ -89,6 +90,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
   const [isGridOpen, setIsGridOpen] = useState(false);
   const [completedTransitionCycle, setCompletedTransitionCycle] = useState(0);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const [galleryRef, animationActive] = useAnimationActivity<HTMLDivElement>();
   const [rotation, setRotation] = useState<GalleryRotation>(() => ({
     activeSlot: 0,
     visibleMediaIndices: [0, 1, 2, 3],
@@ -148,6 +150,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
 
   useEffect(() => {
     if (
+      !animationActive ||
       !shouldRotateMedia ||
       rotation.waitingForVideoSlot !== null ||
       rotation.cycle > completedTransitionCycle
@@ -173,10 +176,10 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     }, 3_000);
 
     return () => window.clearTimeout(timer);
-  }, [completedTransitionCycle, rotation, shouldRotateMedia, visibleMediaTypeSignature]);
+  }, [animationActive, completedTransitionCycle, rotation, shouldRotateMedia, visibleMediaTypeSignature]);
 
   useEffect(() => {
-    if (rotation.cycle <= completedTransitionCycle) return;
+    if (!animationActive || rotation.cycle <= completedTransitionCycle) return;
 
     // This fallback also completes the transition when reduced motion disables CSS animations.
     const timer = window.setTimeout(() => {
@@ -190,21 +193,33 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
       }
     }, 2_400);
     return () => window.clearTimeout(timer);
-  }, [completedTransitionCycle, incomingMediaType, incomingSlot, rotation.cycle]);
+  }, [animationActive, completedTransitionCycle, incomingMediaType, incomingSlot, rotation.cycle]);
 
   useEffect(() => {
     const slot = rotation.waitingForVideoSlot;
-    if (slot === null) return;
+    if (!animationActive || slot === null) return;
 
     // Some browsers do not resume an existing muted video when autoPlay changes.
     // Explicitly playing it ensures the ended event controls the next rotation.
     void videoRefs.current[slot]?.play().catch(() => undefined);
-  }, [rotation.waitingForVideoSlot]);
+  }, [animationActive, rotation.waitingForVideoSlot]);
+
+  useEffect(() => {
+    if (!animationActive) {
+      videoRefs.current.forEach((video) => video?.pause());
+      return;
+    }
+
+    const activeItem = slots[rotation.activeSlot];
+    if (activeItem?.type === "video" && rotation.waitingForVideoSlot === null) {
+      void videoRefs.current[rotation.activeSlot]?.play().catch(() => undefined);
+    }
+  }, [animationActive, rotation.activeSlot, rotation.waitingForVideoSlot, slots]);
 
   return (
     <>
       <div className={`relative ${compact ? "h-full" : ""}`}>
-        <div className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
+        <div ref={galleryRef} className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
         {[
           { slot: 0, layout: "col-span-2 row-span-2" },
           { slot: 1, layout: "col-span-1 row-span-1" },
@@ -272,18 +287,18 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                       videoRefs.current[slot] = element;
                     }}
                     src={item.src}
-                    autoPlay={isActiveTile && !isSliding}
+                    autoPlay={animationActive && isActiveTile && !isSliding}
                     muted
                     loop={rotation.waitingForVideoSlot !== slot}
                     playsInline
-                    preload={isActiveTile || isSliding ? "auto" : "metadata"}
+                    preload={animationActive && (isActiveTile || isSliding) ? "auto" : "metadata"}
                     onEnded={
                       rotation.waitingForVideoSlot === slot
                         ? () => setRotation((current) => advanceGalleryRotation(current, slot, true))
                         : undefined
                     }
                     onCanPlay={(event) => {
-                      if (rotation.waitingForVideoSlot === slot) {
+                      if (animationActive && rotation.waitingForVideoSlot === slot) {
                         void event.currentTarget.play().catch(() => undefined);
                       }
                     }}

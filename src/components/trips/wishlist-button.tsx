@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function WishlistButton({
   tripId,
-  initialWishlisted = false,
+  initialWishlisted,
   size = "md",
   className,
 }: {
@@ -19,13 +19,18 @@ export function WishlistButton({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const [wishlisted, setWishlisted] = useState(initialWishlisted);
+  const [wishlisted, setWishlisted] = useState(initialWishlisted ?? false);
   const [isPending, startTransition] = useTransition();
   const pathname = usePathname();
 
-  // Refetch when the path changes so the heart reflects the session after a
-  // login/logout redirect, not only on first mount.
+  // Server-rendered list items already have authoritative wishlist state. Do
+  // not refetch each card on mount; buttons without it still refresh after an
+  // auth redirect so their state tracks the current session.
   useEffect(() => {
+    if (initialWishlisted !== undefined) {
+      return;
+    }
+
     void (async () => {
       try {
         const response = await fetch(`/api/wishlist/${tripId}`, { cache: "no-store" });
@@ -37,7 +42,7 @@ export function WishlistButton({
         // The button remains usable and the server action remains authoritative.
       }
     })();
-  }, [tripId, pathname]);
+  }, [initialWishlisted, tripId, pathname]);
 
   function handleToggle() {
     startTransition(async () => {

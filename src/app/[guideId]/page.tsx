@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { ShieldCheck } from "lucide-react";
@@ -17,10 +18,13 @@ import { getDisplayName } from "@/lib/profile-initials";
 import { ACCENT_PILL } from "@/lib/card-styles";
 import { formatShortDate } from "@/lib/format";
 
+const GUIDE_TRIPS_PAGE_SIZE = 6;
+const GUIDE_REVIEWS_PAGE_SIZE = 6;
+
 // Guide profile + their trips rarely change; skip the DB round-trip on
 // every request (trips are also tagged "trips" so edits still invalidate).
 const getGuideDetail = unstable_cache(
-  async (username: string) => {
+  async (username: string, tripsPage: number, reviewsPage: number) => {
     return prisma.guide.findFirst({
       where: { deletedAt: null, user: { username, deletedAt: null } },
       select: {
@@ -44,6 +48,8 @@ const getGuideDetail = unstable_cache(
         trips: {
           where: { deletedAt: null },
           orderBy: { createdAt: "asc" },
+          skip: (tripsPage - 1) * GUIDE_TRIPS_PAGE_SIZE,
+          take: GUIDE_TRIPS_PAGE_SIZE,
           select: {
             id: true,
             slug: true,
@@ -60,6 +66,8 @@ const getGuideDetail = unstable_cache(
           // Retired trips retain their snapshot title/date.
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
+          skip: (reviewsPage - 1) * GUIDE_REVIEWS_PAGE_SIZE,
+          take: GUIDE_REVIEWS_PAGE_SIZE,
           select: {
             id: true,
             comment: true,
@@ -70,6 +78,12 @@ const getGuideDetail = unstable_cache(
             trip: { select: { title: true } },
           },
         },
+        _count: {
+          select: {
+            trips: { where: { deletedAt: null } },
+            reviews: { where: { deletedAt: null } },
+          },
+        },
       },
     });
   },
@@ -77,9 +91,9 @@ const getGuideDetail = unstable_cache(
   { tags: ["guides", "trips", "reviews"], revalidate: 3600 },
 );
 
-async function getResolvedGuide(username: string) {
+async function getResolvedGuide(username: string, tripsPage = 1, reviewsPage = 1) {
   return loadDb("guide.detail", async () => {
-    const guide = await getGuideDetail(username);
+    const guide = await getGuideDetail(username, tripsPage, reviewsPage);
     if (guide) return guide;
     await resolveGuideAlias(username);
     return null;
@@ -102,13 +116,35 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
   };
 }
 
-export default async function GuideDetailPage({ params }: { params: Promise<{ guideId: string }> }) {
-  const { guideId } = await params;
+export default async function GuideDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ guideId: string }>;
+  searchParams: Promise<{ tripsPage?: string; reviewsPage?: string }>;
+}) {
+  const [{ guideId }, pageParams] = await Promise.all([params, searchParams]);
+  const parsePage = (value: string | undefined) => {
+    const page = Number.parseInt(value ?? "", 10);
+    return Number.isSafeInteger(page) && page > 0 ? page : 1;
+  };
+  const requestedTripsPage = parsePage(pageParams.tripsPage);
+  const requestedReviewsPage = parsePage(pageParams.reviewsPage);
 
-  const guide = await getResolvedGuide(guideId);
+  let guide = await getResolvedGuide(guideId, requestedTripsPage, requestedReviewsPage);
 
   if (!guide) {
     notFound();
+  }
+
+  const tripPages = Math.max(1, Math.ceil(guide._count.trips / GUIDE_TRIPS_PAGE_SIZE));
+  const reviewPages = Math.max(1, Math.ceil(guide._count.reviews / GUIDE_REVIEWS_PAGE_SIZE));
+  const tripsPage = Math.min(requestedTripsPage, tripPages);
+  const reviewsPage = Math.min(requestedReviewsPage, reviewPages);
+
+  if (tripsPage !== requestedTripsPage || reviewsPage !== requestedReviewsPage) {
+    guide = await getResolvedGuide(guideId, tripsPage, reviewsPage);
+    if (!guide) notFound();
   }
 
   const session = await auth();
@@ -134,6 +170,13 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
     quote: review.comment,
     date: formatShortDate(review.tripDate ?? review.createdAt),
   }));
+  const makePageHref = (nextTripsPage: number, nextReviewsPage: number) => {
+    const query = new URLSearchParams();
+    if (nextTripsPage > 1) query.set("tripsPage", String(nextTripsPage));
+    if (nextReviewsPage > 1) query.set("reviewsPage", String(nextReviewsPage));
+    const suffix = query.toString();
+    return `/${guideId}${suffix ? `?${suffix}` : ""}`;
+  };
 
   return (
     <div className="flex-1">
@@ -231,9 +274,23 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ gu
               ))}
             </div>
           )}
+          {tripPages > 1 ? (
+            <nav className="mt-6 flex items-center justify-center gap-4" aria-label="Guide trip pages">
+              {tripsPage > 1 ? <Link href={makePageHref(tripsPage - 1, reviewsPage)} className="text-sm font-semibold text-foreground underline-offset-4 hover:underline">Previous</Link> : <span className="text-sm text-muted-foreground">Previous</span>}
+              <span className="text-sm text-muted-foreground">Page {Math.min(tripsPage, tripPages)} of {tripPages}</span>
+              {tripsPage < tripPages ? <Link href={makePageHref(tripsPage + 1, reviewsPage)} className="text-sm font-semibold text-foreground underline-offset-4 hover:underline">Next</Link> : <span className="text-sm text-muted-foreground">Next</span>}
+            </nav>
+          ) : null}
         </section>
 
         <GuideReviewsSection guideName={guide.name} reviews={guideReviews} />
+        {reviewPages > 1 ? (
+          <nav className="mt-6 flex items-center justify-center gap-4" aria-label="Guide review pages">
+            {reviewsPage > 1 ? <Link href={makePageHref(tripsPage, reviewsPage - 1)} className="text-sm font-semibold text-foreground underline-offset-4 hover:underline">Previous</Link> : <span className="text-sm text-muted-foreground">Previous</span>}
+            <span className="text-sm text-muted-foreground">Page {Math.min(reviewsPage, reviewPages)} of {reviewPages}</span>
+            {reviewsPage < reviewPages ? <Link href={makePageHref(tripsPage, reviewsPage + 1)} className="text-sm font-semibold text-foreground underline-offset-4 hover:underline">Next</Link> : <span className="text-sm text-muted-foreground">Next</span>}
+          </nav>
+        ) : null}
       </div>
     </div>
   );

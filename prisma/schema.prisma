@@ -270,6 +270,7 @@ model Certification {
 
   guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
+  @@index([guideId, createdAt(sort: Desc)])
   @@map("certifications")
 }
 
@@ -302,8 +303,8 @@ model GuideApplication {
   reviewedBy     User?                           @relation("GuideApplicationReviewedBy", fields: [reviewedById], references: [id])
   certifications GuideApplicationCertification[]
 
-  @@index([status])
-  @@index([userId])
+  @@index([submittedAt(sort: Desc)])
+  @@index([userId, submittedAt(sort: Desc)])
   @@map("guide_applications")
 }
 
@@ -317,7 +318,7 @@ model GuideApplicationCertification {
 
   application GuideApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
-  @@index([applicationId])
+  @@index([applicationId, createdAt(sort: Desc)])
   @@map("guide_application_certifications")
 }
 
@@ -354,7 +355,8 @@ model Trip {
 
   @@index([type])
   @@index([guideId])
-  @@index([deletedAt])
+  @@index([deletedAt, createdAt])
+  @@index([guideId, deletedAt, createdAt(sort: Desc)])
   @@map("trips")
 }
 
@@ -416,7 +418,7 @@ model Slot {
   trip     Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   bookings Booking[]
 
-  @@index([tripId])
+  @@index([tripId, deletedAt, date])
   @@index([date])
   @@index([deletedAt])
   @@map("slots")
@@ -458,8 +460,10 @@ model Booking {
   @@index([userId, deletedAt, createdAt])
   @@index([userId, status, deletedAt, createdAt])
   @@index([slotId])
+  @@index([slotId, status, deletedAt])
   @@index([status])
   @@index([tripId])
+  @@index([tripId, deletedAt, createdAt])
   @@index([deletedAt])
   @@index([deletedById])
   @@map("bookings")
@@ -541,6 +545,8 @@ model SupportChat {
   @@index([status])
   @@index([userId, deletedAt])
   @@index([updatedAt])
+  @@index([status, deletedAt, updatedAt(sort: Desc)])
+  @@index([deletedAt(sort: Desc)])
   @@map("support_chats")
 }
 
@@ -589,6 +595,7 @@ model CustomTripRequest {
   @@index([userId, deletedAt, createdAt])
   @@index([status])
   @@index([updatedAt])
+  @@index([status, deletedAt, updatedAt(sort: Desc)])
   @@map("custom_trip_requests")
 }
 
@@ -616,6 +623,7 @@ model CustomTripMessage {
   sender User           @relation(fields: [senderId], references: [id])
 
   @@index([chatId])
+  @@index([chatId, createdAt(sort: Desc)])
   @@index([senderId])
   @@map("custom_trip_messages")
 }
@@ -637,6 +645,7 @@ model ActivityLog {
 
   @@index([userId, createdAt])
   @@index([createdAt])
+  @@index([action, createdAt(sort: Desc)])
   @@map("activity_logs")
 }
 
@@ -664,6 +673,7 @@ model TripChangeRequest {
 
   @@index([status])
   @@index([guideId])
+  @@index([createdAt(sort: Desc)])
   @@index([tripId])
   @@map("trip_change_requests")
 }
@@ -698,6 +708,7 @@ model TripDraft {
 
   @@index([guideId])
   @@index([deletedAt])
+  @@index([guideId, deletedAt, updatedAt(sort: Desc)])
   @@map("trip_drafts")
 }
 

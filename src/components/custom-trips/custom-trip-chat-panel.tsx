@@ -14,14 +14,10 @@ import {
 import { formatMessageTime } from "@/lib/format";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
+import { useVisiblePolling } from "@/hooks/use-visible-polling";
 
 const composerClassName =
   `w-full resize-none rounded-2xl border ${FORM_FIELD_BORDER} bg-background px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 dark:focus:border-orange-400`;
-
-function sameThread(a: CustomTripMessageView[], b: CustomTripMessageView[]) {
-  if (a.length !== b.length) return false;
-  return a.every((message, index) => message.id === b[index]?.id);
-}
 
 export function CustomTripChatPanel({
   requestId,
@@ -35,27 +31,52 @@ export function CustomTripChatPanel({
   const [messages, setMessages] = useState<CustomTripMessageView[]>(initialMessages);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesFetchControllerRef = useRef<AbortController | null>(null);
+  const cursorRef = useRef(initialMessages.at(-1)?.id ?? null);
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (replaceActiveRequest = false) => {
+    if (messagesFetchControllerRef.current) {
+      if (!replaceActiveRequest) return;
+      messagesFetchControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    messagesFetchControllerRef.current = controller;
     try {
+      const params = new URLSearchParams({ requestId });
+      if (cursorRef.current) params.set("after", cursorRef.current);
       const response = await fetch(
-        `/api/custom-trips/messages?requestId=${encodeURIComponent(requestId)}`,
-        { cache: "no-store" },
+        `/api/custom-trips/messages?${params.toString()}`,
+        { cache: "no-store", signal: controller.signal },
       );
       if (!response.ok) return;
 
       const data = await response.json();
       const next = Array.isArray(data.messages) ? (data.messages as CustomTripMessageView[]) : [];
-      setMessages((previous) => (sameThread(previous, next) ? previous : next));
+      if (next.length > 0) {
+        cursorRef.current = next.at(-1)?.id ?? cursorRef.current;
+        setMessages((previous) => {
+          const knownIds = new Set(previous.map((message) => message.id));
+          const additions = next.filter((message) => !knownIds.has(message.id));
+          return additions.length > 0 ? [...previous, ...additions] : previous;
+        });
+      }
     } catch {
       // Ignore transient network errors; the next poll will retry.
+    } finally {
+      if (messagesFetchControllerRef.current === controller) {
+        messagesFetchControllerRef.current = null;
+      }
     }
   }, [requestId]);
 
   useEffect(() => {
-    const interval = setInterval(loadMessages, 3000);
-    return () => clearInterval(interval);
-  }, [loadMessages]);
+    return () => {
+      messagesFetchControllerRef.current?.abort();
+    };
+  }, [requestId]);
+
+  useVisiblePolling(true, loadMessages, 15_000);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -79,7 +100,7 @@ export function CustomTripChatPanel({
           await sendCustomTripMessageAction(requestId, new FormData(form));
         }
         form.reset();
-        await loadMessages();
+        await loadMessages(true);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not send message.";
         toast.error(message);

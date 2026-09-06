@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { sendEmailAfter, supportReplyEmail } from "@/lib/email";
 import { logActivity } from "@/lib/activity-log";
+import { invalidateProfileSummary } from "@/lib/profile-summary";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { supportMessageSchema } from "@/lib/validations/support";
 
@@ -56,6 +57,7 @@ export async function sendSupportMessageAction(formData: FormData) {
     label: "Sent a support message",
   });
 
+  invalidateProfileSummary(userId);
   revalidatePath("/profile");
   revalidatePath("/support");
 }
@@ -103,7 +105,7 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
       data: { status: chat.status },
     });
 
-    return { email: chat.user.email, name: chat.user.name };
+    return { userId: chat.userId, email: chat.user.email, name: chat.user.name };
   });
 
   await logActivity({
@@ -112,6 +114,8 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
     label: "Replied to a support chat",
     metadata: { chatId },
   });
+
+  invalidateProfileSummary(customer.userId);
 
   // Notify the customer that an agent replied, without blocking the reply.
   sendEmailAfter(
@@ -136,7 +140,7 @@ export async function setSupportChatStatusAction(
     throw new Error("Missing conversation.");
   }
 
-  await prisma.supportChat.update({
+  const chat = await prisma.supportChat.update({
     where: { id: chatId },
     data: {
       status,
@@ -144,8 +148,10 @@ export async function setSupportChatStatusAction(
       // the "Resolved" section instead of appearing in two places.
       ...(status === "OPEN" ? { deletedAt: null } : {}),
     },
+    select: { userId: true },
   });
 
+  invalidateProfileSummary(chat.userId);
   revalidatePath("/support");
   revalidatePath("/profile");
 }
@@ -164,7 +170,7 @@ export async function markSupportChatResolvedAction(chatId: string) {
 
   const chat = await prisma.supportChat.findUnique({
     where: { id: chatId },
-    select: { status: true, deletedAt: true },
+    select: { userId: true, status: true, deletedAt: true },
   });
   if (!chat) {
     throw new Error("Conversation not found.");
@@ -178,6 +184,7 @@ export async function markSupportChatResolvedAction(chatId: string) {
     data: { status: "CLOSED", deletedAt: new Date() },
   });
 
+  invalidateProfileSummary(chat.userId);
   revalidatePath("/support");
   revalidatePath("/profile");
 }
@@ -197,6 +204,7 @@ export async function reopenSupportChatAction() {
     data: { status: "OPEN", deletedAt: null },
   });
 
+  invalidateProfileSummary(session.user.id);
   revalidatePath("/profile");
   revalidatePath("/support");
 }
@@ -218,6 +226,7 @@ export async function resolveSupportChatAction() {
     data: { status: "CLOSED", deletedAt: new Date() },
   });
 
+  invalidateProfileSummary(session.user.id);
   revalidatePath("/profile");
   revalidatePath("/support");
 }

@@ -19,7 +19,7 @@ import {
 } from "@/lib/email";
 import { findUserByIdentifier } from "@/lib/login";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
-import { generateUsername } from "@/lib/username-generator";
+import { generateAvailableUsername } from "@/lib/available-username";
 import { logActivity } from "@/lib/activity-log";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
@@ -135,17 +135,6 @@ export type SignupActionState = {
     phone?: string;
   };
 };
-
-async function generateAvailableUsername(): Promise<string> {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const candidate = generateUsername();
-    const existing = await prisma.user.findUnique({
-      where: { username: candidate },
-    });
-    if (!existing) return candidate;
-  }
-  return `traveler-${crypto.randomInt(0, 1_000_000)}`;
-}
 
 export async function signupAction(
   _prevState: SignupActionState,
@@ -321,7 +310,7 @@ export async function checkUsernameAvailability(
     };
   }
 
-  const existing = await prisma.user.findUnique({ where: { username: normalized } });
+  const existing = await prisma.user.findUnique({ where: { username: normalized }, select: { id: true } });
   if (existing) {
     return { status: "taken", message: "This username is already taken." };
   }

@@ -4,13 +4,13 @@ export type TripCardItem = {
   id: string;
   slug: string;
   title: string;
-  description: string;
+  description?: string;
   location: string;
   priceInRupees: number;
   durationDays: number;
   categories: string[];
   type: string;
-  guide: { name: string } | null;
+  guide?: { name: string } | null;
 };
 
 // Granular winter variants ("ski" / "snowboard") only exist for display

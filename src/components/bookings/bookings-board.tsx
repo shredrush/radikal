@@ -68,6 +68,7 @@ const STATUS_DOT: Record<BookingSectionKey, string> = {
 
 function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
   const tripMap = new Map<string, TripGroup>();
+  const slotMaps = new Map<string, Map<string, SlotGroup>>();
 
   for (const item of items) {
     let trip = tripMap.get(item.tripId);
@@ -82,9 +83,11 @@ function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
         slots: [],
       };
       tripMap.set(item.tripId, trip);
+      slotMaps.set(item.tripId, new Map());
     }
 
-    let slot = trip.slots.find((candidate) => candidate.slotId === item.slotId);
+    const slotMap = slotMaps.get(item.tripId)!;
+    let slot = slotMap.get(item.slotId);
     if (!slot) {
       slot = {
         slotId: item.slotId,
@@ -98,6 +101,7 @@ function groupByTripAndSlot(items: BookingBoardItem[]): TripGroup[] {
         clients: [],
       };
       trip.slots.push(slot);
+      slotMap.set(item.slotId, slot);
     } else {
       slot.reserved = Math.max(slot.reserved, item.reserved ?? 0);
       slot.cancellationReason = slot.cancellationReason ?? item.cancellationReason;
@@ -163,8 +167,8 @@ export function BookingsBoard({
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     CONFIRMED: true,
     PENDING: true,
-    COMPLETED: true,
-    CANCELLED: true,
+    COMPLETED: false,
+    CANCELLED: false,
     DELETED: false,
   });
 

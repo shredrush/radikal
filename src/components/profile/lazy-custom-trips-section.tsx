@@ -7,26 +7,32 @@ import {
   CustomTripRequestCard,
   CustomTripRequestEmpty,
 } from "@/components/custom-trips/custom-trip-request-card";
-import type { CustomTripRequestListItem } from "@/lib/custom-trips";
+import type { ProfileCustomTripRequest } from "@/lib/custom-trips";
 import { cn } from "@/lib/utils";
 
-export function LazyCustomTripsSection() {
-  const [open, setOpen] = useState(false);
-  const [requests, setRequests] = useState<CustomTripRequestListItem[] | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+export function LazyCustomTripsSection({
+  defaultOpen = false,
+  initialRequests = null,
+  initialNextCursor = null,
+}: {
+  defaultOpen?: boolean;
+  initialRequests?: ProfileCustomTripRequest[] | null;
+  initialNextCursor?: string | null;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [requests, setRequests] = useState<ProfileCustomTripRequest[] | null>(initialRequests);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const load = useCallback(async (cursor?: string) => {
-    setLoading(true);
-    setError(false);
     try {
       const url = new URL("/api/profile/custom-trips", window.location.origin);
       if (cursor) url.searchParams.set("cursor", cursor);
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) throw new Error("Request failed");
       const data = (await response.json()) as {
-        requests?: CustomTripRequestListItem[];
+        requests?: ProfileCustomTripRequest[];
         nextCursor?: string | null;
       };
       const nextRequests = Array.isArray(data.requests) ? data.requests : [];
@@ -47,6 +53,8 @@ export function LazyCustomTripsSection() {
 
     setOpen(true);
     if (requests === null && !loading) {
+      setError(false);
+      setLoading(true);
       void load();
     }
   }
@@ -100,7 +108,11 @@ export function LazyCustomTripsSection() {
               {nextCursor ? (
                 <button
                   type="button"
-                  onClick={() => void load(nextCursor)}
+                  onClick={() => {
+                    setError(false);
+                    setLoading(true);
+                    void load(nextCursor);
+                  }}
                   className="mt-4 w-full rounded-full border border-border/80 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-border hover:text-foreground"
                 >
                   {loading ? (

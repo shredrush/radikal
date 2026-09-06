@@ -1,13 +1,26 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@/generated/prisma/client";
 
 import { getAuthorizedUser } from "@/lib/authz";
 import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
-import { toCustomTripRequestListItem } from "@/lib/custom-trips";
+import { toCustomTripRequestBoardListItem } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
 const MAX_REQUESTS = 100;
+type RequestSection = "open" | "confirmed" | "cancelled" | "deleted";
 
-export async function GET() {
+const SECTION_WHERE: Record<RequestSection, Prisma.CustomTripRequestWhereInput> = {
+  open: { deletedAt: null, status: { notIn: ["CONFIRMED", "CANCELLED"] } },
+  confirmed: { deletedAt: null, status: "CONFIRMED" },
+  cancelled: { deletedAt: null, status: "CANCELLED" },
+  deleted: { deletedAt: { not: null } },
+};
+
+function isRequestSection(value: string | null): value is RequestSection {
+  return value === "open" || value === "confirmed" || value === "cancelled" || value === "deleted";
+}
+
+export async function GET(request: Request) {
   let user;
   try {
     user = await getAuthorizedUser("support.manage");
@@ -19,31 +32,39 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const section = new URL(request.url).searchParams.get("section");
+  if (!isRequestSection(section)) {
+    return NextResponse.json({ error: "Invalid request section" }, { status: 400 });
+  }
+
   try {
-    const [requests, deletedRequests] = await Promise.all([
-      prisma.customTripRequest.findMany({
-        where: { deletedAt: null },
-        orderBy: { updatedAt: "desc" },
-        take: MAX_REQUESTS,
-        include: {
-          user: { select: { id: true, name: true, email: true, username: true } },
-          chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+    const requests = await prisma.customTripRequest.findMany({
+      where: SECTION_WHERE[section],
+      orderBy: section === "deleted" ? { deletedAt: "desc" } : { updatedAt: "desc" },
+      take: MAX_REQUESTS,
+      select: {
+        id: true,
+        status: true,
+        groupType: true,
+        startDate: true,
+        endDate: true,
+        updatedAt: true,
+        deletedAt: true,
+        user: { select: { name: true, email: true } },
+        chat: {
+          select: {
+            messages: {
+              select: { senderId: true, body: true },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
+          },
         },
-      }),
-      prisma.customTripRequest.findMany({
-        where: { deletedAt: { not: null } },
-        orderBy: { deletedAt: "desc" },
-        take: MAX_REQUESTS,
-        include: {
-          user: { select: { id: true, name: true, email: true, username: true } },
-          chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
-        },
-      }),
-    ]);
+      },
+    });
 
     return NextResponse.json({
-      requests: requests.map(toCustomTripRequestListItem),
-      deleted: deletedRequests.map(toCustomTripRequestListItem),
+      [section]: requests.map(toCustomTripRequestBoardListItem),
     });
   } catch (error) {
     console.error("[api/custom-trips/requests] failed to load requests", error);

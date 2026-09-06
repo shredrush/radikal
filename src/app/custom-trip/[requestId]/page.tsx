@@ -63,10 +63,10 @@ export default async function CustomTripRequestPage({
           size="sm"
           className="w-fit rounded-full border border-border/70 bg-background/80 hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-500/10 dark:hover:text-orange-300"
           nativeButton={false}
-          render={<Link href="/profile?tab=bookings" />}
+          render={<Link href="/profile?tab=custom-trips" />}
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to my bookings
+          Back to custom trip enquiries
         </Button>
 
         <div className="overflow-hidden rounded-[2rem] border border-border/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)]">

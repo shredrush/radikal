@@ -92,6 +92,14 @@ export const createCustomTripSchema = z
 
 export type CreateCustomTripInput = z.infer<typeof createCustomTripSchema>;
 
+export const createCustomDateEnquirySchema = z.object({
+  tripId: z.string().min(1, "Trip is required"),
+  startDate: z
+    .string()
+    .regex(ISO_DATE_PATTERN, "Choose a valid start date")
+    .refine(isValidIsoDate, "Choose a valid start date"),
+});
+
 export const customTripMessageSchema = z.object({
   body: z
     .string()

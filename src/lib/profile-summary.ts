@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { unstable_cache, updateTag } from "next/cache";
+import { revalidateTag, unstable_cache, updateTag } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 
@@ -62,6 +62,23 @@ export const getProfileSummary = cache((userId: string) =>
   )(),
 );
 
+function profileSummaryTag(userId: string) {
+  return `profile-summary:${userId}`;
+}
+
+/** Expire profile summaries after a Server Action changes their counters. */
 export function invalidateProfileSummary(userId: string) {
-  updateTag(`profile-summary:${userId}`);
+  updateTag(profileSummaryTag(userId));
+}
+
+/** Expire multiple profile summaries without invalidating the same tag twice. */
+export function invalidateProfileSummaries(userIds: Iterable<string>) {
+  for (const userId of new Set(userIds)) {
+    invalidateProfileSummary(userId);
+  }
+}
+
+/** Mark a summary stale when a Route Handler changes its underlying data. */
+export function revalidateProfileSummary(userId: string) {
+  revalidateTag(profileSummaryTag(userId), "max");
 }

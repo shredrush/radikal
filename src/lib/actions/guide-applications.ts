@@ -1,7 +1,5 @@
 "use server";
 
-import crypto from "node:crypto";
-
 import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
@@ -14,7 +12,7 @@ import {
   sendEmailAfter,
 } from "@/lib/email";
 import { createGuestAccount } from "@/lib/guest-account";
-import { notifyGuideApplicationStaff } from "@/lib/notifications";
+import { notifyGuideApplicationStaff, notifyUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity-log";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
@@ -26,7 +24,7 @@ import {
 } from "@/lib/media";
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
-import { generateUsername } from "@/lib/username-generator";
+import { generateAvailableUsername } from "@/lib/available-username";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -55,15 +53,6 @@ function parseSocialUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return isSafeHttpUrl(trimmed) ? trimmed : null;
-}
-
-async function generateAvailableUsername(): Promise<string> {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const candidate = generateUsername();
-    const existing = await prisma.user.findUnique({ where: { username: candidate } });
-    if (!existing) return candidate;
-  }
-  return `guide-${crypto.randomInt(0, 1_000_000)}`;
 }
 
 function parseCertifications(value: string) {
@@ -190,7 +179,7 @@ export async function submitGuideApplicationAction(
     };
   }
 
-  const resolvedUsername = username ?? existingUser.username ?? (await generateAvailableUsername());
+  const resolvedUsername = username ?? existingUser.username ?? (await generateAvailableUsername("guide"));
 
   if (existingUser.username !== resolvedUsername) {
     const usernameTaken = await prisma.user.findFirst({
@@ -245,14 +234,11 @@ export async function submitGuideApplicationAction(
 
   // Let the applicant know in-app that their application is under review.
   try {
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: "GUIDE_APPLICATION_SUBMITTED",
-        title: "Application under review",
-        body: "Your guide application is under review. We'll email you once a decision is made.",
-        href: "/become-a-guide",
-      },
+    await notifyUser(userId, {
+      type: "GUIDE_APPLICATION_SUBMITTED",
+      title: "Application under review",
+      body: "Your guide application is under review. We'll email you once a decision is made.",
+      href: "/become-a-guide",
     });
   } catch (error) {
     console.error("[guide-application] failed to notify applicant", error);

@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { AdminGuideForm } from "@/components/admin/admin-guide-form";
+
+const AdminGuideForm = dynamic(
+  () => import("@/components/admin/admin-guide-form").then((module) => module.AdminGuideForm),
+  { ssr: false, loading: () => null },
+);
 
 export function AddGuideForm() {
   const [open, setOpen] = useState(false);

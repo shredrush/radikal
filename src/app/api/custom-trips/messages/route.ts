@@ -7,9 +7,8 @@ import { toCustomTripMessageViews } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
 
-// Cap the number of messages loaded per request so long-running threads don't
-// grow the response without bound. Newest messages are fetched and re-sorted
-// to chronological order for display.
+// Cap every response so long-running threads do not grow the response without
+// bound. Polls pass the last message id as a cursor and receive only deltas.
 const MAX_MESSAGES = 100;
 
 export async function GET(request: Request) {
@@ -20,6 +19,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const requestId = searchParams.get("requestId");
+  const after = searchParams.get("after");
 
   if (!requestId) {
     return NextResponse.json({ error: "Missing request" }, { status: 400 });
@@ -31,10 +31,9 @@ export async function GET(request: Request) {
 
     const customTrip = await prisma.customTripRequest.findFirst({
       where,
-      include: {
-        chat: {
-          include: { messages: { orderBy: { createdAt: "desc" }, take: MAX_MESSAGES } },
-        },
+      select: {
+        status: true,
+        chat: { select: { id: true } },
       },
     });
 
@@ -42,10 +41,36 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
+    const cursor = after
+      ? await prisma.customTripMessage.findFirst({
+          where: { id: after, chatId: customTrip.chat.id },
+          select: { id: true },
+        })
+      : null;
+    const messages = after
+      ? cursor
+        ? await prisma.customTripMessage.findMany({
+            where: { chatId: customTrip.chat.id },
+            cursor: { id: cursor.id },
+            skip: 1,
+            select: { id: true, body: true, senderId: true, createdAt: true },
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            take: MAX_MESSAGES,
+          })
+        : []
+      : (
+          await prisma.customTripMessage.findMany({
+            where: { chatId: customTrip.chat.id },
+            select: { id: true, body: true, senderId: true, createdAt: true },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: MAX_MESSAGES,
+          })
+        ).reverse();
+
     return NextResponse.json({
       status: customTrip.status,
       messages: toCustomTripMessageViews(
-        customTrip.chat.messages.slice().reverse(),
+        messages,
         supportUser?.id ?? session.user.id,
       ),
     });

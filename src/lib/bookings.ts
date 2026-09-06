@@ -1,7 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { completePastBookings } from "@/lib/booking-completion";
 import { formatTripDateRange } from "@/lib/trip-dates";
 import { getTripCardImage } from "@/lib/trip-card-image";
 import { formatMessageTime } from "@/lib/format";
@@ -81,29 +80,24 @@ export const bookingDetailInclude = {
 /**
  * Shared data source for the guide board and the admin booking view. Both
  * pages read from this single function so they always show the same bookings
- * in the same shape. Past CONFIRMED bookings are persisted as COMPLETED only
- * when `completePast` is set (admin/support read paths), so read-only views
- * never trigger a global write. Booking ids and payment details are only
+ * in the same shape. Completion is performed by the scheduled cron job rather
+ * than an interactive dashboard read. Booking ids and payment details are only
  * included when the caller opts in — the guide board has no use for internal
  * booking ids, bank transfer references or prices.
  */
 export async function fetchBookingsWithDetails(
   where: Prisma.BookingWhereInput = {},
   options: {
-    completePast?: boolean;
     includeBookingIds?: boolean;
     includePaymentDetails?: boolean;
+    limit?: number;
   } = {},
 ): Promise<BookingBoardItem[]> {
   const {
-    completePast = false,
     includeBookingIds = false,
     includePaymentDetails = false,
+    limit = 100,
   } = options;
-
-  if (completePast) {
-    await completePastBookings();
-  }
 
   // Individual slot cancels scope to the caller's trip filter (e.g. the guide's
   // own trips). Reserved-only slots (no bookings) have no booking rows, so they
@@ -114,6 +108,7 @@ export async function fetchBookingsWithDetails(
     prisma.booking.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      take: limit,
       include: bookingDetailInclude,
     }),
     prisma.slot.findMany({
@@ -125,6 +120,7 @@ export async function fetchBookingsWithDetails(
         bookings: { none: {} },
       },
       orderBy: { date: "asc" },
+      take: limit,
       include: {
         trip: {
           select: {

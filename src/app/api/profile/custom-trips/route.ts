@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
-import { toCustomTripRequestListItem } from "@/lib/custom-trips";
+import { toProfileCustomTripRequest } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
 const DEFAULT_PAGE_SIZE = 10;
@@ -27,15 +27,22 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      include: {
-        user: { select: { id: true, name: true, email: true, username: true } },
-        chat: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      select: {
+        id: true,
+        status: true,
+        groupType: true,
+        sports: true,
+        location: true,
+        startDate: true,
+        endDate: true,
+        participantCount: true,
+        budgetRupees: true,
       },
     });
     const page = requests.slice(0, limit);
 
     return NextResponse.json({
-      requests: page.map(toCustomTripRequestListItem),
+      requests: page.map(toProfileCustomTripRequest),
       nextCursor: requests.length > limit ? page.at(-1)?.id : null,
     });
   } catch (error) {

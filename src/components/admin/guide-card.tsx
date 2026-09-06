@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { pluralize } from "@/lib/format";
-import { AdminGuideForm, type GuideFormData } from "@/components/admin/admin-guide-form";
+import type { GuideFormData } from "@/components/admin/admin-guide-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const AdminGuideForm = dynamic(
+  () => import("@/components/admin/admin-guide-form").then((module) => module.AdminGuideForm),
+  { ssr: false, loading: () => null },
+);
 
 export type GuideCardData = GuideFormData & { tripsCount: number };
 
@@ -55,7 +61,7 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
       >
         <div className="overflow-hidden">
           <div className="border-t border-border/70 px-4 pb-5 pt-5">
-            <AdminGuideForm guide={guide} onSaved={() => setOpen(false)} />
+            {open ? <AdminGuideForm guide={guide} onSaved={() => setOpen(false)} /> : null}
           </div>
         </div>
       </div>

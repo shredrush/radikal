@@ -13,11 +13,13 @@ export function BookingBar({
   pricePerPerson,
   durationDays,
   maxGroupSize,
+  hasUpcomingSlots,
 }: {
   tripId: string;
   pricePerPerson: number;
   durationDays: number;
   maxGroupSize: number;
+  hasUpcomingSlots: boolean;
 }) {
   const [people, setPeople] = useState(1);
 
@@ -60,12 +62,13 @@ export function BookingBar({
           <Button
             size="sm"
             className="shrink-0 rounded-full bg-orange-700 text-white hover:bg-orange-800"
-            nativeButton={false}
-            render={
-              <Link
-                href={`/booking/${tripId}/checkout?participants=${people}`}
-              />
-            }
+              nativeButton={false}
+              render={
+                <Link
+                  href={hasUpcomingSlots ? `/booking/${tripId}/checkout?participants=${people}` : "#custom-date-enquiry"}
+                  onClick={hasUpcomingSlots ? undefined : () => window.dispatchEvent(new Event("open-custom-date-enquiry"))}
+                />
+              }
           >
             Book Your Spot
           </Button>

@@ -66,9 +66,61 @@ export type CustomTripRequestListItem = {
   lastMessageBody: string | null;
 };
 
+export type CustomTripRequestBoardListItem = Pick<
+  CustomTripRequestListItem,
+  | "id"
+  | "status"
+  | "groupType"
+  | "startDate"
+  | "endDate"
+  | "updatedAt"
+  | "deletedAt"
+  | "lastMessageSenderId"
+  | "lastMessageBody"
+> & {
+  customer: Pick<CustomTripRequestListItem["customer"], "name">;
+};
+
 export type CustomTripRequestDetail = CustomTripRequestListItem & {
   messages: CustomTripMessageView[];
 };
+
+export type ProfileCustomTripRequest = Pick<
+  CustomTripRequestListItem,
+  | "id"
+  | "status"
+  | "groupType"
+  | "sports"
+  | "location"
+  | "startDate"
+  | "endDate"
+  | "participantCount"
+  | "budgetRupees"
+>;
+
+export function toProfileCustomTripRequest(request: {
+  id: string;
+  status: string;
+  groupType: string;
+  sports: string[];
+  location: string;
+  startDate: Date;
+  endDate: Date;
+  participantCount: number;
+  budgetRupees: number | null;
+}): ProfileCustomTripRequest {
+  return {
+    id: request.id,
+    status: request.status,
+    groupType: request.groupType,
+    sports: request.sports,
+    location: request.location,
+    startDate: request.startDate.toISOString(),
+    endDate: request.endDate.toISOString(),
+    participantCount: request.participantCount,
+    budgetRupees: request.budgetRupees,
+  };
+}
 
 export function formatCustomTripDateRange(startDate: string | Date, endDate: string | Date) {
   const start = formatShortDate(startDate);
@@ -119,26 +171,46 @@ export function toCustomTripRequestListItem(request: {
   user: { id: string; name: string | null; email: string; username: string | null };
   chat: { messages: Array<{ senderId: string; body: string }> } | null;
 }): CustomTripRequestListItem {
+  return {
+    ...toCustomTripRequestBoardListItem(request),
+    sports: request.sports,
+    location: request.location,
+    participantCount: request.participantCount,
+    budgetRupees: request.budgetRupees,
+    requirements: request.requirements,
+    createdAt: request.createdAt.toISOString(),
+    customer: {
+      name: request.user.name || request.user.email,
+      username: request.user.username,
+      email: request.user.email,
+    },
+  };
+}
+
+/** A minimal DTO for custom-trip rows rendered on the support board. */
+export function toCustomTripRequestBoardListItem(request: {
+  id: string;
+  status: string;
+  groupType: string;
+  startDate: Date;
+  endDate: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  user: { name: string | null; email: string };
+  chat: { messages: Array<{ senderId: string; body: string }> } | null;
+}): CustomTripRequestBoardListItem {
   const lastMessage = request.chat?.messages[0];
 
   return {
     id: request.id,
     status: request.status,
     groupType: request.groupType,
-    sports: request.sports,
-    location: request.location,
     startDate: request.startDate.toISOString(),
     endDate: request.endDate.toISOString(),
-    participantCount: request.participantCount,
-    budgetRupees: request.budgetRupees,
-    requirements: request.requirements,
-    createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
     deletedAt: request.deletedAt ? request.deletedAt.toISOString() : null,
     customer: {
       name: request.user.name || request.user.email,
-      username: request.user.username,
-      email: request.user.email,
     },
     lastMessageSenderId: lastMessage?.senderId ?? null,
     lastMessageBody: lastMessage?.body ?? null,

@@ -3,9 +3,9 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { generateAvailableUsername } from "@/lib/available-username";
 import { getClientIp, rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
-import { generateUsername } from "@/lib/username-generator";
 import { z } from "zod";
 
 const guestAccountSchema = z.object({
@@ -19,15 +19,6 @@ const guestAccountSchema = z.object({
     .trim()
     .regex(/^\+\d{7,15}$/, "Enter a valid phone number with country code"),
 });
-
-async function generateAvailableUsername(): Promise<string> {
-  for (let attempt = 0; attempt < 25; attempt += 1) {
-    const candidate = generateUsername();
-    const existing = await prisma.user.findUnique({ where: { username: candidate } });
-    if (!existing) return candidate;
-  }
-  return `traveler-${crypto.randomInt(0, 1_000_000)}`;
-}
 
 export type GuestAccountResult =
   | { success: true; user: { id: string; name: string; email: string }; password: string }

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
@@ -28,10 +29,12 @@ import { getDisplayName } from "@/lib/profile-initials";
 import { TripCard } from "@/components/trips/trip-card";
 import { formatMonthYear } from "@/lib/format";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
+import { isSlotCompleted } from "@/lib/trip-dates";
 
 // Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
 const MAX_REVIEWS = 4;
+const MAX_COMPLETED_SLOTS = 12;
 
 // Cache compact render metadata only. Media may contain large data URLs, which
 // exceed Next's 2 MB Data Cache entry limit and cause cache writes to be rejected.
@@ -68,19 +71,6 @@ const getTripDetail = unstable_cache(
                 username: true,
               },
             },
-          },
-        },
-        slots: {
-          where: { deletedAt: null },
-          orderBy: {
-            date: "asc",
-          },
-          select: {
-            id: true,
-            date: true,
-            capacity: true,
-            booked: true,
-            reserved: true,
           },
         },
         reviews: {
@@ -137,6 +127,32 @@ const EMPTY_TRIP_MEDIA = {
   guide: null,
 };
 
+async function getTripSlots(slug: string) {
+  const now = new Date();
+  const select = {
+    id: true,
+    date: true,
+    capacity: true,
+    booked: true,
+    reserved: true,
+  } as const;
+  const where = {
+    deletedAt: null,
+    trip: {
+      slug,
+      deletedAt: null,
+      OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
+    },
+  };
+
+  const [upcomingSlots, completedSlots] = await Promise.all([
+    prisma.slot.findMany({ where: { ...where, date: { gte: now } }, select, orderBy: { date: "asc" } }),
+    prisma.slot.findMany({ where: { ...where, date: { lt: now } }, select, orderBy: { date: "desc" }, take: MAX_COMPLETED_SLOTS }),
+  ]);
+
+  return [...completedSlots.reverse(), ...upcomingSlots];
+}
+
 // Four trips to show below the FAQ. Prefer trips sharing a category with the
 // current trip, then backfill with any remaining trips so the row stays full.
 const SIMILAR_TRIPS_COUNT = 4;
@@ -147,7 +163,6 @@ const getSimilarTrips = unstable_cache(
       id: true,
       slug: true,
       title: true,
-      description: true,
       location: true,
       categories: true,
       durationDays: true,
@@ -189,6 +204,37 @@ const getSimilarTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
+async function SimilarTrips({ categories, excludeId }: { categories: TripCategory[]; excludeId: string }) {
+  const similarTrips = await safeDb("trip.similar", () => getSimilarTrips(categories, excludeId), []);
+
+  if (similarTrips.length === 0) return null;
+
+  return (
+    <section>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">other adventures you might like</p>
+        </div>
+        <Link
+          href="/trips"
+          className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
+        >
+          Explore all
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        {similarTrips.map((trip) => (
+          <TripCard key={trip.id} trip={trip} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SimilarTripsFallback() {
+  return <div className="h-[18rem] animate-pulse rounded-[1.5rem] bg-muted/40" />;
+}
+
 export default async function TripDetailPage({
   params,
 }: {
@@ -199,9 +245,10 @@ export default async function TripDetailPage({
   await connection();
   const { tripId } = await params;
 
-  const [tripDetail, tripMedia] = await Promise.all([
+  const [tripDetail, tripMedia, slots] = await Promise.all([
     loadDb("trip.detail", () => getTripDetail(tripId)),
     safeDb("trip.media", () => getTripMedia(tripId), EMPTY_TRIP_MEDIA),
+    safeDb("trip.slots", () => getTripSlots(tripId), []),
   ]);
 
   if (!tripDetail) {
@@ -214,6 +261,7 @@ export default async function TripDetailPage({
     images: media.images,
     videos: media.videos,
     mediaOrder: media.mediaOrder,
+    slots,
     guidePhoto: media.guidePhoto,
     guide: tripDetail.guide
       ? {
@@ -237,8 +285,6 @@ export default async function TripDetailPage({
   const guideMediaIsVideo = Boolean(
     guide && trip.guidePhoto && guide.videos.includes(trip.guidePhoto),
   );
-
-  const similarTrips = await safeDb("trip.similar", () => getSimilarTrips(trip.categories, trip.id), []);
 
   // Always render four review rows so the guide section keeps a consistent
   // height across trips, padding any missing reviews with placeholders.
@@ -288,10 +334,11 @@ export default async function TripDetailPage({
           <div className="flex flex-col gap-6">
             <BookingBar
               tripId={trip.id}
-              pricePerPerson={trip.priceInRupees}
-              durationDays={trip.durationDays}
-              maxGroupSize={trip.maxGroupSize}
-            />
+                pricePerPerson={trip.priceInRupees}
+                durationDays={trip.durationDays}
+                maxGroupSize={trip.maxGroupSize}
+                hasUpcomingSlots={trip.slots.some((slot) => !isSlotCompleted(slot.date, new Date()))}
+              />
             <AvailableDatesCard trip={trip} />
             <CompletedDatesCard trip={trip} />
             <WhatsIncludedCard trip={trip} />
@@ -431,28 +478,9 @@ export default async function TripDetailPage({
 
         <FaqSection />
 
-        <section>
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <div className="space-y-1">
-
-              <p className="text-sm text-muted-foreground">other adventures you might like</p>
-            </div>
-            <Link
-              href="/trips"
-              className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
-            >
-              Explore all
-            </Link>
-          </div>
-
-          {similarTrips.length === 0 ? null : (
-            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-              {similarTrips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} />
-              ))}
-            </div>
-          )}
-        </section>
+        <Suspense fallback={<SimilarTripsFallback />}>
+          <SimilarTrips categories={trip.categories} excludeId={trip.id} />
+        </Suspense>
       </section>
     </div>
   );

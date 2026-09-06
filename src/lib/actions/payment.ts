@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { requirePermission } from "@/lib/authz";
@@ -287,6 +287,7 @@ export async function confirmBookingPayment(
   revalidatePath("/admin/bookings");
   revalidatePath("/support");
   revalidatePath("/profile");
+  updateTag("trips");
   return { success: true };
 }
 
@@ -384,6 +385,7 @@ export async function cancelBooking(
   revalidatePath("/admin/bookings");
   revalidatePath("/support");
   revalidatePath("/profile");
+  updateTag("trips");
   return { success: true };
 }
 
@@ -486,6 +488,7 @@ export async function cancelBookingAsGuide(
 
   revalidatePath("/profile");
   revalidatePath("/support");
+  updateTag("trips");
   return { success: true };
 }
 
@@ -628,6 +631,7 @@ export async function cancelSlotBookingsAsGuide(
   revalidatePath("/admin/bookings");
   revalidatePath("/support");
   revalidatePath("/profile");
+  updateTag("trips");
 
   if (!cancelled) {
     return { success: true };
@@ -768,5 +772,6 @@ export async function cancelBookingAsUser(
 
   revalidatePath("/profile");
   revalidatePath("/support");
+  updateTag("trips");
   return { success: true };
 }

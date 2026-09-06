@@ -14,6 +14,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { SupportMessageList } from "@/components/support/support-message-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useVisiblePolling } from "@/hooks/use-visible-polling";
 
 const composerClassName =
   `w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -43,11 +44,20 @@ export function SupportReplyPanel({
   const [resolvedAt, setResolvedAt] = useState<string | null>(initialResolvedAt);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesFetchControllerRef = useRef<AbortController | null>(null);
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (replaceActiveRequest = false) => {
+    if (messagesFetchControllerRef.current) {
+      if (!replaceActiveRequest) return;
+      messagesFetchControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    messagesFetchControllerRef.current = controller;
     try {
       const response = await fetch(`/api/support/messages?chatId=${encodeURIComponent(chatId)}`, {
         cache: "no-store",
+        signal: controller.signal,
       });
       if (!response.ok) return;
 
@@ -60,13 +70,20 @@ export function SupportReplyPanel({
       }
     } catch {
       // Ignore transient network errors; the next poll will retry.
+    } finally {
+      if (messagesFetchControllerRef.current === controller) {
+        messagesFetchControllerRef.current = null;
+      }
     }
   }, [chatId]);
 
   useEffect(() => {
-    const interval = setInterval(loadMessages, 3000);
-    return () => clearInterval(interval);
-  }, [loadMessages]);
+    return () => {
+      messagesFetchControllerRef.current?.abort();
+    };
+  }, [chatId]);
+
+  useVisiblePolling(true, loadMessages, 15_000);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -86,7 +103,7 @@ export function SupportReplyPanel({
       try {
         await replySupportMessageAction(chatId, new FormData(form));
         form.reset();
-        await loadMessages();
+        await loadMessages(true);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not send reply.";
         toast.error(message);

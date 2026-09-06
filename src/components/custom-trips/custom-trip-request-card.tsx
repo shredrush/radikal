@@ -9,7 +9,7 @@ import {
   CUSTOM_TRIP_STATUS_STYLES,
   formatCustomTripDateRange,
   sportLabel,
-  type CustomTripRequestListItem,
+  type ProfileCustomTripRequest,
 } from "@/lib/custom-trips";
 import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/currency/price";
@@ -17,7 +17,7 @@ import { Price } from "@/components/currency/price";
 export function CustomTripRequestCard({
   request,
 }: {
-  request: CustomTripRequestListItem;
+  request: ProfileCustomTripRequest;
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-[1.2rem] border border-border/70 bg-muted/20 p-5 transition-colors hover:border-border sm:flex-row sm:items-center sm:justify-between">

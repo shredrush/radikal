@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Eye, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,19 +90,22 @@ export function GuideTripForm({
   guideMedia,
   trip,
   draft,
+  initialOpen,
+  onClose,
 }: {
   guideId: string;
   guideMedia: GuideMediaItem[];
   trip?: GuideTripData | null;
   draft?: GuideDraftData | null;
+  initialOpen?: boolean;
+  onClose?: () => void;
 }) {
-  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const isEditing = Boolean(trip);
   const isDraft = Boolean(draft);
   const key = trip?.id ?? draft?.draftId ?? "new";
   const fields: GuideTripFields | null = draft ?? trip ?? null;
-  const [open, setOpen] = useState(Boolean(draft));
+  const [open, setOpen] = useState(Boolean(draft) || initialOpen);
   const [filledCount, setFilledCount] = useState(() => countFilledFromValues(fields));
   const [draftId, setDraftId] = useState<string | null>(draft?.draftId ?? null);
   const [isPending, startTransition] = useTransition();
@@ -130,6 +132,11 @@ export function GuideTripForm({
   const inclusions = fields?.inclusions ?? [];
   const exclusions = fields?.exclusions ?? [];
   const highlights = fields?.highlights ?? [];
+
+  function closeForm() {
+    setOpen(false);
+    onClose?.();
+  }
 
   if (!open) {
     return (
@@ -178,8 +185,7 @@ export function GuideTripForm({
         if (isDraft && draft?.draftId) {
           await deleteTripDraftAction(draft.draftId);
         }
-        setOpen(false);
-        router.refresh();
+        closeForm();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not submit trip change.";
@@ -202,7 +208,6 @@ export function GuideTripForm({
         const result = await saveTripDraftAction(formData);
         setDraftId(result.id);
         toast.success("Draft saved.");
-        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not save draft.";
@@ -240,8 +245,7 @@ export function GuideTripForm({
       try {
         await deleteGuideTripAction(trip.id, cleanReason);
         toast.success("Trip deleted");
-        setOpen(false);
-        router.refresh();
+        closeForm();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not delete trip.";
         toast.error(message);
@@ -259,7 +263,7 @@ export function GuideTripForm({
               ? `Draft — ${title || "untitled"}`
               : "New trip"}
         </p>
-        <Button variant="outline" size="sm" className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setOpen(false)}>
+        <Button variant="outline" size="sm" className="rounded-full border-2 border-black text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={closeForm}>
           <X className="h-3.5 w-3.5" />
           Close
         </Button>

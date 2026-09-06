@@ -174,20 +174,6 @@
   }
 }
 
-@keyframes auth-tile-flip {
-  0%,
-  44% {
-    transform: rotateY(0deg);
-  }
-  50%,
-  94% {
-    transform: rotateY(180deg);
-  }
-  100% {
-    transform: rotateY(0deg);
-  }
-}
-
 @keyframes gallery-media-slide {
   from {
     transform: translate3d(var(--gallery-slide-x), var(--gallery-slide-y), 0);

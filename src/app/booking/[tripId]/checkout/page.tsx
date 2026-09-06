@@ -99,11 +99,25 @@ export default async function CheckoutPage({
     () =>
       prisma.trip.findFirst({
         where: { id: tripId, deletedAt: null },
-        include: {
-          guide: true,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          location: true,
+          images: true,
+          priceInRupees: true,
+          durationDays: true,
+          maxGroupSize: true,
           slots: {
             where: { date: { gte: new Date() }, deletedAt: null },
             orderBy: { date: "asc" },
+            select: {
+              id: true,
+              date: true,
+              capacity: true,
+              booked: true,
+              reserved: true,
+            },
           },
         },
       }),

@@ -17,6 +17,7 @@ import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { cn } from "@/lib/utils";
 import type { TripCategory, TripType } from "@/generated/prisma/client";
+import { CustomDateEnquiry } from "@/components/trips/custom-date-enquiry";
 
 export type TripDetailFeatureTrip = {
   id: string;
@@ -162,6 +163,7 @@ export function AvailableDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
         ) : (
           <p className="text-sm text-muted-foreground">No upcoming dates are available yet.</p>
         )}
+        <CustomDateEnquiry tripId={trip.id} />
       </CardContent>
     </Card>
   );
@@ -300,6 +302,7 @@ export function TripDetailFeature({
               pricePerPerson={trip.priceInRupees}
               durationDays={trip.durationDays}
               maxGroupSize={trip.maxGroupSize}
+              hasUpcomingSlots={trip.slots.some((slot) => !isSlotCompleted(slot.date, new Date()))}
             />
           </div>
         </div>

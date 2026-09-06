@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Compass, MessageSquare, Ticket, User, type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, Compass, Loader2, MessageSquare, Ticket, User, type LucideIcon } from "lucide-react";
 
-import { isAwaitingReply, type SupportChatListItem, type SupportMessageView } from "@/lib/support";
+import {
+  isAwaitingReply,
+  type SupportChatBoardListItem,
+  type SupportMessageView,
+} from "@/lib/support";
 import { formatMessageTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type {
   CustomTripRequestDetail,
-  CustomTripRequestListItem,
+  CustomTripRequestBoardListItem,
 } from "@/lib/custom-trips";
 import type { BookingBoardItem } from "@/lib/bookings";
 import { SupportReplyPanel } from "@/components/support/support-reply-panel";
@@ -17,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
+import { useVisiblePolling } from "@/hooks/use-visible-polling";
 
 const BookingsStats = dynamic(
   () => import("@/components/bookings/bookings-stats").then((module) => module.BookingsStats),
@@ -77,7 +83,7 @@ function preview(body: string | null) {
   return singleLine.length > 64 ? `${singleLine.slice(0, 64)}…` : singleLine;
 }
 
-function chatListSignature(chats: SupportChatListItem[]) {
+function chatListSignature(chats: SupportChatBoardListItem[]) {
   return chats
     .map(
       (chat) =>
@@ -85,6 +91,8 @@ function chatListSignature(chats: SupportChatListItem[]) {
     )
     .join("|");
 }
+
+type DeferredChatSection = "closed" | "resolved";
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
@@ -97,7 +105,10 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 export function SupportBoard({
   initialChats,
+  initialClosedChats,
+  closedChatsCount,
   initialResolvedChats,
+  resolvedChatsCount,
   pendingConversationsCount,
   initialBookings,
   bookingGuides,
@@ -105,7 +116,12 @@ export function SupportBoard({
   selectedBookingType,
   pendingBookingsCount,
   initialCustomRequests,
+  confirmedCustomRequests,
+  confirmedCustomRequestsCount,
+  cancelledCustomRequests,
+  cancelledCustomRequestsCount,
   deletedCustomRequests,
+  deletedCustomRequestsCount,
   newCustomRequestsCount,
   chatId,
   tab,
@@ -113,16 +129,24 @@ export function SupportBoard({
   selectedCustomRequestId,
   selectedCustomRequest,
 }: {
-  initialChats: SupportChatListItem[];
-  initialResolvedChats: SupportChatListItem[];
+  initialChats: SupportChatBoardListItem[];
+  initialClosedChats: SupportChatBoardListItem[];
+  closedChatsCount: number;
+  initialResolvedChats: SupportChatBoardListItem[];
+  resolvedChatsCount: number;
   pendingConversationsCount: number;
   initialBookings: BookingBoardItem[];
   bookingGuides: Array<{ id: string; name: string }>;
   selectedBookingGuideId: string;
   selectedBookingType: string;
   pendingBookingsCount: number;
-  initialCustomRequests: CustomTripRequestListItem[];
-  deletedCustomRequests: CustomTripRequestListItem[];
+  initialCustomRequests: CustomTripRequestBoardListItem[];
+  confirmedCustomRequests: CustomTripRequestBoardListItem[];
+  confirmedCustomRequestsCount: number;
+  cancelledCustomRequests: CustomTripRequestBoardListItem[];
+  cancelledCustomRequestsCount: number;
+  deletedCustomRequests: CustomTripRequestBoardListItem[];
+  deletedCustomRequestsCount: number;
   newCustomRequestsCount: number;
   chatId?: string;
   tab: SupportBoardTab;
@@ -130,40 +154,77 @@ export function SupportBoard({
   selectedCustomRequestId?: string;
   selectedCustomRequest: CustomTripRequestDetail | null;
 }) {
-  const [chats, setChats] = useState<SupportChatListItem[]>(initialChats);
+  const [chats, setChats] = useState<SupportChatBoardListItem[]>(initialChats);
+  const [closedChats, setClosedChats] = useState<SupportChatBoardListItem[]>(initialClosedChats);
   const [resolvedChats, setResolvedChats] =
-    useState<SupportChatListItem[]>(initialResolvedChats);
+    useState<SupportChatBoardListItem[]>(initialResolvedChats);
+  const [openChatsOpen, setOpenChatsOpen] = useState(true);
+  const [closedChatsOpen, setClosedChatsOpen] = useState(false);
+  const [resolvedChatsOpen, setResolvedChatsOpen] = useState(false);
+  const [closedChatsLoaded, setClosedChatsLoaded] = useState(initialClosedChats.length > 0);
+  const [resolvedChatsLoaded, setResolvedChatsLoaded] = useState(initialResolvedChats.length > 0);
+  const [loadingChatSection, setLoadingChatSection] = useState<DeferredChatSection | null>(null);
+  const chatsFetchControllerRef = useRef<AbortController | null>(null);
 
   const loadChats = useCallback(async () => {
+    if (chatsFetchControllerRef.current) return;
+
+    const controller = new AbortController();
+    chatsFetchControllerRef.current = controller;
     try {
-      const response = await fetch("/api/support/chats", { cache: "no-store" });
+      const response = await fetch("/api/support/chats?section=open", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
       if (!response.ok) return;
 
       const data = await response.json();
-      const next = Array.isArray(data.chats) ? (data.chats as SupportChatListItem[]) : [];
-      const nextResolved = Array.isArray(data.resolved)
-        ? (data.resolved as SupportChatListItem[])
-        : [];
+      const next = Array.isArray(data.open) ? (data.open as SupportChatBoardListItem[]) : [];
       setChats((previous) => (chatListSignature(previous) === chatListSignature(next) ? previous : next));
-      setResolvedChats((previous) =>
-        chatListSignature(previous) === chatListSignature(nextResolved) ? previous : nextResolved,
-      );
     } catch {
       // Ignore transient network errors; the next poll will retry.
+    } finally {
+      if (chatsFetchControllerRef.current === controller) {
+        chatsFetchControllerRef.current = null;
+      }
     }
   }, []);
 
+  const loadChatSection = useCallback(async (section: DeferredChatSection) => {
+    setLoadingChatSection(section);
+    try {
+      const response = await fetch(`/api/support/chats?section=${section}`, { cache: "no-store" });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const next = Array.isArray(data[section]) ? (data[section] as SupportChatBoardListItem[]) : [];
+      if (section === "closed") {
+        setClosedChats(next);
+        setClosedChatsLoaded(true);
+      } else {
+        setResolvedChats(next);
+        setResolvedChatsLoaded(true);
+      }
+    } catch {
+      // Leave the section eligible for a retry on its next expansion.
+    } finally {
+      setLoadingChatSection((current) => (current === section ? null : current));
+    }
+  }, []);
+
+  useVisiblePolling(tab === "conversations", loadChats, 15_000);
+
   useEffect(() => {
-    if (tab !== "conversations") return;
-    const interval = setInterval(loadChats, 3000);
-    return () => clearInterval(interval);
-  }, [loadChats, tab]);
+    return () => {
+      chatsFetchControllerRef.current?.abort();
+    };
+  }, []);
 
   const openChats = chats.filter((chat) => chat.status === "OPEN");
-  const closedChats = chats.filter((chat) => chat.status === "CLOSED");
-  const resolvedByCustomer = resolvedChats.length;
+  const closedCount = closedChatsLoaded ? closedChats.length : closedChatsCount;
+  const resolvedCount = resolvedChatsLoaded ? resolvedChats.length : resolvedChatsCount;
 
-  // On the conversations tab the count stays live with the 3s poll; on the
+  // On the conversations tab the count stays live with polling; on the
   // other tabs the full chat list is never loaded, so use the server-computed
   // count passed down instead.
   const awaitingReplyCount =
@@ -177,7 +238,19 @@ export function SupportBoard({
     custom: newCustomRequestsCount,
   };
 
-  function renderChatItem(chat: SupportChatListItem, isActive: boolean, resolvedAt?: string | null) {
+  function toggleClosedChats() {
+    const nextOpen = !closedChatsOpen;
+    setClosedChatsOpen(nextOpen);
+    if (nextOpen && !closedChatsLoaded) void loadChatSection("closed");
+  }
+
+  function toggleResolvedChats() {
+    const nextOpen = !resolvedChatsOpen;
+    setResolvedChatsOpen(nextOpen);
+    if (nextOpen && !resolvedChatsLoaded) void loadChatSection("resolved");
+  }
+
+  function renderChatItem(chat: SupportChatBoardListItem, isActive: boolean, resolvedAt?: string | null) {
     const awaitingReply = isAwaitingReply(chat);
     const isClosed = chat.status === "CLOSED" && !resolvedAt;
 
@@ -280,8 +353,8 @@ export function SupportBoard({
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Awaiting reply" value={awaitingReplyCount} />
             <StatCard label="Open chats" value={openChats.length} />
-            <StatCard label="Closed" value={closedChats.length} />
-            <StatCard label="Resolved" value={resolvedByCustomer} />
+            <StatCard label="Closed" value={closedCount} />
+            <StatCard label="Resolved" value={resolvedCount} />
           </section>
         ) : tab === "bookings" ? (
           <BookingsStats items={initialBookings} />
@@ -344,7 +417,12 @@ export function SupportBoard({
           <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <CustomTripsView
               initialRequests={initialCustomRequests}
+              confirmedRequests={confirmedCustomRequests}
+              confirmedRequestsCount={confirmedCustomRequestsCount}
+              cancelledRequests={cancelledCustomRequests}
+              cancelledRequestsCount={cancelledCustomRequestsCount}
               deletedRequests={deletedCustomRequests}
+              deletedRequestsCount={deletedCustomRequestsCount}
               selectedRequestId={selectedCustomRequestId}
               selectedRequest={selectedCustomRequest}
             />
@@ -355,10 +433,23 @@ export function SupportBoard({
               {/* Conversation list */}
               <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
                 <div className="space-y-2">
-                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Open
-                  </h2>
-                  {openChats.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setOpenChatsOpen((open) => !open)}
+                    aria-expanded={openChatsOpen}
+                    className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                      Open ({openChats.length})
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        openChatsOpen && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {openChatsOpen ? (openChats.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
                       No open conversations.
                     </p>
@@ -366,14 +457,31 @@ export function SupportBoard({
                     <div className="flex flex-col gap-2">
                       {openChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
                     </div>
-                  )}
+                  )) : null}
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Closed
-                  </h2>
-                  {closedChats.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={toggleClosedChats}
+                    aria-expanded={closedChatsOpen}
+                    className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                      Closed ({closedCount})
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        closedChatsOpen && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {closedChatsOpen ? (loadingChatSection === "closed" || !closedChatsLoaded ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading closed conversations...
+                    </div>
+                  ) : closedChats.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
                       No closed conversations.
                     </p>
@@ -381,14 +489,31 @@ export function SupportBoard({
                     <div className="flex flex-col gap-2">
                       {closedChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
                     </div>
-                  )}
+                  )) : null}
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="px-1 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Resolved
-                  </h2>
-                  {resolvedChats.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={toggleResolvedChats}
+                    aria-expanded={resolvedChatsOpen}
+                    className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                      Resolved ({resolvedCount})
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        resolvedChatsOpen && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {resolvedChatsOpen ? (loadingChatSection === "resolved" || !resolvedChatsLoaded ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading resolved conversations...
+                    </div>
+                  ) : resolvedChats.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-6 text-center text-sm text-muted-foreground">
                       No resolved conversations.
                     </p>
@@ -398,7 +523,7 @@ export function SupportBoard({
                         renderChatItem(chat, chat.id === chatId, chat.deletedAt),
                       )}
                     </div>
-                  )}
+                  )) : null}
                 </div>
               </aside>
 

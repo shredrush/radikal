@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { ChevronDown, Star, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { deleteReviewAction } from "@/lib/actions/reviews";
@@ -23,7 +22,6 @@ export type AdminGuideReviewData = {
 export function AdminGuideReviews({ reviews }: { reviews: AdminGuideReviewData[] }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   function handleDelete(review: AdminGuideReviewData) {
     if (!window.confirm(`Delete ${review.authorName}'s review? This action cannot be undone.`)) return;
@@ -32,7 +30,6 @@ export function AdminGuideReviews({ reviews }: { reviews: AdminGuideReviewData[]
       try {
         await deleteReviewAction(review.id);
         toast.success("Review deleted.");
-        router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not delete review.");
       }

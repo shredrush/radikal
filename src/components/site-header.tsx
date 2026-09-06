@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { SportIcon } from "@/components/trips/sport-icon";
-import { HeaderAccount } from "@/components/header-account";
+import { HeaderAccount, HeaderAccountProvider } from "@/components/header-account";
 
 type RetreatItem = {
   label: string;
@@ -51,9 +51,13 @@ export function SiteHeader() {
   ];
 
   return (
+    <HeaderAccountProvider>
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
       <div className="w-full px-4 sm:px-6 md:px-6 lg:px-10">
-        <div className="mx-auto w-full max-w-8xl py-2 sm:py-2.5 md:py-4">
+        <div className="relative mx-auto w-full max-w-8xl py-2 sm:py-2.5 md:py-4">
+          <div className="absolute right-0 top-2 z-20 sm:top-2.5 md:top-1/2 md:-translate-y-1/2">
+            <HeaderAccount />
+          </div>
         <div className="flex items-center justify-between md:hidden">
           <SiteLogoLink className="-ml-2 flex items-center gap-2 rounded-full py-0.5 sm:gap-3 sm:py-1">
             <Image
@@ -68,9 +72,6 @@ export function SiteHeader() {
             </p>
           </SiteLogoLink>
 
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2 md:hidden">
-            <HeaderAccount variant="mobile" />
-          </div>
         </div>
 
         <div className="mt-1.5 md:hidden">
@@ -110,7 +111,7 @@ export function SiteHeader() {
                   size="xs"
                   className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                   nativeButton={false}
-                  render={<Link href="/trips?sport=yoga" />}
+                  render={<Link href="/trips" />}
                 >
                   Retreats
                 </Button>
@@ -181,9 +182,6 @@ export function SiteHeader() {
               </p>
             </SiteLogoLink>
 
-            <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-              <HeaderAccount variant="desktop" />
-            </div>
           </div>
 
           <nav className="flex items-center justify-center gap-2 lg:gap-3">
@@ -221,7 +219,7 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips?sport=yoga" />}
+                render={<Link href="/trips" />}
               >
                 Retreats
               </Button>
@@ -274,7 +272,7 @@ export function SiteHeader() {
           </nav>
         </div>
 
-        <div className="hidden grid-cols-[auto_1fr_auto] items-center gap-3 xl:grid">
+        <div className="hidden grid-cols-[auto_1fr] items-center gap-3 xl:grid">
           <SiteLogoLink className="-ml-2 flex items-center gap-2 rounded-full py-0.5 lg:gap-3 lg:py-1">
             <Image
               src="/logo.svg"
@@ -288,7 +286,7 @@ export function SiteHeader() {
             </p>
           </SiteLogoLink>
 
-          <nav className="mx-auto flex flex-nowrap items-center justify-center gap-1.5 lg:gap-2">
+          <nav className="absolute left-1/2 flex -translate-x-1/2 flex-nowrap items-center justify-center gap-1.5 lg:gap-2">
             <div className="group relative">
               <Button
                 variant="ghost"
@@ -323,7 +321,7 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips?sport=yoga" />}
+                render={<Link href="/trips" />}
               >
                 Retreats
               </Button>
@@ -375,12 +373,10 @@ export function SiteHeader() {
             </Button>
           </nav>
 
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 lg:gap-2">
-            <HeaderAccount variant="desktop" />
-          </div>
         </div>
         </div>
       </div>
     </header>
+    </HeaderAccountProvider>
   );
 }

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { useCurrency } from "./currency-provider";
 
-export function CurrencySelector({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function CurrencySelector({ className, compact = false, responsive = false }: { className?: string; compact?: boolean; responsive?: boolean }) {
   const { currency, setCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -48,16 +48,16 @@ export function CurrencySelector({ className, compact = false }: { className?: s
         aria-label="Select currency"
         className={cn(
           "group relative inline-flex items-center rounded-full border border-border/70 bg-background/60 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground",
-          compact ? "h-7 gap-1 px-1.5" : "h-9 gap-1.5 px-3",
+          compact ? "h-7 gap-1 px-1.5" : responsive ? "h-7 gap-1 px-1.5 md:h-9 md:gap-1.5 md:px-3" : "h-9 gap-1.5 px-3",
           open && "border-primary/40 text-foreground",
           className,
         )}
       >
-        <span className={cn("font-heading leading-none tracking-wide", compact ? "text-sm" : "text-base")}>{current.symbol}</span>
-        <span className={cn("leading-none", compact ? "text-sm" : "text-base")}>{current.flag}</span>
+        <span className={cn("font-heading leading-none tracking-wide", compact ? "text-sm" : responsive ? "text-sm md:text-base" : "text-base")}>{current.symbol}</span>
+        <span className={cn("leading-none", compact ? "text-sm" : responsive ? "text-sm md:text-base" : "text-base")}>{current.flag}</span>
         <ChevronDown
           className={cn(
-            compact ? "h-3 w-3 text-muted-foreground transition-transform duration-200" : "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+            compact ? "h-3 w-3 text-muted-foreground transition-transform duration-200" : responsive ? "h-3 w-3 text-muted-foreground transition-transform duration-200 md:h-3.5 md:w-3.5" : "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
           )}
         />

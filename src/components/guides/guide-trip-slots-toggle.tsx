@@ -1,15 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 
-import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
+import type { SlotItem } from "@/components/admin/admin-trip-slots";
 import { Button } from "@/components/ui/button";
 import {
   createGuideSlotAction,
   cancelGuideSlotAction,
   updateGuideSlotAction,
 } from "@/lib/actions/trip-changes";
+
+const SlotsManager = dynamic(
+  () => import("@/components/admin/admin-trip-slots").then((module) => module.SlotsManager),
+  { ssr: false, loading: () => null },
+);
 
 export function GuideTripSlotsToggle({
   tripId,

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -48,7 +48,7 @@ export async function createBooking(
 
   const user = await prisma.user.findFirst({
     where: { id: userId, deletedAt: null },
-    select: { id: true },
+    select: { email: true, name: true },
   });
   if (!user) {
     return {
@@ -84,38 +84,37 @@ export async function createBooking(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const slot = await tx.slot.findUnique({
-        where: { id: slotId },
-        include: { trip: true },
-      });
-
-      if (!slot || slot.tripId !== tripId || slot.deletedAt || slot.trip.deletedAt) {
-        return { status: "unavailable" as const };
-      }
-
-      // Lock the trip row too, so a concurrent trip deletion (which locks the
-      // same row, then refuses to delete while bookings exist) serializes
-      // against this checkout instead of deleting a booking created after its
-      // guard passed.
-      const [lockedTrip] = await tx.$queryRaw<Array<{ id: string; deletedAt: Date | null }>>`
-        SELECT id, "deletedAt" FROM trips WHERE id = ${tripId} FOR UPDATE
-      `;
-      if (!lockedTrip || lockedTrip.deletedAt) {
-        return { status: "unavailable" as const };
-      }
-
-      // Lock the slot row so concurrent checkouts serialize on the same row
-      // (the payment confirmation path locks it too). This keeps the pending
-      // count read below from racing a concurrent checkout and overselling a
-      // slot before payment is captured.
-      const [lockedSlot] = await tx.$queryRaw<Array<{ id: string; booked: number; reserved: number; capacity: number; deletedAt: Date | null }>>`
-        SELECT id, booked, reserved, capacity, "deletedAt"
+      // Lock the matching slot and trip together. This replaces the earlier
+      // read plus separate locks while retaining serialization with trip
+      // deletion, checkout, and payment confirmation.
+      const [lockedSlot] = await tx.$queryRaw<Array<{
+        booked: number;
+        reserved: number;
+        capacity: number;
+        priceInRupees: number;
+        tripTitle: string;
+        tripLocation: string;
+        slotDate: Date;
+        slotDeletedAt: Date | null;
+        tripDeletedAt: Date | null;
+      }>>`
+        SELECT
+          slots.booked,
+          slots.reserved,
+          slots.capacity,
+          trips."priceInRupees",
+          trips.title AS "tripTitle",
+          trips.location AS "tripLocation",
+          slots.date AS "slotDate",
+          slots."deletedAt" AS "slotDeletedAt",
+          trips."deletedAt" AS "tripDeletedAt"
         FROM slots
-        WHERE id = ${slotId}
-        FOR UPDATE
+        INNER JOIN trips ON trips.id = slots."tripId"
+        WHERE slots.id = ${slotId} AND slots."tripId" = ${tripId}
+        FOR UPDATE OF slots, trips
       `;
 
-      if (!lockedSlot || lockedSlot.deletedAt) {
+      if (!lockedSlot || lockedSlot.slotDeletedAt || lockedSlot.tripDeletedAt) {
         return { status: "unavailable" as const };
       }
 
@@ -136,19 +135,26 @@ export async function createBooking(
           tripId,
           slotId,
           participantCount,
-          totalPriceRupees: slot.trip.priceInRupees * participantCount + insuranceRupees,
+          totalPriceRupees: lockedSlot.priceInRupees * participantCount + insuranceRupees,
           status: "PENDING",
           paymentTransactionId: cleanTransactionId,
           specialRequests: cleanSpecialRequests,
         },
-        include: {
-          user: { select: { email: true, name: true } },
-          trip: { select: { title: true, location: true } },
-          slot: { select: { date: true } },
+        select: {
+          id: true,
+          participantCount: true,
+          totalPriceRupees: true,
+          specialRequests: true,
         },
       });
 
-      return { status: "created" as const, booking };
+      return {
+        status: "created" as const,
+        booking,
+        tripTitle: lockedSlot.tripTitle,
+        tripLocation: lockedSlot.tripLocation,
+        slotDate: lockedSlot.slotDate,
+      };
     });
 
     if (result.status === "unavailable") {
@@ -159,46 +165,55 @@ export async function createBooking(
       return { success: false, error: "Not enough spots left in this slot." };
     }
 
-    await logActivity({
-      userId,
-      action: "BOOKING_CREATED",
-      label: "Created a booking",
-      metadata: {
-        bookingId: result.booking.id,
-        tripId,
-        slotId,
-        participantCount,
-        adventureInsurance,
-        insuranceRupees,
-        transactionId: cleanTransactionId,
-      },
-    });
+    const activityLogs = [
+      logActivity({
+        userId,
+        action: "BOOKING_CREATED",
+        label: "Created a booking",
+        metadata: {
+          bookingId: result.booking.id,
+          tripId,
+          slotId,
+          participantCount,
+          adventureInsurance,
+          insuranceRupees,
+          transactionId: cleanTransactionId,
+        },
+      }),
+    ];
 
     if (cleanTransactionId) {
-      await logActivity({
-        userId,
-        action: "PAYMENT_REFERENCE_SUBMITTED",
-        label: "Submitted a payment reference",
-        metadata: { bookingId: result.booking.id, transactionId: cleanTransactionId },
-      });
+      activityLogs.push(
+        logActivity({
+          userId,
+          action: "PAYMENT_REFERENCE_SUBMITTED",
+          label: "Submitted a payment reference",
+          metadata: { bookingId: result.booking.id, transactionId: cleanTransactionId },
+        }),
+      );
+
+      await Promise.all(activityLogs);
 
       sendEmailAfter(
         paymentReferenceReceivedEmail({
-          to: result.booking.user.email,
-          name: result.booking.user.name,
-          tripTitle: result.booking.trip.title,
-          location: result.booking.trip.location,
-          date: result.booking.slot.date,
+          to: user.email,
+          name: user.name,
+          tripTitle: result.tripTitle,
+          location: result.tripLocation,
+          date: result.slotDate,
           participantCount: result.booking.participantCount,
           totalPriceRupees: result.booking.totalPriceRupees,
           transactionId: cleanTransactionId,
           specialRequests: result.booking.specialRequests,
         }),
       );
+    } else {
+      await Promise.all(activityLogs);
     }
 
     revalidatePath("/profile");
     revalidatePath("/admin/bookings");
+    updateTag("trips");
 
     return { success: true, bookingId: result.booking.id };
   } catch (error) {

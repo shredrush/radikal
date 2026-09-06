@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useAnimationActivity } from "@/hooks/use-animation-activity";
 
 export type CommunityGuideMediaItem = {
   src: string;
@@ -31,9 +32,10 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
   const [previousIndices, setPreviousIndices] = useState<number[] | null>(null);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [cycle, setCycle] = useState(0);
+  const [sectionRef, animationActive] = useAnimationActivity<HTMLElement>();
 
   useEffect(() => {
-    if (items.length <= visibleCount || activeSlot !== null) return;
+    if (!animationActive || items.length <= visibleCount || activeSlot !== null) return;
 
     const timer = window.setTimeout(() => {
       setVisibleIndices((current) => {
@@ -52,10 +54,10 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
     }, 3_000);
 
     return () => window.clearTimeout(timer);
-  }, [activeSlot, items, visibleCount]);
+  }, [activeSlot, animationActive, items, visibleCount]);
 
   useEffect(() => {
-    if (activeSlot === null) return;
+    if (!animationActive || activeSlot === null) return;
 
     // Completes the rotation when reduced motion disables the CSS animation.
     const timer = window.setTimeout(() => {
@@ -64,12 +66,12 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
     }, 2_400);
 
     return () => window.clearTimeout(timer);
-  }, [activeSlot, cycle]);
+  }, [activeSlot, animationActive, cycle]);
 
   if (visibleCount === 0) return null;
 
   return (
-    <section aria-label="Guide moments">
+    <section ref={sectionRef} aria-label="Guide moments">
       <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 sm:h-[36rem] sm:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] sm:grid-rows-2 lg:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];

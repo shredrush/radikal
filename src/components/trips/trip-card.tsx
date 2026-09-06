@@ -22,19 +22,29 @@ export function TripCard({
   size = "standard",
   showPrice = true,
   imageOnly = false,
+  showTravelStyles = false,
+  showImageSummary = false,
 }: {
   trip: TripCardTrip;
   size?: "standard" | "compact";
   showPrice?: boolean;
   imageOnly?: boolean;
+  showTravelStyles?: boolean;
+  showImageSummary?: boolean;
 }) {
   const compact = size === "compact";
+  const imageCardWithSummary = imageOnly && showImageSummary;
 
   return (
-    <Link href={`/trips/${trip.slug}`} className="block h-full w-full">
+    <Link
+      href={`/trips/${trip.slug}`}
+      className={imageCardWithSummary ? "flex h-full w-full flex-col gap-2" : "block h-full w-full"}
+    >
       <Card
         className={`flex flex-col gap-0 overflow-hidden py-0 transition-transform duration-200 hover:-translate-y-1 ${CARD_SURFACE} ${
-          compact
+          imageCardWithSummary
+            ? "h-auto min-h-0 flex-none rounded-[0.9rem]"
+            : compact
             ? "h-[360px] min-w-0 rounded-[0.9rem] sm:h-[400px]"
             : "h-full min-h-[320px] rounded-[0.9rem] sm:min-h-[420px]"
         }`}
@@ -42,7 +52,9 @@ export function TripCard({
         <div
           className={`relative -m-[1px] overflow-hidden bg-muted/60 ${
             imageOnly
-              ? "flex-1"
+              ? imageCardWithSummary
+                ? "aspect-[25/27] w-full flex-none"
+                : "flex-1"
               : `flex-[0_0_48%] min-h-[180px] sm:flex-[0_0_52%] ${
                   compact ? "sm:min-h-[200px]" : "sm:min-h-[220px]"
                 }`
@@ -70,9 +82,22 @@ export function TripCard({
             }`}
           />
           {imageOnly ? (
-            <h3 className="absolute inset-x-0 bottom-0 p-4 text-base font-semibold tracking-tight text-white sm:text-lg">
-              {trip.title}
-            </h3>
+            <div className="absolute inset-x-0 bottom-0 p-4">
+              <h3 className="text-base font-semibold tracking-tight text-white sm:text-lg">{trip.title}</h3>
+              {showTravelStyles && trip.categories.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {trip.categories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="rounded-full border border-white/25 bg-transparent px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-white sm:text-[0.65rem]"
+                    >
+                      {TRIP_CATEGORY_LABELS[category] ?? category}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </div>
         {imageOnly ? null : (
@@ -144,6 +169,12 @@ export function TripCard({
           </div>
         )}
       </Card>
+      {imageCardWithSummary ? (
+        <div className="flex items-center justify-between gap-3 px-1 text-sm font-medium text-foreground">
+          <span>{formatDurationDays(trip.durationDays)}</span>
+          <Price className="font-heading text-base font-semibold text-foreground" amount={trip.priceInRupees} />
+        </div>
+      ) : null}
     </Link>
   );
 }

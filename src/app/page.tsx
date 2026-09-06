@@ -4,6 +4,11 @@ import { prisma, safeDb } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatShortDate } from "@/lib/format";
+import {
+  HOME_TRIP_LIMIT,
+  publicTripCardSelect,
+  publicTripVisibilityWhere,
+} from "@/lib/public-trip-catalog";
 
 const FEATURED_TRIP_SLUGS = [
   "backcountry-snowboarding-expedition",
@@ -19,26 +24,28 @@ const FEATURED_TRIP_SLUGS = [
 // call updateTag("trips"), which invalidates this on-demand.
 const getHomeTrips = unstable_cache(
   async () => {
-    return prisma.trip.findMany({
-      where: {
-        deletedAt: null,
-        OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        location: true,
-        priceInRupees: true,
-        durationDays: true,
-        categories: true,
-        type: true,
-        images: true,
-        guide: { select: { name: true } },
-      },
+    const featuredTrips = await prisma.trip.findMany({
+      where: { AND: [publicTripVisibilityWhere, { slug: { in: [...FEATURED_TRIP_SLUGS] } }] },
+      select: publicTripCardSelect,
       orderBy: { createdAt: "asc" },
+      take: HOME_TRIP_LIMIT,
     });
+    const fallbackTrips =
+      featuredTrips.length < HOME_TRIP_LIMIT
+        ? await prisma.trip.findMany({
+            where: {
+              AND: [
+                publicTripVisibilityWhere,
+                { slug: { notIn: featuredTrips.map((trip) => trip.slug) } },
+              ],
+            },
+            select: publicTripCardSelect,
+            orderBy: { createdAt: "asc" },
+            take: HOME_TRIP_LIMIT - featuredTrips.length,
+          })
+        : [];
+
+    return [...featuredTrips, ...fallbackTrips];
   },
   ["home-page-trips"],
   { tags: ["trips"], revalidate: 300 },
@@ -55,6 +62,7 @@ const getHomeGuides = unstable_cache(
         name: true,
         photos: true,
       },
+      take: 6,
     });
   },
   ["home-guides"],
@@ -107,14 +115,12 @@ export default async function Home() {
           id: trip.id,
           slug: trip.slug,
           title: trip.title,
-          description: trip.description,
           location: trip.location,
           priceInRupees: trip.priceInRupees,
           durationDays: trip.durationDays,
           categories: trip.categories,
           type: trip.type,
           images: trip.images,
-          guide: trip.guide ? { name: trip.guide.name } : null,
         }))}
         guideMedia={guides.flatMap((guide) =>
           (guide.photos ?? [])
@@ -123,7 +129,7 @@ export default async function Home() {
               src,
               alt: `${guide.name} photo ${index + 1}`,
             })),
-        )}
+        ).slice(0, 12)}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
           trip: review.tripName ?? review.trip?.title ?? "Radikal experience",

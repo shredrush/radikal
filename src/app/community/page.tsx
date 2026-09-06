@@ -138,8 +138,8 @@ export default async function CommunityPage() {
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-orange-50/70 via-background to-emerald-50/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10">
-          <div className="p-6 sm:p-8 lg:p-10">
-            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:items-center lg:gap-12 lg:p-10">
+            <div className="flex max-w-3xl flex-col items-start text-left">
               <div className={`inline-flex items-center gap-2 rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>
                 <Sparkles className="h-3.5 w-3.5" />
                 The Radikal Community
@@ -152,7 +152,7 @@ export default async function CommunityPage() {
                 We bring together adventure seekers and experts to create journeys that are personal, responsible and deeply rooted in place.
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link
                   href="/become-a-guide"
                   className="inline-flex items-center gap-2 rounded-full bg-orange-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-800"
@@ -169,13 +169,53 @@ export default async function CommunityPage() {
                 </Link>
               </div>
 
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" />Vetted guides</span>
                 <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Small group sizes</span>
                 <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />Leave-no-trace travel</span>
               </div>
             </div>
 
+            <aside className="rounded-[1.5rem] border border-border/70 bg-background/75 p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur-sm dark:bg-card/70 sm:p-6">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-orange-700 dark:text-orange-300">
+                Made for guides
+              </p>
+              <h2 className="mt-3 font-heading text-2xl font-semibold tracking-tight text-foreground">
+                The operating system for guides.
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                A guide-based platform that gives outdoor experts the tools, audience and support to build meaningful work outside.
+              </p>
+              <div className="mt-6 space-y-3">
+                <div className="flex gap-3 rounded-2xl bg-orange-50/80 p-3 dark:bg-orange-500/10">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+                    <Compass className="size-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Guide-based platform</h3>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Built around local expertise and real field knowledge.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 rounded-2xl bg-blue-50/80 p-3 dark:bg-blue-500/10">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                    <Lightbulb className="size-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Infrastructure for guides</h3>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">The practical foundation to grow your guiding practice.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 rounded-2xl bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <Users className="size-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">A trusted marketplace</h3>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Connect with travellers looking for thoughtful adventures.</p>
+                  </div>
+                </div>
+              </div>
+            </aside>
           </div>
         </section>
 

@@ -1,4 +1,6 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { invalidateProfileSummaries } from "@/lib/profile-summary";
 import { ROLE_PERMISSIONS, type Role } from "@/lib/authz";
 
 export type NotificationInput = {
@@ -27,26 +29,46 @@ const GUIDE_APPLICATION_ROLES = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter
 /** Maximum notifications kept per user; older ones are auto-cleared. */
 const MAX_NOTIFICATIONS_PER_USER = 21;
 
-/**
- * Delete every notification beyond the newest {@link MAX_NOTIFICATIONS_PER_USER}
- * for the given users.
- */
-async function trimNotificationsToLimit(userIds: string[]) {
-  await prisma.$transaction(async (tx) => {
-    for (const userId of userIds) {
-      const keep = await tx.notification.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        select: { id: true },
-        take: MAX_NOTIFICATIONS_PER_USER,
-      });
-      if (keep.length === 0) continue;
+/** Create notifications and retain only the newest rows for each recipient. */
+async function createNotifications(userIds: string[], input: NotificationInput) {
+  const recipientIds = [...new Set(userIds)];
+  if (recipientIds.length === 0) return;
 
-      await tx.notification.deleteMany({
-        where: { userId, id: { notIn: keep.map((n) => n.id) } },
-      });
-    }
+  await prisma.$transaction(async (tx) => {
+    await tx.notification.createMany({
+      data: recipientIds.map((userId) => ({
+        userId,
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        href: input.href ?? null,
+      })),
+    });
+
+    // Rank every affected recipient in one query, then remove only rows beyond
+    // the retention cap. This avoids a read/delete pair for every recipient.
+    await tx.$executeRaw`
+      WITH ranked AS (
+        SELECT id, ROW_NUMBER() OVER (
+          PARTITION BY "userId"
+          ORDER BY "createdAt" DESC, id DESC
+        ) AS position
+        FROM notifications
+        WHERE "userId" IN (${Prisma.join(recipientIds)})
+      )
+      DELETE FROM notifications AS notification
+      USING ranked
+      WHERE notification.id = ranked.id
+        AND ranked.position > ${MAX_NOTIFICATIONS_PER_USER}
+    `;
   });
+
+  invalidateProfileSummaries(recipientIds);
+}
+
+/** Create one notification and refresh its recipient's profile summary. */
+export async function notifyUser(userId: string, input: NotificationInput) {
+  await createNotifications([userId], input);
 }
 
 /**
@@ -61,17 +83,7 @@ export async function notifyBookingStaff(input: NotificationInput) {
 
   if (users.length === 0) return users;
 
-  await prisma.notification.createMany({
-    data: users.map((user) => ({
-      userId: user.id,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      href: input.href ?? null,
-    })),
-  });
-
-  await trimNotificationsToLimit(users.map((user) => user.id));
+  await createNotifications(users.map((user) => user.id), input);
 
   return users;
 }
@@ -88,17 +100,7 @@ export async function notifyGuideApplicationStaff(input: NotificationInput) {
 
   if (users.length === 0) return users;
 
-  await prisma.notification.createMany({
-    data: users.map((user) => ({
-      userId: user.id,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      href: input.href ?? null,
-    })),
-  });
-
-  await trimNotificationsToLimit(users.map((user) => user.id));
+  await createNotifications(users.map((user) => user.id), input);
 
   return users;
 }

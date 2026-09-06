@@ -12,7 +12,11 @@ export default async function GuideBoardBookingsPage() {
 
   const items = await loadDb(
     "guide-board.bookings",
-    () => fetchBookingsWithDetails({ trip: { guideId: guide.id } }),
+    () =>
+      fetchBookingsWithDetails({
+        deletedAt: null,
+        trip: { guideId: guide.id },
+      }),
   );
 
   return (
