@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getPublicTripFilters, getPublicTripFilterWhere } from "@/lib/public-trip-catalog";
+import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 
 describe("public trip catalog filters", () => {
   it("normalizes public URL filters and bounds the requested page", () => {
@@ -37,5 +38,11 @@ describe("public trip catalog filters", () => {
     });
     expect(JSON.stringify(where)).toContain('"SKI"');
     expect(JSON.stringify(where)).toContain('"travelStyleLinks"');
+  });
+
+  it("limits travel-style filters to the client selection cap", () => {
+    const travelStyle = Array.from({ length: MAX_TRAVEL_STYLE_FILTERS + 1 }, (_, index) => `style-${index}`);
+
+    expect(getPublicTripFilters({ travelStyle }).travelStyles).toHaveLength(MAX_TRAVEL_STYLE_FILTERS);
   });
 });

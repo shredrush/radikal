@@ -14,7 +14,7 @@ import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
-import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
+import { TripSportSelector, type TripSportOption } from "@/components/trips/trip-sport-selector";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -22,6 +22,7 @@ const inputClassName =
 export function AdminTripForm({
   trip,
   guides,
+  sports,
   supplemental,
   slots = [],
   onSaved,
@@ -42,8 +43,10 @@ export function AdminTripForm({
     mediaOrder: string[];
     guidePhoto: string | null;
     guideId: string | null;
+    sportLinks?: Array<{ sport: TripSportOption }>;
   };
   guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
+  sports: TripSportOption[];
   supplemental?: {
     pickup: string;
     drop: string;
@@ -65,7 +68,7 @@ export function AdminTripForm({
   // controls instead of undefined defaults.
   const title = trip?.title ?? "";
   const slug = trip?.slug ?? "";
-  const type = trip?.type ?? "TREK";
+  const selectedSportIds = trip?.sportLinks?.map((link) => link.sport.id) ?? [];
   const location = trip?.location ?? "";
   const description = trip?.description ?? "";
   const priceInRupees = trip?.priceInRupees ?? 0;
@@ -143,16 +146,7 @@ export function AdminTripForm({
               <Label htmlFor={`title-${key}`}>Trip title</Label>
               <input id={`title-${key}`} name="title" defaultValue={title} required className={inputClassName} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={`type-${key}`}>Sport type</Label>
-              <select id={`type-${key}`} name="type" defaultValue={type} className={inputClassName}>
-                {ACTIVITY_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <TripSportSelector sports={sports} selectedIds={selectedSportIds} idPrefix={`sport-${key}`} />
             <div className="space-y-2">
               <Label htmlFor={`location-${key}`}>Location</Label>
               <input id={`location-${key}`} name="location" defaultValue={location} required className={inputClassName} />

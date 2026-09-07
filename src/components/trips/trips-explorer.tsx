@@ -14,6 +14,11 @@ import {
 } from "@/components/trips/sport-filters";
 import { SportIcon } from "@/components/trips/sport-icon";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
+import {
+  INITIAL_TRAVEL_STYLE_FILTERS,
+  MAX_TRAVEL_STYLE_FILTERS,
+} from "@/lib/trip-filter-constants";
+import { cn } from "@/lib/utils";
 
 export type TripsExplorerTrip = {
   id: string;
@@ -26,6 +31,12 @@ export type TripsExplorerTrip = {
   priceInRupees: number;
   durationDays: number;
   images?: string[];
+};
+
+export type TripsExplorerTravelStyle = {
+  id: string;
+  name: string;
+  slug: string;
 };
 
 function normalizeLocationFilter(value: string[]) {
@@ -65,11 +76,13 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
 export function TripsExplorer({
   trips,
   otherTrips,
+  travelStyles = [],
   page,
   totalPages,
 }: {
   trips: TripsExplorerTrip[];
   otherTrips: TripsExplorerTrip[];
+  travelStyles?: TripsExplorerTravelStyle[];
   page: number;
   totalPages: number;
 }) {
@@ -77,9 +90,13 @@ export function TripsExplorer({
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q")?.trim().slice(0, 200) ?? "";
   const [query, setQuery] = useState(urlQuery);
+  const [showAllTravelStyles, setShowAllTravelStyles] = useState(false);
 
   const selectedSport = normalizeSportFilter(searchParams.getAll("sport"));
-  const selectedTravelStyle = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"));
+  const activeTravelStyleSlugs = new Set(travelStyles.map((style) => style.slug));
+  const selectedTravelStyle = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"))
+    .filter((slug) => activeTravelStyleSlugs.has(slug))
+    .slice(0, MAX_TRAVEL_STYLE_FILTERS);
   const selectedLocation = normalizeLocationFilter(searchParams.getAll("location"));
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
@@ -107,6 +124,29 @@ export function TripsExplorer({
     router.replace(`/trips?${params.toString()}`, { scroll: false });
   };
 
+  const toggleTravelStyle = (slug: string) => {
+    if (!selectedTravelStyle.includes(slug) && selectedTravelStyle.length >= MAX_TRAVEL_STYLE_FILTERS) {
+      return;
+    }
+
+    const nextStyles = selectedTravelStyle.includes(slug)
+      ? selectedTravelStyle.filter((selected) => selected !== slug)
+      : [...selectedTravelStyle, slug];
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("travelStyle");
+    nextStyles.forEach((selected) => params.append("travelStyle", selected));
+    params.delete("page");
+    router.replace(`/trips?${params.toString()}`, { scroll: false });
+  };
+
+  const clearFilters = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    ["sport", "travelStyle", "location", "q", "startDate", "endDate", "page"].forEach((key) => params.delete(key));
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `/trips?${nextQuery}` : "/trips", { scroll: false });
+  };
+
   const hasActiveFilters =
     selectedSport.length > 0 ||
     selectedTravelStyle.length > 0 ||
@@ -130,6 +170,11 @@ export function TripsExplorer({
       return matchesSportFilter(trip, [normalizedSportId]);
     }),
   }));
+  const visibleTravelStyles = showAllTravelStyles
+    ? travelStyles
+    : travelStyles.filter(
+        (style, index) => index < INITIAL_TRAVEL_STYLE_FILTERS || selectedTravelStyle.includes(style.slug),
+      );
 
   const updateSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -209,14 +254,15 @@ export function TripsExplorer({
                 onClick={() => toggleSport(item.filter)}
                 className="group flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1 text-center transition hover:-translate-y-1 hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:gap-1 sm:px-2 sm:py-2"
               >
-                <span className={`flex size-8 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 sm:size-11 ${
+                <span className={cn(
+                  "flex size-8 items-center justify-center rounded-full border border-border/70 bg-transparent text-foreground shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 sm:size-11",
                   isSelected
-                    ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-400 dark:bg-emerald-400"
-                    : "group-hover:border-black group-hover:text-orange-700 group-hover:shadow-[0_18px_30px_-20px_rgba(194,65,12,0.7)] dark:group-hover:border-white dark:group-hover:text-orange-300"
-                }`}>
+                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                    : "group-hover:border-black group-hover:text-black group-hover:shadow-[0_18px_30px_-20px_rgba(0,0,0,0.7)] dark:group-hover:border-white dark:group-hover:text-white",
+                )}>
                   <SportIcon
                     sport={item.sport}
-                    iconClassName={isSelected ? "text-black dark:text-emerald-950" : undefined}
+                    iconClassName={isSelected ? "text-white dark:text-black" : undefined}
                     className="size-4 sm:size-5"
                   />
                 </span>
@@ -227,11 +273,53 @@ export function TripsExplorer({
             );
           })}
         </div>
+
+        {travelStyles.length > 0 ? (
+          <div className="mx-auto flex w-full max-w-[44.88rem] flex-wrap items-center justify-center gap-1.5 px-3 pt-2 sm:gap-2 sm:px-4 sm:pt-3">
+            {visibleTravelStyles.map((style) => {
+              const isSelected = selectedTravelStyle.includes(style.slug);
+
+              return (
+                <button
+                  key={style.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => toggleTravelStyle(style.slug)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    isSelected
+                      ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                      : "border-border/70 bg-transparent text-foreground hover:border-black hover:text-black dark:hover:border-white dark:hover:text-white"
+                  }`}
+                >
+                  {style.name}
+                </button>
+              );
+            })}
+            {travelStyles.length > INITIAL_TRAVEL_STYLE_FILTERS ? (
+              <button
+                type="button"
+                onClick={() => setShowAllTravelStyles((shown) => !shown)}
+                className="rounded-full border border-border/70 bg-transparent px-3 py-1 text-xs font-medium text-foreground transition hover:border-black hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:hover:border-white dark:hover:text-white"
+              >
+                {showAllTravelStyles ? "Show fewer" : `Show ${travelStyles.length - INITIAL_TRAVEL_STYLE_FILTERS} more`}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {trips.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
           No trips match your search yet. Try another sport, destination, or keyword.
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="ml-2 font-semibold text-foreground underline underline-offset-4 transition hover:text-muted-foreground"
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -267,7 +355,7 @@ export function TripsExplorer({
       ) : null}
 
       {hasActiveFilters && otherTrips.length > 0 ? (
-        <div className="flex flex-col gap-8">
+        <div className="mt-4 flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedOtherActivities.map((group) => {
               if (group.trips.length === 0) {

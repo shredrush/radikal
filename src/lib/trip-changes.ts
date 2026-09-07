@@ -97,6 +97,7 @@ export type AdminTripChangeSummary = {
   createdAt: Date;
   reviewedAt: Date | null;
   title: string | null;
+  guideId: string | null;
   guideName: string | null;
   submittedByName: string | null;
   submittedByUsername: string | null;

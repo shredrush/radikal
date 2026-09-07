@@ -252,7 +252,7 @@ export async function submitGuideApplicationAction(
       type: "GUIDE_APPLICATION_NEW",
       title: "New guide application",
       body: `${fields.name} (@${resolvedUsername}) applied to become a guide.`,
-      href: "/admin/guide-applications",
+      href: "/admin/guides",
     });
 
     for (const user of staff) {
@@ -276,13 +276,13 @@ export async function submitGuideApplicationAction(
   }
 
   revalidatePath("/become-a-guide");
-  revalidatePath("/admin/guide-applications");
+  revalidatePath("/admin/guides");
 
   return { success: true };
 }
 
 export async function approveGuideApplicationAction(applicationId: string) {
-  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
+  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guides");
 
   if (!applicationId) {
     throw new Error("Missing application id.");
@@ -359,7 +359,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
     throw error;
   }
 
-  revalidatePath("/admin/guide-applications");
+  revalidatePath("/admin/guides");
   revalidatePath("/become-a-guide");
   revalidatePath("/community");
   revalidatePath("/");
@@ -393,7 +393,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
 }
 
 export async function rejectGuideApplicationAction(applicationId: string) {
-  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guide-applications");
+  const session = await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guides");
 
   if (!applicationId) {
     throw new Error("Missing application id.");
@@ -433,7 +433,7 @@ export async function rejectGuideApplicationAction(applicationId: string) {
     metadata: { applicationId },
   });
 
-  revalidatePath("/admin/guide-applications");
+  revalidatePath("/admin/guides");
   revalidatePath("/become-a-guide");
 
   sendEmailAfter(
@@ -443,4 +443,20 @@ export async function rejectGuideApplicationAction(applicationId: string) {
       approved: false,
     }),
   );
+}
+
+export async function getGuideApplicationsAction() {
+  await requirePermission("guideApplications.manage", "/login?callbackUrl=/admin/guides");
+
+  return prisma.guideApplication.findMany({
+    orderBy: { submittedAt: "desc" },
+    include: {
+      user: { select: { id: true, name: true, username: true, email: true } },
+      certifications: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, title: true },
+      },
+      reviewedBy: { select: { name: true } },
+    },
+  });
 }

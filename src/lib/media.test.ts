@@ -57,6 +57,7 @@ describe("validateTripFields media caps", () => {
       durationDays: 3,
       maxGroupSize: 8,
       guideId: "",
+      sportIds: ["sport_trek"],
       categories: [],
       images: overrides.images ?? [],
       videos: overrides.videos ?? [],

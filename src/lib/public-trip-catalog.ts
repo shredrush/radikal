@@ -1,4 +1,5 @@
 import type { Prisma, TripType } from "@/generated/prisma/client";
+import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 
 export const PUBLIC_CATALOG_PAGE_SIZE = 24;
 export const PUBLIC_CATALOG_OTHER_TRIPS_LIMIT = 12;
@@ -101,7 +102,7 @@ export function getPublicTripFilters(params: PublicTripSearchParams): PublicTrip
         .map((style) => style.trim().toLowerCase())
         .filter((style) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(style)),
     ),
-  ).slice(0, 10);
+  ).slice(0, MAX_TRAVEL_STYLE_FILTERS);
   const locations = getValues(params, "location")
     .map((location) => location.trim().slice(0, 200))
     .filter(Boolean)

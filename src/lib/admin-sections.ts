@@ -6,12 +6,11 @@ import { hasPermission, type Permission, type Role } from "@/lib/access-control"
  * this list so their order, labels, hrefs and permission gating stay in sync.
  */
 export const ADMIN_SECTIONS = [
-  { key: "trip-changes", href: "/admin/trip-changes", label: "Trip changes", permission: "trips.manage" },
   { key: "styles", href: "/admin/styles", label: "Manage styles", permission: "trips.manage" },
+  { key: "sports", href: "/admin/sports", label: "Manage sports", permission: "trips.manage" },
   { key: "trips", href: "/admin/trips", label: "Manage trips", permission: "trips.manage" },
   { key: "bookings", href: "/admin/bookings", label: "Manage bookings", permission: "bookings.read" },
   { key: "guides", href: "/admin/guides", label: "Manage guides", permission: "guides.manage" },
-  { key: "applications", href: "/admin/guide-applications", label: "Guide Applications", permission: "guideApplications.manage" },
   { key: "users", href: "/admin/users", label: "Manage users", permission: "users.manage" },
 ] as const satisfies ReadonlyArray<{
   key: string;

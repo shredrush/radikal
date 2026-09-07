@@ -27,6 +27,7 @@ function parseIntValue(value: string, fallback: number) {
 type DraftFields = {
   title: string | null;
   type: (typeof validTypes)[number];
+  sportIds: string[];
   location: string | null;
   description: string | null;
   priceInRupees: number;
@@ -52,6 +53,7 @@ function readDraftFields(formData: FormData): DraftFields {
     type: validTypes.includes(type as (typeof validTypes)[number])
       ? (type as (typeof validTypes)[number])
       : "TREK",
+    sportIds: Array.from(new Set(formData.getAll("sportIds").map((value) => asString(value)).filter(Boolean))),
     location: optionalText(asString(formData.get("location")), 200),
     description: optionalText(asString(formData.get("description")), 5000, true),
     priceInRupees: parseIntValue(asString(formData.get("priceInRupees")), 0),

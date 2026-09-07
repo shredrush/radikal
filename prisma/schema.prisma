@@ -359,6 +359,7 @@ model Trip {
   highlights    TripHighlight[]
   tripChanges   TripChangeRequest[]
   travelStyleLinks TripTravelStyle[]
+  sportLinks    TripSport[]
 
   @@index([type])
   @@index([guideId])
@@ -375,6 +376,7 @@ model TravelStyle {
   slug      String   @unique
   image     String?
   active    Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -382,6 +384,7 @@ model TravelStyle {
 
   @@index([name])
   @@index([active, name])
+  @@index([active, sortOrder])
   @@map("travel_styles")
 }
 
@@ -398,6 +401,39 @@ model TripTravelStyle {
   @@id([tripId, travelStyleId])
   @@index([travelStyleId, tripId])
   @@map("trip_travel_styles")
+}
+
+// Sports are admin-managed independently of the legacy TripType enum. Links
+// allow one trip to be discoverable under any number of sports.
+model Sport {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  icon      String   @default("mountain")
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tripLinks TripSport[]
+
+  @@index([name])
+  @@index([active, deletedAt, sortOrder])
+  @@map("sports")
+}
+
+model TripSport {
+  tripId    String
+  sportId   String
+  createdAt DateTime @default(now())
+
+  trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  sport Sport @relation(fields: [sportId], references: [id], onDelete: Restrict)
+
+  @@id([tripId, sportId])
+  @@index([sportId, tripId])
+  @@map("trip_sports")
 }
 
 model TripLocation {
@@ -726,6 +762,7 @@ model TripDraft {
   guideId       String
   title         String?
   type          TripType       @default(TREK)
+  sportIds      String[]       @default([])
   location      String?
   description   String?
   priceInRupees Int            @default(0)

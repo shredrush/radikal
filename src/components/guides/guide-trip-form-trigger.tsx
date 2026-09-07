@@ -10,6 +10,7 @@ import type {
   GuideTripData,
 } from "@/components/guides/guide-trip-form";
 import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 
 const GuideTripForm = dynamic(
   () => import("@/components/guides/guide-trip-form").then((module) => module.GuideTripForm),
@@ -19,11 +20,13 @@ const GuideTripForm = dynamic(
 export function GuideTripFormTrigger({
   guideId,
   guideMedia,
+  sports,
   trip,
   draft,
 }: {
   guideId: string;
   guideMedia: GuideMediaItem[];
+  sports: TripSportOption[];
   trip?: GuideTripData | null;
   draft?: GuideDraftData | null;
 }) {
@@ -35,6 +38,7 @@ export function GuideTripFormTrigger({
       <GuideTripForm
         guideId={guideId}
         guideMedia={guideMedia}
+        sports={sports}
         trip={trip}
         draft={draft}
         initialOpen

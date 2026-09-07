@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, ImageIcon, Link2, Pencil, Plus, Power, Search, Trash2, Unlink, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ImageIcon, Link2, Pencil, Plus, Power, Search, Trash2, Unlink, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -11,6 +11,7 @@ import {
   renameTravelStyleAction,
   searchUnlinkedTripsForTravelStyleAction,
   setTravelStyleActiveAction,
+  moveTravelStyleAction,
   unlinkTripFromTravelStyleAction,
   updateTravelStyleImageAction,
 } from "@/lib/actions/travel-styles";
@@ -55,7 +56,11 @@ export function TravelStylesManager({ styles, availableTrips }: { styles: Travel
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">No travel styles yet. Create one to start tagging trips.</p>
       ) : (
         <ul className="space-y-3">
-          {styles.map((style) => <StyleRow key={style.id} style={style} availableTrips={availableTrips} />)}
+          {styles.map((style) => {
+            const group = styles.filter((item) => item.active === style.active);
+            const position = group.findIndex((item) => item.id === style.id);
+            return <StyleRow key={style.id} style={style} availableTrips={availableTrips} canMoveUp={position > 0} canMoveDown={position < group.length - 1} />;
+          })}
         </ul>
       )}
     </div>
@@ -81,7 +86,7 @@ function CreateStyleForm({ onSaved }: { onSaved: () => void }) {
   </form>;
 }
 
-function StyleRow({ style, availableTrips }: { style: TravelStyle; availableTrips: AvailableTrip[] }) {
+function StyleRow({ style, availableTrips, canMoveUp, canMoveDown }: { style: TravelStyle; availableTrips: AvailableTrip[]; canMoveUp: boolean; canMoveDown: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -110,12 +115,22 @@ function StyleRow({ style, availableTrips }: { style: TravelStyle; availableTrip
   function toggleActive() {
     startTransition(async () => { try { await setTravelStyleActiveAction(style.id, !style.active); toast.success(style.active ? "Style hidden from travellers." : "Style is live for travellers."); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update style visibility."); } });
   }
+  function move(direction: "up" | "down") {
+    startTransition(async () => { try { await moveTravelStyleAction(style.id, direction); } catch (error) { toast.error(error instanceof Error ? error.message : "Could not reorder travel style."); } });
+  }
 
   return <li className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
-    <div className="flex flex-wrap items-center gap-3">
-      {editing ? <form onSubmit={rename} className="flex flex-1 items-center gap-2"><input name="name" defaultValue={style.name} required minLength={2} maxLength={80} className={inputClassName} /><Button type="submit" size="sm" className="rounded-full" disabled={isPending}>Save</Button><Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => setEditing(false)}>Cancel</Button></form> : <><div className="min-w-0 flex-1"><p className="font-semibold text-foreground">{style.name}</p><p className="text-xs text-muted-foreground">{style.tripCount} linked trip{style.tripCount === 1 ? "" : "s"} · {style.active ? "Live" : "Hidden"}</p></div><Button type="button" variant={style.active ? "default" : "outline"} size="sm" className="rounded-full" disabled={isPending} onClick={toggleActive}><Power className="h-3.5 w-3.5" />{style.active ? "Active" : "Inactive"}</Button><Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setEditingImage((value) => !value)}><ImageIcon className="h-3.5 w-3.5" />Photo</Button><Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setEditing(true)}><Pencil className="h-3.5 w-3.5" />Rename</Button></>}
+    <div className="flex items-start gap-3">
+      <div className="flex shrink-0 flex-col gap-1 pt-0.5">
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${style.name} up`} className="rounded-full" disabled={isPending || !canMoveUp} onClick={() => move("up")}><ArrowUp className="h-3.5 w-3.5" /></Button>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${style.name} down`} className="rounded-full" disabled={isPending || !canMoveDown} onClick={() => move("down")}><ArrowDown className="h-3.5 w-3.5" /></Button>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+      {editing ? <form onSubmit={rename} className="flex flex-1 items-center gap-2"><input name="name" defaultValue={style.name} required minLength={2} maxLength={80} className={inputClassName} /><Button type="submit" size="sm" className="rounded-full" disabled={isPending}>Save</Button><Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => setEditing(false)}>Cancel</Button></form> : <><div className="min-w-0 flex-1"><p className="font-semibold text-foreground">{style.name}</p><p className="text-xs text-muted-foreground">{style.tripCount} linked trip{style.tripCount === 1 ? "" : "s"} · {style.active ? "Live" : "Hidden"}</p></div><Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setEditingImage((value) => !value)}><ImageIcon className="h-3.5 w-3.5" />Photo</Button><Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => setEditing(true)}><Pencil className="h-3.5 w-3.5" />Rename</Button></>}
       <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => { setExpanded((value) => !value); setLinking(false); }}><ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />Trips</Button>
-      <Button type="button" variant="outline" size="sm" className="rounded-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={isPending} onClick={remove}><Trash2 className="h-3.5 w-3.5" />Delete</Button>
+      <Button type="button" variant="outline" size="sm" className={`rounded-full ${style.active ? "border-2 border-black bg-white text-black hover:bg-muted hover:text-black dark:border-white dark:bg-black dark:text-white dark:hover:bg-white/10 dark:hover:text-white" : "border-border bg-background"}`} disabled={isPending} onClick={toggleActive}><Power className="h-3.5 w-3.5" />{style.active ? "Active" : "Inactive"}</Button>
+      <Button type="button" variant="outline" size="icon-sm" aria-label={`Delete ${style.name}`} title="Delete style" className="rounded-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={isPending} onClick={remove}><Trash2 className="h-3.5 w-3.5" /></Button>
+      </div>
     </div>
     {editingImage ? <form onSubmit={saveImage} className="mt-4 space-y-3 border-t border-border/70 pt-4"><MediaUploader entity="style" folderKey={style.id} initialImages={style.image ? [style.image] : []} imagesFieldName="image" videosFieldName="styleVideo" mediaOrderFieldName="styleMediaOrder" /><div className="flex justify-end"><Button type="submit" size="sm" className="rounded-full" disabled={isPending}>{isPending ? "Saving..." : "Save photo"}</Button></div></form> : null}
     {expanded ? <div className="mt-4 border-t border-border/70 pt-4">

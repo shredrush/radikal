@@ -18,7 +18,7 @@ import {
   parseMediaList,
   validTypes,
 } from "@/lib/trip-fields";
-import { type TripProposal } from "@/lib/trip-changes";
+import { type AdminTripChangeSummary, type TripProposal } from "@/lib/trip-changes";
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { slugify } from "@/lib/format";
 import { parseSlotInteger } from "@/lib/validations/slots";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/email";
 import { cancelActiveBookingsForSlot, type CancellationEmail } from "@/lib/actions/payment";
 import { startOfTodayIST } from "@/lib/dates";
+import { resolveActiveSports } from "@/lib/sports";
 
 const MAX_SLOT_CAPACITY = 100;
 
@@ -191,6 +192,7 @@ async function uniqueTripSlug(title: string): Promise<string> {
 export async function submitTripCreateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
   const fields = validateTripFields(readTripFields(formData));
+  const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields);
   await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);
   const slug = await uniqueTripSlug(fields.title);
@@ -204,7 +206,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
         data: {
           slug: proposal.slug,
           title: proposal.title,
-          type: proposal.type as (typeof validTypes)[number],
+          type: legacyType,
           location: proposal.location,
           description: proposal.description,
           priceInRupees: proposal.priceInRupees,
@@ -218,6 +220,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           guideId: guide.id,
         },
       });
+      await tx.tripSport.createMany({ data: sportIds.map((sportId) => ({ tripId: trip.id, sportId })) });
       await applySupplemental(tx, trip.id, proposal);
       const change = await tx.tripChangeRequest.create({
         data: {
@@ -253,7 +256,6 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
 
   revalidatePath("/profile");
   revalidatePath("/guide-board/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
@@ -292,6 +294,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
   }
 
   const fields = validateTripFields(readTripFields(formData));
+  const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields);
   await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);
 
@@ -325,7 +328,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
       where: { id: tripId, deletedAt: null, guideId: guide.id },
       data: {
         title: proposal.title,
-        type: proposal.type as (typeof validTypes)[number],
+        type: legacyType,
         location: proposal.location,
         description: proposal.description,
         priceInRupees: proposal.priceInRupees,
@@ -339,6 +342,8 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
       },
     });
     if (updated.count === 0) throw new Error("This trip is no longer available to edit.");
+    await tx.tripSport.deleteMany({ where: { tripId } });
+    await tx.tripSport.createMany({ data: sportIds.map((sportId) => ({ tripId, sportId })) });
     await applySupplemental(tx, tripId, proposal);
     const change = await tx.tripChangeRequest.create({
       data: {
@@ -369,7 +374,6 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
 
   revalidatePath("/profile");
   revalidatePath("/guide-board/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
@@ -698,7 +702,6 @@ export async function deleteGuideTripAction(tripId: string, reason?: string): Pr
 
   revalidatePath("/profile");
   revalidatePath("/guide-board/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/admin/trips");
   revalidatePath("/trips");
   revalidatePath("/");
@@ -782,13 +785,99 @@ export async function getAdminTripChangeDetailsAction(changeId: string): Promise
   proposed: TripProposal;
   original: TripProposal | null;
 }> {
-  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
   const change = await fetchChangeSnapshots(changeId);
 
   return {
     type: change.type,
     proposed: change.proposed,
     original: change.original,
+  };
+}
+
+const HISTORY_PAGE_SIZE = 10;
+
+/**
+ * Fetch one page of the admin trip-change history on demand. Moved out of the
+ * server-rendered trips page so the full (potentially large) history is only
+ * queried when an admin opens the History panel, with pagination applied at
+ * the database level.
+ */
+export async function getAdminTripHistoryAction(input: {
+  guideId?: string | null;
+  page?: number;
+}): Promise<{ changes: AdminTripChangeSummary[]; total: number }> {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+  const guideId = input.guideId?.trim() || null;
+  const page = Math.max(1, Math.trunc(Number(input.page)) || 1);
+  const offset = (page - 1) * HISTORY_PAGE_SIZE;
+
+  const rows = await prisma.$queryRaw<
+    Array<AdminTripChangeSummary & { total: bigint | number | string }>
+  >(Prisma.sql`
+    WITH changes AS (
+      SELECT
+        tc.id,
+        tc."type"::text AS "type",
+        tc.status::text AS status,
+        tc."createdAt",
+        tc."reviewedAt",
+        tc.proposed->>'title' AS title,
+        tc."guideId",
+        g.name AS "guideName",
+        u.name AS "submittedByName",
+        u.username AS "submittedByUsername",
+        t.title AS "tripTitle",
+        r.name AS "reviewedByName"
+      FROM "trip_change_requests" tc
+      LEFT JOIN "guides" g ON g.id = tc."guideId"
+      LEFT JOIN "users" u ON u.id = tc."submittedById"
+      LEFT JOIN "users" r ON r.id = tc."reviewedById"
+      LEFT JOIN "trips" t ON t.id = tc."tripId"
+      UNION ALL
+      SELECT
+        al.id,
+        'DELETE' AS "type",
+        'APPROVED' AS status,
+        al."createdAt",
+        al."createdAt" AS "reviewedAt",
+        COALESCE(t.title, al.metadata->>'title') AS title,
+        t."guideId",
+        g.name AS "guideName",
+        u.name AS "submittedByName",
+        u.username AS "submittedByUsername",
+        t.title AS "tripTitle",
+        NULL AS "reviewedByName"
+      FROM "activity_logs" al
+      LEFT JOIN "users" u ON u.id = al."userId"
+      LEFT JOIN "trips" t ON t.id = al.metadata->>'tripId'
+      LEFT JOIN "guides" g ON g.id = t."guideId"
+      WHERE al.action = 'TRIP_DELETED'
+    )
+    SELECT *, COUNT(*) OVER() AS "total"
+    FROM changes
+    WHERE 1 = 1 ${guideId ? Prisma.sql`AND "guideId" = ${guideId}` : Prisma.empty}
+    ORDER BY "createdAt" DESC
+    LIMIT ${HISTORY_PAGE_SIZE} OFFSET ${offset}
+  `);
+
+  const total = rows.length > 0 ? Number(rows[0].total) : 0;
+  return {
+    changes: rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      createdAt: row.createdAt,
+      reviewedAt: row.reviewedAt,
+      title: row.title,
+      guideId: row.guideId,
+      guideName: row.guideName,
+      submittedByName: row.submittedByName,
+      submittedByUsername: row.submittedByUsername,
+      tripTitle: row.tripTitle,
+      reviewedByName: row.reviewedByName,
+    })),
+    total,
   };
 }
 

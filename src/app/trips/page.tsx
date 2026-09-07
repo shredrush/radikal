@@ -14,6 +14,7 @@ import {
   type PublicTripFilters,
   type PublicTripSearchParams,
 } from "@/lib/public-trip-catalog";
+import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { TripsCatalogSkeleton, TripsPageTemplate } from "@/components/trips/trips-page-template";
 
@@ -47,6 +48,17 @@ const getCatalogPage = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
+const getTravelStyles = unstable_cache(
+  () =>
+    prisma.travelStyle.findMany({
+      where: { active: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, slug: true },
+    }),
+  ["public-catalog-travel-styles"],
+  { tags: ["trips"], revalidate: 300 },
+);
+
 async function CatalogContent({
   searchParams,
 }: {
@@ -58,18 +70,27 @@ async function CatalogContent({
     totalTrips: 0,
     otherTrips: [],
   };
-  const initialCatalog = await safeDb("trips.catalog", () => getCatalogPage(filters), fallback);
+  const travelStyles = await safeDb("trips.travel-styles", () => getTravelStyles(), []);
+  const activeTravelStyleSlugs = new Set(travelStyles.map((style) => style.slug));
+  const catalogFilters = {
+    ...filters,
+    travelStyles: filters.travelStyles
+      .filter((slug) => activeTravelStyleSlugs.has(slug))
+      .slice(0, MAX_TRAVEL_STYLE_FILTERS),
+  };
+  const initialCatalog = await safeDb("trips.catalog", () => getCatalogPage(catalogFilters), fallback);
   const totalPages = Math.max(1, Math.ceil(initialCatalog.totalTrips / PUBLIC_CATALOG_PAGE_SIZE));
-  const page = Math.min(filters.page, totalPages);
+  const page = Math.min(catalogFilters.page, totalPages);
   const catalog =
-    page === filters.page
+    page === catalogFilters.page
       ? initialCatalog
-      : await safeDb("trips.catalog", () => getCatalogPage({ ...filters, page }), fallback);
+      : await safeDb("trips.catalog", () => getCatalogPage({ ...catalogFilters, page }), fallback);
 
   return (
     <TripsExplorer
       trips={catalog.trips}
       otherTrips={catalog.otherTrips}
+      travelStyles={travelStyles}
       page={page}
       totalPages={totalPages}
     />

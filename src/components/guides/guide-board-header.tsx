@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { ArrowLeft, ClipboardList, Compass, UserRoundPen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,16 +13,16 @@ const GUIDE_BOARD_SECTIONS = [
     description: "Update your public details and media.",
   },
   {
-    key: "trips",
-    href: "/guide-board/trips",
-    label: "My trips",
-    description: "Create and manage your trips",
-  },
-  {
     key: "bookings",
     href: "/guide-board/bookings",
     label: "My Bookings",
     description: "Review traveller reservations",
+  },
+  {
+    key: "trips",
+    href: "/guide-board/trips",
+    label: "My trips",
+    description: "Create and manage your trips",
   },
 ] as const;
 
@@ -61,25 +62,28 @@ export function GuideBoardHeader({
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-4 lg:max-w-xl">
               {GUIDE_BOARD_SECTIONS.map((section) => (
-                <div key={section.key} className={section.key === "profile" ? "col-span-2" : undefined}>
-                  <Button
-                    variant={section.key === active ? "default" : "outline"}
-                    size="sm"
-                    className="w-full max-w-full rounded-full border-2 border-black dark:border-white"
-                    nativeButton={false}
-                    render={<Link href={section.href} />}
-                  >
-                    {section.key === "profile" ? (
-                      <UserRoundPen className="h-3.5 w-3.5" />
-                    ) : section.key === "trips" ? (
-                      <Compass className="h-3.5 w-3.5" />
-                    ) : (
-                      <ClipboardList className="h-3.5 w-3.5" />
-                    )}
-                    {section.label}
-                  </Button>
-                  <p className="mt-1 text-xs text-muted-foreground">{section.description}</p>
-                </div>
+                <Fragment key={section.key}>
+                  <div>
+                    <Button
+                      variant={section.key === active ? "default" : "outline"}
+                      size="sm"
+                      className="w-full max-w-full rounded-full border-2 border-black dark:border-white"
+                      nativeButton={false}
+                      render={<Link href={section.href} />}
+                    >
+                      {section.key === "profile" ? (
+                        <UserRoundPen className="h-3.5 w-3.5" />
+                      ) : section.key === "trips" ? (
+                        <Compass className="h-3.5 w-3.5" />
+                      ) : (
+                        <ClipboardList className="h-3.5 w-3.5" />
+                      )}
+                      {section.label}
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">{section.description}</p>
+                  </div>
+                  {section.key === "profile" ? <div aria-hidden="true" /> : null}
+                </Fragment>
               ))}
             </div>
           </div>

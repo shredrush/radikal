@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 
 type AdminTripCardProps = {
   trip: {
@@ -25,6 +26,7 @@ type AdminTripCardProps = {
     mediaOrder: string[];
     guidePhoto: string | null;
     guideId: string | null;
+    sportLinks: Array<{ sport: TripSportOption }>;
     guide: { id: string; name: string } | null;
     tripLocation: { pickup: string; drop: string } | null;
     inclusions: Array<{ included: boolean; item: string }>;
@@ -39,9 +41,10 @@ type AdminTripCardProps = {
     }>;
   };
   guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
+  sports: TripSportOption[];
 };
 
-export function AdminTripCard({ trip, guides }: AdminTripCardProps) {
+export function AdminTripCard({ trip, guides, sports }: AdminTripCardProps) {
   const [editing, setEditing] = useState(false);
 
   return (
@@ -82,6 +85,7 @@ export function AdminTripCard({ trip, guides }: AdminTripCardProps) {
           <AdminTripForm
             trip={trip}
             guides={guides}
+            sports={sports}
             slots={trip.slots.map(toSlotItem)}
             supplemental={{
               pickup: trip.tripLocation?.pickup ?? "",

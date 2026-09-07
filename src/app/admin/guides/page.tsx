@@ -61,7 +61,7 @@ export default async function AdminGuidesPage() {
         </section>
 
         <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-          <GuidesManager />
+          <GuidesManager role={session.user.role} />
         </section>
       </div>
     </div>

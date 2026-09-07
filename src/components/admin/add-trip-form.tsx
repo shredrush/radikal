@@ -5,11 +5,14 @@ import { Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 
 export function AddTripForm({
   guides,
+  sports,
 }: {
   guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
+  sports: TripSportOption[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -30,7 +33,7 @@ export function AddTripForm({
           Close
         </Button>
       </div>
-      <AdminTripForm guides={guides} onSaved={() => setOpen(false)} />
+      <AdminTripForm guides={guides} sports={sports} onSaved={() => setOpen(false)} />
     </div>
   );
 }

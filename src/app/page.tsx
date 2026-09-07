@@ -74,7 +74,7 @@ const getHomeGuides = unstable_cache(
 const getHomeTravelStyles = unstable_cache(
   () => prisma.travelStyle.findMany({
     where: { active: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: { id: true, name: true, slug: true, image: true },
   }),
   ["home-page-travel-styles"],

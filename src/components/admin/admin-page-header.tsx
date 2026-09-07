@@ -4,7 +4,6 @@ import { ArrowLeft, Headset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission, type Role } from "@/lib/authz";
 import { ADMIN_SECTIONS, type AdminSection } from "@/lib/admin-sections";
-import { prisma, safeDb } from "@/lib/prisma";
 
 export async function AdminPageHeader({
   title,
@@ -17,20 +16,7 @@ export async function AdminPageHeader({
   active: AdminSection;
   role?: Role;
 }) {
-  const visibleSections = ADMIN_SECTIONS.filter(
-    (section) => section.key !== "trip-changes" && hasPermission(role, section.permission),
-  );
-
-  // Count pending guide applications for the admin board badge. Only queried
-  // when the signed-in role can review applications; a DB failure degrades to
-  // zero instead of breaking the header.
-  const pendingApplicationCount = hasPermission(role, "guideApplications.manage")
-    ? await safeDb(
-        "admin.header.pending-applications",
-        () => prisma.guideApplication.count({ where: { status: "PENDING" } }),
-        0,
-      )
-    : 0;
+  const visibleSections = ADMIN_SECTIONS.filter((section) => hasPermission(role, section.permission));
 
   return (
     <header className="rounded-[2rem] border border-border/80 bg-background/90 p-8 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
@@ -72,11 +58,6 @@ export async function AdminPageHeader({
               render={<Link href={section.href} />}
             >
               {section.label}
-              {section.key === "applications" && pendingApplicationCount > 0 ? (
-                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
-                  {pendingApplicationCount > 9 ? "9+" : pendingApplicationCount}
-                </span>
-              ) : null}
             </Button>
           ))}
         </div>

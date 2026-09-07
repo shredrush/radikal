@@ -7,7 +7,6 @@ import { requirePermission } from "@/lib/authz";
 import { logActivity } from "@/lib/activity-log";
 import { sendEmailAfter, bookingCancelledEmail } from "@/lib/email";
 import {
-  validTypes,
   asString,
   readTripFields,
   validateTripFields,
@@ -17,10 +16,10 @@ import { assertValidStoredMedia } from "@/lib/media";
 import { sanitizeText } from "@/lib/sanitize";
 import { cancelActiveBookingsForSlot, type CancellationEmail } from "@/lib/actions/payment";
 import { startOfTodayIST } from "@/lib/dates";
+import { resolveActiveSports } from "@/lib/sports";
 
 function revalidateTripPages(slug: string) {
   revalidatePath("/admin/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");
@@ -56,6 +55,7 @@ export async function createTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   const fields = validateTripFields(readTripFields(formData));
+  const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
   await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);
   const {
@@ -63,7 +63,6 @@ export async function createTripAction(formData: FormData) {
     slug,
     location,
     description,
-    type,
     priceInRupees,
     durationDays,
     maxGroupSize,
@@ -88,7 +87,7 @@ export async function createTripAction(formData: FormData) {
           slug,
           location,
           description,
-          type: type as (typeof validTypes)[number],
+          type: legacyType,
           priceInRupees,
           durationDays,
           maxGroupSize,
@@ -100,6 +99,7 @@ export async function createTripAction(formData: FormData) {
           guideId: guideId || null,
         },
       });
+      await tx.tripSport.createMany({ data: sportIds.map((sportId) => ({ tripId: trip.id, sportId })) });
 
       if (pickup || drop) {
         await tx.tripLocation.create({
@@ -138,6 +138,7 @@ export async function updateTripAction(formData: FormData) {
 
   const tripId = asString(formData.get("tripId"));
   const fields = validateTripFields(readTripFields(formData));
+  const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
   await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);
   const {
@@ -145,7 +146,6 @@ export async function updateTripAction(formData: FormData) {
     slug,
     location,
     description,
-    type,
     priceInRupees,
     durationDays,
     maxGroupSize,
@@ -187,7 +187,7 @@ export async function updateTripAction(formData: FormData) {
           slug,
           location,
           description,
-          type: type as (typeof validTypes)[number],
+          type: legacyType,
           priceInRupees,
           durationDays,
           maxGroupSize,
@@ -198,6 +198,8 @@ export async function updateTripAction(formData: FormData) {
           guideId: guideId || null,
         },
       });
+      await tx.tripSport.deleteMany({ where: { tripId } });
+      await tx.tripSport.createMany({ data: sportIds.map((sportId) => ({ tripId, sportId })) });
 
       // If both are blank, remove any existing location row to avoid stale values.
       if (pickup || drop) {
@@ -302,7 +304,6 @@ export async function deleteTripAction(tripId: string, reason?: string) {
   });
 
   revalidatePath("/admin/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");
@@ -349,7 +350,6 @@ export async function restoreTripAction(tripId: string) {
   });
 
   revalidatePath("/admin/trips");
-  revalidatePath("/admin/trip-changes");
   revalidatePath("/trips");
   revalidatePath("/");
   updateTag("trips");

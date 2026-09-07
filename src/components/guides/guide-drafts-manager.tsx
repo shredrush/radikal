@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { GuideDraftData } from "@/components/guides/guide-trip-form";
 import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 import { deleteTripDraftAction } from "@/lib/actions/trip-drafts";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +21,12 @@ const GuideTripForm = dynamic(
 export function GuideDraftsManager({
   guideId,
   guideMedia,
+  sports,
   drafts,
 }: {
   guideId: string;
   guideMedia: GuideMediaItem[];
+  sports: TripSportOption[];
   drafts: GuideDraftData[];
 }) {
   const [open, setOpen] = useState(false);
@@ -106,7 +109,7 @@ export function GuideDraftsManager({
 
                     {expanded ? (
                       <div className="border-t border-border/70 p-4">
-                        <GuideTripForm key={draft.draftId} guideId={guideId} guideMedia={guideMedia} draft={draft} />
+                        <GuideTripForm key={draft.draftId} guideId={guideId} guideMedia={guideMedia} sports={sports} draft={draft} />
                       </div>
                     ) : null}
                   </li>

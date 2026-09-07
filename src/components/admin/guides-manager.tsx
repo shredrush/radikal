@@ -1,19 +1,24 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { Trash2, Users } from "lucide-react";
 
+import { hasPermission, type Role } from "@/lib/authz";
 import { fetchGuidesWithDetails } from "@/lib/guides";
-import { prisma } from "@/lib/prisma";
+import { prisma, safeDb } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
 import { AddGuideForm } from "@/components/admin/add-guide-form";
 import { GuideCard, type GuideCardData } from "@/components/admin/guide-card";
+import { GuideApplicationsPanel } from "@/components/admin/guide-applications-panel";
 import { RestoreGuideButton } from "@/components/admin/restore-guide-button";
 
 export async function GuidesManager({
   where,
+  role,
 }: {
   where?: Prisma.GuideWhereInput;
+  role?: Role;
 }) {
-  const [guides, deletedGuides] = await Promise.all([
+  const canManageApplications = hasPermission(role, "guideApplications.manage");
+  const [guides, deletedGuides, pendingApplicationCount] = await Promise.all([
     fetchGuidesWithDetails(where),
     prisma.guide.findMany({
       where: { deletedAt: { not: null } },
@@ -45,6 +50,13 @@ export async function GuidesManager({
         },
       },
     }),
+    canManageApplications
+      ? safeDb(
+          "admin.guides.pending-applications-count",
+          () => prisma.guideApplication.count({ where: { status: "PENDING" } }),
+          0,
+        )
+      : Promise.resolve(0),
   ]);
 
   const items: GuideCardData[] = guides.map((guide) => ({
@@ -78,6 +90,9 @@ export async function GuidesManager({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <AddGuideForm />
+        {canManageApplications ? (
+          <GuideApplicationsPanel pendingCount={pendingApplicationCount} />
+        ) : null}
       </div>
       {items.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-dashed border-border/80 bg-muted/20 px-6 py-10 text-center">

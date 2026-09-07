@@ -1,0 +1,2 @@
+export const MAX_TRAVEL_STYLE_FILTERS = 10;
+export const INITIAL_TRAVEL_STYLE_FILTERS = 12;

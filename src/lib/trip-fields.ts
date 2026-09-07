@@ -62,6 +62,7 @@ export type TripFields = {
   location: string;
   description: string;
   type: string;
+  sportIds: string[];
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -90,7 +91,9 @@ export function readTripFields(formData: FormData): TripFields {
       maxLength: 5000,
       allowNewlines: true,
     }),
-    type: asString(formData.get("type")),
+    // Retained for historical enum-backed rows. New sport links are canonical.
+    type: asString(formData.get("type")) || "TREK",
+    sportIds: Array.from(new Set(formData.getAll("sportIds").map((value) => asString(value)).filter(Boolean))),
     priceInRupees: Number.parseInt(asString(formData.get("priceInRupees")), 10),
     durationDays: Number.parseInt(asString(formData.get("durationDays")), 10),
     maxGroupSize: Number.parseInt(asString(formData.get("maxGroupSize")), 10),
@@ -120,6 +123,8 @@ export function validateTripFields(fields: TripFields): TripFields {
   if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {
     throw new Error("Invalid trip type.");
   }
+
+  if (fields.sportIds.length === 0) throw new Error("Select at least one sport.");
 
   if (
     Number.isNaN(fields.priceInRupees) ||

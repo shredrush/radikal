@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, ChevronDown, ChevronUp, Trash2, XCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TripChangeDiff } from "@/components/admin/trip-change-diff";
 import { getAdminTripChangeDetailsAction } from "@/lib/actions/trip-changes";
 import { type AdminTripChangeSummary, type TripProposal } from "@/lib/trip-changes";
@@ -27,11 +26,7 @@ function statusBadge(status: AdminTripChangeSummary["status"]) {
     );
   }
   if (status === "APPROVED") {
-    return (
-      <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-        <CheckCircle2 className="h-3 w-3" /> Published
-      </Badge>
-    );
+    return null;
   }
   return (
     <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
@@ -81,7 +76,7 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {changes.map((change) => {
         const isDeleteEntry = change.type === "DELETE";
         const submittedBy = change.submittedByUsername
@@ -90,66 +85,52 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
         const expanded = Boolean(expandedIds[change.id]);
 
         return (
-          <Card
+          <section
             key={change.id}
             id={`change-${change.id}`}
-            size="sm"
-            className="scroll-mt-6 overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
+            className="scroll-mt-6 overflow-hidden rounded-[1.2rem] border border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]"
           >
-            <CardHeader className="border-b border-border/70 bg-muted/20">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {statusBadge(change.status)}
-                    <Badge variant="outline" className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${changeTypeBadgeClass(change.type)}`}>
-                      {isDeleteEntry ? <Trash2 className="h-3 w-3" /> : null}
-                      {changeTypeLabel(change.type)}
-                    </Badge>
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{change.title ?? "Untitled trip"}</CardTitle>
-                    <CardDescription className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                      {change.guideName ? `Guide: ${change.guideName}` : "Guide removed"}
-                      {change.submittedByUsername ? ` · @${change.submittedByUsername}` : ""}
-                      {change.type === "UPDATE" && change.tripTitle
-                        ? ` · Editing “${change.tripTitle}”`
-                        : ""}
-                    </CardDescription>
-                    <CardDescription className="mt-0.5 text-xs text-muted-foreground">
-                      {isDeleteEntry
-                        ? `Deleted${submittedBy ? ` by ${submittedBy}` : ""}`
-                        : "Submitted"} {formatDateTime(change.createdAt)}
-                      {change.reviewedAt && !isDeleteEntry
-                        ? ` · Published ${formatDateTime(change.reviewedAt)}${change.reviewedByName ? ` by ${change.reviewedByName}` : ""}`
-                        : ""}
-                    </CardDescription>
-                  </div>
-                </div>
+            <div className="flex w-full items-center justify-between gap-4 px-6 py-4">
+              <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  {!isDeleteEntry ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-full"
-                      aria-expanded={expanded}
-                      disabled={isPending}
-                      onClick={() => handleToggle(change.id)}
-                    >
-                      {expanded ? "Hide changes" : "View changes"}
-                      {expanded ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  ) : null}
+                  <span className="font-medium text-foreground">{change.title ?? "Untitled trip"}</span>
+                  <Badge variant="outline" className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${changeTypeBadgeClass(change.type)}`}>
+                    {isDeleteEntry ? <Trash2 className="h-3 w-3" /> : null}
+                    {changeTypeLabel(change.type)}
+                  </Badge>
+                  {statusBadge(change.status)}
                 </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {change.guideName ?? "Guide removed"}
+                  {change.submittedByUsername ? ` · @${change.submittedByUsername}` : ""}
+                  {isDeleteEntry
+                    ? ` · Deleted${submittedBy ? ` by ${submittedBy}` : ""}`
+                    : " · Submitted"}{" "}
+                  {formatDateTime(change.createdAt)}
+                </p>
               </div>
-            </CardHeader>
+              {!isDeleteEntry ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 rounded-full"
+                  aria-expanded={expanded}
+                  disabled={isPending}
+                  onClick={() => handleToggle(change.id)}
+                >
+                  {expanded ? "Hide changes" : "View changes"}
+                  {expanded ? (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              ) : null}
+            </div>
 
             {expanded ? (
-              <CardContent className="pt-4">
+              <div className="border-t border-border/70 px-6 pb-6 pt-5">
                 {details[change.id] ? (
                   <TripChangeDiff
                     type={details[change.id].type}
@@ -159,9 +140,9 @@ export function AdminTripChangesList({ changes }: { changes: AdminTripChangeSumm
                 ) : (
                   <p className="text-sm text-muted-foreground">Loading changes…</p>
                 )}
-              </CardContent>
+              </div>
             ) : null}
-          </Card>
+          </section>
         );
       })}
     </div>

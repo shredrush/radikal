@@ -487,7 +487,7 @@ export function guideApplicationAdminEmail({
           ["Languages", applicant.languages.join(", ") || "—"],
         ]) +
         paragraph(`<strong>About:</strong><br/>${escapeMultiline(applicant.bio)}`) +
-        button(siteUrl("/admin/guide-applications"), "Review application"),
+        button(siteUrl("/admin/guides"), "Review application"),
     ),
   };
 }

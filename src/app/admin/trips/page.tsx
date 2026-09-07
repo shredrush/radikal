@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { History } from "lucide-react";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Button } from "@/components/ui/button";
 import { AdminTripsManager } from "@/components/admin/admin-trips-manager";
 import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
+import { AdminTripHistoryPanel } from "@/components/admin/admin-trip-history-panel";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import type { AdminDraftData } from "@/components/admin/admin-drafts-manager";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
@@ -34,7 +34,7 @@ export default async function AdminTripsPage({
     Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
   );
 
-  const [guides, totalTrips, totalSlots, draftRows] = await Promise.all([
+  const [guides, totalTrips, totalSlots, draftRows, sports] = await Promise.all([
     loadDb(
       "admin.trips.guide-filter",
       () =>
@@ -56,6 +56,7 @@ export default async function AdminTripsPage({
             id: true,
             title: true,
             type: true,
+            sportIds: true,
             location: true,
             description: true,
             priceInRupees: true,
@@ -74,6 +75,7 @@ export default async function AdminTripsPage({
           },
         }),
     ),
+    loadDb("admin.trips.sports", () => prisma.sport.findMany({ where: { active: true, deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, icon: true } })),
   ]);
 
   const hasSelectedGuide = guides.some((item) => item.id === selectedGuideId);
@@ -84,6 +86,7 @@ export default async function AdminTripsPage({
     guideName: draft.guide.name,
     title: draft.title,
     type: draft.type,
+    sportIds: draft.sportIds,
     location: draft.location,
     description: draft.description,
     priceInRupees: draft.priceInRupees,
@@ -128,18 +131,7 @@ export default async function AdminTripsPage({
         </section>
 
         <section className="space-y-4">
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-              nativeButton={false}
-              render={<Link href="/admin/trip-changes" prefetch={false} />}
-            >
-              <History className="h-3.5 w-3.5" />
-              History
-            </Button>
-          </div>
+          <AdminTripHistoryPanel guides={guides} />
 
           <div className="flex flex-wrap items-end justify-between gap-4">
             <AdminGuideFilter
@@ -188,6 +180,7 @@ export default async function AdminTripsPage({
             selectedGuideId={activeGuideId || null}
             type={selectedType || undefined}
             page={page}
+            sports={sports}
           />
         </section>
       </div>

@@ -10,6 +10,7 @@ import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggl
 import { GuideActivityLog } from "@/components/guides/guide-activity-log";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 
 function toGuideTripData(trip: {
   id: string;
@@ -25,6 +26,7 @@ function toGuideTripData(trip: {
   videos: string[];
   mediaOrder: string[];
   guidePhoto: string | null;
+  sportLinks: Array<{ sport: TripSportOption }>;
   tripLocation: { pickup: string; drop: string } | null;
   inclusions: Array<{ included: boolean; item: string }>;
   highlights: Array<{ text: string }>;
@@ -43,6 +45,7 @@ function toGuideTripData(trip: {
     videos: trip.videos,
     mediaOrder: trip.mediaOrder,
     guidePhoto: trip.guidePhoto,
+    sportLinks: trip.sportLinks,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
     inclusions: trip.inclusions.filter((i) => i.included).map((i) => i.item),
@@ -52,7 +55,7 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, guideProfile, draftRows] = await Promise.all([
+  const [trips, guideProfile, draftRows, sports] = await Promise.all([
     loadDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId })),
     loadDb(
       "guide.trips-manager.guide-profile",
@@ -66,6 +69,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
           orderBy: { updatedAt: "desc" },
         }),
     ),
+    loadDb("guide.trips-manager.sports", () => prisma.sport.findMany({ where: { active: true, deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, icon: true } })),
   ]);
   const guideMedia: GuideMediaItem[] = [
     ...Array.from(new Set([...(guideProfile?.photos ?? []), guideProfile?.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
@@ -75,6 +79,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     draftId: draft.id,
     title: draft.title ?? "",
     type: draft.type,
+    sportIds: draft.sportIds,
     location: draft.location ?? "",
     description: draft.description ?? "",
     priceInRupees: draft.priceInRupees,
@@ -104,8 +109,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Add a new trip or edit an existing one
             </p>
           </div>
-          <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} drafts={drafts} />
-          <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} />
+          <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} sports={sports} drafts={drafts} />
+          <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} />
         </div>
 
         {trips.length === 0 ? (
@@ -131,7 +136,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col items-end gap-3">
-                    <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} trip={data} />
+                    <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} trip={data} />
                     <GuideTripSlotsToggle
                       tripId={trip.id}
                       slots={trip.slots.map(toSlotItem)}

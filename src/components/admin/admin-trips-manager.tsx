@@ -11,6 +11,7 @@ import { AdminTripCard } from "@/components/admin/admin-trip-card";
 import { RestoreTripButton } from "@/components/admin/restore-trip-button";
 import { formatDateTime } from "@/lib/format";
 import { formatPrice } from "@/lib/currency";
+import type { TripSportOption } from "@/components/trips/trip-sport-selector";
 
 const PAGE_SIZE = 20;
 
@@ -20,12 +21,14 @@ export async function AdminTripsManager({
   selectedGuideId,
   type,
   page,
+  sports,
 }: {
   guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
   drafts: AdminDraftData[];
   selectedGuideId: string | null;
   type?: string;
   page: number;
+  sports: TripSportOption[];
 }) {
   const where = {
     ...(selectedGuideId ? { guideId: selectedGuideId } : {}),
@@ -80,7 +83,7 @@ export async function AdminTripsManager({
             </p>
           </div>
           <AdminDraftsManager drafts={drafts} />
-          <AddTripForm guides={guides} />
+          <AddTripForm guides={guides} sports={sports} />
         </div>
 
         {trips.length === 0 ? (
@@ -100,7 +103,7 @@ export async function AdminTripsManager({
         ) : (
           <ul className="flex flex-col gap-4">
             {trips.map((trip) => (
-              <AdminTripCard key={trip.id} trip={trip} guides={guides} />
+              <AdminTripCard key={trip.id} trip={trip} guides={guides} sports={sports} />
             ))}
           </ul>
         )}

@@ -16,7 +16,7 @@ export default async function AdminStylesPage() {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/styles");
   const [styles, availableTrips] = await Promise.all([
     loadDb("admin.styles.list", () => prisma.travelStyle.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ active: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
       include: {
         tripLinks: {
           where: { trip: { deletedAt: null } },

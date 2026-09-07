@@ -56,6 +56,10 @@ function revalidateTravelStyles() {
   updateTag("trips");
 }
 
+function isWriteConflict(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "P2034";
+}
+
 export async function createTravelStyleAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/styles");
   const name = readStyleName(formData.get("name"));
@@ -68,11 +72,19 @@ export async function createTravelStyleAction(formData: FormData) {
   if (existing) throw new Error("A travel style with this name already exists.");
 
   try {
-    await prisma.travelStyle.create({ data: { name, slug, image: "/travel-styles/adventure-enthusiast.jpg" } });
+    await prisma.$transaction(async (tx) => {
+      const lastStyle = await tx.travelStyle.findFirst({
+        where: { active: true }, orderBy: { sortOrder: "desc" }, select: { sortOrder: true },
+      });
+      await tx.travelStyle.create({
+        data: { name, slug, image: "/travel-styles/adventure-enthusiast.jpg", sortOrder: (lastStyle?.sortOrder ?? -1) + 1 },
+      });
+    }, { isolationLevel: "Serializable" });
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint failed")) {
       throw new Error("A travel style with this name already exists.");
     }
+    if (isWriteConflict(error)) throw new Error("This travel style changed while saving. Please try again.");
     throw error;
   }
   revalidateTravelStyles();
@@ -110,8 +122,53 @@ export async function setTravelStyleActiveAction(styleId: string, active: boolea
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/styles");
   if (!styleId.trim()) throw new Error("Missing travel style.");
   if (typeof active !== "boolean") throw new Error("Invalid travel style visibility.");
-  const result = await prisma.travelStyle.updateMany({ where: { id: styleId }, data: { active } });
-  if (result.count !== 1) throw new Error("Travel style not found.");
+  try {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.travelStyle.findUnique({ where: { id: styleId }, select: { active: true } });
+      if (!current) throw new Error("Travel style not found.");
+      if (current.active === active) return;
+      const lastStyle = await tx.travelStyle.findFirst({
+        where: { active }, orderBy: { sortOrder: "desc" }, select: { sortOrder: true },
+      });
+      const result = await tx.travelStyle.updateMany({
+        where: { id: styleId }, data: { active, sortOrder: (lastStyle?.sortOrder ?? -1) + 1 },
+      });
+      if (result.count !== 1) throw new Error("Travel style not found.");
+    }, { isolationLevel: "Serializable" });
+  } catch (error) {
+    if (isWriteConflict(error)) throw new Error("This travel style changed while saving. Please try again.");
+    throw error;
+  }
+  revalidateTravelStyles();
+}
+
+export async function moveTravelStyleAction(styleId: string, direction: "up" | "down") {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/styles");
+  if (!styleId.trim() || (direction !== "up" && direction !== "down")) {
+    throw new Error("Invalid travel style move.");
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const style = await tx.travelStyle.findUnique({
+        where: { id: styleId }, select: { id: true, active: true, sortOrder: true },
+      });
+      if (!style) throw new Error("Travel style not found.");
+      const target = await tx.travelStyle.findFirst({
+        where: { active: style.active, ...(direction === "up" ? { sortOrder: { lt: style.sortOrder } } : { sortOrder: { gt: style.sortOrder } }) },
+        orderBy: { sortOrder: direction === "up" ? "desc" : "asc" },
+        select: { id: true, sortOrder: true },
+      });
+      if (!target) return;
+      await Promise.all([
+        tx.travelStyle.update({ where: { id: style.id }, data: { sortOrder: target.sortOrder } }),
+        tx.travelStyle.update({ where: { id: target.id }, data: { sortOrder: style.sortOrder } }),
+      ]);
+    }, { isolationLevel: "Serializable" });
+  } catch (error) {
+    if (isWriteConflict(error)) throw new Error("This travel style changed while reordering. Please try again.");
+    throw error;
+  }
   revalidateTravelStyles();
 }
 

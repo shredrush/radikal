@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfTodayIST } from "@/lib/dates";
 
 const tripDetailInclude = {
+  sportLinks: { include: { sport: true }, orderBy: { sport: { sortOrder: "asc" } } },
   tripLocation: true,
   inclusions: { orderBy: { order: "asc" } },
   highlights: { orderBy: { order: "asc" } },
