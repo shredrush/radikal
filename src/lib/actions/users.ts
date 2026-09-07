@@ -20,7 +20,10 @@ function asString(value: FormDataEntryValue | null) {
  * recorded in the target user's activity log so there is a full audit trail.
  */
 export async function updateUserAction(formData: FormData) {
-  const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
+  const session = await requirePermission(
+    "users.manage",
+    "/login?callbackUrl=/admin/users",
+  );
 
   const userId = asString(formData.get("userId"));
   const name = sanitizeText(asString(formData.get("name")), { maxLength: 100 });
@@ -28,7 +31,13 @@ export async function updateUserAction(formData: FormData) {
   const username = asString(formData.get("username"));
   const role = asString(formData.get("role"));
 
-  const parsed = updateUserSchema.safeParse({ userId, name, email, username, role });
+  const parsed = updateUserSchema.safeParse({
+    userId,
+    name,
+    email,
+    username,
+    role,
+  });
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid user details.");
   }
@@ -37,13 +46,18 @@ export async function updateUserAction(formData: FormData) {
 
   const target = await prisma.user.findUnique({
     where: { id: data.userId },
-    include: { guide: { select: { id: true, photos: true, videos: true, deletedAt: true } } },
+    include: {
+      guide: {
+        select: { id: true, photos: true, videos: true, deletedAt: true },
+      },
+    },
   });
   if (!target || target.deletedAt) {
     throw new Error("User not found.");
   }
 
-  const activeGuide = target.guide && !target.guide.deletedAt ? target.guide : null;
+  const activeGuide =
+    target.guide && !target.guide.deletedAt ? target.guide : null;
 
   // Never let an admin change their own role — that could lock them (and the
   // last admin) out of the admin board.
@@ -63,11 +77,11 @@ export async function updateUserAction(formData: FormData) {
   // Moving a user away from the GUIDE role removes their guide profile too.
   // Leaving the Guide row behind would keep a "vetted guide" public page and
   // bookable trips alive that nobody can manage.
-  const demotingGuide = target.role === "GUIDE" && data.role !== "GUIDE" && !!activeGuide;
+  const demotingGuide =
+    target.role === "GUIDE" && data.role !== "GUIDE" && !!activeGuide;
 
-  // The teardown unlinks the guide's trips but leaves them live and bookable,
-  // so refuse to demote while any of their trips has an active booking — the
-  // admin must cancel the bookings or reassign the trips first.
+  // Demoting a guide retires their active trips, so active bookings must be
+  // cancelled or the trips reassigned before the role can change.
   if (demotingGuide && activeGuide) {
     const activeBookings = await prisma.booking.count({
       where: {
@@ -82,19 +96,25 @@ export async function updateUserAction(formData: FormData) {
     }
   }
 
-  const emailTaken = await prisma.user.findUnique({ where: { email: data.email } });
+  const emailTaken = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
   if (emailTaken && emailTaken.id !== data.userId) {
     throw new Error("An account with this email already exists.");
   }
 
   if (data.username) {
-    const usernameTaken = await prisma.user.findUnique({ where: { username: data.username } });
+    const usernameTaken = await prisma.user.findUnique({
+      where: { username: data.username },
+    });
     if (usernameTaken && usernameTaken.id !== data.userId) {
       throw new Error("This username is already taken.");
     }
   } else if (data.role === "GUIDE") {
     // A guide's username is its public URL — it can never be cleared.
-    throw new Error("A guide account must have a username. Enter one instead of clearing it.");
+    throw new Error(
+      "A guide account must have a username. Enter one instead of clearing it.",
+    );
   }
 
   const previousUsername = target.username;
@@ -104,7 +124,9 @@ export async function updateUserAction(formData: FormData) {
     await prisma.$transaction(async (tx) => {
       if (data.username) {
         // The handle is now live, so retire any alias that still points to it.
-        await tx.usernameAlias.deleteMany({ where: { username: data.username } });
+        await tx.usernameAlias.deleteMany({
+          where: { username: data.username },
+        });
       }
 
       await tx.user.update({
@@ -125,14 +147,22 @@ export async function updateUserAction(formData: FormData) {
 
       // Keep the old handle resolving to this user's guide page — only when
       // they remain a guide (a demoted user has no guide page to resolve to).
-      if (usernameChanged && previousUsername && activeGuide && data.role === "GUIDE") {
+      if (
+        usernameChanged &&
+        previousUsername &&
+        activeGuide &&
+        data.role === "GUIDE"
+      ) {
         await tx.usernameAlias.create({
           data: { username: previousUsername, userId: data.userId },
         });
       }
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint failed")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("Unique constraint failed")
+    ) {
       throw new Error("This email or username is already taken.");
     }
     throw error;
@@ -140,7 +170,10 @@ export async function updateUserAction(formData: FormData) {
 
   // The guide row is deactivated; reclaim its storage objects best-effort.
   if (demotingGuide && activeGuide) {
-    await removeStoredMedia([...(activeGuide.photos ?? []), ...(activeGuide.videos ?? [])]);
+    await removeStoredMedia([
+      ...(activeGuide.photos ?? []),
+      ...(activeGuide.videos ?? []),
+    ]);
   }
 
   await logActivity({
@@ -171,7 +204,8 @@ export async function updateUserAction(formData: FormData) {
     await logActivity({
       userId: data.userId,
       action: "GUIDE_PROFILE_REMOVED",
-      label: "Guide profile removed because the role was changed away from GUIDE",
+      label:
+        "Guide profile removed because the role was changed away from GUIDE",
       metadata: { guideId: activeGuide?.id },
     });
   }
@@ -205,7 +239,10 @@ export async function updateUserAction(formData: FormData) {
  * actionable and capacity stays consistent.
  */
 export async function deactivateUserAction(userId: string) {
-  const session = await requirePermission("users.manage", "/login?callbackUrl=/admin/users");
+  const session = await requirePermission(
+    "users.manage",
+    "/login?callbackUrl=/admin/users",
+  );
 
   if (!userId) {
     throw new Error("Missing user id.");
@@ -235,7 +272,9 @@ export async function deactivateUserAction(userId: string) {
     },
   });
   if (activeBookings > 0) {
-    throw new Error("Cancel or complete this account's active bookings before deactivating it.");
+    throw new Error(
+      "Cancel or complete this account's active bookings before deactivating it.",
+    );
   }
 
   await prisma.$transaction(async (tx) => {

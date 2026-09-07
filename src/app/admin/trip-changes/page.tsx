@@ -1,21 +1,49 @@
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
+import { Prisma } from "@/generated/prisma/client";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminTripChangesList } from "@/components/admin/admin-trip-changes-list";
+import { AdminGuideFilter } from "@/components/admin/admin-guide-filter";
 import { type AdminTripChangeSummary } from "@/lib/trip-changes";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminTripChangesPage() {
-  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
+const PAGE_SIZE = 20;
 
-  const changes = await loadDb(
-    "admin.trip-changes.list",
+export default async function AdminTripChangesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    guide?: string | string[] | undefined;
+    page?: string | string[] | undefined;
+  }>;
+}) {
+  const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trip-changes");
+  const { guide, page: pageParam } = await searchParams;
+  const selectedGuideId = typeof guide === "string" ? guide : "";
+  const page = Math.max(
+    1,
+    Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
+  );
+
+  const guides = await loadDb(
+    "admin.trip-changes.guide-filter",
     () =>
-      prisma.$queryRaw<AdminTripChangeSummary[]>`
+      prisma.guide.findMany({
+        where: { deletedAt: null },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+  );
+  const activeGuideId = guides.some((item) => item.id === selectedGuideId) ? selectedGuideId : "";
+  const guideFilter = activeGuideId ? Prisma.sql`WHERE "guideId" = ${activeGuideId}` : Prisma.empty;
+  const historyRows = Prisma.sql`
+    WITH changes AS (
       SELECT
         tc.id,
         tc."type"::text AS "type",
@@ -23,6 +51,7 @@ export default async function AdminTripChangesPage() {
         tc."createdAt",
         tc."reviewedAt",
         tc.proposed->>'title' AS title,
+        tc."guideId",
         g.name AS "guideName",
         u.name AS "submittedByName",
         u.username AS "submittedByUsername",
@@ -41,6 +70,7 @@ export default async function AdminTripChangesPage() {
         al."createdAt",
         al."createdAt" AS "reviewedAt",
         COALESCE(t.title, al.metadata->>'title') AS title,
+        t."guideId",
         g.name AS "guideName",
         u.name AS "submittedByName",
         u.username AS "submittedByUsername",
@@ -51,13 +81,39 @@ export default async function AdminTripChangesPage() {
       LEFT JOIN "trips" t ON t.id = al.metadata->>'tripId'
       LEFT JOIN "guides" g ON g.id = t."guideId"
       WHERE al.action = 'TRIP_DELETED'
-      ORDER BY "createdAt" DESC
-    `,
-  );
+    )
+  `;
 
-  const publishedCount = changes.filter((change) => change.status === "APPROVED").length;
-  const deletedCount = changes.filter((change) => change.type === "DELETE").length;
-  const editCount = changes.filter((change) => change.type === "UPDATE").length;
+  const [changes, [counts]] = await Promise.all([
+    loadDb("admin.trip-changes.list", () =>
+      prisma.$queryRaw<AdminTripChangeSummary[]>(Prisma.sql`
+        ${historyRows}
+        SELECT id, "type", status, "createdAt", "reviewedAt", title, "guideName", "submittedByName", "submittedByUsername", "tripTitle", "reviewedByName"
+        FROM changes
+        ${guideFilter}
+        ORDER BY "createdAt" DESC
+        LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}
+      `),
+    ),
+    loadDb("admin.trip-changes.counts", () =>
+      prisma.$queryRaw<Array<{ total: number; published: number; deleted: number; edits: number }>>(Prisma.sql`
+        ${historyRows}
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE status = 'APPROVED')::int AS published,
+          COUNT(*) FILTER (WHERE "type" = 'DELETE')::int AS deleted,
+          COUNT(*) FILTER (WHERE "type" = 'UPDATE')::int AS edits
+        FROM changes
+        ${guideFilter}
+      `),
+    ),
+  ]);
+  const totalPages = Math.max(1, Math.ceil((counts?.total ?? 0) / PAGE_SIZE));
+  const paginationHref = (targetPage: number) =>
+    `/admin/trip-changes?${new URLSearchParams({
+      ...(activeGuideId ? { guide: activeGuideId } : {}),
+      page: String(targetPage),
+    }).toString()}`;
 
   return (
     <div className="min-h-screen">
@@ -73,18 +129,24 @@ export default async function AdminTripChangesPage() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Published</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{publishedCount}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{counts?.published ?? 0}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Edits</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{editCount}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{counts?.edits ?? 0}</p>
             </div>
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Deleted</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{deletedCount}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{counts?.deleted ?? 0}</p>
             </div>
           </div>
         </section>
+
+        <AdminGuideFilter
+          guides={guides}
+          selectedGuideId={activeGuideId}
+          pathname="/admin/trip-changes"
+        />
 
         {changes.length === 0 ? (
           <Card className="border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
@@ -101,6 +163,28 @@ export default async function AdminTripChangesPage() {
         ) : (
           <AdminTripChangesList changes={changes} />
         )}
+
+        {totalPages > 1 ? (
+          <nav className="flex items-center justify-center gap-4">
+            {page > 1 ? (
+              <Button size="sm" variant="outline" className="rounded-full" nativeButton={false} render={<Link href={paginationHref(page - 1)} />}>
+                Previous
+              </Button>
+            ) : (
+              <span className="text-sm text-muted-foreground">Previous</span>
+            )}
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Button size="sm" variant="outline" className="rounded-full" nativeButton={false} render={<Link href={paginationHref(page + 1)} />}>
+                Next
+              </Button>
+            ) : (
+              <span className="text-sm text-muted-foreground">Next</span>
+            )}
+          </nav>
+        ) : null}
       </div>
     </div>
   );

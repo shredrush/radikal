@@ -10,16 +10,38 @@ import type { Prisma } from "@/generated/prisma/client";
 export async function deactivateGuide(
   tx: Prisma.TransactionClient,
   guideId: string,
+  restoreable = false,
 ) {
   const deletedAt = new Date();
   await Promise.all([
-    tx.guide.update({ where: { id: guideId }, data: { deletedAt } }),
-    tx.trip.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt } }),
-    tx.slot.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
-    tx.booking.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
-    tx.wishlistItem.updateMany({ where: { trip: { guideId }, deletedAt: null }, data: { deletedAt, deletedWithTrip: true } }),
-    tx.review.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt, deletedWithGuide: true } }),
-    tx.tripDraft.updateMany({ where: { guideId, deletedAt: null }, data: { deletedAt } }),
+    tx.guide.update({
+      where: { id: guideId },
+      data: { deletedAt, deletedByGuideRemoval: restoreable },
+    }),
+    tx.trip.updateMany({
+      where: { guideId, deletedAt: null },
+      data: { deletedAt, deletedWithGuide: restoreable },
+    }),
+    tx.slot.updateMany({
+      where: { trip: { guideId }, deletedAt: null },
+      data: { deletedAt, deletedWithTrip: true },
+    }),
+    tx.booking.updateMany({
+      where: { trip: { guideId }, deletedAt: null },
+      data: { deletedAt, deletedWithTrip: true },
+    }),
+    tx.wishlistItem.updateMany({
+      where: { trip: { guideId }, deletedAt: null },
+      data: { deletedAt, deletedWithTrip: true },
+    }),
+    tx.review.updateMany({
+      where: { guideId, deletedAt: null },
+      data: { deletedAt, deletedWithGuide: true },
+    }),
+    tx.tripDraft.updateMany({
+      where: { guideId, deletedAt: null },
+      data: { deletedAt, deletedWithGuide: restoreable },
+    }),
     tx.tripChangeRequest.updateMany({
       where: { guideId, status: "PENDING" },
       data: { status: "REJECTED", reviewedAt: deletedAt },

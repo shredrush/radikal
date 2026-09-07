@@ -23,10 +23,12 @@ export function CustomTripChatPanel({
   requestId,
   role,
   messages: initialMessages,
+  onRequestChanged,
 }: {
   requestId: string;
   role: "customer" | "support";
   messages: CustomTripMessageView[];
+  onRequestChanged?: () => void;
 }) {
   const [messages, setMessages] = useState<CustomTripMessageView[]>(initialMessages);
   const [isPending, startTransition] = useTransition();
@@ -101,6 +103,7 @@ export function CustomTripChatPanel({
         }
         form.reset();
         await loadMessages(true);
+        onRequestChanged?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not send message.";
         toast.error(message);

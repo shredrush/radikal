@@ -30,7 +30,12 @@ export default async function GuideBoardBookingsPage() {
         />
 
         <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] sm:p-6">
-          <BookingsBoard items={items} slotCancel hideDeletedSection />
+          <BookingsBoard
+            key={items.map((item) => `${item.bookingId}:${item.status}:${item.slotId}`).join("|")}
+            items={items}
+            slotCancel
+            hideDeletedSection
+          />
         </section>
 
         <GuideActivityLog />

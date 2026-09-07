@@ -5,22 +5,38 @@ import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
-import { restoreTripAction } from "@/lib/actions/admin";
+import { restoreGuideAction } from "@/lib/actions/guides";
 import { Button } from "@/components/ui/button";
 
-export function RestoreTripButton({ tripId, tripTitle }: { tripId: string; tripTitle: string }) {
+export function RestoreGuideButton({
+  guideId,
+  guideName,
+}: {
+  guideId: string;
+  guideName: string;
+}) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   function handleRestore() {
+    if (
+      !window.confirm(
+        `Restore "${guideName}"? Their guide role and records retired with the guide will be restored. Removed profile media must be uploaded again.`,
+      )
+    )
+      return;
+
     startTransition(async () => {
       try {
-        await restoreTripAction(tripId);
-        toast.success(`"${tripTitle}" has been restored.`);
+        await restoreGuideAction(guideId);
+        toast.success(
+          `"${guideName}" has been restored. Profile media must be uploaded again.`,
+        );
         router.refresh();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to restore trip.";
-        toast.error(message);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to restore guide.",
+        );
       }
     });
   }
@@ -35,7 +51,7 @@ export function RestoreTripButton({ tripId, tripTitle }: { tripId: string; tripT
       onClick={handleRestore}
     >
       <RotateCcw className="h-3.5 w-3.5" />
-      {isPending ? "Restoring…" : "Restore trip"}
+      {isPending ? "Restoring…" : "Restore guide"}
     </Button>
   );
 }

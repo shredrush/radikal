@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { ChevronDown, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ export function GuideDraftsManager({
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleDelete(draftId: string) {
     startTransition(async () => {
@@ -37,6 +39,7 @@ export function GuideDraftsManager({
         if (expandedId === draftId) {
           setExpandedId(null);
         }
+        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not delete draft.";

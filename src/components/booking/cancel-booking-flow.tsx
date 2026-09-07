@@ -22,6 +22,7 @@ export function CancelBookingFlow({
   size = "sm",
   open: controlledOpen,
   onOpenChange,
+  onCancelled,
 }: {
   bookingId: string;
   action: CancelAction;
@@ -33,6 +34,7 @@ export function CancelBookingFlow({
   size?: "xs" | "sm";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onCancelled?: (bookingId: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
@@ -56,6 +58,7 @@ export function CancelBookingFlow({
           toast.success(successMessage);
           setOpen(false);
           setReason("");
+          onCancelled?.(bookingId);
         } else {
           toast.error(result.error);
         }

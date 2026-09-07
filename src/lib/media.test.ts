@@ -133,7 +133,7 @@ describe("parseStoredUrl", () => {
   });
 
   it("returns null for non-storage URLs", () => {
-    expect(parseStoredUrl("https://images.unsplash.com/photo.jpg")).toBeNull();
+    expect(parseStoredUrl("https://example.invalid/photo.jpg")).toBeNull();
     expect(parseStoredUrl("/activities/slug/cover.jpg")).toBeNull();
     expect(parseStoredUrl("data:image/png;base64,xxx")).toBeNull();
   });

@@ -1,15 +1,11 @@
-export const TRIP_CATEGORY_LABELS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "Adventure Enthusiast",
-  WOMEN_ONLY: "Women Only",
-  CORPORATE: "Corporate",
-  LUXURY: "Luxury",
-  FAMILY: "For Family",
-  COURSE: "Courses",
-  SELF_GUIDED: "Self Guided",
-  BEGINNER_FRIENDLY: "Beginner Friendly",
-};
-
-export const TRIP_CATEGORIES = Object.keys(TRIP_CATEGORY_LABELS);
+/** Formats legacy enum values retained only in historical draft snapshots. */
+export function formatLegacyTravelStyle(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 export const ACTIVITY_TYPE_OPTIONS = [
   { value: "TREK", label: "Hiking & Trekking" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { deactivateUserAction, updateUserAction } from "@/lib/actions/users";
@@ -38,6 +39,7 @@ export function AdminUserForm({
   isSelf?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +50,7 @@ export function AdminUserForm({
       try {
         await updateUserAction(formData);
         toast.success("User updated.");
+        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not update user.";
@@ -65,6 +68,7 @@ export function AdminUserForm({
       try {
         await deactivateUserAction(user.id);
         toast.success("User deactivated.");
+        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not deactivate user.";

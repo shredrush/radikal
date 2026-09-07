@@ -4,12 +4,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { SPORT_FILTERS, TRAVEL_STYLE_FILTERS } from "@/components/trips/sport-filters";
+import { SPORT_FILTERS } from "@/components/trips/sport-filters";
 import { SportIcon } from "@/components/trips/sport-icon";
 
 type TripsFilterBarProps = {
   selectedSport: string[];
-  selectedTravelStyle: string[];
 };
 
 export function TripsFilterBar({
@@ -40,7 +39,6 @@ export function TripsFilterBar({
     router.push(nextHref, { scroll: false });
   };
 
-  const selectedTravelStyles = searchParams.getAll("travelStyle");
   const normalizedSelectedSports = selectedSport.map((sport) => (sport === "climb" ? "expedition" : sport));
 
   return (
@@ -84,31 +82,6 @@ export function TripsFilterBar({
             </div>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-700">Travel Style</p>
-            <div className="grid grid-cols-4 gap-3.5">
-              {TRAVEL_STYLE_FILTERS.map((filter) => {
-                const isActive = selectedTravelStyles.includes(filter.id) || (filter.id === "all" && selectedTravelStyles.length === 0);
-
-                return (
-                  <Button
-                    key={filter.id}
-                    type="button"
-                    variant={isActive ? "default" : "outline"}
-                    size="xs"
-                    onClick={() => handleSelectFilter("travelStyle", filter.id)}
-                    className={
-                      isActive
-                        ? "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 bg-emerald-100 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-800"
-                        : "h-auto min-h-7 w-full min-w-0 justify-start !whitespace-normal uppercase tracking-widest px-2 py-1.5 text-left text-[10px] leading-4 hover:border-emerald-300 hover:bg-emerald-100/60 hover:text-emerald-800"
-                    }
-                  >
-                    <span className="min-w-0 break-words whitespace-normal">{filter.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       ) : null}
     </div>

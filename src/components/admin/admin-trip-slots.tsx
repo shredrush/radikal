@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Ban, CalendarDays, Pencil, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,6 +50,7 @@ export function SlotsManager({
   actions?: SlotActions;
 }) {
   const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(new Set());
+  const router = useRouter();
   const visibleSlots = slots.filter((slot) => !removedIds.has(slot.id));
 
   return (
@@ -60,7 +62,7 @@ export function SlotsManager({
         </span>
       </div>
 
-      <AddSlotForm tripId={tripId} createAction={actions.create} />
+      <AddSlotForm tripId={tripId} createAction={actions.create} onSaved={router.refresh} />
 
       {visibleSlots.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
@@ -77,6 +79,7 @@ export function SlotsManager({
               onCancelled={(slotId) =>
                 setRemovedIds((prev) => new Set(prev).add(slotId))
               }
+              onSaved={router.refresh}
             />
           ))}
         </ul>
@@ -88,9 +91,11 @@ export function SlotsManager({
 function AddSlotForm({
   tripId,
   createAction,
+  onSaved,
 }: {
   tripId: string;
   createAction: SlotActions["create"];
+  onSaved: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -124,6 +129,8 @@ function AddSlotForm({
         await createAction(formData);
         form.reset();
         toast.success("Date added.");
+        onSaved();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not add date.");
       }
@@ -157,11 +164,13 @@ function SlotRow({
   updateAction,
   cancelAction,
   onCancelled,
+  onSaved,
 }: {
   slot: SlotItem;
   updateAction: SlotActions["update"];
   cancelAction: SlotActions["remove"];
   onCancelled: (slotId: string) => void;
+  onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -214,6 +223,8 @@ function SlotRow({
         } else {
           toast.success("No changes to this slot.");
         }
+        onSaved();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not update date.");
       }
@@ -233,6 +244,8 @@ function SlotRow({
         await cancelAction(slot.id, needsReason ? cleanReason : undefined);
         onCancelled(slot.id);
         toast.success(`Date ${slot.dateLabel} cancelled.`);
+        onSaved();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not cancel date.");
       }

@@ -46,6 +46,7 @@ export function CustomTripsView({
   deletedRequestsCount,
   selectedRequestId,
   selectedRequest,
+  onStatusChanged,
 }: {
   initialRequests: CustomTripRequestBoardListItem[];
   confirmedRequests: CustomTripRequestBoardListItem[];
@@ -56,6 +57,7 @@ export function CustomTripsView({
   deletedRequestsCount: number;
   selectedRequestId?: string;
   selectedRequest: CustomTripRequestDetail | null;
+  onStatusChanged?: (previousStatus: string, nextStatus: string) => void;
 }) {
   const [requests, setRequests] = useState<CustomTripRequestBoardListItem[]>(initialRequests);
   const [confirmedRequests, setConfirmedRequests] =
@@ -74,8 +76,11 @@ export function CustomTripsView({
   const [loadingSection, setLoadingSection] = useState<DeferredSection | null>(null);
   const requestsFetchControllerRef = useRef<AbortController | null>(null);
 
-  const loadRequests = useCallback(async () => {
-    if (requestsFetchControllerRef.current) return;
+  const loadRequests = useCallback(async (replaceActiveRequest = false) => {
+    if (requestsFetchControllerRef.current) {
+      if (!replaceActiveRequest) return;
+      requestsFetchControllerRef.current.abort();
+    }
 
     const controller = new AbortController();
     requestsFetchControllerRef.current = controller;
@@ -159,6 +164,18 @@ export function CustomTripsView({
     const nextOpen = !deletedOpen;
     setDeletedOpen(nextOpen);
     if (nextOpen && !deletedLoaded) void loadSection("deleted");
+  }
+
+  function handleRequestChanged() {
+    void loadRequests(true);
+    void loadSection("confirmed");
+    void loadSection("cancelled");
+    void loadSection("deleted");
+  }
+
+  function handleStatusChanged(previousStatus: string, nextStatus: string) {
+    handleRequestChanged();
+    onStatusChanged?.(previousStatus, nextStatus);
   }
 
   return (
@@ -491,7 +508,11 @@ export function CustomTripsView({
       {/* Request detail */}
       <section className="min-w-0">
         {selectedRequest ? (
-          <CustomTripRequestDetailPanel request={selectedRequest} />
+          <CustomTripRequestDetailPanel
+            request={selectedRequest}
+            onRequestChanged={handleRequestChanged}
+            onStatusChanged={handleStatusChanged}
+          />
         ) : (
           <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
             <Compass className="h-8 w-8 text-muted-foreground/50" />

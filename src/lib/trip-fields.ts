@@ -16,16 +16,6 @@ export const validTypes = [
   "EXPEDITION",
   "YOGA",
 ] as const;
-export const validCategories = [
-  "ADVENTURE_ENTHUSIAST",
-  "WOMEN_ONLY",
-  "CORPORATE",
-  "LUXURY",
-  "FAMILY",
-  "COURSE",
-  "SELF_GUIDED",
-  "BEGINNER_FRIENDLY",
-] as const;
 
 export function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -49,17 +39,10 @@ export function parseMediaList(values: FormDataEntryValue[]) {
   );
 }
 
-export function parseCategories(values: FormDataEntryValue[]) {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => value.toString())
-        .filter(
-          (value): value is (typeof validCategories)[number] =>
-            validCategories.includes(value as (typeof validCategories)[number]),
-        ),
-    ),
-  );
+export function parseCategories(_values: FormDataEntryValue[]) {
+  // Travel styles are managed through TripTravelStyle, never embedded in trip forms.
+  void _values;
+  return [] as string[];
 }
 
 export function parseList(value: string) {
@@ -87,7 +70,7 @@ export type TripFields = {
   videos: string[];
   mediaOrder: string[];
   guidePhoto: string;
-  categories: (typeof validCategories)[number][];
+  categories: string[];
   pickup: string;
   drop: string;
   inclusions: string[];

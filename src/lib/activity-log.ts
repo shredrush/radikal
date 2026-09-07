@@ -43,6 +43,7 @@ export type ActivityAction =
   | "SLOT_CANCELLED"
   | "GUIDE_PROFILE_UPDATED"
   | "GUIDE_PROFILE_REMOVED"
+  | "GUIDE_PROFILE_RESTORED"
   | "USER_PROFILE_UPDATED"
   | "USER_ROLE_CHANGED"
   | "REVIEW_SUBMITTED"
@@ -140,7 +141,9 @@ function activityLogData(
     label: truncate(label, 500),
     ip: context.ip ? truncate(context.ip, 64) : null,
     userAgent: context.userAgent ? truncate(context.userAgent, 500) : null,
-    metadata: (context.geo ? { ...base, geo: context.geo } : metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+    metadata: (context.geo
+      ? { ...base, geo: context.geo }
+      : (metadata ?? undefined)) as Prisma.InputJsonValue | undefined,
   };
 }
 

@@ -4,7 +4,7 @@
  * interpret the JSON snapshots without importing "use server" code.
  */
 
-import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { ACTIVITY_TYPE_LABELS, formatLegacyTravelStyle } from "@/lib/trip-metadata";
 
 export type TripProposal = {
   slug: string;
@@ -71,7 +71,7 @@ function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (key === "type") return ACTIVITY_TYPE_LABELS[String(value)] ?? String(value);
   if (key === "categories" && Array.isArray(value)) {
-    return value.map((item) => TRIP_CATEGORY_LABELS[String(item)] ?? String(item)).join(", ");
+    return value.map((item) => formatLegacyTravelStyle(String(item))).join(", ");
   }
   if (Array.isArray(value)) return value.join("\n");
   return String(value);

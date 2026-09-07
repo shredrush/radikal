@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   CalendarDays,
@@ -163,6 +164,7 @@ export function BookingsBoard({
 }) {
   const [query, setQuery] = useState("");
   const [bookingItems, setBookingItems] = useState(items);
+  const router = useRouter();
   const [cancelSlotId, setCancelSlotId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     CONFIRMED: true,
@@ -365,6 +367,10 @@ export function BookingsBoard({
                                               ...current,
                                               CANCELLED: true,
                                             }));
+                                            router.refresh();
+                                            window.dispatchEvent(
+                                              new Event("guide-activity-changed"),
+                                            );
                                           }}
                                         />
                                       </div>
@@ -443,6 +449,32 @@ export function BookingsBoard({
                                                 status={client.status}
                                                 canConfirm={adminActions.canConfirm}
                                                 canCancel={adminActions.canCancel}
+                                                onConfirmed={(bookingId) => {
+                                                  setBookingItems((current) =>
+                                                    current.map((item) =>
+                                                      item.bookingId === bookingId
+                                                        ? { ...item, status: "CONFIRMED" }
+                                                        : item,
+                                                    ),
+                                                  );
+                                                  setOpenSections((current) => ({
+                                                    ...current,
+                                                    CONFIRMED: true,
+                                                  }));
+                                                }}
+                                                onCancelled={(bookingId) => {
+                                                  setBookingItems((current) =>
+                                                    current.map((item) =>
+                                                      item.bookingId === bookingId
+                                                        ? { ...item, status: "CANCELLED" }
+                                                        : item,
+                                                    ),
+                                                  );
+                                                  setOpenSections((current) => ({
+                                                    ...current,
+                                                    CANCELLED: true,
+                                                  }));
+                                                }}
                                               />
                                             </span>
                                           ) : null}

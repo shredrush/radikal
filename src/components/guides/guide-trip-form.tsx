@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
-import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -56,7 +57,6 @@ function countFilledFromValues(values: GuideTripFields | null | undefined) {
   if (values?.description?.trim()) count += 1;
   if (values?.pickup?.trim()) count += 1;
   if (values?.drop?.trim()) count += 1;
-  if (values?.categories?.length) count += 1;
   if (values?.images?.length) count += 1;
   if (values?.videos?.length) count += 1;
   if (values?.inclusions?.length) count += 1;
@@ -76,7 +76,6 @@ function countFilledFromForm(form: HTMLFormElement) {
   if (has("description")) count += 1;
   if (has("pickup")) count += 1;
   if (has("drop")) count += 1;
-  if (formData.getAll("categories").length > 0) count += 1;
   if (has("images")) count += 1;
   if (has("videos")) count += 1;
   if (has("inclusions")) count += 1;
@@ -109,6 +108,7 @@ export function GuideTripForm({
   const [filledCount, setFilledCount] = useState(() => countFilledFromValues(fields));
   const [draftId, setDraftId] = useState<string | null>(draft?.draftId ?? null);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const [isPreviewing, startPreviewing] = useTransition();
   const [isSavingDraft, startSavingDraft] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
@@ -122,7 +122,6 @@ export function GuideTripForm({
   const priceInRupees = fields?.priceInRupees ?? 0;
   const durationDays = fields?.durationDays ?? 1;
   const maxGroupSize = fields?.maxGroupSize ?? 8;
-  const categories = fields?.categories ?? [];
   const images = fields?.images ?? [];
   const videos = fields?.videos ?? [];
   const mediaOrder = fields?.mediaOrder ?? [];
@@ -186,6 +185,8 @@ export function GuideTripForm({
           await deleteTripDraftAction(draft.draftId);
         }
         closeForm();
+        router.refresh();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not submit trip change.";
@@ -208,6 +209,8 @@ export function GuideTripForm({
         const result = await saveTripDraftAction(formData);
         setDraftId(result.id);
         toast.success("Draft saved.");
+        router.refresh();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not save draft.";
@@ -246,6 +249,8 @@ export function GuideTripForm({
         await deleteGuideTripAction(trip.id, cleanReason);
         toast.success("Trip deleted");
         closeForm();
+        router.refresh();
+        window.dispatchEvent(new Event("guide-activity-changed"));
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not delete trip.";
         toast.error(message);
@@ -326,21 +331,6 @@ export function GuideTripForm({
           <div className="space-y-2">
             <Label htmlFor={`exclusions-${key}`}>Not included (one per line)</Label>
             <textarea id={`exclusions-${key}`} name="exclusions" defaultValue={exclusions.join("\n")} rows={5} className={`min-h-28 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Trip categories</Label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {TRIP_CATEGORIES.map((category) => {
-              const isChecked = categories.includes(category);
-              return (
-                <label key={category} className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm text-foreground">
-                  <input type="checkbox" name="categories" value={category} defaultChecked={isChecked} className="h-4 w-4 rounded border-input" />
-                  {TRIP_CATEGORY_LABELS[category] ?? category}
-                </label>
-              );
-            })}
           </div>
         </div>
 

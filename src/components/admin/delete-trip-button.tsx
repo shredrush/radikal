@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ export function DeleteTripButton({
   tripTitle: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -24,6 +26,7 @@ export function DeleteTripButton({
       try {
         await deleteTripAction(tripId, reason.trim() || undefined);
         toast.success(`"${tripTitle}" has been deleted.`);
+        router.refresh();
       } catch {
         toast.error("Failed to delete trip. Please try again.");
       }

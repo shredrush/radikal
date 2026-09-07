@@ -7,10 +7,12 @@ export function CancelBookingButton({
   bookingId,
   open,
   onOpenChange,
+  onCancelled,
 }: {
   bookingId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onCancelled?: (bookingId: string) => void;
 }) {
   return (
     <CancelBookingFlow
@@ -23,6 +25,7 @@ export function CancelBookingButton({
       size="xs"
       open={open}
       onOpenChange={onOpenChange}
+      onCancelled={onCancelled}
     />
   );
 }

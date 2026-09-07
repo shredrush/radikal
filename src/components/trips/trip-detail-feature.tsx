@@ -14,7 +14,6 @@ import { BookingBar } from "@/components/trips/booking-bar";
 import { TripGallery } from "@/components/trips/trip-gallery";
 import { formatDurationDays, formatTripDateRange, isSlotCompleted } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
-import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { cn } from "@/lib/utils";
 import type { TripCategory, TripType } from "@/generated/prisma/client";
 import { CustomDateEnquiry } from "@/components/trips/custom-date-enquiry";
@@ -63,13 +62,13 @@ export function TripDetailsCard({
     >
       {travelStyleTags.length > 0 ? (
         <div className="flex flex-wrap gap-2 px-5 sm:px-6">
-          {travelStyleTags.map((category) => (
+          {travelStyleTags.map((style) => (
             <Badge
-              key={category}
+              key={style}
               variant="secondary"
               className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 text-[0.62rem] font-medium leading-3 text-foreground/80 sm:text-[0.72rem]"
             >
-              {TRIP_CATEGORY_LABELS[category] ?? category}
+              {style}
             </Badge>
           ))}
         </div>
@@ -289,13 +288,6 @@ export function TripDetailFeature({
               <p className="line-clamp-6 text-base leading-8 text-muted-foreground">
                 {trip.description}
               </p>
-              <div className="flex flex-wrap items-start gap-2">
-                {trip.categories.map((category) => (
-                  <span key={category} className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                    {TRIP_CATEGORY_LABELS[category] ?? category}
-                  </span>
-                ))}
-              </div>
             </div>
             <BookingBar
               tripId={trip.id}

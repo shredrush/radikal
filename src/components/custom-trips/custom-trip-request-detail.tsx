@@ -22,8 +22,12 @@ const STATUS_OPTIONS = ["NEW", "IN_REVIEW", "QUOTED", "CONFIRMED", "CANCELLED"] 
 
 export function CustomTripRequestDetailPanel({
   request,
+  onRequestChanged,
+  onStatusChanged,
 }: {
   request: CustomTripRequestDetail;
+  onRequestChanged?: () => void;
+  onStatusChanged?: (previousStatus: string, nextStatus: string) => void;
 }) {
   const [status, setStatus] = useState<string>(request.status);
   const [isPending, startTransition] = useTransition();
@@ -36,6 +40,11 @@ export function CustomTripRequestDetailPanel({
         await setCustomTripStatusAction(request.id, nextStatus as (typeof STATUS_OPTIONS)[number]);
         setStatus(nextStatus);
         toast.success(`Request marked as ${CUSTOM_TRIP_STATUS_LABELS[nextStatus] ?? nextStatus}.`);
+        if (onStatusChanged) {
+          onStatusChanged(status, nextStatus);
+        } else {
+          onRequestChanged?.();
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not update status.";
         toast.error(message);
@@ -164,6 +173,7 @@ export function CustomTripRequestDetailPanel({
         requestId={request.id}
         role="support"
         messages={request.messages}
+        onRequestChanged={onRequestChanged}
       />
     </div>
   );

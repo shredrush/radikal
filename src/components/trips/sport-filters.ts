@@ -8,7 +8,7 @@ export type TripCardItem = {
   location: string;
   priceInRupees: number;
   durationDays: number;
-  categories: string[];
+  categories?: string[];
   type: string;
   guide?: { name: string } | null;
 };
@@ -27,16 +27,6 @@ export const SPORT_FILTERS: Array<{ id: "all" | SportId; label: string }> = [
     })),
 ];
 
-export const TRAVEL_STYLE_FILTERS = [
-  { id: "all", label: "All" },
-  { id: "beginner-friendly", label: "Beginner Friendly" },
-  { id: "women-only", label: "Women Only" },
-  { id: "family", label: "For Family" },
-  { id: "adventure-enthusiast", label: "Adventure Enthusiast" },
-  { id: "course", label: "Courses" },
-  { id: "self-guided", label: "Self Guided" },
-] as const;
-
 export function normalizeSportFilter(value: string | string[] | null | undefined) {
   const values = Array.isArray(value) ? value : value ? [value] : [];
   const normalizedValues = values.filter(
@@ -54,17 +44,13 @@ export function normalizeSportFilter(value: string | string[] | null | undefined
 
 export function normalizeTravelStyleFilter(value: string | string[] | null | undefined) {
   const values = Array.isArray(value) ? value : value ? [value] : [];
-  const normalizedValues = values.filter(
-    (item): item is string =>
-      item === "beginner-friendly" ||
-      item === "women-only" ||
-      item === "family" ||
-      item === "adventure-enthusiast" ||
-      item === "course" ||
-      item === "self-guided",
+  return Array.from(
+    new Set(
+      values
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item)),
+    ),
   );
-
-  return normalizedValues;
 }
 
 export function matchesSportFilter(trip: TripCardItem, sports: string[]) {
@@ -92,31 +78,6 @@ export function matchesSportFilter(trip: TripCardItem, sports: string[]) {
   });
 }
 
-export function matchesTravelStyleFilter(trip: TripCardItem, travelStyles: string[]) {
-  if (travelStyles.length === 0) {
-    return true;
-  }
-
-  return travelStyles.some((travelStyle) => {
-    switch (travelStyle) {
-      case "beginner-friendly":
-        return trip.categories.includes("BEGINNER_FRIENDLY");
-      case "women-only":
-        return trip.categories.includes("WOMEN_ONLY");
-      case "family":
-        return trip.categories.includes("FAMILY");
-      case "adventure-enthusiast":
-        return trip.categories.includes("ADVENTURE_ENTHUSIAST");
-      case "course":
-        return trip.categories.includes("COURSE");
-      case "self-guided":
-        return trip.categories.includes("SELF_GUIDED");
-      default:
-        return false;
-    }
-  });
-}
-
 // Maps each trip `type` to human-readable keywords so a single free-text
 // search can match sport names (e.g. "trekking", "cycling", "snowboard").
 const SPORT_TYPE_KEYWORDS: Record<string, string> = {
@@ -129,17 +90,6 @@ const SPORT_TYPE_KEYWORDS: Record<string, string> = {
   EXPEDITION: "expedition summit peak mountaineering summit expedition",
 };
 
-const CATEGORY_KEYWORDS: Record<string, string> = {
-  ADVENTURE_ENTHUSIAST: "adventure enthusiast adventure",
-  WOMEN_ONLY: "women only women",
-  CORPORATE: "corporate",
-  LUXURY: "luxury",
-  FAMILY: "family for family",
-  COURSE: "course courses",
-  SELF_GUIDED: "self guided self-guided",
-  BEGINNER_FRIENDLY: "beginner friendly beginner",
-};
-
 export type SearchableTrip = {
   title: string;
   description?: string | null;
@@ -150,9 +100,7 @@ export type SearchableTrip = {
 };
 
 export function buildTripSearchText(trip: SearchableTrip) {
-  const categoryKeywords = (trip.categories ?? []).map(
-    (category) => CATEGORY_KEYWORDS[category] ?? category.toLowerCase().replace(/_/g, " "),
-  );
+  const categoryKeywords = (trip.categories ?? []).map((category) => category.toLowerCase().replace(/_/g, " "));
 
   const parts = [
     trip.title,

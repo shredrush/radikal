@@ -31,6 +31,7 @@ export function SupportReplyPanel({
   customerName,
   customerEmail,
   messages: initialMessages,
+  onConversationChanged,
 }: {
   chatId: string;
   status: "OPEN" | "CLOSED";
@@ -38,6 +39,7 @@ export function SupportReplyPanel({
   customerName: string;
   customerEmail: string;
   messages: SupportMessageView[];
+  onConversationChanged?: () => void;
 }) {
   const [messages, setMessages] = useState<SupportMessageView[]>(initialMessages);
   const [status, setStatus] = useState<"OPEN" | "CLOSED">(initialStatus);
@@ -104,6 +106,7 @@ export function SupportReplyPanel({
         await replySupportMessageAction(chatId, new FormData(form));
         form.reset();
         await loadMessages(true);
+        onConversationChanged?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not send reply.";
         toast.error(message);
@@ -120,6 +123,7 @@ export function SupportReplyPanel({
         if (nextStatus === "OPEN") {
           setResolvedAt(null);
         }
+        onConversationChanged?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not update conversation.";
         toast.error(message);
@@ -134,6 +138,7 @@ export function SupportReplyPanel({
         setStatus("CLOSED");
         setResolvedAt(new Date().toISOString());
         toast.success("Conversation marked as resolved.");
+        onConversationChanged?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not resolve conversation.";
         toast.error(message);

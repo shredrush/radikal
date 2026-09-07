@@ -54,6 +54,7 @@ const getTripDetail = unstable_cache(
         title: true,
         type: true,
         categories: true,
+        travelStyleLinks: { where: { travelStyle: { active: true } }, select: { travelStyle: { select: { name: true } } } },
         description: true,
         location: true,
         priceInRupees: true,
@@ -401,7 +402,7 @@ export default async function TripDetailPage({
 
         {/* Trip details + booking */}
         <div className="grid items-stretch gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <TripDetailsCard trip={trip} travelStyleTags={trip.categories} />
+          <TripDetailsCard trip={trip} travelStyleTags={trip.travelStyleLinks.map((link) => link.travelStyle.name)} />
           <div className="flex flex-col gap-6">
             <Suspense fallback={<TripAvailabilityFallback />}>
               <TripAvailability trip={trip} />

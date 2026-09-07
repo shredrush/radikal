@@ -16,7 +16,6 @@ import {
   parseCategories,
   parseList,
   parseMediaList,
-  validCategories,
   validTypes,
 } from "@/lib/trip-fields";
 import { type TripProposal } from "@/lib/trip-changes";
@@ -61,7 +60,7 @@ type TripFields = {
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
-  categories: (typeof validCategories)[number][];
+  categories: string[];
   images: string[];
   videos: string[];
   mediaOrder: string[];
@@ -211,7 +210,7 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           priceInRupees: proposal.priceInRupees,
           durationDays: proposal.durationDays,
           maxGroupSize: proposal.maxGroupSize,
-          categories: proposal.categories as (typeof validCategories)[number][],
+          categories: [],
           images: proposal.images,
           videos: proposal.videos,
           mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),
@@ -332,7 +331,7 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
         priceInRupees: proposal.priceInRupees,
         durationDays: proposal.durationDays,
         maxGroupSize: proposal.maxGroupSize,
-        categories: proposal.categories as (typeof validCategories)[number][],
+        categories: [],
         images: proposal.images,
         videos: proposal.videos,
         mediaOrder: normalizeMediaOrder(proposal.images, proposal.videos, proposal.mediaOrder),

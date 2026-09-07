@@ -3,7 +3,7 @@ import { Eye } from "lucide-react";
 import { loadDb, prisma } from "@/lib/prisma";
 import { authorizeTripPreviewAction } from "@/lib/actions/trip-previews";
 import { TripGallery } from "@/components/trips/trip-gallery";
-import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { ACTIVITY_TYPE_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { type TripProposal } from "@/lib/trip-changes";
@@ -94,15 +94,6 @@ export default async function TripPreviewPage({
                 <span className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                   {ACTIVITY_TYPE_LABELS[p.type] ?? p.type}
                 </span>
-                {Array.isArray(p.categories) &&
-                  p.categories.map((category) => (
-                    <span
-                      key={category}
-                      className="rounded-full border border-border/80 bg-muted px-2.5 py-0.5 text-xs text-muted-foreground"
-                    >
-                      {TRIP_CATEGORY_LABELS[category] ?? category}
-                    </span>
-                  ))}
               </div>
               <h1 className="font-heading text-3xl font-semibold tracking-wide sm:text-4xl">
                 {p.title}

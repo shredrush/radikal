@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { createGuideAction, updateGuideAction } from "@/lib/actions/guides";
@@ -52,6 +53,7 @@ export function AdminGuideForm({
   onSaved?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const isEditing = Boolean(guide);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -70,6 +72,7 @@ export function AdminGuideForm({
           form.reset();
         }
         onSaved?.();
+        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not save guide.";
         toast.error(message);

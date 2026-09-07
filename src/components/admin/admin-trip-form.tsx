@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { createTripAction, updateTripAction } from "@/lib/actions/admin";
@@ -13,7 +14,7 @@ import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
-import { ACTIVITY_TYPE_OPTIONS, TRIP_CATEGORIES, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -56,6 +57,7 @@ export function AdminTripForm({
   const isEditing = Boolean(trip);
   const key = trip?.id ?? "new";
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const [isPreviewing, startPreviewing] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -69,7 +71,6 @@ export function AdminTripForm({
   const priceInRupees = trip?.priceInRupees ?? 0;
   const durationDays = trip?.durationDays ?? 1;
   const maxGroupSize = trip?.maxGroupSize ?? 8;
-  const categories = trip?.categories ?? [];
   const images = trip?.images ?? [];
   const videos = trip?.videos ?? [];
   const mediaOrder = trip?.mediaOrder ?? [];
@@ -105,6 +106,7 @@ export function AdminTripForm({
           form.reset();
         }
         onSaved?.();
+        router.refresh();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not save trip changes.";
@@ -210,21 +212,6 @@ export function AdminTripForm({
         </div>
 
         <div className="space-y-4 rounded-[1.25rem] border border-border/70 bg-background/90 p-4 shadow-sm">
-          <div className="space-y-2">
-            <Label>Trip categories</Label>
-            <div className="grid gap-2">
-              {TRIP_CATEGORIES.map((category) => {
-                const isChecked = categories.includes(category);
-                return (
-                  <label key={category} className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-foreground">
-                    <input type="checkbox" name="categories" value={category} defaultChecked={isChecked} className="h-4 w-4 rounded border-input" />
-                    {TRIP_CATEGORY_LABELS[category] ?? category}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="space-y-2 md:col-span-2">
             <MediaUploader
               entity="trip"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export function ApproveGuideButton({
   applicantName: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleApprove() {
     const confirmed = window.confirm(
@@ -27,6 +29,7 @@ export function ApproveGuideButton({
       try {
         await approveGuideApplicationAction(applicationId);
         toast.success(`"${applicantName}" has been approved.`);
+        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to approve application.";
         toast.error(message);
@@ -56,6 +59,7 @@ export function RejectGuideButton({
   applicantName: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleReject() {
     const confirmed = window.confirm(
@@ -68,6 +72,7 @@ export function RejectGuideButton({
       try {
         await rejectGuideApplicationAction(applicationId);
         toast.success(`"${applicantName}" has been rejected.`);
+        router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to reject application.";
         toast.error(message);

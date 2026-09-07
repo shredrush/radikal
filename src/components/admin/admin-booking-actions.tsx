@@ -10,11 +10,15 @@ export function AdminBookingActions({
   status,
   canConfirm,
   canCancel,
+  onConfirmed,
+  onCancelled,
 }: {
   bookingId: string;
   status: string;
   canConfirm: boolean;
   canCancel: boolean;
+  onConfirmed?: (bookingId: string) => void;
+  onCancelled?: (bookingId: string) => void;
 }) {
   const [openAction, setOpenAction] = useState<"confirm" | "cancel" | null>(null);
 
@@ -25,6 +29,7 @@ export function AdminBookingActions({
           bookingId={bookingId}
           open={openAction === "confirm"}
           onOpenChange={(open) => setOpenAction(open ? "confirm" : null)}
+          onConfirmed={onConfirmed}
         />
       ) : null}
       {canCancel && (status === "PENDING" || status === "CONFIRMED") && openAction !== "confirm" ? (
@@ -32,6 +37,7 @@ export function AdminBookingActions({
           bookingId={bookingId}
           open={openAction === "cancel"}
           onOpenChange={(open) => setOpenAction(open ? "cancel" : null)}
+          onCancelled={onCancelled}
         />
       ) : null}
     </div>

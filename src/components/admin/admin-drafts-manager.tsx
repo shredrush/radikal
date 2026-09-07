@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronDown, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ACTIVITY_TYPE_LABELS, TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
+import { ACTIVITY_TYPE_LABELS, formatLegacyTravelStyle } from "@/lib/trip-metadata";
 import { cn } from "@/lib/utils";
 
 export type AdminDraftData = {
@@ -52,7 +52,7 @@ function DraftReadOnly({ draft }: { draft: AdminDraftData }) {
   if (draft.categories.length > 0) {
     rows.push({
       label: "Categories",
-      value: draft.categories.map((c) => TRIP_CATEGORY_LABELS[c] ?? c).join(", "),
+      value: draft.categories.map(formatLegacyTravelStyle).join(", "),
     });
   }
   if (draft.images.length > 0) rows.push({ label: "Images", value: draft.images.join(", ") });

@@ -21,7 +21,7 @@ import {
 } from "@/lib/media";
 
 export type CreateMediaUploadInput = {
-  entity: "guide" | "profile" | "trip";
+  entity: "guide" | "profile" | "trip" | "style";
   folderKey: string;
   kind: "images" | "videos";
   contentType: string;
@@ -42,7 +42,7 @@ const FOLDER_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
  *   staff with `trips.manage`.
  */
 async function authorizeFolder(
-  entity: "guide" | "profile" | "trip",
+  entity: "guide" | "profile" | "trip" | "style",
   folderKey: string,
 ): Promise<string> {
   const session = await auth();
@@ -62,6 +62,13 @@ async function authorizeFolder(
   if (entity === "guide") {
     if (session.user.id === folderKey) return session.user.id;
     await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+    return session.user.id;
+  }
+
+  if (entity === "style") {
+    await requirePermission("trips.manage", "/login?callbackUrl=/admin/styles");
+    const style = await prisma.travelStyle.findUnique({ where: { id: folderKey }, select: { id: true } });
+    if (!style) throw new Error("Travel style not found.");
     return session.user.id;
   }
 
@@ -140,7 +147,7 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
  * failed deletion here is not a leak.
  */
 export async function deleteMediaAction(input: {
-  entity: "guide" | "profile" | "trip";
+  entity: "guide" | "profile" | "trip" | "style";
   folderKey: string;
   paths: string[];
 }): Promise<void> {

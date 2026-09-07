@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export function DeleteGuideButton({
   guideName: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleDelete() {
     const confirmed = window.confirm(
@@ -27,6 +29,7 @@ export function DeleteGuideButton({
       try {
         await deleteGuideAction(guideId);
         toast.success(`"${guideName}" has been deleted.`);
+        router.refresh();
       } catch {
         toast.error("Failed to delete guide. Please try again.");
       }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { History } from "lucide-react";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
@@ -126,44 +127,59 @@ export default async function AdminTripsPage({
           </div>
         </section>
 
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <AdminGuideFilter
-            guides={guides}
-            selectedGuideId={activeGuideId}
-            type={selectedType || undefined}
-          />
-
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
+        <section className="space-y-4">
+          <div className="flex justify-end">
             <Button
-              variant={selectedType === "" ? "default" : "outline"}
-              size="xs"
-              className="rounded-full border-2 border-black dark:border-white"
+              variant="outline"
+              size="sm"
+              className="rounded-full border-border bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               nativeButton={false}
-              render={<Link href={activeGuideId ? `/admin/trips?guide=${activeGuideId}` : "/admin/trips"} />}
+              render={<Link href="/admin/trip-changes" prefetch={false} />}
             >
-              All
+              <History className="h-3.5 w-3.5" />
+              History
             </Button>
-            {ACTIVITY_TYPE_OPTIONS.map((option) => (
+          </div>
+
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <AdminGuideFilter
+              guides={guides}
+              selectedGuideId={activeGuideId}
+              type={selectedType || undefined}
+            />
+
+            <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
               <Button
-                key={option.value}
-                variant={selectedType === option.value ? "default" : "outline"}
+                variant={selectedType === "" ? "default" : "outline"}
                 size="xs"
                 className="rounded-full border-2 border-black dark:border-white"
                 nativeButton={false}
-                render={
-                  <Link
-                    href={`/admin/trips?${new URLSearchParams({
-                      ...(activeGuideId ? { guide: activeGuideId } : {}),
-                      type: option.value,
-                    }).toString()}`}
-                  />
-                }
+                render={<Link href={activeGuideId ? `/admin/trips?guide=${activeGuideId}` : "/admin/trips"} />}
               >
-                {option.label}
+                All
               </Button>
-            ))}
+              {ACTIVITY_TYPE_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={selectedType === option.value ? "default" : "outline"}
+                  size="xs"
+                  className="rounded-full border-2 border-black dark:border-white"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/admin/trips?${new URLSearchParams({
+                        ...(activeGuideId ? { guide: activeGuideId } : {}),
+                        type: option.value,
+                      }).toString()}`}
+                    />
+                  }
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
 
         <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <AdminTripsManager

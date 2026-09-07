@@ -5,11 +5,18 @@ import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { requireGuideAction } from "@/lib/guide-board";
-import { getActivityLogContext, logActivityInTransaction } from "@/lib/activity-log";
+import {
+  getActivityLogContext,
+  logActivityInTransaction,
+} from "@/lib/activity-log";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { guideWelcomeEmail, sendEmailAfter } from "@/lib/email";
-import { isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
+import {
+  isValidUsername,
+  normalizeUsername,
+  sanitizeText,
+} from "@/lib/sanitize";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
 import {
@@ -43,7 +50,9 @@ function parseExperienceYears(value: string) {
   return Math.min(Math.max(0, parsed), 100);
 }
 
-const guideSportValues = new Set<string>(ACTIVITY_TYPE_OPTIONS.map((option) => option.value));
+const guideSportValues = new Set<string>(
+  ACTIVITY_TYPE_OPTIONS.map((option) => option.value),
+);
 const MAX_GUIDE_LANGUAGES = 20;
 const MAX_GUIDE_CERTIFICATIONS = 25;
 const MAX_GUIDE_LANGUAGES_INPUT_CHARS = 1700;
@@ -52,13 +61,17 @@ const MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS = 5100;
 function readBoundedText(formData: FormData, field: string, maxLength: number) {
   const value = asString(formData.get(field));
   if (value.length > maxLength) {
-    throw new Error(`${field} must be ${maxLength.toLocaleString()} characters or fewer.`);
+    throw new Error(
+      `${field} must be ${maxLength.toLocaleString()} characters or fewer.`,
+    );
   }
   return value;
 }
 
 function parseSports(formData: FormData) {
-  return Array.from(new Set(formData.getAll("sports").map((value) => value.toString()))).filter((sport) => guideSportValues.has(sport));
+  return Array.from(
+    new Set(formData.getAll("sports").map((value) => value.toString())),
+  ).filter((sport) => guideSportValues.has(sport));
 }
 
 function parseCertifications(value: string) {
@@ -80,18 +93,37 @@ function readGuideFields(formData: FormData) {
   const photo = photos[0] ?? null;
 
   return {
-    name: sanitizeText(readBoundedText(formData, "name", 120), { maxLength: 120 }),
-    bio: sanitizeText(readBoundedText(formData, "bio", 3000), { maxLength: 3000, allowNewlines: true }),
+    name: sanitizeText(readBoundedText(formData, "name", 120), {
+      maxLength: 120,
+    }),
+    bio: sanitizeText(readBoundedText(formData, "bio", 3000), {
+      maxLength: 3000,
+      allowNewlines: true,
+    }),
     photo,
     photos,
     videos,
-    mediaOrder: normalizeMediaOrder(photos, videos, parseMediaList(formData.getAll("mediaOrder"))),
-    location: sanitizeText(readBoundedText(formData, "location", 200), { maxLength: 200 }),
-    experienceYears: parseExperienceYears(asString(formData.get("experienceYears"))),
-    languages: parseLanguages(readBoundedText(formData, "languages", MAX_GUIDE_LANGUAGES_INPUT_CHARS)),
+    mediaOrder: normalizeMediaOrder(
+      photos,
+      videos,
+      parseMediaList(formData.getAll("mediaOrder")),
+    ),
+    location: sanitizeText(readBoundedText(formData, "location", 200), {
+      maxLength: 200,
+    }),
+    experienceYears: parseExperienceYears(
+      asString(formData.get("experienceYears")),
+    ),
+    languages: parseLanguages(
+      readBoundedText(formData, "languages", MAX_GUIDE_LANGUAGES_INPUT_CHARS),
+    ),
     sports: parseSports(formData),
     certifications: parseCertifications(
-      readBoundedText(formData, "certifications", MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS),
+      readBoundedText(
+        formData,
+        "certifications",
+        MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS,
+      ),
     ),
   };
 }
@@ -123,11 +155,15 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
   }
 
   if (fields.languages.length > MAX_GUIDE_LANGUAGES) {
-    throw new Error(`Guides can list at most ${MAX_GUIDE_LANGUAGES} languages.`);
+    throw new Error(
+      `Guides can list at most ${MAX_GUIDE_LANGUAGES} languages.`,
+    );
   }
 
   if (fields.certifications.length > MAX_GUIDE_CERTIFICATIONS) {
-    throw new Error(`Guides can list at most ${MAX_GUIDE_CERTIFICATIONS} certifications.`);
+    throw new Error(
+      `Guides can list at most ${MAX_GUIDE_CERTIFICATIONS} certifications.`,
+    );
   }
 
   return fields;
@@ -147,7 +183,9 @@ function revalidateGuidePages(...usernames: string[]) {
 }
 
 function isUniqueConstraint(error: unknown) {
-  return error instanceof Error && error.message.includes("Unique constraint failed");
+  return (
+    error instanceof Error && error.message.includes("Unique constraint failed")
+  );
 }
 
 function changedValues(before: object, after: object) {
@@ -177,15 +215,21 @@ export async function createGuideAction(formData: FormData) {
   const username = normalizeUsername(asString(formData.get("username")));
 
   if (!email) {
-    throw new Error("A guide must be linked to an account. Enter the account email.");
+    throw new Error(
+      "A guide must be linked to an account. Enter the account email.",
+    );
   }
 
   if (!username) {
-    throw new Error("Username is required — it becomes the guide's public URL.");
+    throw new Error(
+      "Username is required — it becomes the guide's public URL.",
+    );
   }
 
   if (!isValidUsername(username)) {
-    throw new Error("Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.");
+    throw new Error(
+      "Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.",
+    );
   }
 
   const linkedUser = await prisma.user.findFirst({
@@ -205,7 +249,9 @@ export async function createGuideAction(formData: FormData) {
     throw new Error("This account is already linked to a guide.");
   }
   if (alreadyLinked?.deletedAt) {
-    throw new Error("This account has a removed guide profile. Restore or update that profile instead of creating a duplicate.");
+    throw new Error(
+      "This account has a removed guide profile. Restore or update that profile instead of creating a duplicate.",
+    );
   }
 
   if (linkedUser.username !== username) {
@@ -214,7 +260,9 @@ export async function createGuideAction(formData: FormData) {
       select: { id: true },
     });
     if (usernameTaken) {
-      throw new Error("This username is already taken. Please choose a different username.");
+      throw new Error(
+        "This username is already taken. Please choose a different username.",
+      );
     }
   }
 
@@ -238,7 +286,9 @@ export async function createGuideAction(formData: FormData) {
     });
   } catch (error) {
     if (isUniqueConstraint(error)) {
-      throw new Error("This username is already taken. Please choose a different username.");
+      throw new Error(
+        "This username is already taken. Please choose a different username.",
+      );
     }
     throw error;
   }
@@ -256,7 +306,10 @@ export async function createGuideAction(formData: FormData) {
 }
 
 export async function updateGuideAction(formData: FormData) {
-  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+  const session = await requirePermission(
+    "guides.manage",
+    "/login?callbackUrl=/admin/guides",
+  );
 
   const guideId = asString(formData.get("guideId"));
   const fields = validateGuideFields(readGuideFields(formData));
@@ -288,7 +341,10 @@ export async function updateGuideAction(formData: FormData) {
           languages: true,
           sports: true,
           user: { select: { username: true } },
-          certifications: { select: { title: true }, orderBy: { createdAt: "asc" } },
+          certifications: {
+            select: { title: true },
+            orderBy: { createdAt: "asc" },
+          },
         },
       });
 
@@ -310,11 +366,15 @@ export async function updateGuideAction(formData: FormData) {
           experienceYears: currentGuide.experienceYears,
           languages: currentGuide.languages,
           sports: currentGuide.sports,
-          certifications: currentGuide.certifications.map((certification) => certification.title),
+          certifications: currentGuide.certifications.map(
+            (certification) => certification.title,
+          ),
         },
         {
           ...guideData,
-          certifications: certifications.map((certification) => certification.title),
+          certifications: certifications.map(
+            (certification) => certification.title,
+          ),
         },
       );
 
@@ -346,7 +406,9 @@ export async function updateGuideAction(formData: FormData) {
     });
   } catch (error) {
     if (isUniqueConstraint(error)) {
-      throw new Error("A guide with this username already exists. Please choose a different username.");
+      throw new Error(
+        "A guide with this username already exists. Please choose a different username.",
+      );
     }
     throw error;
   }
@@ -360,7 +422,11 @@ export async function updateGuideAction(formData: FormData) {
  */
 export async function updateOwnGuideProfileAction(formData: FormData) {
   const { guide, userId } = await requireGuideAction();
-  const updateLimit = rateLimit(`guide-profile-update:user:${userId}`, 20, 60 * 60_000);
+  const updateLimit = rateLimit(
+    `guide-profile-update:user:${userId}`,
+    20,
+    60 * 60_000,
+  );
   if (!updateLimit.success) {
     throw new Error(rateLimitError(updateLimit));
   }
@@ -391,7 +457,10 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
         languages: true,
         sports: true,
         user: { select: { username: true } },
-        certifications: { select: { title: true }, orderBy: { createdAt: "asc" } },
+        certifications: {
+          select: { title: true },
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
 
@@ -413,11 +482,15 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
         experienceYears: currentGuide.experienceYears,
         languages: currentGuide.languages,
         sports: currentGuide.sports,
-        certifications: currentGuide.certifications.map((certification) => certification.title),
+        certifications: currentGuide.certifications.map(
+          (certification) => certification.title,
+        ),
       },
       {
         ...guideData,
-        certifications: certifications.map((certification) => certification.title),
+        certifications: certifications.map(
+          (certification) => certification.title,
+        ),
       },
     );
 
@@ -454,7 +527,10 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
 }
 
 export async function deleteGuideAction(guideId: string) {
-  const session = await requirePermission("guides.manage", "/login?callbackUrl=/admin/guides");
+  const session = await requirePermission(
+    "guides.manage",
+    "/login?callbackUrl=/admin/guides",
+  );
 
   if (!guideId) {
     throw new Error("Missing guide id.");
@@ -479,12 +555,11 @@ export async function deleteGuideAction(guideId: string) {
   const username = guide.user.username ?? "";
   const activityContext = await getActivityLogContext();
 
-  // The teardown unlinks the guide's trips but leaves them live and bookable,
-  // so refuse to remove the guide while any of their trips has an active
-  // booking — the admin must cancel the bookings or reassign the trips first.
+  // Removing a guide retires their active trips, so active bookings must be
+  // cancelled or the trips reassigned before the guide can be removed.
   const activeBookings = await prisma.booking.count({
     where: {
-        trip: { guideId: guide.id, deletedAt: null },
+      trip: { guideId: guide.id, deletedAt: null },
       status: { in: ["PENDING", "CONFIRMED"] },
     },
   });
@@ -495,7 +570,7 @@ export async function deleteGuideAction(guideId: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await deactivateGuide(tx, guide.id);
+    await deactivateGuide(tx, guide.id, true);
 
     // A user cannot hold the GUIDE role without a linked guide profile — that
     // state redirects them from the guide board while blocking re-application.
@@ -513,7 +588,11 @@ export async function deleteGuideAction(guideId: string) {
         userId: session.user.id,
         action: "GUIDE_PROFILE_REMOVED",
         label: "Removed a guide profile",
-        metadata: { guideId: guide.id, guideUserId: guide.userId, roleReset: guide.user.role === "GUIDE" },
+        metadata: {
+          guideId: guide.id,
+          guideUserId: guide.userId,
+          roleReset: guide.user.role === "GUIDE",
+        },
       },
       activityContext,
     );
@@ -530,4 +609,162 @@ export async function deleteGuideAction(guideId: string) {
   revalidateGuidePages(username);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${guide.userId}`);
+}
+
+export async function restoreGuideAction(guideId: string) {
+  const session = await requirePermission(
+    "guides.manage",
+    "/login?callbackUrl=/admin/guides",
+  );
+
+  if (!guideId) {
+    throw new Error("Missing guide id.");
+  }
+
+  const activityContext = await getActivityLogContext();
+  const restored = await prisma.$transaction(async (tx) => {
+    // Serialize restoration with guide deletion and administrative role changes.
+    const [lockedGuide] = await tx.$queryRaw<
+      Array<{
+        id: string;
+        deletedAt: Date | null;
+        deletedByGuideRemoval: boolean;
+      }>
+    >`
+      SELECT id, "deletedAt", "deletedByGuideRemoval"
+      FROM guides
+      WHERE id = ${guideId}
+      FOR UPDATE
+    `;
+    if (!lockedGuide) throw new Error("Guide not found.");
+    if (!lockedGuide.deletedAt) throw new Error("Guide is not deleted.");
+    if (!lockedGuide.deletedByGuideRemoval) {
+      throw new Error(
+        "This guide was removed through account or role administration and cannot be restored here.",
+      );
+    }
+
+    const guide = await tx.guide.findUnique({
+      where: { id: guideId },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: { deletedAt: true, username: true } },
+      },
+    });
+    if (!guide) throw new Error("Guide not found.");
+    if (guide.user.deletedAt) {
+      throw new Error(
+        "The linked account is deactivated. Restore the account before restoring its guide profile.",
+      );
+    }
+
+    const pendingApplication = await tx.guideApplication.findFirst({
+      where: { userId: guide.userId, status: "PENDING" },
+      select: { id: true },
+    });
+    if (pendingApplication) {
+      throw new Error(
+        "Resolve this account's pending guide application before restoring the guide profile.",
+      );
+    }
+
+    const [trips, drafts, reviews] = await Promise.all([
+      tx.trip.count({ where: { guideId, deletedWithGuide: true } }),
+      tx.tripDraft.count({ where: { guideId, deletedWithGuide: true } }),
+      tx.review.count({ where: { guideId, deletedWithGuide: true } }),
+    ]);
+
+    // Restore descendants before clearing the trip provenance used to select
+    // them. Independent trip deletions never carry this marker.
+    await Promise.all([
+      tx.slot.updateMany({
+        where: {
+          trip: { guideId, deletedWithGuide: true },
+          deletedWithTrip: true,
+        },
+        data: { deletedAt: null, deletedWithTrip: false },
+      }),
+      tx.booking.updateMany({
+        where: {
+          trip: { guideId, deletedWithGuide: true },
+          deletedWithTrip: true,
+        },
+        data: {
+          deletedAt: null,
+          deletedWithTrip: false,
+          deletedById: null,
+          deletedByRole: null,
+        },
+      }),
+      tx.wishlistItem.updateMany({
+        where: {
+          trip: { guideId, deletedWithGuide: true },
+          deletedWithTrip: true,
+        },
+        data: { deletedAt: null, deletedWithTrip: false },
+      }),
+      tx.review.updateMany({
+        where: { guideId, deletedWithGuide: true },
+        data: { deletedAt: null, deletedWithGuide: false },
+      }),
+      tx.tripDraft.updateMany({
+        where: { guideId, deletedWithGuide: true },
+        data: { deletedAt: null, deletedWithGuide: false },
+      }),
+    ]);
+
+    await Promise.all([
+      // Guide media objects are removed after deletion, so never republish
+      // stale URLs when restoring the profile.
+      tx.guide.update({
+        where: { id: guideId },
+        data: {
+          deletedAt: null,
+          deletedByGuideRemoval: false,
+          photo: null,
+          photos: [],
+          videos: [],
+          mediaOrder: [],
+        },
+      }),
+      tx.user.update({ where: { id: guide.userId }, data: { role: "GUIDE" } }),
+      tx.trip.updateMany({
+        where: { guideId, deletedWithGuide: true },
+        data: { deletedAt: null, deletedWithGuide: false, deletedById: null },
+      }),
+    ]);
+
+    await logActivityInTransaction(
+      tx,
+      {
+        userId: session.user.id,
+        action: "GUIDE_PROFILE_RESTORED",
+        label: "Restored a guide profile",
+        metadata: {
+          guideId,
+          guideUserId: guide.userId,
+          trips,
+          drafts,
+          reviews,
+          mediaCleared: true,
+        },
+      },
+      activityContext,
+    );
+
+    return { userId: guide.userId, username: guide.user.username ?? "" };
+  });
+
+  invalidateSessionVersion(restored.userId);
+  revalidateGuidePages(restored.username);
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${restored.userId}`);
+  revalidatePath("/admin/trips");
+  revalidatePath("/guide-board/trips");
+  revalidatePath("/guide-board/profile");
+  revalidatePath("/become-a-guide");
+  revalidatePath("/trips");
+  updateTag("trips");
+  updateTag("reviews");
 }

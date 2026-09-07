@@ -11,10 +11,12 @@ export function ConfirmPaymentButton({
   bookingId,
   open: controlledOpen,
   onOpenChange,
+  onConfirmed,
 }: {
   bookingId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onConfirmed?: (bookingId: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
@@ -33,6 +35,7 @@ export function ConfirmPaymentButton({
         if (result.success) {
           toast.success("Booking confirmed.");
           setOpen(false);
+          onConfirmed?.(bookingId);
         } else {
           toast.error(result.error);
         }

@@ -10,7 +10,6 @@ import {
   parseCategories,
   parseList,
   parseMediaList,
-  validCategories,
   validTypes,
 } from "@/lib/trip-fields";
 import { normalizeMediaOrder } from "@/lib/media-order";
@@ -33,7 +32,7 @@ type DraftFields = {
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
-  categories: (typeof validCategories)[number][];
+  categories: string[];
   images: string[];
   videos: string[];
   mediaOrder: string[];
@@ -111,14 +110,14 @@ export async function saveTripDraftAction(
     if (!existing || existing.guideId !== guide.id || existing.deletedAt) {
       throw new Error("Draft not found.");
     }
-    await prisma.tripDraft.update({ where: { id: draftId }, data: fields });
+    await prisma.tripDraft.update({ where: { id: draftId }, data: { ...fields, categories: [] } });
     revalidatePath("/guide-board/trips");
     revalidatePath("/admin/trips");
     return { id: draftId };
   }
 
   const draft = await prisma.tripDraft.create({
-    data: { ...fields, guideId: guide.id },
+    data: { ...fields, categories: [], guideId: guide.id },
   });
   revalidatePath("/guide-board/trips");
   revalidatePath("/admin/trips");

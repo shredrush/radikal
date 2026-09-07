@@ -309,7 +309,7 @@ export function MediaUploader({
               Add photos ({images.length}/{limits.images})
             </Button>
 
-            <input
+            {limits.videos > 0 ? <><input
               ref={videoInputRef}
               type="file"
               accept={[...VIDEO_MIME].join(",")}
@@ -327,7 +327,7 @@ export function MediaUploader({
             >
               <Plus className="h-3.5 w-3.5" />
               Add videos ({videos.length}/{limits.videos})
-            </Button>
+            </Button></> : null}
           </div>
         </div>
 

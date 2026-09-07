@@ -1,4 +1,4 @@
-import type { Prisma, TripCategory, TripType } from "@/generated/prisma/client";
+import type { Prisma, TripType } from "@/generated/prisma/client";
 
 export const PUBLIC_CATALOG_PAGE_SIZE = 24;
 export const PUBLIC_CATALOG_OTHER_TRIPS_LIMIT = 12;
@@ -11,7 +11,7 @@ export type PublicTripFilters = {
   page: number;
   query: string;
   sports: TripType[];
-  travelStyles: TripCategory[];
+  travelStyles: string[];
   locations: string[];
   startDate: Date | null;
   endDate: Date | null;
@@ -22,7 +22,7 @@ export const publicTripCardSelect = {
   slug: true,
   title: true,
   type: true,
-  categories: true,
+  travelStyleLinks: { where: { travelStyle: { active: true } }, select: { travelStyle: { select: { name: true, slug: true } } } },
   location: true,
   priceInRupees: true,
   durationDays: true,
@@ -42,15 +42,6 @@ const SPORT_TYPES = {
   rockclimb: ["ROCKCLIMB"],
   yoga: ["YOGA"],
 } as const satisfies Record<string, TripType[]>;
-
-const TRAVEL_STYLE_CATEGORIES = {
-  "beginner-friendly": "BEGINNER_FRIENDLY",
-  "women-only": "WOMEN_ONLY",
-  family: "FAMILY",
-  "adventure-enthusiast": "ADVENTURE_ENTHUSIAST",
-  course: "COURSE",
-  "self-guided": "SELF_GUIDED",
-} as const satisfies Record<string, TripCategory>;
 
 const SEARCH_TYPES: Record<string, TripType[]> = {
   trek: ["TREK"],
@@ -82,21 +73,6 @@ const SEARCH_TYPES: Record<string, TripType[]> = {
   mountaineering: ["EXPEDITION"],
 };
 
-const SEARCH_CATEGORIES: Record<string, TripCategory[]> = {
-  adventure: ["ADVENTURE_ENTHUSIAST"],
-  enthusiast: ["ADVENTURE_ENTHUSIAST"],
-  women: ["WOMEN_ONLY"],
-  family: ["FAMILY"],
-  course: ["COURSE"],
-  courses: ["COURSE"],
-  self: ["SELF_GUIDED"],
-  guided: ["SELF_GUIDED"],
-  beginner: ["BEGINNER_FRIENDLY"],
-  friendly: ["BEGINNER_FRIENDLY"],
-  corporate: ["CORPORATE"],
-  luxury: ["LUXURY"],
-};
-
 function getValues(params: PublicTripSearchParams, key: string) {
   const value = params[key];
   return (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean);
@@ -119,10 +95,13 @@ export function getPublicTripFilters(params: PublicTripSearchParams): PublicTrip
     .flatMap((sport) => SPORT_TYPES[sport as keyof typeof SPORT_TYPES] ?? [])
     .filter((sport, index, values) => values.indexOf(sport) === index)
     .slice(0, 3);
-  const travelStyles: TripCategory[] = getValues(params, "travelStyle").flatMap((style) => {
-    const category = TRAVEL_STYLE_CATEGORIES[style as keyof typeof TRAVEL_STYLE_CATEGORIES];
-    return category ? [category] : [];
-  });
+  const travelStyles = Array.from(
+    new Set(
+      getValues(params, "travelStyle")
+        .map((style) => style.trim().toLowerCase())
+        .filter((style) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(style)),
+    ),
+  ).slice(0, 10);
   const locations = getValues(params, "location")
     .map((location) => location.trim().slice(0, 200))
     .filter(Boolean)
@@ -147,7 +126,9 @@ export function getPublicTripFilterWhere(filters: PublicTripFilters): Prisma.Tri
   }
 
   if (filters.travelStyles.length > 0) {
-    conditions.push({ categories: { hasSome: filters.travelStyles } });
+    conditions.push({
+      travelStyleLinks: { some: { travelStyle: { active: true, slug: { in: filters.travelStyles } } } },
+    });
   }
 
   if (filters.locations.length > 0) {
@@ -175,8 +156,6 @@ export function getPublicTripFilterWhere(filters: PublicTripFilters): Prisma.Tri
     conditions.push({
       AND: terms.map((term) => {
         const types = SEARCH_TYPES[term] ?? [];
-        const categories = SEARCH_CATEGORIES[term] ?? [];
-
         return {
           OR: [
             { title: { contains: term, mode: "insensitive" } },
@@ -184,7 +163,7 @@ export function getPublicTripFilterWhere(filters: PublicTripFilters): Prisma.Tri
             { location: { contains: term, mode: "insensitive" } },
             { guide: { name: { contains: term, mode: "insensitive" } } },
             ...(types.length > 0 ? [{ type: { in: types } }] : []),
-            ...(categories.length > 0 ? [{ categories: { hasSome: categories } }] : []),
+            { travelStyleLinks: { some: { travelStyle: { active: true, name: { contains: term, mode: "insensitive" } } } } },
           ],
         } satisfies Prisma.TripWhereInput;
       }),

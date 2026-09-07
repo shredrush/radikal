@@ -228,8 +228,11 @@ model Guide {
   facebookUrl     String?
   youtubeUrl      String?
   websiteUrl      String?
-  deletedAt       DateTime?
-  createdAt       DateTime  @default(now())
+  deletedAt              DateTime?
+  // True only when removed from Admin → Guides. Role and account deactivations
+  // share the teardown but must not be restorable through the guide UI.
+  deletedByGuideRemoval Boolean @default(false)
+  createdAt              DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   user           User                @relation(fields: [userId], references: [id])
@@ -339,6 +342,9 @@ model Trip {
   maxGroupSize  Int            @default(8)
   guideId       String?
   deletedAt     DateTime?
+  // Lets guide restoration revive only trips retired with that guide, never
+  // independently deleted trips linked to the same profile.
+  deletedWithGuide Boolean @default(false)
   deletedById   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -352,12 +358,46 @@ model Trip {
   inclusions    TripInclusion[]
   highlights    TripHighlight[]
   tripChanges   TripChangeRequest[]
+  travelStyleLinks TripTravelStyle[]
 
   @@index([type])
   @@index([guideId])
   @@index([deletedAt, createdAt])
   @@index([guideId, deletedAt, createdAt(sort: Desc)])
   @@map("trips")
+}
+
+// Admin-managed travel-style tags. Slugs are stable so public links remain
+// valid when an administrator renames a style.
+model TravelStyle {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  image     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tripLinks TripTravelStyle[]
+
+  @@index([name])
+  @@index([active, name])
+  @@map("travel_styles")
+}
+
+// Explicit relation keeps linking idempotent and makes style removal safely
+// cascade through its trip associations without deleting trips themselves.
+model TripTravelStyle {
+  tripId        String
+  travelStyleId String
+  createdAt     DateTime @default(now())
+
+  trip        Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  travelStyle TravelStyle @relation(fields: [travelStyleId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, travelStyleId])
+  @@index([travelStyleId, tripId])
+  @@map("trip_travel_styles")
 }
 
 model TripLocation {
@@ -700,8 +740,9 @@ model TripDraft {
   inclusions    String[]
   exclusions    String[]
   highlights    String[]
-  deletedAt     DateTime?
-  createdAt     DateTime       @default(now())
+  deletedAt        DateTime?
+  deletedWithGuide Boolean     @default(false)
+  createdAt        DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)

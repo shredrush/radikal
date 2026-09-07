@@ -7,6 +7,7 @@ import { hasPermission, type Permission, type Role } from "@/lib/access-control"
  */
 export const ADMIN_SECTIONS = [
   { key: "trip-changes", href: "/admin/trip-changes", label: "Trip changes", permission: "trips.manage" },
+  { key: "styles", href: "/admin/styles", label: "Manage styles", permission: "trips.manage" },
   { key: "trips", href: "/admin/trips", label: "Manage trips", permission: "trips.manage" },
   { key: "bookings", href: "/admin/bookings", label: "Manage bookings", permission: "bookings.read" },
   { key: "guides", href: "/admin/guides", label: "Manage guides", permission: "guides.manage" },

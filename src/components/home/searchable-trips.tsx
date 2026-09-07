@@ -32,7 +32,8 @@ type TripCardItem = {
   location: string;
   priceInRupees: number;
   durationDays: number;
-  categories: string[];
+  categories?: string[];
+  travelStyleLinks?: Array<{ travelStyle: { name: string; slug: string } }>;
   images?: string[];
   type?: string;
 };
@@ -43,6 +44,8 @@ type Testimonial = {
   quote: string;
   date?: string;
 };
+
+type TravelStyleTile = { id: string; name: string; slug: string; image: string | null };
 
 function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: readonly string[]) {
   const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
@@ -75,11 +78,13 @@ export function SearchableTrips({
   featuredTripSlugs = [],
   guideMedia = [],
   testimonials = [],
+  travelStyles = [],
 }: {
   trips: TripCardItem[];
   featuredTripSlugs?: readonly string[];
   guideMedia?: CommunityGuideMediaItem[];
   testimonials?: Testimonial[];
+  travelStyles?: TravelStyleTile[];
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -321,56 +326,17 @@ export function SearchableTrips({
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 sm:gap-4">
-            {[
-              {
-                title: "Beginner Friendly",
-                image:
-                  "https://plus.unsplash.com/premium_photo-1676982098817-844e52754258?auto=format&fit=crop&w=900&q=80",
-              },
-              {
-                title: "Adventure Enthusiast",
-                image:
-                  "https://images.unsplash.com/photo-1676823648066-01a3e8db31c2?auto=format&fit=crop&w=900&q=80",
-              },
-              {
-                title: "Courses",
-                image:
-                  "https://plus.unsplash.com/premium_photo-1661963517045-f3ad4911bf4b?auto=format&fit=crop&w=900&q=80",
-              },
-              {
-                title: "For Families",
-                image:
-                  "https://images.unsplash.com/photo-1503431153573-96e959f4d9b7?auto=format&fit=crop&w=900&q=80",
-              },
-              {
-                title: "Women Only",
-                image:
-                  "https://plus.unsplash.com/premium_photo-1732538263622-a8f2501e3a82?auto=format&fit=crop&w=900&q=80",
-              },
-              {
-                title: "Self Guided",
-                image:
-                  "https://plus.unsplash.com/premium_photo-1709311446331-fbc1800fd833?auto=format&fit=crop&w=900&q=80",
-              },
-              
-            ].map((item) => (
+            {travelStyles.map((style) => (
               <Link
-                key={item.title}
-                href="/trips"
+                key={style.id}
+                href={`/trips?travelStyle=${encodeURIComponent(style.slug)}`}
                 className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-[1rem] bg-muted shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_38px_-20px_rgba(0,0,0,0.7)]"
               >
-                <Image
-                  src={item.image}
-                  alt=""
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                  sizes="(max-width: 1023px) calc(33vw - 16px), 16vw"
-                  loading="lazy"
-                />
+                {style.image ? <Image src={style.image} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(max-width: 1023px) calc(33vw - 16px), 16vw" loading="lazy" /> : null}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
                 <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
                   <p className="font-heading text-[0.85rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
-                    {item.title}
+                    {style.name}
                   </p>
                 </div>
               </Link>

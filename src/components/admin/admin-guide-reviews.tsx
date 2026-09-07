@@ -22,6 +22,7 @@ export type AdminGuideReviewData = {
 export function AdminGuideReviews({ reviews }: { reviews: AdminGuideReviewData[] }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [visibleReviews, setVisibleReviews] = useState(reviews);
 
   function handleDelete(review: AdminGuideReviewData) {
     if (!window.confirm(`Delete ${review.authorName}'s review? This action cannot be undone.`)) return;
@@ -30,6 +31,7 @@ export function AdminGuideReviews({ reviews }: { reviews: AdminGuideReviewData[]
       try {
         await deleteReviewAction(review.id);
         toast.success("Review deleted.");
+        setVisibleReviews((current) => current.filter(({ id }) => id !== review.id));
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not delete review.");
       }
@@ -45,17 +47,17 @@ export function AdminGuideReviews({ reviews }: { reviews: AdminGuideReviewData[]
         className="flex w-full items-center justify-between gap-4 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/40"
       >
         <span className="text-sm font-medium">
-          Reviews <span className="text-muted-foreground">({reviews.length} {pluralize(reviews.length, "review")})</span>
+          Reviews <span className="text-muted-foreground">({visibleReviews.length} {pluralize(visibleReviews.length, "review")})</span>
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", open && "rotate-180")} />
       </button>
       <div className={cn("grid transition-all duration-200 ease-out", open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
         <div className="overflow-hidden">
           <div className="space-y-3 border-t border-border/70 p-4">
-            {reviews.length === 0 ? (
+            {visibleReviews.length === 0 ? (
               <p className="text-sm text-muted-foreground">No reviews yet.</p>
             ) : (
-              reviews.map((review) => (
+              visibleReviews.map((review) => (
                 <article key={review.id} className="rounded-xl border border-border/70 bg-background p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">

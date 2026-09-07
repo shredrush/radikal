@@ -17,8 +17,8 @@ export async function AdminPageHeader({
   active: AdminSection;
   role?: Role;
 }) {
-  const visibleSections = ADMIN_SECTIONS.filter((section) =>
-    hasPermission(role, section.permission),
+  const visibleSections = ADMIN_SECTIONS.filter(
+    (section) => section.key !== "trip-changes" && hasPermission(role, section.permission),
   );
 
   // Count pending guide applications for the admin board badge. Only queried

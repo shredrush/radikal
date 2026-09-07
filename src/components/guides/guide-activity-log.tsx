@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronDown, History, MapPin, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +53,27 @@ export function GuideActivityLog() {
   const [entries, setEntries] = useState<GuideActivityEntry[] | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  function loadEntries() {
+    startTransition(async () => {
+      try {
+        setEntries(await getGuideActivityLogAction());
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load activity log.";
+        toast.error(message);
+      }
+    });
+  }
+
+  useEffect(() => {
+    function handleActivityChanged() {
+      if (entries !== null) loadEntries();
+    }
+
+    window.addEventListener("guide-activity-changed", handleActivityChanged);
+    return () => window.removeEventListener("guide-activity-changed", handleActivityChanged);
+  }, [entries]);
+
   function handleToggle() {
     if (open) {
       setOpen(false);
@@ -60,15 +81,7 @@ export function GuideActivityLog() {
     }
     setOpen(true);
     if (entries === null) {
-      startTransition(async () => {
-        try {
-          setEntries(await getGuideActivityLogAction());
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "Failed to load activity log.";
-          toast.error(message);
-        }
-      });
+      loadEntries();
     }
   }
 

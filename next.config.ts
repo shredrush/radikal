@@ -11,7 +11,7 @@ const contentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://ui-avatars.com https://*.supabase.co;
+  img-src 'self' data: blob: https://ui-avatars.com https://*.supabase.co;
   font-src 'self' data:;
   connect-src 'self' https://*.supabase.co;
   media-src 'self' blob: data: https://*.supabase.co;
@@ -34,14 +34,6 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "plus.unsplash.com",
-      },
       {
         protocol: "https",
         hostname: "*.supabase.co",

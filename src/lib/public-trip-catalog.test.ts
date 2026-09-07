@@ -8,7 +8,7 @@ describe("public trip catalog filters", () => {
       page: "3",
       q: "  winter hiking  ",
       sport: ["winter", "trek", "invalid", "bike"],
-      travelStyle: ["course", "invalid"],
+      travelStyle: ["course", "weekend-escapes"],
       location: [" Manali ", ""],
       startDate: "2026-10-01",
       endDate: "2026-10-31",
@@ -18,7 +18,7 @@ describe("public trip catalog filters", () => {
       page: 3,
       query: "winter hiking",
       sports: ["SKI", "SNOWBOARD", "TREK"],
-      travelStyles: ["COURSE"],
+      travelStyles: ["course", "weekend-escapes"],
       locations: ["Manali"],
     });
     expect(filters.startDate).toEqual(new Date("2026-10-01T00:00:00.000Z"));
@@ -36,6 +36,6 @@ describe("public trip catalog filters", () => {
       ]),
     });
     expect(JSON.stringify(where)).toContain('"SKI"');
-    expect(JSON.stringify(where)).toContain('"BEGINNER_FRIENDLY"');
+    expect(JSON.stringify(where)).toContain('"travelStyleLinks"');
   });
 });

@@ -158,6 +158,7 @@ export function SupportBoard({
   const [closedChats, setClosedChats] = useState<SupportChatBoardListItem[]>(initialClosedChats);
   const [resolvedChats, setResolvedChats] =
     useState<SupportChatBoardListItem[]>(initialResolvedChats);
+  const [customNewCount, setCustomNewCount] = useState(newCustomRequestsCount);
   const [openChatsOpen, setOpenChatsOpen] = useState(true);
   const [closedChatsOpen, setClosedChatsOpen] = useState(false);
   const [resolvedChatsOpen, setResolvedChatsOpen] = useState(false);
@@ -166,8 +167,11 @@ export function SupportBoard({
   const [loadingChatSection, setLoadingChatSection] = useState<DeferredChatSection | null>(null);
   const chatsFetchControllerRef = useRef<AbortController | null>(null);
 
-  const loadChats = useCallback(async () => {
-    if (chatsFetchControllerRef.current) return;
+  const loadChats = useCallback(async (replaceActiveRequest = false) => {
+    if (chatsFetchControllerRef.current) {
+      if (!replaceActiveRequest) return;
+      chatsFetchControllerRef.current.abort();
+    }
 
     const controller = new AbortController();
     chatsFetchControllerRef.current = controller;
@@ -235,7 +239,7 @@ export function SupportBoard({
   const tabCounts: Record<SupportBoardTab, number> = {
     conversations: awaitingReplyCount,
     bookings: pendingBookingsCount,
-    custom: newCustomRequestsCount,
+    custom: customNewCount,
   };
 
   function toggleClosedChats() {
@@ -248,6 +252,20 @@ export function SupportBoard({
     const nextOpen = !resolvedChatsOpen;
     setResolvedChatsOpen(nextOpen);
     if (nextOpen && !resolvedChatsLoaded) void loadChatSection("resolved");
+  }
+
+  function handleConversationChanged() {
+    void loadChats(true);
+    void loadChatSection("closed");
+    void loadChatSection("resolved");
+  }
+
+  function handleCustomTripStatusChanged(previousStatus: string, nextStatus: string) {
+    if (previousStatus === "NEW" && nextStatus !== "NEW") {
+      setCustomNewCount((count) => Math.max(0, count - 1));
+    } else if (previousStatus !== "NEW" && nextStatus === "NEW") {
+      setCustomNewCount((count) => count + 1);
+    }
   }
 
   function renderChatItem(chat: SupportChatBoardListItem, isActive: boolean, resolvedAt?: string | null) {
@@ -361,7 +379,7 @@ export function SupportBoard({
         ) : (
           <section className="grid gap-3 md:grid-cols-2">
             <StatCard label="Total requests" value={initialCustomRequests.length} />
-            <StatCard label="New" value={newCustomRequestsCount} />
+            <StatCard label="New" value={customNewCount} />
           </section>
         )}
 
@@ -425,6 +443,7 @@ export function SupportBoard({
               deletedRequestsCount={deletedCustomRequestsCount}
               selectedRequestId={selectedCustomRequestId}
               selectedRequest={selectedCustomRequest}
+              onStatusChanged={handleCustomTripStatusChanged}
             />
           </section>
         ) : (
@@ -537,6 +556,7 @@ export function SupportBoard({
                     customerName={selectedChat.customerName}
                     customerEmail={selectedChat.customerEmail}
                     messages={selectedChat.messages}
+                    onConversationChanged={handleConversationChanged}
                   />
                 ) : (
                   <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">

@@ -69,6 +69,18 @@ const getHomeGuides = unstable_cache(
   { tags: ["guides"], revalidate: 3600 },
 );
 
+// Style tiles are database-managed so the home page never needs remote image
+// lookups or a duplicated list of travel-style metadata.
+const getHomeTravelStyles = unstable_cache(
+  () => prisma.travelStyle.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, slug: true, image: true },
+  }),
+  ["home-page-travel-styles"],
+  { tags: ["trips"], revalidate: 300 },
+);
+
 // The home-page "Travellers love the Radikal Experiences" section is driven by
 // the reviews travellers leave on completed trips (seeded via the demo data).
 // Every review is linked to both its trip and guide, while snapshots preserve
@@ -101,10 +113,11 @@ export default async function Home() {
   // If the database is unreachable, serve the page with empty sections instead
   // of crashing. Failures are logged (with connection diagnostics) and never
   // cached, so the next request recovers automatically.
-  const [trips, guides, reviews] = await Promise.all([
+  const [trips, guides, reviews, travelStyles] = await Promise.all([
     safeDb("home.trips", () => getHomeTrips(), []),
     safeDb("home.guides", () => getHomeGuides(), []),
     safeDb("home.reviews", () => getHomeReviews(), []),
+    safeDb("home.travel-styles", () => getHomeTravelStyles(), []),
   ]);
 
   return (
@@ -118,7 +131,7 @@ export default async function Home() {
           location: trip.location,
           priceInRupees: trip.priceInRupees,
           durationDays: trip.durationDays,
-          categories: trip.categories,
+          travelStyleLinks: trip.travelStyleLinks,
           type: trip.type,
           images: trip.images,
         }))}
@@ -130,6 +143,7 @@ export default async function Home() {
               alt: `${guide.name} photo ${index + 1}`,
             })),
         ).slice(0, 12)}
+        travelStyles={travelStyles}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
           trip: review.tripName ?? review.trip?.title ?? "Radikal experience",

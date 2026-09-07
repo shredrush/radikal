@@ -20,7 +20,8 @@ export type TripsExplorerTrip = {
   slug: string;
   title: string;
   type: string;
-  categories: string[];
+  categories?: string[];
+  travelStyleLinks?: Array<{ travelStyle: { name: string; slug: string } }>;
   location: string;
   priceInRupees: number;
   durationDays: number;

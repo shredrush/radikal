@@ -11,15 +11,15 @@ import {
 } from "@/lib/trip-card-image";
 import { TripCardSlideshow } from "@/components/trips/trip-card-slideshow";
 import { CARD_SURFACE } from "@/lib/card-styles";
-import { TRIP_CATEGORY_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
 
 export type TripCardTrip = TripCardImageTrip & {
   slug: string;
   location: string;
-  categories: string[];
+  categories?: string[];
   durationDays: number;
   priceInRupees: number;
+  travelStyleLinks?: Array<{ travelStyle: { name: string; slug: string } }>;
 };
 
 export function TripCard({
@@ -43,6 +43,11 @@ export function TripCard({
 }) {
   const compact = size === "compact";
   const imageCardWithSummary = imageOnly && showImageSummary;
+  const travelStyleTags = Array.from(
+    new Set([
+      ...(trip.travelStyleLinks?.map((link) => link.travelStyle.name) ?? []),
+    ]),
+  );
 
   let slideSources: string[] = [];
   if (slideshow) {
@@ -111,15 +116,15 @@ export function TripCard({
               {!imageCardWithSummary ? (
                 <h3 className="text-base font-semibold tracking-tight text-white sm:text-lg">{trip.title}</h3>
               ) : null}
-              {showTravelStyles && trip.categories.length > 0 ? (
+              {showTravelStyles && travelStyleTags.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {trip.categories.map((category) => (
+                  {travelStyleTags.map((style) => (
                     <Badge
-                      key={category}
+                      key={style}
                       variant="secondary"
                       className="rounded-full border border-white/25 bg-transparent px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-white sm:text-[0.65rem]"
                     >
-                      {TRIP_CATEGORY_LABELS[category] ?? category}
+                      {style}
                     </Badge>
                   ))}
                 </div>
@@ -157,9 +162,9 @@ export function TripCard({
               <div
                 className={`${compact ? "" : "mt-1 "}flex min-h-[1.35rem] flex-wrap content-start gap-1`}
               >
-                {trip.categories.map((category) => (
+                {travelStyleTags.map((style) => (
                   <Badge
-                    key={category}
+                    key={style}
                     variant="secondary"
                     className={
                       compact
@@ -167,7 +172,7 @@ export function TripCard({
                         : "max-w-full rounded-full border border-border/70 bg-background/80 px-1.5 py-0.5 text-[0.55rem] font-medium leading-3 text-foreground/80 sm:px-2 sm:text-[0.72rem]"
                     }
                   >
-                    {TRIP_CATEGORY_LABELS[category] ?? category}
+                    {style}
                   </Badge>
                 ))}
               </div>
