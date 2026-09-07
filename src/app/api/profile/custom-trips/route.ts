@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   try {
     const requests = await prisma.customTripRequest.findMany({
       where: { userId: session.user.id, deletedAt: null },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {

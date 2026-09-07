@@ -12,8 +12,11 @@ export async function GET(request: Request) {
   const query = new URL(request.url).searchParams.get("q") ?? "";
   const filters = getPublicTripFilters({ q: query });
 
-  if (!filters.query) {
-    return NextResponse.json({ trips: [] });
+  if (!filters.query || filters.query.length < 2) {
+    return NextResponse.json(
+      { trips: [] },
+      { headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" } },
+    );
   }
 
   const trips = await safeDb(
@@ -28,5 +31,8 @@ export async function GET(request: Request) {
     [],
   );
 
-  return NextResponse.json({ trips }, { headers: { "Cache-Control": "public, max-age=60" } });
+  return NextResponse.json(
+    { trips },
+    { headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" } },
+  );
 }

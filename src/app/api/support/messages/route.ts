@@ -21,6 +21,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const chatId = searchParams.get("chatId");
+  const after = searchParams.get("after");
 
   try {
     // Users with support access may read any conversation by id; everyone
@@ -33,7 +34,8 @@ export async function GET(request: Request) {
           status: true,
           messages: {
             select: { id: true, body: true, senderId: true, createdAt: true },
-            orderBy: { createdAt: "desc" },
+            ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+            orderBy: [{ createdAt: after ? "asc" : "desc" }, { id: after ? "asc" : "desc" }],
             take: MAX_MESSAGES,
           },
         },
@@ -45,7 +47,7 @@ export async function GET(request: Request) {
 
       return NextResponse.json({
         status: chat.status,
-        messages: toSupportMessageViews(chat.messages.slice().reverse(), supportUser.id),
+        messages: toSupportMessageViews(after ? chat.messages : chat.messages.slice().reverse(), supportUser.id),
       });
     }
 
@@ -58,7 +60,8 @@ export async function GET(request: Request) {
         customerLastReadAt: true,
         messages: {
           select: { id: true, body: true, senderId: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
+          ...(after ? { cursor: { id: after }, skip: 1 } : {}),
+          orderBy: [{ createdAt: after ? "asc" : "desc" }, { id: after ? "asc" : "desc" }],
           take: MAX_MESSAGES,
         },
       },
@@ -76,7 +79,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       status: chat?.status ?? "OPEN",
-      messages: chat ? toSupportMessageViews(chat.messages.slice().reverse(), session.user.id) : [],
+      messages: chat ? toSupportMessageViews(after ? chat.messages : chat.messages.slice().reverse(), session.user.id) : [],
     });
   } catch (error) {
     console.error("[api/support/messages] failed to load messages", error);

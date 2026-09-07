@@ -76,19 +76,32 @@ export function CurrencyProvider({
     if (selectedCurrency || storedCurrency) return;
 
     let cancelled = false;
-    fetch("/api/geo", { headers: { accept: "application/json" } })
-      .then((res) => (res.ok ? (res.json() as Promise<{ country?: string | null }>) : null))
-      .then((data) => {
-        if (cancelled || !data) return;
-        const code = currencyForCountry(data.country);
-        if (code) setGeoCurrency(code);
-      })
-      .catch(() => {
-        // Ignore — geo lookup is best-effort and never blocks rendering.
-      });
+    const loadGeoCurrency = () => {
+      void fetch("/api/geo", { headers: { accept: "application/json" } })
+        .then((res) => (res.ok ? (res.json() as Promise<{ country?: string | null }>) : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          const code = currencyForCountry(data.country);
+          if (code) setGeoCurrency(code);
+        })
+        .catch(() => {
+          // Ignore — geo lookup is best-effort and never blocks rendering.
+        });
+    };
+
+    const idleCallback = window.requestIdleCallback?.(loadGeoCurrency, { timeout: 3_000 });
+    if (idleCallback !== undefined) {
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleCallback);
+      };
+    }
+
+    const timeout = window.setTimeout(loadGeoCurrency, 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [selectedCurrency, storedCurrency]);
 

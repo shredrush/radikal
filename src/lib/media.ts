@@ -118,7 +118,7 @@ export function buildMediaPath(
 export async function issueSignedUploadUrl(
   bucket: MediaBucket,
   path: string,
-): Promise<{ token: string; publicUrl: string }> {
+): Promise<{ signedUrl: string; publicUrl: string }> {
   await ensureMediaParent(bucket, path);
   const { data, error } = await storage()
     .from(bucket)
@@ -126,7 +126,7 @@ export async function issueSignedUploadUrl(
   if (error) {
     throw new Error(`Could not prepare upload: ${error.message}`);
   }
-  return { token: data.token, publicUrl: publicMediaUrl(bucket, path) };
+  return { signedUrl: data.signedUrl, publicUrl: publicMediaUrl(bucket, path) };
 }
 
 /**

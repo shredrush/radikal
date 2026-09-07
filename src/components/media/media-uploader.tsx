@@ -104,16 +104,14 @@ export function MediaUploader({
   }
 
   /**
-   * Upload a file to the Signed URL with XMLHttpRequest so `upload.onprogress`
-   * reports real byte-level progress. Mirrors the wire format the supabase-js
-   * SDK uses (HTTP PUT + FormData), which is the one that persists; passing the
-   * raw File as a plain body is accepted by the endpoint but does not store.
+   * Upload a file to the server-issued signed URL with XMLHttpRequest so
+   * `upload.onprogress` reports real byte-level progress. Mirrors the wire
+   * format the supabase-js SDK uses; the signed URL authorizes this one upload.
    */
   function uploadToSignedUrl(url: string, form: FormData, onProgress: (pct: number) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", url);
-      xhr.setRequestHeader("authorization", `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}`);
       xhr.setRequestHeader("x-upsert", "false");
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && event.total > 0) {
@@ -161,22 +159,13 @@ export function MediaUploader({
       throw new Error(`File is too large (max ${Math.round(maxBytes / 1024 / 1024)} MB).`);
     }
 
-    const { token, publicUrl, path } = await createMediaUploadAction({
+    const { signedUrl, publicUrl, path } = await createMediaUploadAction({
       entity,
       folderKey,
       kind,
       contentType: fileToUpload.type,
       size: fileToUpload.size,
     });
-
-    // Reconstruct the signed upload URL exactly like the server did ("PUT")
-    // and mirror the SDK's FormData payload — the format that actually stores.
-    const marker = "/storage/v1/object/public/";
-    const markerIndex = publicUrl.indexOf(marker);
-    const baseUrl = markerIndex >= 0 ? publicUrl.slice(0, markerIndex) : "";
-    const bucket = entity === "guide" ? "guide-media" : "trip-media";
-    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-    const signedUrl = `${baseUrl}/storage/v1/object/upload/sign/${bucket}/${encodedPath}?token=${encodeURIComponent(token)}`;
 
     const form = new FormData();
     form.append("cacheControl", CACHE_CONTROL);

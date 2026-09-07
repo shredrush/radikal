@@ -13,14 +13,10 @@ import type { SupportMessageView } from "@/lib/support";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { SupportMessageList } from "@/components/support/support-message-list";
 import { Button } from "@/components/ui/button";
+import { useVisiblePolling } from "@/hooks/use-visible-polling";
 
 const composerClassName =
   `w-full resize-none rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
-
-function sameThread(a: SupportMessageView[], b: SupportMessageView[]) {
-  if (a.length !== b.length) return false;
-  return a.every((message, index) => message.id === b[index]?.id);
-}
 
 export function SupportChatPanel({
   messages: initialMessages,
@@ -34,28 +30,49 @@ export function SupportChatPanel({
   const [isPending, startTransition] = useTransition();
   const [isUpdating, startUpdating] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef(initialMessages.at(-1)?.id ?? null);
+  const fetchControllerRef = useRef<AbortController | null>(null);
 
   const loadMessages = useCallback(async () => {
+    if (fetchControllerRef.current) return;
+
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
     try {
-      const response = await fetch("/api/support/messages", { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (cursorRef.current) params.set("after", cursorRef.current);
+      const response = await fetch(`/api/support/messages?${params}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
       if (!response.ok) return;
 
       const data = await response.json();
       const next = Array.isArray(data.messages) ? (data.messages as SupportMessageView[]) : [];
-      setMessages((previous) => (sameThread(previous, next) ? previous : next));
+      if (next.length > 0) {
+        cursorRef.current = next.at(-1)?.id ?? cursorRef.current;
+        setMessages((previous) => {
+          const known = new Set(previous.map((message) => message.id));
+          const additions = next.filter((message) => !known.has(message.id));
+          return additions.length ? [...previous, ...additions] : previous;
+        });
+      }
 
       if (data.status === "OPEN" || data.status === "CLOSED") {
         setStatus((previous) => (previous === data.status ? previous : data.status));
       }
     } catch {
       // Ignore transient network errors; the next poll will retry.
+    } finally {
+      if (fetchControllerRef.current === controller) fetchControllerRef.current = null;
     }
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(loadMessages, 3000);
-    return () => clearInterval(interval);
+    return () => fetchControllerRef.current?.abort();
   }, [loadMessages]);
+
+  useVisiblePolling(true, loadMessages, 15_000);
 
   useEffect(() => {
     const container = scrollRef.current;

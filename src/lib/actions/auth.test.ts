@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   otpFindFirst: vi.fn(),
   otpUpdate: vi.fn(),
   otpUpdateMany: vi.fn(),
+  queryRaw: vi.fn(),
 }));
 
 vi.mock("bcryptjs", () => ({
@@ -77,6 +78,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
       callback({
+        $queryRaw: mocks.queryRaw,
         passwordResetOtp: { updateMany: mocks.otpUpdateMany },
         user: { update: mocks.userUpdate },
       }),
@@ -182,8 +184,12 @@ describe("password recovery security boundaries", () => {
       identifier: "traveler@example.com",
     });
 
-    expect(mocks.otpUpdateMany).toHaveBeenCalledWith({
+    expect(mocks.otpUpdateMany).toHaveBeenNthCalledWith(1, {
       where: expect.objectContaining({ id: "otp-1", usedAt: null }),
+      data: { usedAt: expect.any(Date) },
+    });
+    expect(mocks.otpUpdateMany).toHaveBeenNthCalledWith(2, {
+      where: { userId: "user-1", usedAt: null },
       data: { usedAt: expect.any(Date) },
     });
     expect(mocks.userUpdate).toHaveBeenCalledWith({

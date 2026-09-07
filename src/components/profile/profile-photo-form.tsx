@@ -99,7 +99,6 @@ export function ProfilePhotoForm({
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", url);
-      xhr.setRequestHeader("authorization", `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""}`);
       xhr.setRequestHeader("x-upsert", "false");
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) resolve();
@@ -118,18 +117,13 @@ export function ProfilePhotoForm({
       throw new Error(`Photo must be ${Math.round(MAX_PROFILE_IMAGE_BYTES / 1024 / 1024)} MB or smaller.`);
     }
 
-    const { token, publicUrl, path } = await createMediaUploadAction({
+    const { signedUrl, publicUrl } = await createMediaUploadAction({
       entity: "profile",
       folderKey: userId,
       kind: "images",
       contentType: file.type,
       size: file.size,
     });
-    const marker = "/storage/v1/object/public/";
-    const markerIndex = publicUrl.indexOf(marker);
-    const baseUrl = markerIndex >= 0 ? publicUrl.slice(0, markerIndex) : "";
-    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-    const signedUrl = `${baseUrl}/storage/v1/object/upload/sign/profile-media/${encodedPath}?token=${encodeURIComponent(token)}`;
     const form = new FormData();
     form.append("cacheControl", CACHE_CONTROL);
     form.append("", file);

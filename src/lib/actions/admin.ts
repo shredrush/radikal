@@ -483,6 +483,9 @@ export async function updateSlotAction(formData: FormData) {
 
   let slug = "";
   await prisma.$transaction(async (tx) => {
+    // Serialize capacity edits with payment confirmation, which takes the same
+    // row lock before incrementing booked spots.
+    await tx.$queryRaw`SELECT id FROM slots WHERE id = ${slotId} FOR UPDATE`;
     const slot = await tx.slot.findUnique({
       where: { id: slotId },
       include: { trip: { select: { slug: true } } },

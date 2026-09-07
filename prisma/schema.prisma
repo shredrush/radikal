@@ -208,6 +208,9 @@ model PasswordResetOtp {
 
   @@index([userId])
   @@index([userId, expiresAt])
+  // The matching database index also covers the active-code verification
+  // lookup, including its newest-first ordering.
+  @@index([userId, usedAt, expiresAt, createdAt(sort: Desc)], map: "password_reset_otps_userId_usedAt_expiresAt_createdAt_idx")
   @@map("password_reset_otps")
 }
 
@@ -476,9 +479,9 @@ model TripHighlight {
   @@map("trip_highlights")
 }
 
-// A bookable date instance of a trip. Never let `booked` exceed
-// `capacity` — always check availability inside a transaction before
-// confirming a booking.
+// A bookable date instance of a trip. The database additionally enforces that
+// capacity is positive, counts are non-negative, and booked + reserved does
+// not exceed capacity (see the audit integrity migration).
 model Slot {
   id              String    @id @default(cuid())
   tripId          String

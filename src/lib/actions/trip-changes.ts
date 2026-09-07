@@ -466,27 +466,32 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
   if (!date) throw new Error("Please enter a valid date.");
 
   const { guide, userId } = await requireGuide();
-  const slot = await prisma.slot.findUnique({
-    where: { id: slotId },
-    include: { trip: { select: { guideId: true, slug: true, deletedAt: true } } },
-  });
-
-  if (!slot || slot.trip.guideId !== guide.id) {
-    throw new Error("You can only manage dates for your own trips.");
-  }
-  if (slot.trip.deletedAt || slot.deletedAt) {
-    throw new Error("Deleted trips cannot be changed.");
-  }
-  if (reserved > capacity - slot.booked) {
-    throw new Error(`Reserved cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
-  }
-
-  const changes = changedValues(
-    { date: slot.date.toISOString(), capacity: slot.capacity, reserved: slot.reserved },
-    { date: date.toISOString(), capacity, reserved },
-  );
   const activityContext = await getActivityLogContext();
+  let tripSlug = "";
   await prisma.$transaction(async (tx) => {
+    // Serialize capacity edits with payment confirmation, which takes the same
+    // row lock before incrementing booked spots.
+    await tx.$queryRaw`SELECT id FROM slots WHERE id = ${slotId} FOR UPDATE`;
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: { trip: { select: { guideId: true, slug: true, deletedAt: true } } },
+    });
+
+    if (!slot || slot.trip.guideId !== guide.id) {
+      throw new Error("You can only manage dates for your own trips.");
+    }
+    if (slot.trip.deletedAt || slot.deletedAt) {
+      throw new Error("Deleted trips cannot be changed.");
+    }
+    if (reserved > capacity - slot.booked) {
+      throw new Error(`Reserved cannot exceed the ${capacity - slot.booked} places remaining after booked spots.`);
+    }
+
+    const changes = changedValues(
+      { date: slot.date.toISOString(), capacity: slot.capacity, reserved: slot.reserved },
+      { date: date.toISOString(), capacity, reserved },
+    );
+    tripSlug = slot.trip.slug;
     await tx.slot.update({ where: { id: slotId }, data: { date, capacity, reserved } });
     await logActivityInTransaction(
       tx,
@@ -499,7 +504,7 @@ export async function updateGuideSlotAction(formData: FormData): Promise<void> {
       activityContext,
     );
   });
-  revalidateGuideSlotPages(slot.trip.slug);
+  revalidateGuideSlotPages(tripSlug);
 }
 
 export async function cancelGuideSlotAction(slotId: string, reason?: string): Promise<void> {

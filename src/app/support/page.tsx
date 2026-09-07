@@ -25,15 +25,15 @@ import {
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
 
 export const dynamic = "force-dynamic";
-const MAX_SUPPORT_LIST_ITEMS = 100;
+const MAX_SUPPORT_LIST_ITEMS = 25;
 const MAX_SELECTED_MESSAGES = 100;
 
-async function loadChats(): Promise<SupportChatBoardListItem[]> {
+async function loadChats(): Promise<{ chats: SupportChatBoardListItem[]; nextCursor: string | null }> {
   return loadDb("support.chats", async () => {
     const rows = await prisma.supportChat.findMany({
       where: { deletedAt: null, status: "OPEN" },
-      orderBy: { updatedAt: "desc" },
-      take: MAX_SUPPORT_LIST_ITEMS,
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: MAX_SUPPORT_LIST_ITEMS + 1,
       select: {
         id: true,
         status: true,
@@ -47,7 +47,11 @@ async function loadChats(): Promise<SupportChatBoardListItem[]> {
         },
       },
     });
-    return rows.map(toSupportChatBoardListItem);
+    const page = rows.slice(0, MAX_SUPPORT_LIST_ITEMS);
+    return {
+      chats: page.map(toSupportChatBoardListItem),
+      nextCursor: rows.length > MAX_SUPPORT_LIST_ITEMS ? page.at(-1)?.id ?? null : null,
+    };
   });
 }
 
@@ -85,12 +89,15 @@ async function countOpenChatsAwaitingReply(): Promise<number> {
   });
 }
 
-async function loadCustomRequests(): Promise<CustomTripRequestBoardListItem[]> {
+async function loadCustomRequests(): Promise<{
+  requests: CustomTripRequestBoardListItem[];
+  nextCursor: string | null;
+}> {
   return loadDb("support.custom-requests", async () => {
     const rows = await prisma.customTripRequest.findMany({
       where: { deletedAt: null, status: { notIn: ["CONFIRMED", "CANCELLED"] } },
-      orderBy: { updatedAt: "desc" },
-      take: MAX_SUPPORT_LIST_ITEMS,
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: MAX_SUPPORT_LIST_ITEMS + 1,
       select: {
         id: true,
         status: true,
@@ -111,7 +118,11 @@ async function loadCustomRequests(): Promise<CustomTripRequestBoardListItem[]> {
         },
       },
     });
-    return rows.map(toCustomTripRequestBoardListItem);
+    const page = rows.slice(0, MAX_SUPPORT_LIST_ITEMS);
+    return {
+      requests: page.map(toCustomTripRequestBoardListItem),
+      nextCursor: rows.length > MAX_SUPPORT_LIST_ITEMS ? page.at(-1)?.id ?? null : null,
+    };
   });
 }
 
@@ -170,7 +181,7 @@ export default async function SupportBoardPage({
     await Promise.all([
       tab === "conversations"
         ? loadChats()
-        : Promise.resolve([] as SupportChatBoardListItem[]),
+        : Promise.resolve({ chats: [], nextCursor: null }),
       tab === "conversations"
         ? Promise.resolve(0)
         : countOpenChatsAwaitingReply(),
@@ -200,7 +211,7 @@ export default async function SupportBoardPage({
           ),
       tab === "custom"
         ? loadCustomRequests()
-        : Promise.resolve([] as CustomTripRequestBoardListItem[]),
+        : Promise.resolve({ requests: [], nextCursor: null }),
       tab === "custom"
         ? loadCustomSectionCounts()
         : Promise.resolve({ confirmed: 0, cancelled: 0, deleted: 0 }),
@@ -260,14 +271,15 @@ export default async function SupportBoardPage({
 
   return (
     <SupportBoard
-      initialChats={chats}
+      initialChats={chats.chats}
+      initialChatsNextCursor={chats.nextCursor}
       initialClosedChats={[]}
       closedChatsCount={conversationSectionCounts.closed}
       initialResolvedChats={[]}
       resolvedChatsCount={conversationSectionCounts.resolved}
       pendingConversationsCount={
         tab === "conversations"
-          ? chats.filter(isAwaitingReply).length
+          ? chats.chats.filter(isAwaitingReply).length
           : awaitingReplyCount
       }
       initialBookings={bookings}
@@ -279,7 +291,8 @@ export default async function SupportBoardPage({
           ? bookings.filter((booking) => booking.status === "PENDING").length
           : pendingBookingsCount
       }
-      initialCustomRequests={customRequests}
+      initialCustomRequests={customRequests.requests}
+      initialNextCursor={customRequests.nextCursor}
       confirmedCustomRequests={[]}
       confirmedCustomRequestsCount={customSectionCounts.confirmed}
       cancelledCustomRequests={[]}
@@ -288,7 +301,7 @@ export default async function SupportBoardPage({
       deletedCustomRequestsCount={customSectionCounts.deleted}
       newCustomRequestsCount={
         tab === "custom"
-          ? customRequests.filter((request) => request.status === "NEW").length
+          ? customRequests.requests.filter((request) => request.status === "NEW").length
           : newCustomRequestsCount
       }
       chatId={chatId}

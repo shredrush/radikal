@@ -35,6 +35,7 @@ function listSignature(requests: CustomTripRequestBoardListItem[]) {
 }
 
 type DeferredSection = "confirmed" | "cancelled" | "deleted";
+type RequestSection = DeferredSection | "open";
 
 export function CustomTripsView({
   initialRequests,
@@ -44,6 +45,7 @@ export function CustomTripsView({
   cancelledRequestsCount,
   deletedRequests: initialDeletedRequests,
   deletedRequestsCount,
+  initialNextCursor = null,
   selectedRequestId,
   selectedRequest,
   onStatusChanged,
@@ -55,6 +57,7 @@ export function CustomTripsView({
   cancelledRequestsCount: number;
   deletedRequests: CustomTripRequestBoardListItem[];
   deletedRequestsCount: number;
+  initialNextCursor?: string | null;
   selectedRequestId?: string;
   selectedRequest: CustomTripRequestDetail | null;
   onStatusChanged?: (previousStatus: string, nextStatus: string) => void;
@@ -74,9 +77,15 @@ export function CustomTripsView({
   const [cancelledLoaded, setCancelledLoaded] = useState(initialCancelledRequests.length > 0);
   const [deletedLoaded, setDeletedLoaded] = useState(initialDeletedRequests.length > 0);
   const [loadingSection, setLoadingSection] = useState<DeferredSection | null>(null);
+  const [nextCursors, setNextCursors] = useState<Record<RequestSection, string | null>>({
+    open: initialNextCursor,
+    confirmed: null,
+    cancelled: null,
+    deleted: null,
+  });
   const requestsFetchControllerRef = useRef<AbortController | null>(null);
 
-  const loadRequests = useCallback(async (replaceActiveRequest = false) => {
+  const loadRequests = useCallback(async (replaceActiveRequest = false, cursor?: string) => {
     if (requestsFetchControllerRef.current) {
       if (!replaceActiveRequest) return;
       requestsFetchControllerRef.current.abort();
@@ -85,7 +94,9 @@ export function CustomTripsView({
     const controller = new AbortController();
     requestsFetchControllerRef.current = controller;
     try {
-      const response = await fetch("/api/custom-trips/requests?section=open", {
+      const params = new URLSearchParams({ section: "open" });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`/api/custom-trips/requests?${params}`, {
         cache: "no-store",
         signal: controller.signal,
       });
@@ -95,7 +106,11 @@ export function CustomTripsView({
       const next = Array.isArray(data.open)
         ? (data.open as CustomTripRequestBoardListItem[])
         : [];
-      setRequests((previous) => (listSignature(previous) === listSignature(next) ? previous : next));
+      setRequests((previous) => {
+        const merged = cursor ? [...previous, ...next.filter((item) => !previous.some(({ id }) => id === item.id))] : next;
+        return listSignature(previous) === listSignature(merged) ? previous : merged;
+      });
+      setNextCursors((current) => ({ ...current, open: data.nextCursor ?? null }));
     } catch {
       // Ignore transient network errors; the next poll will retry.
     } finally {
@@ -105,10 +120,12 @@ export function CustomTripsView({
     }
   }, []);
 
-  const loadSection = useCallback(async (section: DeferredSection) => {
+  const loadSection = useCallback(async (section: DeferredSection, cursor?: string) => {
     setLoadingSection(section);
     try {
-      const response = await fetch(`/api/custom-trips/requests?section=${section}`, {
+      const params = new URLSearchParams({ section });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`/api/custom-trips/requests?${params}`, {
         cache: "no-store",
       });
       if (!response.ok) return;
@@ -119,15 +136,16 @@ export function CustomTripsView({
         : [];
 
       if (section === "confirmed") {
-        setConfirmedRequests(next);
+        setConfirmedRequests((current) => cursor ? [...current, ...next.filter((item) => !current.some(({ id }) => id === item.id))] : next);
         setConfirmedLoaded(true);
       } else if (section === "cancelled") {
-        setCancelledRequests(next);
+        setCancelledRequests((current) => cursor ? [...current, ...next.filter((item) => !current.some(({ id }) => id === item.id))] : next);
         setCancelledLoaded(true);
       } else {
-        setDeletedRequests(next);
+        setDeletedRequests((current) => cursor ? [...current, ...next.filter((item) => !current.some(({ id }) => id === item.id))] : next);
         setDeletedLoaded(true);
       }
+      setNextCursors((current) => ({ ...current, [section]: data.nextCursor ?? null }));
     } catch {
       // Leave the section eligible for a retry on its next expansion.
     } finally {
@@ -277,6 +295,15 @@ export function CustomTripsView({
                   </Link>
                 );
               })}
+              {nextCursors.open ? (
+                <button
+                  type="button"
+                  onClick={() => void loadRequests(false, nextCursors.open ?? undefined)}
+                  className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Load more
+                </button>
+              ) : null}
             </div>
           )) : null}
         </div>
@@ -353,6 +380,15 @@ export function CustomTripsView({
                   </Link>
                 );
               })}
+              {nextCursors.confirmed ? (
+                <button
+                  type="button"
+                  onClick={() => void loadSection("confirmed", nextCursors.confirmed ?? undefined)}
+                  className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Load more
+                </button>
+              ) : null}
             </div>
           )) : null}
         </div>
@@ -430,6 +466,15 @@ export function CustomTripsView({
                   </Link>
                 );
               })}
+              {nextCursors.cancelled ? (
+                <button
+                  type="button"
+                  onClick={() => void loadSection("cancelled", nextCursors.cancelled ?? undefined)}
+                  className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Load more
+                </button>
+              ) : null}
               </div>
             )
           ) : null}
@@ -499,6 +544,15 @@ export function CustomTripsView({
                     </Link>
                   );
                 })}
+                {nextCursors.deleted ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadSection("deleted", nextCursors.deleted ?? undefined)}
+                    className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Load more
+                  </button>
+                ) : null}
               </div>
             )) : null}
           </div>

@@ -43,7 +43,7 @@ export async function GET(request: Request) {
           deletedAt: null,
           trip: { deletedAt: null },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: limit + 1,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         select: bookingCardSelect,

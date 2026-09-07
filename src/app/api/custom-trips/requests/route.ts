@@ -6,7 +6,8 @@ import { getDatabaseErrorStatus, prisma } from "@/lib/prisma";
 import { toCustomTripRequestBoardListItem } from "@/lib/custom-trips";
 
 export const dynamic = "force-dynamic";
-const MAX_REQUESTS = 100;
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 50;
 type RequestSection = "open" | "confirmed" | "cancelled" | "deleted";
 
 const SECTION_WHERE: Record<RequestSection, Prisma.CustomTripRequestWhereInput> = {
@@ -32,16 +33,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const section = new URL(request.url).searchParams.get("section");
+  const { searchParams } = new URL(request.url);
+  const section = searchParams.get("section");
   if (!isRequestSection(section)) {
     return NextResponse.json({ error: "Invalid request section" }, { status: 400 });
   }
 
+  const cursor = searchParams.get("cursor") || undefined;
+  const requestedLimit = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(Math.trunc(requestedLimit), 1), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+
   try {
     const requests = await prisma.customTripRequest.findMany({
       where: SECTION_WHERE[section],
-      orderBy: section === "deleted" ? { deletedAt: "desc" } : { updatedAt: "desc" },
-      take: MAX_REQUESTS,
+      orderBy: section === "deleted"
+        ? [{ deletedAt: "desc" }, { id: "desc" }]
+        : [{ updatedAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {
         id: true,
         status: true,
@@ -63,8 +74,10 @@ export async function GET(request: Request) {
       },
     });
 
+    const page = requests.slice(0, limit);
     return NextResponse.json({
-      [section]: requests.map(toCustomTripRequestBoardListItem),
+      [section]: page.map(toCustomTripRequestBoardListItem),
+      nextCursor: requests.length > limit ? page.at(-1)?.id ?? null : null,
     });
   } catch (error) {
     console.error("[api/custom-trips/requests] failed to load requests", error);

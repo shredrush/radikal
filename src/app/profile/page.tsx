@@ -225,7 +225,7 @@ export default async function ProfilePage({
       ? loadDb("profile.custom-trips", async () => {
           const requests = await prisma.customTripRequest.findMany({
             where: { userId: user.id, deletedAt: null },
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: PROFILE_CUSTOM_TRIPS_PAGE_SIZE + 1,
             select: {
               id: true,

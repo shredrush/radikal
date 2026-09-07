@@ -11,7 +11,6 @@ import {
   Home,
   Leaf,
   Lightbulb,
-  Mountain,
   Sparkles,
   Sprout,
   Users,
@@ -204,7 +203,7 @@ export default async function CommunityPage() {
                     <Users className="size-4" />
                   </span>
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground">Earn what you're worth</h3>
+                    <h3 className="text-sm font-semibold text-foreground">Earn what you&apos;re worth</h3>
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Pricing set by you and transparent payouts, no race-to-the-bottom bidding</p>
                   </div>
                 </div>

@@ -93,6 +93,7 @@ function chatListSignature(chats: SupportChatBoardListItem[]) {
 }
 
 type DeferredChatSection = "closed" | "resolved";
+type ChatSection = DeferredChatSection | "open";
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
@@ -105,6 +106,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 export function SupportBoard({
   initialChats,
+  initialChatsNextCursor,
   initialClosedChats,
   closedChatsCount,
   initialResolvedChats,
@@ -116,6 +118,7 @@ export function SupportBoard({
   selectedBookingType,
   pendingBookingsCount,
   initialCustomRequests,
+  initialNextCursor,
   confirmedCustomRequests,
   confirmedCustomRequestsCount,
   cancelledCustomRequests,
@@ -130,6 +133,7 @@ export function SupportBoard({
   selectedCustomRequest,
 }: {
   initialChats: SupportChatBoardListItem[];
+  initialChatsNextCursor: string | null;
   initialClosedChats: SupportChatBoardListItem[];
   closedChatsCount: number;
   initialResolvedChats: SupportChatBoardListItem[];
@@ -141,6 +145,7 @@ export function SupportBoard({
   selectedBookingType: string;
   pendingBookingsCount: number;
   initialCustomRequests: CustomTripRequestBoardListItem[];
+  initialNextCursor: string | null;
   confirmedCustomRequests: CustomTripRequestBoardListItem[];
   confirmedCustomRequestsCount: number;
   cancelledCustomRequests: CustomTripRequestBoardListItem[];
@@ -165,9 +170,14 @@ export function SupportBoard({
   const [closedChatsLoaded, setClosedChatsLoaded] = useState(initialClosedChats.length > 0);
   const [resolvedChatsLoaded, setResolvedChatsLoaded] = useState(initialResolvedChats.length > 0);
   const [loadingChatSection, setLoadingChatSection] = useState<DeferredChatSection | null>(null);
+  const [nextChatCursors, setNextChatCursors] = useState<Record<ChatSection, string | null>>({
+    open: initialChatsNextCursor,
+    closed: null,
+    resolved: null,
+  });
   const chatsFetchControllerRef = useRef<AbortController | null>(null);
 
-  const loadChats = useCallback(async (replaceActiveRequest = false) => {
+  const loadChats = useCallback(async (replaceActiveRequest = false, cursor?: string) => {
     if (chatsFetchControllerRef.current) {
       if (!replaceActiveRequest) return;
       chatsFetchControllerRef.current.abort();
@@ -176,7 +186,9 @@ export function SupportBoard({
     const controller = new AbortController();
     chatsFetchControllerRef.current = controller;
     try {
-      const response = await fetch("/api/support/chats?section=open", {
+      const params = new URLSearchParams({ section: "open" });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`/api/support/chats?${params}`, {
         cache: "no-store",
         signal: controller.signal,
       });
@@ -184,7 +196,11 @@ export function SupportBoard({
 
       const data = await response.json();
       const next = Array.isArray(data.open) ? (data.open as SupportChatBoardListItem[]) : [];
-      setChats((previous) => (chatListSignature(previous) === chatListSignature(next) ? previous : next));
+      setChats((previous) => {
+        const merged = cursor ? [...previous, ...next.filter((item) => !previous.some(({ id }) => id === item.id))] : next;
+        return chatListSignature(previous) === chatListSignature(merged) ? previous : merged;
+      });
+      setNextChatCursors((current) => ({ ...current, open: data.nextCursor ?? null }));
     } catch {
       // Ignore transient network errors; the next poll will retry.
     } finally {
@@ -194,21 +210,24 @@ export function SupportBoard({
     }
   }, []);
 
-  const loadChatSection = useCallback(async (section: DeferredChatSection) => {
+  const loadChatSection = useCallback(async (section: DeferredChatSection, cursor?: string) => {
     setLoadingChatSection(section);
     try {
-      const response = await fetch(`/api/support/chats?section=${section}`, { cache: "no-store" });
+      const params = new URLSearchParams({ section });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`/api/support/chats?${params}`, { cache: "no-store" });
       if (!response.ok) return;
 
       const data = await response.json();
       const next = Array.isArray(data[section]) ? (data[section] as SupportChatBoardListItem[]) : [];
       if (section === "closed") {
-        setClosedChats(next);
+        setClosedChats((current) => cursor ? [...current, ...next.filter((item) => !current.some(({ id }) => id === item.id))] : next);
         setClosedChatsLoaded(true);
       } else {
-        setResolvedChats(next);
+        setResolvedChats((current) => cursor ? [...current, ...next.filter((item) => !current.some(({ id }) => id === item.id))] : next);
         setResolvedChatsLoaded(true);
       }
+      setNextChatCursors((current) => ({ ...current, [section]: data.nextCursor ?? null }));
     } catch {
       // Leave the section eligible for a retry on its next expansion.
     } finally {
@@ -435,6 +454,7 @@ export function SupportBoard({
           <section className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
             <CustomTripsView
               initialRequests={initialCustomRequests}
+              initialNextCursor={initialNextCursor}
               confirmedRequests={confirmedCustomRequests}
               confirmedRequestsCount={confirmedCustomRequestsCount}
               cancelledRequests={cancelledCustomRequests}
@@ -475,6 +495,15 @@ export function SupportBoard({
                   ) : (
                     <div className="flex flex-col gap-2">
                       {openChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
+                      {nextChatCursors.open ? (
+                        <button
+                          type="button"
+                          onClick={() => void loadChats(false, nextChatCursors.open ?? undefined)}
+                          className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          Load more
+                        </button>
+                      ) : null}
                     </div>
                   )) : null}
                 </div>
@@ -507,6 +536,15 @@ export function SupportBoard({
                   ) : (
                     <div className="flex flex-col gap-2">
                       {closedChats.map((chat) => renderChatItem(chat, chat.id === chatId))}
+                      {nextChatCursors.closed ? (
+                        <button
+                          type="button"
+                          onClick={() => void loadChatSection("closed", nextChatCursors.closed ?? undefined)}
+                          className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          Load more
+                        </button>
+                      ) : null}
                     </div>
                   )) : null}
                 </div>
@@ -541,6 +579,15 @@ export function SupportBoard({
                       {resolvedChats.map((chat) =>
                         renderChatItem(chat, chat.id === chatId, chat.deletedAt),
                       )}
+                      {nextChatCursors.resolved ? (
+                        <button
+                          type="button"
+                          onClick={() => void loadChatSection("resolved", nextChatCursors.resolved ?? undefined)}
+                          className="rounded-xl border border-border/70 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          Load more
+                        </button>
+                      ) : null}
                     </div>
                   )) : null}
                 </div>

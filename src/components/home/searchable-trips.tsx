@@ -90,7 +90,11 @@ export function SearchableTrips({
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [searchTrips, setSearchTrips] = useState<TripCardItem[] | null>(null);
+  const [searchResult, setSearchResult] = useState<{
+    query: string;
+    trips: TripCardItem[];
+  } | null>(null);
+  const searchCache = useMemo(() => new Map<string, TripCardItem[]>(), []);
 
   const placeholder = useEllipsisPlaceholder(
     "Search trips, sports, or destinations",
@@ -102,27 +106,44 @@ export function SearchableTrips({
   const normalizedQuery = query.trim().slice(0, 200);
 
   useEffect(() => {
-    if (!normalizedQuery) {
+    if (normalizedQuery.length < 2) {
       return;
     }
 
+    if (searchCache.has(normalizedQuery)) return;
+
     const controller = new AbortController();
-
-    void fetch(`/api/trips/search?q=${encodeURIComponent(normalizedQuery)}`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Trip search failed");
-        const data = (await response.json()) as { trips: TripCardItem[] };
-        if (!controller.signal.aborted) setSearchTrips(data.trips);
+    const timeout = setTimeout(() => {
+      void fetch(`/api/trips/search?q=${encodeURIComponent(normalizedQuery)}`, {
+        signal: controller.signal,
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setSearchTrips([]);
-      });
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Trip search failed");
+          const data = (await response.json()) as { trips: TripCardItem[] };
+          if (!controller.signal.aborted) {
+            searchCache.set(normalizedQuery, data.trips);
+            setSearchResult({ query: normalizedQuery, trips: data.trips });
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setSearchResult({ query: normalizedQuery, trips: [] });
+          }
+        });
+    }, 250);
 
-    return () => controller.abort();
-  }, [normalizedQuery]);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [normalizedQuery, searchCache]);
 
-  const suggestions = normalizedQuery ? (searchTrips ?? []) : [];
-  const visibleTrips = normalizedQuery ? (searchTrips ?? rankedTrips).slice(0, 5) : rankedTrips.slice(0, 5);
+  const cachedTrips = searchCache.get(normalizedQuery);
+  const currentSearchTrips =
+    searchResult?.query === normalizedQuery ? searchResult.trips : (cachedTrips ?? null);
+  const canTypeahead = normalizedQuery.length >= 2;
+  const suggestions = canTypeahead ? (currentSearchTrips ?? []) : [];
+  const visibleTrips = canTypeahead ? (currentSearchTrips ?? rankedTrips).slice(0, 5) : rankedTrips.slice(0, 5);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -171,7 +192,7 @@ export function SearchableTrips({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setActiveIndex(-1);
-                setSearchTrips(null);
+                setSearchResult(null);
               }}
               placeholder={placeholder}
               aria-label="Search trips, sports, or destinations"
@@ -187,7 +208,7 @@ export function SearchableTrips({
                 onClick={() => {
                   setQuery("");
                   setActiveIndex(-1);
-                  setSearchTrips(null);
+                  setSearchResult(null);
                 }}
                 aria-label="Clear search"
                 className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
@@ -202,9 +223,9 @@ export function SearchableTrips({
               <Search className="size-3.5" />
               <span className="hidden sm:inline">Search</span>
             </button>
-            {isFocused && query.trim() ? (
+            {isFocused && canTypeahead ? (
               <div className="absolute inset-x-0 top-full z-30 mt-1.5 overflow-hidden rounded-[1rem] border border-border bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] backdrop-blur">
-                {searchTrips === null ? (
+                {currentSearchTrips === null ? (
                   <p className="px-4 py-6 text-center text-sm text-muted-foreground">Searching trips...</p>
                 ) : suggestions.length > 0 ? (
                   <ul className="max-h-[320px] overflow-y-auto py-1">

@@ -690,30 +690,28 @@ export async function requestPasswordResetAction(
     return { sent: true, identifier };
   }
 
-  // Enforce a resend cooldown silently: within the cooldown window we still
-  // report success but skip issuing and sending a fresh code. Returning an
-  // error here would reveal the account exists (non-existent identifiers never
-  // reach this branch), so the response stays identical either way.
-  const latestOtp = await prisma.passwordResetOtp.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-  if (latestOtp) {
-    const elapsed = Date.now() - latestOtp.createdAt.getTime();
-    if (elapsed < OTP_RESEND_COOLDOWN_MS) {
-      return { sent: true, identifier };
+  // Lock the account so concurrent requests cannot both pass the cooldown or
+  // leave multiple live codes. A new code invalidates every older one.
+  const issued = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
+    const latestOtp = await tx.passwordResetOtp.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    if (latestOtp && Date.now() - latestOtp.createdAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
+      return false;
     }
-  }
 
-  // Delete any consumed or expired codes for this account (keeps the table
-  // small and guarantees only one active code exists), then issue a fresh
-  // single-use code.
-  await prisma.$transaction(async (tx) => {
+    const now = new Date();
+    await tx.passwordResetOtp.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
+    });
     await tx.passwordResetOtp.deleteMany({
       where: {
         userId: user.id,
         OR: [
-          { expiresAt: { lte: new Date() } },
+          { expiresAt: { lte: now } },
           { usedAt: { not: null } },
         ],
       },
@@ -725,7 +723,12 @@ export async function requestPasswordResetAction(
         expiresAt: new Date(Date.now() + OTP_TTL_MS),
       },
     });
+    return true;
   });
+
+  if (!issued) {
+    return { sent: true, identifier };
+  }
 
   await logActivity({
     userId: user.id,
@@ -839,6 +842,9 @@ export async function resetPasswordAction(
   // code can't be replayed by two concurrent requests — both would otherwise
   // pass the bcrypt check above before either marks it used.
   const consumed = await prisma.$transaction(async (tx) => {
+    // Use the same account lock as code issuance so a newly issued code cannot
+    // be invalidated midway through this reset transaction.
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
     const result = await tx.passwordResetOtp.updateMany({
       where: {
         id: record.id,
@@ -850,6 +856,12 @@ export async function resetPasswordAction(
     if (result.count !== 1) {
       return false;
     }
+    // A successful reset invalidates every other outstanding code, including
+    // any legacy duplicate created before issuance was serialized.
+    await tx.passwordResetOtp.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
     await tx.user.update({
       where: { id: user.id },
       data: { passwordHash: newPasswordHash, sessionVersion: { increment: 1 } },
