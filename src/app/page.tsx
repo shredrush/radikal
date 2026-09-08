@@ -75,9 +75,19 @@ const getHomeTravelStyles = unstable_cache(
   () => prisma.travelStyle.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, slug: true, image: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      image: true,
+      _count: {
+        select: {
+          tripLinks: { where: { trip: publicTripVisibilityWhere } },
+        },
+      },
+    },
   }),
-  ["home-page-travel-styles"],
+  ["home-page-travel-styles-v3"],
   { tags: ["trips"], revalidate: 300 },
 );
 
@@ -143,7 +153,13 @@ export default async function Home() {
               alt: `${guide.name} photo ${index + 1}`,
             })),
         ).slice(0, 12)}
-        travelStyles={travelStyles}
+        travelStyles={travelStyles.map((style) => ({
+          id: style.id,
+          name: style.name,
+          slug: style.slug,
+          image: style.image,
+          tripCount: style._count.tripLinks,
+        }))}
         testimonials={reviews.map((review) => ({
           name: getDisplayName(review.user.name),
           trip: review.tripName ?? review.trip?.title ?? "Radikal experience",

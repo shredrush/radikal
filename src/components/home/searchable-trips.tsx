@@ -45,7 +45,13 @@ type Testimonial = {
   date?: string;
 };
 
-type TravelStyleTile = { id: string; name: string; slug: string; image: string | null };
+type TravelStyleTile = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  tripCount: number;
+};
 
 function prioritizeFeaturedTrips(trips: TripCardItem[], featuredTripSlugs: readonly string[]) {
   const featuredRank = new Map(featuredTripSlugs.map((slug, index) => [slug, index]));
@@ -347,21 +353,30 @@ export function SearchableTrips({
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 sm:gap-4">
-            {travelStyles.map((style) => (
-              <Link
-                key={style.id}
-                href={`/trips?travelStyle=${encodeURIComponent(style.slug)}`}
-                className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-[1rem] bg-muted shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_38px_-20px_rgba(0,0,0,0.7)]"
-              >
-                {style.image ? <Image src={style.image} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(max-width: 1023px) calc(33vw - 16px), 16vw" loading="lazy" /> : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                <div className="relative z-10 flex h-full items-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
-                  <p className="font-heading text-[0.85rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
-                    {style.name}
-                  </p>
-                </div>
-              </Link>
-            ))}
+            {travelStyles.map((style) => {
+              const isComingSoon = style.tripCount === 0;
+
+              return (
+                <Link
+                  key={style.id}
+                  href={`/trips?travelStyle=${encodeURIComponent(style.slug)}`}
+                  className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-[1rem] bg-muted shadow-[0_8px_26px_-18px_rgba(0,0,0,0.55)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_38px_-20px_rgba(0,0,0,0.7)]"
+                >
+                  {style.image ? <Image src={style.image} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(max-width: 1023px) calc(33vw - 16px), 16vw" loading="lazy" /> : null}
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent ${isComingSoon ? "bg-slate-950/25" : ""}`} />
+                  <div className="relative z-10 flex h-full flex-col items-start justify-end px-3 pb-1 pt-3 sm:px-4 sm:pb-2 sm:pt-4">
+                    {isComingSoon ? (
+                      <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-white/80 sm:text-[0.65rem]">
+                        Coming soon
+                      </p>
+                    ) : null}
+                    <p className="font-heading text-[0.85rem] font-semibold tracking-wide text-white sm:text-[1.15rem]">
+                      {style.name}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
