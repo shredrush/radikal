@@ -300,6 +300,9 @@ export async function updateGuideAction(formData: FormData) {
   );
 
   const guideId = asString(formData.get("guideId"));
+  const name = sanitizeText(readBoundedText(formData, "name", 100), {
+    maxLength: 100,
+  });
   const fields = validateGuideFields(readGuideFields(formData));
   const { certifications, ...guideData } = fields;
   await assertValidGuideMedia(fields.photos, fields.videos);
@@ -307,6 +310,9 @@ export async function updateGuideAction(formData: FormData) {
 
   if (!guideId) {
     throw new Error("Missing guide id.");
+  }
+  if (!name) {
+    throw new Error("Full name is required.");
   }
 
   let username = "";
@@ -328,7 +334,7 @@ export async function updateGuideAction(formData: FormData) {
           experienceYears: true,
           languages: true,
           sports: true,
-          user: { select: { username: true, name: true } },
+          user: { select: { username: true } },
           certifications: {
             select: { title: true },
             orderBy: { createdAt: "asc" },
@@ -341,9 +347,7 @@ export async function updateGuideAction(formData: FormData) {
       }
 
       username = currentGuide.user.username ?? "";
-      // The linked account owns the name, so always re-derive it here too. This
-      // also self-heals any row that predates the user.name source of truth.
-      const guideName = resolveGuideName(currentGuide.user);
+      const guideName = resolveGuideName({ name });
 
       const changes = changedValues(
         {
@@ -369,6 +373,11 @@ export async function updateGuideAction(formData: FormData) {
           ),
         },
       );
+
+      await tx.user.update({
+        where: { id: currentGuide.userId },
+        data: { name },
+      });
 
       await tx.guide.update({
         where: { id: guideId },

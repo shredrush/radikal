@@ -388,10 +388,10 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-[1.5rem] bg-foreground px-5 py-5 text-background sm:flex-row sm:items-center sm:justify-between">
+        <section className="flex flex-col gap-4 rounded-[1.5rem] border border-border/70 bg-card px-5 py-5 text-card-foreground sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="inline-flex items-center gap-2 text-sm font-semibold"><MessageCircleHeart className="size-4 text-orange-300" /> Your trip brief is ready</p>
-            <p className="mt-1 text-sm text-background/65">We&apos;ll open a dedicated conversation to turn it into an itinerary and quote.</p>
+            <p className="mt-1 text-sm text-muted-foreground">We&apos;ll open a dedicated conversation to turn it into an itinerary and quote.</p>
           </div>
           <Button type="submit" size="lg" disabled={isPending || atChatLimit} className="shrink-0 rounded-full bg-orange-600 px-5 text-white hover:bg-orange-500 disabled:opacity-60">
             {isPending ? "Sending your brief..." : "Start the conversation"}

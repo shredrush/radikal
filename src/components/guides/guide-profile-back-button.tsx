@@ -2,9 +2,20 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
+
+const subscribeToHistory = () => () => {};
+
+function hasPreviousHistoryEntry() {
+  return window.history.length > 1;
+}
 
 export function GuideProfileBackButton() {
   const router = useRouter();
+  // A newly opened tab has no in-tab entry to return to.
+  const canGoBack = useSyncExternalStore(subscribeToHistory, hasPreviousHistoryEntry, () => false);
+
+  if (!canGoBack) return null;
 
   return (
     <button

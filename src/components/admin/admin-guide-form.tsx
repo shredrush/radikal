@@ -87,12 +87,17 @@ export function AdminGuideForm({
       <div className="grid gap-4 md:grid-cols-2">
         {isEditing ? (
           <div className="space-y-2">
-            <Label>Full name</Label>
-            <p className="flex h-10 items-center rounded-xl border border-border/70 bg-muted/30 px-3 text-sm text-muted-foreground">
-              {guide?.name}
-            </p>
+            <Label htmlFor={`name-${guide?.id}`}>Full name</Label>
+            <input
+              id={`name-${guide?.id}`}
+              name="name"
+              defaultValue={guide?.name}
+              required
+              maxLength={100}
+              className={inputClassName}
+            />
             <p className="text-xs text-muted-foreground">
-              Managed from the linked account. Change it under Admin → Users.
+              This also updates the linked account name.
             </p>
           </div>
         ) : null}
