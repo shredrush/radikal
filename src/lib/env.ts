@@ -1,4 +1,5 @@
 import "server-only";
+import { isValidEmailSender } from "@/lib/email-sender";
 
 const databaseUrlNames = [
   "DATABASE_URL",
@@ -44,6 +45,12 @@ export function validateProductionEnvironment() {
 
   if (!isUrl(process.env.SUPABASE_URL)) invalid.push("SUPABASE_URL");
   if (!isUrl(process.env.NEXTAUTH_URL)) invalid.push("NEXTAUTH_URL");
+  if (
+    process.env.RESEND_FROM_EMAIL?.trim() &&
+    !isValidEmailSender(process.env.RESEND_FROM_EMAIL)
+  ) {
+    invalid.push("RESEND_FROM_EMAIL");
+  }
   if (!process.env.NEXTAUTH_URL?.trim()) missing.push("NEXTAUTH_URL");
   if (!process.env.AUTH_SECRET?.trim() && !process.env.NEXTAUTH_SECRET?.trim()) {
     missing.push("AUTH_SECRET or NEXTAUTH_SECRET");

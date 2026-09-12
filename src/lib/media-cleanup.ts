@@ -56,7 +56,7 @@ async function mapWithConcurrency<T, R>(
  * so uploads that never made it into any row (abandoned forms) are covered.
  */
 export async function sweepOrphanMedia() {
-  const [trips, guides, applications, drafts, users, pendingChanges, previews] = await Promise.all([
+  const [trips, guides, applications, drafts, users, travelStyles, pendingChanges, previews] = await Promise.all([
     prisma.trip.findMany({ select: { images: true, videos: true } }),
     prisma.guide.findMany({ select: { photos: true, videos: true } }),
     prisma.guideApplication.findMany({
@@ -65,6 +65,7 @@ export async function sweepOrphanMedia() {
     }),
     prisma.tripDraft.findMany({ select: { images: true, videos: true } }),
     prisma.user.findMany({ select: { image: true } }),
+    prisma.travelStyle.findMany({ select: { image: true } }),
     prisma.tripChangeRequest.findMany({
       where: { status: "PENDING" },
       select: { proposed: true },
@@ -82,6 +83,9 @@ export async function sweepOrphanMedia() {
   for (const draft of drafts) recordUrl(referenced, [...draft.images, ...draft.videos]);
   for (const user of users) {
     if (user.image) recordUrl(referenced, [user.image]);
+  }
+  for (const style of travelStyles) {
+    if (style.image) recordUrl(referenced, [style.image]);
   }
   for (const change of pendingChanges) {
     recordUrl(referenced, (change.proposed as TripProposal | null)?.images ?? []);

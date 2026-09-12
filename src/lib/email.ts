@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { Resend } from "resend";
+import { normalizeEmailSender } from "@/lib/email-sender";
 
 const SITE_NAME = "Radikal";
 
@@ -7,7 +8,9 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 // Resend requires the sender to be a verified domain. While developing, the
 // shared "onboarding@resend.dev" address works with a test API key. Point this
 // at your own verified domain (e.g. "Radikal <trips@radikal.in>") in production.
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? `Radikal <onboarding@resend.dev>`;
+const FROM_EMAIL = normalizeEmailSender(
+  process.env.RESEND_FROM_EMAIL ?? `Radikal <onboarding@resend.dev>`,
+);
 
 // TEMPORARY test redirect: while developing, any email addressed to a
 // @example.com or @radikal.in recipient is routed to the developer's inbox
