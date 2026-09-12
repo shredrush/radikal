@@ -6,6 +6,8 @@ import { processEmailOutbox } from "@/lib/email-outbox";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// [TODO] Restore the five-minute schedule in vercel.json after upgrading from
+// Vercel Hobby, which permits cron jobs to run only once per day.
 /** Processes persisted mail jobs. Vercel Cron authenticates with CRON_SECRET. */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
