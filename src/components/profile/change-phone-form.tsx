@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 import {
   Select,
   SelectContent,
@@ -56,9 +57,10 @@ export function ChangePhoneForm({
   const initial = useMemo(() => splitPhoneNumber(currentPhone), [currentPhone]);
   const [countryCode, setCountryCode] = useState(initial.iso2);
   const [phoneNumber, setPhoneNumber] = useState(initial.localNumber);
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onChange={dismissErrors} onInvalidCapture={dismissErrors} className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
         Current phone:{" "}
         <span className="font-semibold text-foreground">
@@ -76,7 +78,7 @@ export function ChangePhoneForm({
         </p>
       ) : null}
 
-      {state.error ? (
+      {areErrorsVisible && state.error ? (
         <p
           role="alert"
           className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -90,9 +92,10 @@ export function ChangePhoneForm({
         <div className="flex items-stretch gap-2">
           <Select
             value={countryCode}
-            onValueChange={(value) =>
-              setCountryCode((value as string) ?? DEFAULT_PHONE_COUNTRY)
-            }
+            onValueChange={(value) => {
+              dismissErrors();
+              setCountryCode((value as string) ?? DEFAULT_PHONE_COUNTRY);
+            }}
           >
             <SelectTrigger
               className="w-[5.75rem] shrink-0"
@@ -143,7 +146,7 @@ export function ChangePhoneForm({
           name="phone"
           value={`+${getDialCode(countryCode)}${phoneNumber}`}
         />
-        {state.fieldErrors?.phone ? (
+        {areErrorsVisible && state.fieldErrors?.phone ? (
           <p className="text-xs text-destructive">{state.fieldErrors.phone}</p>
         ) : null}
         <p className="text-xs text-muted-foreground">

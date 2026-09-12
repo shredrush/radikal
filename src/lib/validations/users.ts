@@ -24,3 +24,17 @@ export const updateUserSchema = z.object({
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+export const adminChangeUserPasswordSchema = z
+  .object({
+    userId: z.string().min(1, "Missing user id"),
+    newPassword: z
+      .string()
+      .min(6, "New password must be at least 6 characters")
+      .max(72, "New password must be 72 characters or fewer"),
+    confirmPassword: z.string().min(1, "Confirm the new password").max(200),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });

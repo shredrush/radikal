@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { logActivity } from "@/lib/activity-log";
+import { getActivityLogContext, logActivity, logActivityInTransaction } from "@/lib/activity-log";
 import { rateLimit, rateLimitError } from "@/lib/rate-limit";
 import {
   createCustomDateEnquirySchema,
@@ -14,8 +14,12 @@ import {
   customTripMessageSchema,
 } from "@/lib/validations/custom-trip";
 import { MAX_OPEN_CUSTOM_TRIP_CHATS } from "@/lib/custom-trips";
-import { createGuestAccount } from "@/lib/guest-account";
-import { guestAccountCreatedEmail, sendEmailAfter } from "@/lib/email";
+import {
+  createGuestAccount,
+  validateGuestAccount,
+  type GuestAccountInput,
+} from "@/lib/guest-account";
+import { sendEmailAfter, welcomeEmail } from "@/lib/email";
 
 export type CreateCustomTripResult =
   | { success: true; requestId: string }
@@ -59,27 +63,57 @@ export async function createCustomTripRequestAction(
   } = parsed.data;
 
   let userId = session?.user?.id;
+  let guestAccountData: GuestAccountInput | null = null;
   if (!userId) {
-    const account = await createGuestAccount({
+    const account = validateGuestAccount({
       name: parsed.data.contactName,
       email: parsed.data.contactEmail,
       phone: parsed.data.contactPhone,
+      password: parsed.data.password,
     });
     if (!account.success) return { success: false, error: account.error };
-    userId = account.user.id;
-    await sendEmailAfter(guestAccountCreatedEmail({
-      to: account.user.email,
-      name: account.user.name,
-      password: account.password,
-    }));
+    guestAccountData = account.data;
   }
 
-  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
+  if (!userId && !guestAccountData) {
+    return { success: false, error: "Could not validate your contact details." };
+  }
+
+  const guestActivityContext = !userId ? await getActivityLogContext() : null;
+
+  const requestLimit = rateLimit(
+    userId ? `custom-trip-create:user:${userId}` : `custom-trip-create:guest:${guestAccountData!.email}`,
+    5,
+    60 * 60_000,
+  );
   if (!requestLimit.success) return { success: false, error: rateLimitError(requestLimit) };
 
-  let request;
+  let guestAccountError: string | null = null;
+  let requestResult: {
+    request: { id: string };
+    guestAccount: { name: string; email: string } | null;
+  };
   try {
-    request = await prisma.$transaction(async (tx) => {
+    requestResult = await prisma.$transaction(async (tx) => {
+      let createdGuestAccount: { name: string; email: string } | null = null;
+      if (!userId) {
+        const account = await createGuestAccount(guestAccountData!, tx);
+        if (!account.success) {
+          guestAccountError = account.error;
+          throw new Error("GUEST_ACCOUNT_ERROR");
+        }
+        userId = account.user.id;
+        createdGuestAccount = { name: account.user.name, email: account.user.email };
+        if (guestActivityContext) {
+          await logActivityInTransaction(tx, {
+            userId,
+            action: "ACCOUNT_CREATED",
+            label: "Account created from a custom trip request",
+            metadata: { email: account.user.email, source: "custom_trip" },
+          }, guestActivityContext);
+        }
+      }
+
       // Lock the account row so concurrent requests for the same customer
       // serialize before checking the open-chat limit.
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
@@ -89,27 +123,30 @@ export async function createCustomTripRequestAction(
       if (openRequestCount >= MAX_OPEN_CUSTOM_TRIP_CHATS) {
         throw new Error("OPEN_REQUEST_LIMIT");
       }
-      const created = await tx.customTripRequest.create({
-      data: {
-        userId,
-        groupType,
-        sports,
-        startDate: new Date(`${startDate}T00:00:00`),
-        endDate: new Date(`${endDate}T00:00:00`),
-        location,
-        participantCount,
-        budgetRupees,
-        requirements: requirements || null,
-        status: "NEW",
-        chat: {
-          create: {},
+      const request = await tx.customTripRequest.create({
+        data: {
+          userId,
+          groupType,
+          sports,
+          startDate: new Date(`${startDate}T00:00:00`),
+          endDate: new Date(`${endDate}T00:00:00`),
+          location,
+          participantCount,
+          budgetRupees,
+          requirements: requirements || null,
+          status: "NEW",
+          chat: {
+            create: {},
+          },
         },
-      },
-    });
+      });
 
-      return created;
+      return { request, guestAccount: createdGuestAccount };
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "GUEST_ACCOUNT_ERROR") {
+      return { success: false, error: guestAccountError ?? "Could not create an account." };
+    }
     if (error instanceof Error && error.message === "OPEN_REQUEST_LIMIT") {
       return {
         success: false,
@@ -119,12 +156,19 @@ export async function createCustomTripRequestAction(
     throw error;
   }
 
+  if (requestResult.guestAccount) {
+    await sendEmailAfter(welcomeEmail({
+      to: requestResult.guestAccount.email,
+      name: requestResult.guestAccount.name,
+    }));
+  }
+
   await logActivity({
     userId,
     action: "CUSTOM_TRIP_REQUESTED",
     label: "Requested a custom trip",
     metadata: {
-      requestId: request.id,
+      requestId: requestResult.request.id,
       groupType,
       sports,
       participantCount,
@@ -134,7 +178,7 @@ export async function createCustomTripRequestAction(
   revalidatePath("/profile");
   revalidatePath("/support");
 
-  return { success: true, requestId: request.id };
+  return { success: true, requestId: requestResult.request.id };
 }
 
 /**

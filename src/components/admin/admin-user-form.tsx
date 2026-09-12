@@ -2,12 +2,18 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
-import { deactivateUserAction, updateUserAction } from "@/lib/actions/users";
+import {
+  changeUserPasswordAction,
+  deactivateUserAction,
+  updateUserAction,
+} from "@/lib/actions/users";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const inputClassName =
   `flex h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`;
@@ -34,9 +40,11 @@ export type AdminUserFormUser = {
 export function AdminUserForm({
   user,
   isSelf = false,
+  canChangePassword = false,
 }: {
   user: AdminUserFormUser;
   isSelf?: boolean;
+  canChangePassword?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -77,10 +85,33 @@ export function AdminUserForm({
     });
   }
 
+  function handlePasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (!window.confirm(`Reset the password for ${user.name}? They will be signed out on other devices.`)) {
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await changeUserPasswordAction(new FormData(form));
+        form.reset();
+        toast.success("Password reset. The user will receive a security email.");
+        router.refresh();
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not reset password.";
+        toast.error(message);
+      }
+    });
+  }
+
   const isDeleted = Boolean(user.deletedAt);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-5">
       <input type="hidden" name="userId" value={user.id} />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -167,6 +198,53 @@ export function AdminUserForm({
           </Button>
         </div>
       </div>
-    </form>
+      </form>
+
+      {canChangePassword && !isSelf && !isDeleted ? (
+        <form
+          onSubmit={handlePasswordSubmit}
+          className="space-y-5 border-t border-border/70 pt-6"
+        >
+          <input type="hidden" name="userId" value={user.id} />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-heading text-base font-semibold text-foreground">
+                Reset password
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Set a new password for this account. This immediately signs the user out on other devices.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`new-password-${user.id}`}>New password</Label>
+              <PasswordInput
+                id={`new-password-${user.id}`}
+                name="newPassword"
+                autoComplete="new-password"
+                placeholder="At least 6 characters"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`confirm-password-${user.id}`}>Confirm new password</Label>
+              <PasswordInput
+                id={`confirm-password-${user.id}`}
+                name="confirmPassword"
+                autoComplete="new-password"
+                required
+              />
+            </div>
+          </div>
+
+          <Button type="submit" variant="outline" className="rounded-full" disabled={isPending}>
+            {isPending ? "Resetting…" : "Reset password"}
+          </Button>
+        </form>
+      ) : null}
+    </div>
   );
 }

@@ -19,6 +19,11 @@ export const usernameSchema = z
 
 export type Username = z.infer<typeof usernameSchema>;
 
+export const passwordSchema = z
+  .string()
+  .min(6, "Password must be at least 6 characters")
+  .max(72, "Password must be 72 characters or fewer");
+
 export const signupSchema = z.object({
   name: z
     .string()
@@ -29,7 +34,7 @@ export const signupSchema = z.object({
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     usernameSchema.optional()
   ),
-  password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password must be 72 characters or fewer"),
+  password: passwordSchema,
   // Full E.164 number (e.g. +917217217678): a leading +, then 7–15 digits.
   phone: z
     .string()

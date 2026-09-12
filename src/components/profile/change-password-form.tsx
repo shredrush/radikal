@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 
 const initialState: ChangePasswordActionState = {};
 
@@ -19,6 +20,7 @@ export function ChangePasswordForm() {
     initialState
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
 
   useEffect(() => {
     if (state.success) {
@@ -27,7 +29,7 @@ export function ChangePasswordForm() {
   }, [state.success]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} onChange={dismissErrors} onInvalidCapture={dismissErrors} className="flex flex-col gap-4">
       {state.success ? (
         <p
           role="status"
@@ -38,7 +40,7 @@ export function ChangePasswordForm() {
         </p>
       ) : null}
 
-      {state.error ? (
+      {areErrorsVisible && state.error ? (
         <p
           role="alert"
           className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -55,7 +57,7 @@ export function ChangePasswordForm() {
           autoComplete="current-password"
           required
         />
-        {state.fieldErrors?.currentPassword ? (
+        {areErrorsVisible && state.fieldErrors?.currentPassword ? (
           <p className="text-xs text-destructive">{state.fieldErrors.currentPassword}</p>
         ) : null}
       </div>
@@ -69,7 +71,7 @@ export function ChangePasswordForm() {
           placeholder="At least 6 characters"
           required
         />
-        {state.fieldErrors?.newPassword ? (
+        {areErrorsVisible && state.fieldErrors?.newPassword ? (
           <p className="text-xs text-destructive">{state.fieldErrors.newPassword}</p>
         ) : null}
       </div>
@@ -82,7 +84,7 @@ export function ChangePasswordForm() {
           autoComplete="new-password"
           required
         />
-        {state.fieldErrors?.confirmPassword ? (
+        {areErrorsVisible && state.fieldErrors?.confirmPassword ? (
           <p className="text-xs text-destructive">{state.fieldErrors.confirmPassword}</p>
         ) : null}
       </div>

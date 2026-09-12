@@ -175,7 +175,7 @@ export function ProfilePhotoForm({
             <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
               {PROFILE_AVATARS.map((avatar) => (
                 <label key={avatar.key} className="group flex cursor-pointer flex-col items-center gap-1.5 text-center text-[0.65rem] text-muted-foreground">
-                  <input type="radio" name="avatarKey" value={avatar.key} checked={selectedAvatar === avatar.key} onChange={() => { setSelectedAvatar(avatar.key); setPreview(null); setPhotoFile(null); conversionToken.current += 1; if (fileInputRef.current) fileInputRef.current.value = ""; }} className="sr-only" />
+                  <input type="radio" name="avatarKey" value={avatar.key} checked={selectedAvatar === avatar.key} onChange={() => { setError(null); setSelectedAvatar(avatar.key); setPreview(null); setPhotoFile(null); conversionToken.current += 1; if (fileInputRef.current) fileInputRef.current.value = ""; }} className="sr-only" />
                   <span className={`relative rounded-full p-0.5 ring-2 transition ${selectedAvatar === avatar.key ? "ring-primary" : "ring-transparent group-hover:ring-border"}`}>
                     <Image src={avatar.src} alt={avatar.label} width={52} height={52} className="size-12 rounded-full object-contain" />
                     {selectedAvatar === avatar.key ? <Check className="absolute -right-1 -top-1 rounded-full bg-primary p-0.5 text-primary-foreground" size={18} /> : null}

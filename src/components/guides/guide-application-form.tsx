@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
 import { PhoneNumberField } from "@/components/forms/phone-number-field";
+import { PasswordInput } from "@/components/ui/password-input";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 import { useUsernameAvailability } from "@/hooks/use-username-availability";
 
 const initialState: GuideApplicationState = {};
@@ -43,6 +45,7 @@ export function GuideApplicationForm({
   const formRef = useRef<HTMLFormElement>(null);
   const submittedValues = useRef(new Map<string, FormDataEntryValue>());
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
   const {
     availability: usernameStatus,
     isChecking: isCheckingUsername,
@@ -52,8 +55,11 @@ export function GuideApplicationForm({
   });
 
   const hasClientErrors = Object.keys(clientErrors).length > 0;
-  const fieldErrors = hasClientErrors ? clientErrors : state.fieldErrors ?? clientErrors;
-  const errorMessage = state.error ?? (hasClientErrors ? "Complete the required fields below." : undefined);
+  const serverFieldErrors = areErrorsVisible ? state.fieldErrors : undefined;
+  const fieldErrors = hasClientErrors ? clientErrors : serverFieldErrors ?? clientErrors;
+  const errorMessage = hasClientErrors
+    ? "Complete the required fields below."
+    : areErrorsVisible ? state.error : undefined;
   const submitErrorMessage = errorMessage === "Complete the required fields below."
     ? "Complete the required fields above."
     : errorMessage;
@@ -85,8 +91,9 @@ export function GuideApplicationForm({
   }, [fieldErrors]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    dismissErrors();
     const formData = new FormData(event.currentTarget);
-    const requiredFields = isGuest ? [...requiredFieldNames, "phone", "email"] : [...requiredFieldNames, "phone"];
+    const requiredFields = isGuest ? [...requiredFieldNames, "phone", "email", "password"] : [...requiredFieldNames, "phone"];
     const missing = Object.fromEntries(
       requiredFields
         .filter((name) => !formData.get(name)?.toString().trim())
@@ -99,9 +106,20 @@ export function GuideApplicationForm({
       return;
     }
 
+    const password = formData.get("password")?.toString() ?? "";
+    if (isGuest && (password.length < 6 || password.length > 72)) {
+      event.preventDefault();
+      setClientErrors({
+        password: password.length < 6
+          ? "Password must be at least 6 characters"
+          : "Password must be 72 characters or fewer",
+      });
+      return;
+    }
+
     submittedValues.current = new Map(
       Array.from(formData.entries()).filter(([name, value]) =>
-        typeof value === "string" && !["images", "videos", "mediaOrder"].includes(name),
+        typeof value === "string" && !["images", "videos", "mediaOrder", "password"].includes(name),
       ),
     );
     setClientErrors({});
@@ -114,9 +132,15 @@ export function GuideApplicationForm({
           <CheckCircle2 className="size-12 text-primary" />
           <h2 className="font-heading text-2xl font-semibold tracking-wide">Application submitted</h2>
           <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-            Thanks! Your guide application is now under review. {isGuest ? "We created your account and emailed a temporary password so you can sign in and follow updates." : "Our team will verify your details and get back to you soon."}
+            Thanks! Your guide application is now under review. {isGuest ? "We created your account so you can sign in and follow updates." : "Our team will verify your details and get back to you soon."}
           </p>
         </div>
+
+        {isGuest ? (
+          <Button className="rounded-full" nativeButton={false} render={<Link href="/login" />}>
+            Login
+          </Button>
+        ) : null}
 
         <div className="w-full rounded-2xl border border-border/70 bg-muted/20 p-6 text-left">
           <h3 className="font-heading text-base font-semibold tracking-wide">What happens next?</h3>
@@ -136,15 +160,25 @@ export function GuideApplicationForm({
           </ul>
         </div>
 
-        <Button className="rounded-full" nativeButton={false} render={<Link href={isGuest ? "/login" : "/profile"} />}>
-          {isGuest ? "Sign in" : "Go to profile"}
-        </Button>
+        {!isGuest ? (
+          <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
+            Go to profile
+          </Button>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      onChange={dismissErrors}
+      onSubmit={handleSubmit}
+      onInvalidCapture={dismissErrors}
+      noValidate
+      className="space-y-5"
+    >
       {errorMessage ? (
         <p
           role="alert"
@@ -203,17 +237,6 @@ export function GuideApplicationForm({
           ) : null}
           {fieldErrors.username ? <p id="application-username-error" role="alert" className="text-xs text-destructive">{fieldErrors.username}</p> : null}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="application-phone">{requiredLabel("Phone")}</Label>
-          <PhoneNumberField
-            id="application-phone"
-            name="phone"
-            defaultValue={phone ?? ""}
-            required
-            className={`${inputClassName} ${fieldErrors.phone ? "border-destructive" : ""}`}
-          />
-          {fieldErrors.phone ? <p role="alert" className="text-xs text-destructive">{fieldErrors.phone}</p> : null}
-        </div>
         {isGuest ? (
           <div className="space-y-2">
             <Label htmlFor="application-email">{requiredLabel("Email")}</Label>
@@ -229,9 +252,37 @@ export function GuideApplicationForm({
               aria-describedby={fieldErrors.email ? "application-email-error" : undefined}
             />
             {fieldErrors.email ? <p id="application-email-error" role="alert" className="text-xs text-destructive">{fieldErrors.email}</p> : null}
-            <p className="text-xs text-muted-foreground">We&apos;ll create your account and email a temporary password.</p>
           </div>
         ) : null}
+        {isGuest ? (
+          <div className="space-y-2">
+            <Label htmlFor="application-password">{requiredLabel("Password")}</Label>
+            <PasswordInput
+              id="application-password"
+              name="password"
+              autoComplete="new-password"
+              placeholder="At least 6 characters"
+              minLength={6}
+              maxLength={72}
+              required
+              className={`${inputClassName} ${fieldErrors.password ? "border-destructive" : ""}`}
+              aria-invalid={Boolean(fieldErrors.password)}
+              aria-describedby={fieldErrors.password ? "application-password-error" : undefined}
+            />
+            {fieldErrors.password ? <p id="application-password-error" role="alert" className="text-xs text-destructive">{fieldErrors.password}</p> : null}
+          </div>
+        ) : null}
+        <div className="space-y-2">
+          <Label htmlFor="application-phone">{requiredLabel("Phone")}</Label>
+          <PhoneNumberField
+            id="application-phone"
+            name="phone"
+            defaultValue={phone ?? ""}
+            required
+            className={`${inputClassName} ${fieldErrors.phone ? "border-destructive" : ""}`}
+          />
+          {fieldErrors.phone ? <p role="alert" className="text-xs text-destructive">{fieldErrors.phone}</p> : null}
+        </div>
         <div className="space-y-2">
           <Label htmlFor="application-location">{requiredLabel("Location")}</Label>
           <input

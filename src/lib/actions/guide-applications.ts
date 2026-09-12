@@ -8,13 +8,16 @@ import {
   guideApplicationAdminEmail,
   guideApplicationDecisionEmail,
   guideApplicationReceivedEmail,
-  guestAccountCreatedEmail,
   sendEmailAfter,
 } from "@/lib/email";
-import { createGuestAccount } from "@/lib/guest-account";
+import {
+  createGuestAccount,
+  validateGuestAccount,
+  type GuestAccountInput,
+} from "@/lib/guest-account";
 import { notifyGuideApplicationStaff, notifyUser } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { logActivity } from "@/lib/activity-log";
+import { getActivityLogContext, logActivity, logActivityInTransaction } from "@/lib/activity-log";
 import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { isSafeHttpUrl, isValidUsername, normalizeUsername, sanitizeText } from "@/lib/sanitize";
 import { MEDIA_LIMITS } from "@/lib/media-constants";
@@ -25,12 +28,22 @@ import {
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
 import { generateAvailableUsername } from "@/lib/available-username";
+import { passwordSchema } from "@/lib/validations/auth";
 
 const MAX_GUIDE_LANGUAGES = 20;
 const MAX_GUIDE_CERTIFICATIONS = 25;
 const MAX_GUIDE_LANGUAGES_INPUT_CHARS = 1700;
 const MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS = 5100;
 const MAX_SOCIAL_URL_LENGTH = 2048;
+
+class GuideSubmissionError extends Error {
+  constructor(
+    message: string,
+    readonly fieldErrors?: Record<string, string>,
+  ) {
+    super(message);
+  }
+}
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -149,6 +162,17 @@ export async function submitGuideApplicationAction(
     return { error: "Complete the required fields below.", fieldErrors };
   }
 
+  const password = formData.get("password")?.toString() ?? "";
+  if (!session?.user) {
+    const parsedPassword = passwordSchema.safeParse(password);
+    if (!parsedPassword.success) {
+      return {
+        error: "Correct the highlighted fields below.",
+        fieldErrors: { password: parsedPassword.error.issues[0]?.message ?? "Enter a valid password." },
+      };
+    }
+  }
+
   if (!/^\+\d{7,15}$/.test(fields.phone)) {
     return {
       error: "Correct the required fields below.",
@@ -217,69 +241,92 @@ export async function submitGuideApplicationAction(
     return { error: error instanceof Error ? error.message : "Media could not be validated." };
   }
 
-  let userId = session?.user?.id;
-  let accountEmail = session?.user?.email ?? "";
-  if (!userId) {
-    const account = await createGuestAccount({
-      name: fields.name,
-      email: asString(formData.get("email")),
-      phone: fields.phone,
-    });
-    if (!account.success) return { error: account.error, fieldErrors: account.fieldErrors };
-    userId = account.user.id;
-    accountEmail = account.user.email;
-    await sendEmailAfter(guestAccountCreatedEmail({
-      to: account.user.email,
-      name: account.user.name,
-      password: account.password,
-    }));
-  }
-
-  const existingUser = await prisma.user.findFirst({
-    where: { id: userId, deletedAt: null },
-    select: { username: true },
-  });
-  if (!existingUser) {
-    return { error: "Account not found." };
-  }
-
-  const existing = await prisma.guideApplication.findFirst({
-    where: { userId, status: "PENDING" },
-    select: { id: true },
-  });
-  if (existing) {
-    return { error: "You already have an application under review." };
-  }
-
-  // Every guide needs a public URL, so an available handle is generated when
-  // the applicant leaves this optional field blank.
-  const username = normalizeUsername(asString(formData.get("username")));
-
-  if (username && !isValidUsername(username)) {
+  const requestedUsername = normalizeUsername(asString(formData.get("username")));
+  if (requestedUsername && !isValidUsername(requestedUsername)) {
     return {
       error: "Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.",
       fieldErrors: { username: "Use 3–30 lowercase letters or numbers." },
     };
   }
 
-  const resolvedUsername = username ?? existingUser.username ?? (await generateAvailableUsername("guide"));
-
-  if (existingUser.username !== resolvedUsername) {
+  if (requestedUsername) {
     const usernameTaken = await prisma.user.findFirst({
-      where: { username: resolvedUsername, deletedAt: null },
+      where: {
+        username: requestedUsername,
+        deletedAt: null,
+        ...(session?.user?.id ? { id: { not: session.user.id } } : {}),
+      },
       select: { id: true },
     });
     if (usernameTaken) {
-        return { error: "This username is already taken.", fieldErrors: { username: "This username is already taken." } };
+      return { error: "This username is already taken.", fieldErrors: { username: "This username is already taken." } };
     }
   }
 
+  let guestAccountData: GuestAccountInput | null = null;
+  if (!session?.user?.id) {
+    const account = validateGuestAccount({
+      name: fields.name,
+      email: asString(formData.get("email")),
+      phone: fields.phone,
+      password,
+    });
+    if (!account.success) return { error: account.error, fieldErrors: account.fieldErrors };
+    guestAccountData = account.data;
+  }
+
   const { certifications, ...applicationData } = fields;
+  const guestActivityContext = guestAccountData ? await getActivityLogContext() : null;
+  let submission: { userId: string; accountEmail: string; resolvedUsername: string };
 
   try {
-    await prisma.$transaction(async (tx) => {
+    submission = await prisma.$transaction(async (tx) => {
+      let userId = session?.user?.id;
+      let accountEmail = session?.user?.email ?? "";
+      if (!userId) {
+        const account = await createGuestAccount(guestAccountData!, tx);
+        if (!account.success) {
+          throw new GuideSubmissionError(account.error, account.fieldErrors);
+        }
+        userId = account.user.id;
+        accountEmail = account.user.email;
+        if (guestActivityContext) {
+          await logActivityInTransaction(tx, {
+            userId,
+            action: "ACCOUNT_CREATED",
+            label: "Account created from a guide application",
+            metadata: { email: accountEmail, source: "guide_application" },
+          }, guestActivityContext);
+        }
+      }
+
+      const existingUser = await tx.user.findFirst({
+        where: { id: userId, deletedAt: null },
+        select: { username: true },
+      });
+      if (!existingUser) throw new GuideSubmissionError("Account not found.");
+
+      const existing = await tx.guideApplication.findFirst({
+        where: { userId, status: "PENDING" },
+        select: { id: true },
+      });
+      if (existing) throw new GuideSubmissionError("You already have an application under review.");
+
+      // Every guide needs a public URL, so an available handle is generated when
+      // the applicant leaves this optional field blank.
+      const resolvedUsername = requestedUsername ?? existingUser.username ?? await generateAvailableUsername("guide", tx);
+      if (existingUser.username !== resolvedUsername) {
+        const usernameTaken = await tx.user.findFirst({
+          where: { username: resolvedUsername, id: { not: userId } },
+          select: { id: true },
+        });
+        if (usernameTaken) {
+          throw new GuideSubmissionError("This username is already taken.", { username: "This username is already taken." });
+        }
+      }
+
       // The handle is now live, so retire any alias that still points to it.
-        await tx.usernameAlias.deleteMany({ where: { username: resolvedUsername } });
+      await tx.usernameAlias.deleteMany({ where: { username: resolvedUsername } });
 
       await tx.user.update({
         where: { id: userId },
@@ -293,16 +340,20 @@ export async function submitGuideApplicationAction(
           certifications: { create: certifications },
         },
       });
+      return { userId, accountEmail, resolvedUsername };
     });
   } catch (error) {
+    if (error instanceof GuideSubmissionError) {
+      return { error: error.message, fieldErrors: error.fieldErrors };
+    }
     if (error instanceof Error && error.message.includes("Unique constraint failed")) {
-      return { error: "You already have an application under review." };
+      return { error: "Your application could not be submitted. Please try again." };
     }
     throw error;
   }
 
   await logActivity({
-    userId,
+    userId: submission.userId,
     action: "GUIDE_APPLICATION_SUBMITTED",
     label: "Submitted a guide application",
   });
@@ -310,14 +361,14 @@ export async function submitGuideApplicationAction(
   // Acknowledge receipt in the background — never block submission on email.
   await sendEmailAfter(
     guideApplicationReceivedEmail({
-      to: accountEmail,
+      to: submission.accountEmail,
       name: session?.user?.name ?? fields.name,
     }),
   );
 
   // Let the applicant know in-app that their application is under review.
   try {
-    await notifyUser(userId, {
+    await notifyUser(submission.userId, {
       type: "GUIDE_APPLICATION_SUBMITTED",
       title: "Application under review",
       body: "Your guide application is under review. We'll email you once a decision is made.",
@@ -334,7 +385,7 @@ export async function submitGuideApplicationAction(
     const staff = await notifyGuideApplicationStaff({
       type: "GUIDE_APPLICATION_NEW",
       title: "New guide application",
-      body: `${fields.name} (@${resolvedUsername}) applied to become a guide.`,
+      body: `${fields.name} (@${submission.resolvedUsername}) applied to become a guide.`,
       href: "/admin/guides",
     });
 
@@ -345,7 +396,7 @@ export async function submitGuideApplicationAction(
           name: user.name ?? "",
           applicant: {
             name: fields.name,
-            username: resolvedUsername,
+            username: submission.resolvedUsername,
             location: fields.location,
             experienceYears: fields.experienceYears,
             languages: fields.languages,

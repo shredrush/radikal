@@ -155,6 +155,7 @@ export function CheckoutFlow({
   }
 
   function handleSubmitPayment() {
+    setError(null);
     // Sanitize locally before sending — mirrors the server-side sanitization.
     const cleanTransactionId = sanitizeText(transactionId, { maxLength: 100 });
     const cleanSpecialRequests = sanitizeText(specialRequests, {
@@ -361,7 +362,10 @@ export function CheckoutFlow({
                 role="switch"
                 aria-checked={adventureInsurance}
                 disabled={step !== "select"}
-                onClick={() => setAdventureInsurance((on) => !on)}
+                onClick={() => {
+                  setAdventureInsurance((on) => !on);
+                  setError(null);
+                }}
                 className={`relative flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5 transition-colors ${
                   adventureInsurance
                     ? "border-emerald-700/60 bg-emerald-600 dark:border-emerald-500/50"
@@ -387,7 +391,10 @@ export function CheckoutFlow({
               <textarea
                 id="special-requests"
                 value={specialRequests}
-                onChange={(event) => setSpecialRequests(event.target.value)}
+                onChange={(event) => {
+                  setSpecialRequests(event.target.value);
+                  setError(null);
+                }}
                 maxLength={SPECIAL_REQUESTS_MAX_LENGTH}
                 rows={4}
                 disabled={step !== "select"}

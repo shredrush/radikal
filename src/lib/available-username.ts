@@ -4,18 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { generateUsername } from "@/lib/username-generator";
 
 const USERNAME_CANDIDATE_BATCH_SIZE = 25;
+type UserClient = Pick<typeof prisma, "user">;
 
 /**
  * Choose an unused generated username with one indexed lookup instead of
  * probing the users table once per candidate.
  */
-export async function generateAvailableUsername(prefix = "traveler"): Promise<string> {
+export async function generateAvailableUsername(
+  prefix = "traveler",
+  client: UserClient = prisma,
+): Promise<string> {
   const candidates = new Set<string>();
   while (candidates.size < USERNAME_CANDIDATE_BATCH_SIZE) {
     candidates.add(generateUsername());
   }
 
-  const existing = await prisma.user.findMany({
+  const existing = await client.user.findMany({
     where: { username: { in: [...candidates] } },
     select: { username: true },
   });

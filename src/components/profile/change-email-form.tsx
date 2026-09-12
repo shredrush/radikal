@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 
 const initialState: ChangeEmailActionState = {};
 
@@ -22,9 +23,10 @@ export function ChangeEmailForm({
     changeEmailAction,
     initialState
   );
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onChange={dismissErrors} onInvalidCapture={dismissErrors} className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
         Current email:{" "}
         <span className="font-semibold text-foreground">{currentEmail}</span>
@@ -40,7 +42,7 @@ export function ChangeEmailForm({
         </p>
       ) : null}
 
-      {state.error ? (
+      {areErrorsVisible && state.error ? (
         <p
           role="alert"
           className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -60,7 +62,7 @@ export function ChangeEmailForm({
           placeholder="you@example.com"
           required
         />
-        {state.fieldErrors?.email ? (
+        {areErrorsVisible && state.fieldErrors?.email ? (
           <p className="text-xs text-destructive">{state.fieldErrors.email}</p>
         ) : null}
         <p className="text-xs text-muted-foreground">

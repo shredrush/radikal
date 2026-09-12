@@ -31,4 +31,13 @@ describe("custom trip validation", () => {
       createCustomTripSchema.safeParse({ ...validRequest, startDate: "2026-02-30" }).success,
     ).toBe(false);
   });
+
+  it("uses the signup password constraints when a password is supplied", () => {
+    expect(
+      createCustomTripSchema.safeParse({ ...validRequest, password: "secret" }).success,
+    ).toBe(true);
+    expect(
+      createCustomTripSchema.safeParse({ ...validRequest, password: "short" }).success,
+    ).toBe(false);
+  });
 });

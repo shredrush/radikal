@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 
 const loginInitialState: LoginActionState = {};
 const requestResetInitialState: RequestPasswordResetState = {};
@@ -37,6 +38,8 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   );
 
   const [identifier, setIdentifier] = useState(loginState.identifier ?? "");
+  const { areErrorsVisible: areLoginErrorsVisible, dismissErrors: dismissLoginErrors } =
+    useFormActionErrorVisibility(loginState);
 
   if (mode === "forgot") {
     return (
@@ -65,11 +68,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
 
       <form
         action={loginFormAction}
+        onChange={dismissLoginErrors}
+        onInvalidCapture={dismissLoginErrors}
         className="flex flex-col gap-5 rounded-[1.25rem] border border-border/70 bg-background/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-7"
       >
         <input type="hidden" name="callbackUrl" value={callbackUrl ?? "/"} />
 
-        {loginState.error ? (
+        {areLoginErrorsVisible && loginState.error ? (
           <p
             role="alert"
             className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -150,6 +155,10 @@ function ForgotPasswordFlow({
     requestState.identifier ?? ""
   );
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const { areErrorsVisible: areRequestErrorsVisible, dismissErrors: dismissRequestErrors } =
+    useFormActionErrorVisibility(requestState);
+  const { areErrorsVisible: areResetErrorsVisible, dismissErrors: dismissResetErrors } =
+    useFormActionErrorVisibility(resetState);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -209,10 +218,10 @@ function ForgotPasswordFlow({
         </div>
       ) : currentStep === "reset" ? (
         <div className="flex flex-col gap-5 rounded-[1.25rem] border border-border/70 bg-background/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-7">
-          <form action={requestFormAction} className="flex flex-col gap-5">
+          <form action={requestFormAction} onSubmit={dismissRequestErrors} className="flex flex-col gap-5">
             <input type="hidden" name="identifier" value={effectiveResetIdentifier} />
 
-            {requestState.error ? (
+            {areRequestErrorsVisible && requestState.error ? (
               <p
                 role="alert"
                 className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -243,10 +252,15 @@ function ForgotPasswordFlow({
             </div>
           </form>
 
-          <form action={resetFormAction} className="flex flex-col gap-5">
+          <form
+            action={resetFormAction}
+            onChange={dismissResetErrors}
+            onInvalidCapture={dismissResetErrors}
+            className="flex flex-col gap-5"
+          >
             <input type="hidden" name="identifier" value={effectiveResetIdentifier} />
 
-            {resetState.error ? (
+            {areResetErrorsVisible && resetState.error ? (
               <p
                 role="alert"
                 className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -269,7 +283,7 @@ function ForgotPasswordFlow({
                 className="tracking-[0.4em]"
                 required
               />
-              {resetState.fieldErrors?.otp ? (
+              {areResetErrorsVisible && resetState.fieldErrors?.otp ? (
                 <p className="text-xs text-destructive">
                   {resetState.fieldErrors.otp}
                 </p>
@@ -285,7 +299,7 @@ function ForgotPasswordFlow({
                 placeholder="At least 6 characters"
                 required
               />
-              {resetState.fieldErrors?.newPassword ? (
+              {areResetErrorsVisible && resetState.fieldErrors?.newPassword ? (
                 <p className="text-xs text-destructive">
                   {resetState.fieldErrors.newPassword}
                 </p>
@@ -301,7 +315,7 @@ function ForgotPasswordFlow({
                 placeholder="Re-enter your password"
                 required
               />
-              {resetState.fieldErrors?.confirmPassword ? (
+              {areResetErrorsVisible && resetState.fieldErrors?.confirmPassword ? (
                 <p className="text-xs text-destructive">
                   {resetState.fieldErrors.confirmPassword}
                 </p>
@@ -317,9 +331,11 @@ function ForgotPasswordFlow({
       ) : (
         <form
           action={requestFormAction}
+          onChange={dismissRequestErrors}
+          onInvalidCapture={dismissRequestErrors}
           className="flex flex-col gap-5 rounded-[1.25rem] border border-border/70 bg-background/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-7"
         >
-          {requestState.error ? (
+          {areRequestErrorsVisible && requestState.error ? (
             <p
               role="alert"
               className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"

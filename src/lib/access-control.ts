@@ -12,6 +12,8 @@ export type Role = (typeof ROLES)[number];
 
 export const PERMISSIONS = [
   "users.manage",
+  "users.password.manage",
+  "users.delete",
   "bookings.read",
   "bookings.confirm",
   "bookings.cancel",

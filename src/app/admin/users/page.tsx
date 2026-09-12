@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, Search, ShieldCheck, Users as UsersIcon } from "lucide-react";
+import { ArrowRight, ChevronDown, ShieldCheck, Users as UsersIcon } from "lucide-react";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
-import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminHardDeleteUserButton } from "@/components/admin/admin-hard-delete-user-button";
+import { AdminRestoreUserButton } from "@/components/admin/admin-restore-user-button";
+import { AdminUserSearch } from "@/components/admin/admin-user-search";
+import { AdminDeactivateUserButton } from "@/components/admin/admin-deactivate-user-button";
 import { formatLongDate, pluralize } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +40,89 @@ function roleBadgeClass(role: string) {
 }
 
 const PAGE_SIZE = 20;
+
+type UserEntry = {
+  id: string;
+  name: string;
+  email: string;
+  username: string | null;
+  role: string;
+  createdAt: Date;
+  _count: { bookings: number; activityLogs: number };
+};
+
+function UserListEntry({
+  user,
+  isCurrentUser,
+  deactivated = false,
+  canHardDelete = false,
+  canDeactivate = false,
+}: {
+  user: UserEntry;
+  isCurrentUser: boolean;
+  deactivated?: boolean;
+  canHardDelete?: boolean;
+  canDeactivate?: boolean;
+}) {
+  return (
+    <article
+      className={`flex min-w-0 items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+        deactivated
+          ? "border-border/60 bg-muted/10 text-muted-foreground"
+          : "border-border/70 bg-background/80 hover:bg-muted/20"
+      }`}
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="truncate font-heading text-sm font-semibold text-foreground">{user.name}</span>
+          <Badge
+            variant="outline"
+            className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] ${roleBadgeClass(user.role)}`}
+          >
+            {ROLE_LABELS[user.role] ?? user.role}
+          </Badge>
+          {deactivated ? (
+            <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[9px] font-medium text-foreground/70">
+              Deactivated
+            </Badge>
+          ) : null}
+          {isCurrentUser ? (
+            <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[9px] font-medium text-foreground/70">
+              You
+            </Badge>
+          ) : null}
+        </div>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {user.username ? `@${user.username} · ` : ""}{user.email}
+        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Joined {formatLongDate(user.createdAt)} · {pluralize(user._count.bookings, "booking")} · {pluralize(user._count.activityLogs, "activity event")}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        {deactivated ? (
+          <>
+            <AdminRestoreUserButton userId={user.id} userName={user.name} />
+            {canHardDelete ? <AdminHardDeleteUserButton userId={user.id} userName={user.name} /> : null}
+          </>
+        ) : (
+          <>
+            {canDeactivate ? <AdminDeactivateUserButton userId={user.id} userName={user.name} /> : null}
+            <Link
+              href={`/admin/users/${user.id}`}
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground transition hover:bg-muted"
+            >
+              <ShieldCheck className="h-3 w-3" />
+              Manage
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </>
+        )}
+      </div>
+    </article>
+  );
+}
 
 export default async function AdminUsersPage({
   searchParams,
@@ -74,12 +159,15 @@ export default async function AdminUsersPage({
       : {}),
   };
 
-  const [users, roleCounts, totalMatches] = await Promise.all([
+  const activeWhere = { ...where, deletedAt: null };
+  const deactivatedWhere = { ...where, deletedAt: { not: null } };
+
+  const [users, deactivatedUsers, roleCounts, totalMatches] = await Promise.all([
     loadDb(
       "admin.users.list",
       () =>
         prisma.user.findMany({
-          where,
+          where: activeWhere,
           orderBy: { createdAt: "desc" },
           skip: (page - 1) * PAGE_SIZE,
           take: PAGE_SIZE,
@@ -95,8 +183,25 @@ export default async function AdminUsersPage({
           },
         }),
     ),
+    loadDb(
+      "admin.users.deactivated-list",
+      () =>
+        prisma.user.findMany({
+          where: deactivatedWhere,
+          orderBy: { deletedAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            _count: { select: { bookings: true, activityLogs: true } },
+          },
+        }),
+    ),
     loadDb("admin.users.role-counts", () => prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } })),
-    loadDb("admin.users.total-matches", () => prisma.user.count({ where })),
+    loadDb("admin.users.total-matches", () => prisma.user.count({ where: activeWhere })),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE));
@@ -165,24 +270,7 @@ export default async function AdminUsersPage({
             ))}
           </div>
 
-          <form method="get" action="/admin/users" className="flex w-full max-w-sm items-center gap-2">
-            {roleFilter ? <input type="hidden" name="role" value={roleFilter} /> : null}
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                name="q"
-                defaultValue={search}
-                placeholder="Search name, email, or username"
-                className={`h-10 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 pl-9 pr-3 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`}
-              />
-            </div>
-            <button
-              type="submit"
-              className="h-10 rounded-xl border border-black bg-black px-4 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-black/80"
-            >
-              Search
-            </button>
-          </form>
+          <AdminUserSearch initialQuery={search} role={roleFilter || undefined} />
         </div>
 
         {users.length === 0 ? (
@@ -190,57 +278,40 @@ export default async function AdminUsersPage({
             No users match this search. Try a different name, email, or username.
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid gap-2 xl:grid-cols-2">
             {users.map((user) => (
-              <Card key={user.id} className="border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-                <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-heading text-lg font-semibold text-foreground">{user.name}</span>
-                      <Badge variant="outline" className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] ${roleBadgeClass(user.role)}`}>
-                        {ROLE_LABELS[user.role] ?? user.role}
-                      </Badge>
-                      {user.deletedAt ? (
-                        <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground/70">
-                          Deactivated
-                        </Badge>
-                      ) : null}
-                      {user.id === session.user.id ? (
-                        <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground/70">
-                          You
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="space-y-0.5 text-sm text-muted-foreground">
-                      {user.username ? (
-                        <>
-                          <p className="truncate">@{user.username}</p>
-                          <p className="truncate">{user.email}</p>
-                        </>
-                      ) : (
-                        <p className="truncate">{user.email}</p>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Joined {formatLongDate(user.createdAt)}
-                      {" · "}{pluralize(user._count.bookings, "booking")}
-                      {" · "}{pluralize(user._count.activityLogs, "activity event")}
-                    </p>
-                  </div>
-
-                  <Link
-                    href={`/admin/users/${user.id}`}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-foreground transition hover:bg-muted"
-                  >
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Manage user
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </CardContent>
-              </Card>
+              <UserListEntry
+                key={user.id}
+                user={user}
+                isCurrentUser={user.id === session.user.id}
+                canDeactivate={user.id !== session.user.id}
+              />
             ))}
           </div>
         )}
+
+        {deactivatedUsers.length > 0 ? (
+          <details className="group overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 bg-muted/20 px-4 py-3 text-left transition-colors hover:bg-muted/40 sm:px-5">
+              <div>
+                <p className="font-heading text-base font-semibold text-foreground">Deactivated accounts</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{deactivatedUsers.length} matching {pluralize(deactivatedUsers.length, "account")}</p>
+              </div>
+              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <div className="grid gap-2 border-t border-border/70 p-3 sm:p-4 xl:grid-cols-2">
+              {deactivatedUsers.map((user) => (
+                <UserListEntry
+                  key={user.id}
+                  user={user}
+                  isCurrentUser={user.id === session.user.id}
+                  deactivated
+                  canHardDelete={session.user.role === "ADMAX"}
+                />
+              ))}
+            </div>
+          </details>
+        ) : null}
 
         <p className="text-center text-xs text-muted-foreground">
           <UsersIcon className="mr-1 inline h-3.5 w-3.5" />

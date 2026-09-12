@@ -146,7 +146,7 @@ export default async function AdminUserDetailPage({
       <div className="mx-auto flex max-w-8xl flex-col gap-8 px-6 py-10 sm:py-14 lg:px-10">
         <AdminPageHeader
           title="User Details"
-          description="Update this account's details and role, and review its full activity history."
+          description="Manage users"
           active="users"
           role={session.user.role}
         />
@@ -214,6 +214,7 @@ export default async function AdminUserDetailPage({
                   deletedAt: user.deletedAt,
                 }}
                 isSelf={isSelf}
+                canChangePassword={session.user.role === "ADMAX"}
               />
             </CardContent>
           </Card>

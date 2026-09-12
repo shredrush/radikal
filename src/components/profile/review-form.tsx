@@ -18,6 +18,7 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 
 const initialState: ReviewActionState = {};
 
@@ -42,6 +43,7 @@ export function ReviewForm({
     isEditing ? updateReviewAction : createReviewAction,
     initialState,
   );
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
 
   useEffect(() => {
     if (state.success) {
@@ -55,9 +57,11 @@ export function ReviewForm({
   const wordCount = comment.trim() ? comment.trim().split(/\s+/).length : 0;
 
   return (
-    <form
-      action={formAction}
-      className="border-t border-border/70 bg-muted/10 px-4 py-4"
+      <form
+        action={formAction}
+        onChange={dismissErrors}
+        onInvalidCapture={dismissErrors}
+        className="border-t border-border/70 bg-muted/10 px-4 py-4"
     >
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="rating" value={rating} />
@@ -82,7 +86,10 @@ export function ReviewForm({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setRating(value)}
+                  onClick={() => {
+                    dismissErrors();
+                    setRating(value);
+                  }}
                   aria-label={`${value} ${pluralize(value, "star")}`}
                   aria-pressed={rating === value}
                   className="text-muted-foreground transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
@@ -125,7 +132,7 @@ export function ReviewForm({
             </div>
           </div>
 
-          {state.error ? (
+          {areErrorsVisible && state.error ? (
             <p
               role="alert"
               className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { sanitizeText } from "@/lib/sanitize";
+import { passwordSchema } from "@/lib/validations/auth";
 
 export const CUSTOM_TRIP_LOCATION_MAX_CHARS = 100;
 export const CUSTOM_TRIP_REQUIREMENTS_MAX_CHARS = 4000;
@@ -80,6 +81,7 @@ export const createCustomTripSchema = z
     contactName: z.string().optional(),
     contactEmail: z.string().optional(),
     contactPhone: z.string().optional(),
+    password: passwordSchema.optional(),
   })
   .refine(
     (data) => {

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CalendarDays, ClipboardCheck, Clock3, History, Inbox, Loader2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ClipboardCheck, Clock3, History, Inbox, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { GuideApplicationDetails } from "@/components/admin/guide-application-details";
 import {
   GuideApplicationHistory,
@@ -13,6 +13,7 @@ import {
 } from "@/components/admin/guide-application-history";
 import { ApproveGuideButton, RejectGuideButton } from "@/components/admin/review-guide-application-buttons";
 import { getGuideApplicationsAction } from "@/lib/actions/guide-applications";
+import { cn } from "@/lib/utils";
 
 export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: number }) {
   const [open, setOpen] = useState(false);
@@ -20,6 +21,7 @@ export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: nu
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [openApplicationId, setOpenApplicationId] = useState<string | null>(null);
 
   const pendingApplications = applications.filter((application) => application.status === "PENDING");
   const historyApplications = applications.filter(
@@ -122,43 +124,61 @@ export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: nu
                         <p className="mt-3 text-sm text-muted-foreground">You&apos;re all caught up — no applications waiting for review.</p>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-6">
-                        {pendingApplications.map((application) => (
-                          <Card key={application.id} className="overflow-hidden border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-                            <CardHeader className="border-b border-border/70 bg-muted/20">
-                              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="space-y-3">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-600">
-                                      <Clock3 className="h-3 w-3" /> Pending
-                                    </Badge>
-                                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                                      {application.experienceYears} yrs
-                                    </Badge>
-                                    <Badge variant="outline" className="rounded-full border-border/70 bg-background/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                                      {application.location}
-                                    </Badge>
-                                  </div>
-                                  <div>
-                                    <CardTitle className="text-xl">{application.name}</CardTitle>
-                                    <CardDescription className="mt-1 text-sm leading-6 text-muted-foreground">
-                                      {application.user.username ? `@${application.user.username}` : ""}
-                                      {application.user.email ? ` · ${application.user.email}` : ""}
-                                      {application.phone ? ` · ${application.phone}` : ""}
-                                    </CardDescription>
+                      <div className="flex flex-col gap-3">
+                        {pendingApplications.map((application) => {
+                          const openApplication = openApplicationId === application.id;
+                          return (
+                            <article
+                              key={application.id}
+                              className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 shadow-sm"
+                            >
+                              <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <p className="truncate font-semibold text-foreground">{application.name}</p>
+                                      <Badge variant="outline" className="rounded-full border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-600">
+                                        <Clock3 className="h-3 w-3" /> Pending
+                                      </Badge>
+                                    </div>
+                                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                                      {application.location} · {application.experienceYears} yrs experience
+                                      {application.user.username ? ` · @${application.user.username}` : ""}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                      {application.user.email}{application.phone ? ` · ${application.phone}` : ""}
+                                    </p>
                                   </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex shrink-0 items-center gap-2">
                                   <ApproveGuideButton applicationId={application.id} applicantName={application.name} onReviewed={load} />
                                   <RejectGuideButton applicationId={application.id} applicantName={application.name} onReviewed={load} />
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenApplicationId(openApplication ? null : application.id)}
+                                    aria-expanded={openApplication}
+                                    aria-label={`${openApplication ? "Collapse" : "Expand"} ${application.name}'s application`}
+                                    className="rounded-sm p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                  >
+                                    <ChevronDown className={cn("h-5 w-5 transition-transform duration-200", openApplication && "rotate-180")} />
+                                  </button>
                                 </div>
                               </div>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                              <GuideApplicationDetails application={application} />
-                            </CardContent>
-                          </Card>
-                        ))}
+                              <div
+                                className={cn(
+                                  "grid transition-all duration-200 ease-out",
+                                  openApplication ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                                )}
+                              >
+                                <div className="overflow-hidden">
+                                  <div className="border-t border-border/70 px-4 pb-5 pt-5">
+                                    <GuideApplicationDetails application={application} />
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
                     )}
                   </section>

@@ -105,7 +105,7 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
                 <p className="text-sm leading-6 text-muted-foreground">{guide.bio}</p>
               </div>
               <div className="mt-6 space-y-5">
-                <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p><div className="mt-3 flex flex-wrap gap-2">{guide.certifications.map((certification) => <span key={certification.title} className={`rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>{certification.title}</span>)}</div></div>
+                {guide.certifications.length > 0 ? <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p><div className="mt-3 flex flex-wrap gap-2">{guide.certifications.map((certification) => <span key={certification.title} className={`rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>{certification.title}</span>)}</div></div> : null}
                 <GuideSports sports={guide.sports} />
                 <div><p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Languages</p><div className="mt-3 flex flex-wrap gap-2">{guide.languages.map((language) => <span key={language} className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{language}</span>)}</div></div>
               </div>

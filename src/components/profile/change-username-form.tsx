@@ -11,6 +11,7 @@ import { useUsernameAvailability } from "@/hooks/use-username-availability";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 
 const initialState: ChangeUsernameActionState = {};
 
@@ -25,6 +26,7 @@ export function ChangeUsernameForm({
     changeUsernameAction,
     initialState
   );
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
 
   const { availability, isChecking, check } = useUsernameAvailability({
     // The user's own handle reads as "taken" — treat it as available instead
@@ -35,7 +37,7 @@ export function ChangeUsernameForm({
   const isChangeLocked = hasChangedUsername || state.success;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onChange={dismissErrors} onInvalidCapture={dismissErrors} className="flex flex-col gap-4">
       {currentUsername ? (
         <p className="text-sm text-muted-foreground">
           Current username:{" "}
@@ -52,7 +54,7 @@ export function ChangeUsernameForm({
         </p>
       ) : null}
 
-      {state.error ? (
+      {areErrorsVisible && state.error ? (
         <p
           role="alert"
           className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -109,7 +111,7 @@ export function ChangeUsernameForm({
               >
                 {availability.message}
               </p>
-            ) : state.fieldErrors?.username ? (
+            ) : areErrorsVisible && state.fieldErrors?.username ? (
               <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
             ) : null}
           </div>

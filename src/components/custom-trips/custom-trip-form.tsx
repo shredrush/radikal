@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SportIcon, type SportId } from "@/components/trips/sport-icon";
 import { PhoneNumberField } from "@/components/forms/phone-number-field";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const SPORT_OPTIONS: { value: string; label: string; sport: SportId }[] = [
   { value: "TREK", label: "Trekking", sport: "trek" },
@@ -53,6 +54,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
   const [requirements, setRequirements] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
   }
 
   function updateParticipantCount(nextCount: number) {
+    clearFieldError();
     setParticipantCount(Math.min(200, Math.max(1, nextCount)));
   }
 
@@ -138,6 +141,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
           contactName,
           contactEmail,
           contactPhone,
+          password: isGuest ? password : undefined,
         });
 
         if (!result.success) {
@@ -146,7 +150,7 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
         }
 
         if (isGuest) {
-          setSuccessMessage("Your request is in. We created your account and emailed a temporary password so you can sign in to follow the conversation.");
+          setSuccessMessage("Your request is in. We created your account so you can sign in to follow the conversation.");
         } else {
           router.push(`/custom-trip/${result.requestId}`);
         }
@@ -157,7 +161,12 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] sm:p-6">
+    <form
+      onSubmit={handleSubmit}
+      onChange={clearFieldError}
+      onInvalidCapture={clearFieldError}
+      className="rounded-[2rem] border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_12px_32px_-18px_rgba(0,0,0,0.35)] sm:p-6"
+    >
       <div className="flex flex-col gap-6 sm:gap-8">
         <section className="rounded-[1.6rem] bg-gradient-to-br from-orange-50 via-white to-emerald-50/70 p-5 dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10 sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-700 dark:text-orange-300">
@@ -218,11 +227,23 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
           <section className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50/60 p-5 dark:border-emerald-500/15 dark:bg-emerald-500/5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">Keep in touch</p>
             <h3 className="mt-2 font-heading text-xl font-semibold text-foreground">Where should we send your trip details?</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">We&apos;ll create your account and email a temporary password after you submit.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">We&apos;ll create an account so you can follow your request.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <input required maxLength={100} value={contactName} onChange={(event) => setContactName(event.target.value)} placeholder="Full name" autoComplete="name" className={inputClassName} />
               <input required type="email" maxLength={254} value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} placeholder="Email address" autoComplete="email" className={inputClassName} />
-              <PhoneNumberField id="custom-trip-phone" required className={inputClassName} onValueChange={setContactPhone} />
+              <div className="space-y-1">
+                <PasswordInput required minLength={6} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" autoComplete="new-password" className={inputClassName} />
+                <p className="text-xs text-muted-foreground">At least 6 characters.</p>
+              </div>
+              <PhoneNumberField
+                id="custom-trip-phone"
+                required
+                className={inputClassName}
+                onValueChange={(value) => {
+                  clearFieldError();
+                  setContactPhone(value);
+                }}
+              />
             </div>
           </section>
         ) : null}
@@ -310,7 +331,10 @@ export function CustomTripForm({ atChatLimit = false, isGuest = false }: { atCha
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setGroupType(value)}
+                    onClick={() => {
+                      clearFieldError();
+                      setGroupType(value);
+                    }}
                     className={cn(
                       "flex items-center gap-2 rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition",
                       selected

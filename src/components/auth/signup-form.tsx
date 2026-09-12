@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { useFormActionErrorVisibility } from "@/hooks/use-form-action-error-visibility";
 import {
   Select,
   SelectContent,
@@ -37,6 +38,9 @@ export function SignupForm() {
 
   const [countryCode, setCountryCode] = useState(DEFAULT_PHONE_COUNTRY);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const { areErrorsVisible, dismissErrors } = useFormActionErrorVisibility(state);
+  const fieldErrors = areErrorsVisible ? state.fieldErrors : undefined;
+  const errorMessage = areErrorsVisible ? state.error : undefined;
 
   const {
     availability: usernameStatus,
@@ -59,14 +63,16 @@ export function SignupForm() {
 
       <form
         action={formAction}
+        onChange={dismissErrors}
+        onInvalidCapture={dismissErrors}
         className="flex flex-col gap-5 rounded-[1.25rem] border border-border/70 bg-background/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-7"
       >
-        {state.error ? (
+        {errorMessage ? (
           <p
             role="alert"
             className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {state.error}
+            {errorMessage}
           </p>
         ) : null}
 
@@ -81,8 +87,8 @@ export function SignupForm() {
             defaultValue={state.values?.name}
             required
           />
-          {state.fieldErrors?.name ? (
-            <p className="text-xs text-destructive">{state.fieldErrors.name}</p>
+          {fieldErrors?.name ? (
+            <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
         </div>
 
@@ -125,8 +131,8 @@ export function SignupForm() {
             >
               {usernameStatus.message}
             </p>
-          ) : state.fieldErrors?.username ? (
-            <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
+          ) : fieldErrors?.username ? (
+            <p className="text-xs text-destructive">{fieldErrors.username}</p>
           ) : null}
         </div>
 
@@ -135,9 +141,10 @@ export function SignupForm() {
           <div className="flex items-stretch gap-2">
             <Select
               value={countryCode}
-              onValueChange={(value) =>
-                setCountryCode((value as string) ?? DEFAULT_PHONE_COUNTRY)
-              }
+              onValueChange={(value) => {
+                dismissErrors();
+                setCountryCode((value as string) ?? DEFAULT_PHONE_COUNTRY);
+              }}
             >
               <SelectTrigger
                 className="w-[5.75rem] shrink-0"
@@ -188,8 +195,8 @@ export function SignupForm() {
             name="phone"
             value={`+${getDialCode(countryCode)}${phoneNumber}`}
           />
-          {state.fieldErrors?.phone ? (
-            <p className="text-xs text-destructive">{state.fieldErrors.phone}</p>
+          {fieldErrors?.phone ? (
+            <p className="text-xs text-destructive">{fieldErrors.phone}</p>
           ) : null}
         </div>
 
@@ -204,8 +211,8 @@ export function SignupForm() {
             placeholder="you@example.com"
             required
           />
-          {state.fieldErrors?.email ? (
-            <p className="text-xs text-destructive">{state.fieldErrors.email}</p>
+          {fieldErrors?.email ? (
+            <p className="text-xs text-destructive">{fieldErrors.email}</p>
           ) : null}
         </div>
 
@@ -218,8 +225,8 @@ export function SignupForm() {
             placeholder="At least 6 characters"
             required
           />
-          {state.fieldErrors?.password ? (
-            <p className="text-xs text-destructive">{state.fieldErrors.password}</p>
+          {fieldErrors?.password ? (
+            <p className="text-xs text-destructive">{fieldErrors.password}</p>
           ) : null}
         </div>
 

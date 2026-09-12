@@ -125,7 +125,7 @@ export default async function BecomeAGuidePage() {
                 ) : lastApplicationStatus === "APPROVED" ? (
                   "Your previous guide profile is no longer active. Submit a new application below."
                 ) : (
-                  "Fill in the details below. Fields marked as optional can be skipped."
+                  "Fill in the details below."
                 )}
               </CardDescription>
             </CardHeader>

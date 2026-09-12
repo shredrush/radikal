@@ -51,19 +51,21 @@ export function GuideProfileSummary({
       </div>
 
       <div className="mt-6 space-y-5">
-        <div>
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {guide.certifications.map((certification) => (
-              <span
-                key={certification.id}
-                className={`max-w-full break-words rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}
-              >
-                {certification.title}
-              </span>
-            ))}
+        {guide.certifications.length > 0 ? (
+          <div>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {guide.certifications.map((certification) => (
+                <span
+                  key={certification.id}
+                  className={`max-w-full break-words rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}
+                >
+                  {certification.title}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <GuideSports sports={guide.sports} />
         <div>

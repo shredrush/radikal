@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import bcrypt from "bcryptjs";
 
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
@@ -9,10 +10,60 @@ import { invalidateSessionVersion } from "@/lib/session-revocation";
 import { sanitizeText } from "@/lib/sanitize";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { removeStoredMedia } from "@/lib/media";
-import { updateUserSchema } from "@/lib/validations/users";
+import { passwordChangedEmail, sendEmailAfter } from "@/lib/email";
+import {
+  adminChangeUserPasswordSchema,
+  updateUserSchema,
+} from "@/lib/validations/users";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
+}
+
+/** Super-admin action: replace another active user's password. */
+export async function changeUserPasswordAction(formData: FormData) {
+  const session = await requirePermission(
+    "users.password.manage",
+    "/login?callbackUrl=/admin/users",
+  );
+  const parsed = adminChangeUserPasswordSchema.safeParse({
+    userId: asString(formData.get("userId")),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid password.");
+  }
+
+  const { userId, newPassword } = parsed.data;
+  if (session.user.id === userId) {
+    throw new Error("Use your profile settings to change your own password.");
+  }
+
+  const target = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
+    select: { id: true, name: true, email: true },
+  });
+  if (!target) {
+    throw new Error("User not found.");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: target.id },
+    data: { passwordHash, sessionVersion: { increment: 1 } },
+  });
+  invalidateSessionVersion(target.id);
+
+  await logActivity({
+    userId: target.id,
+    action: "PASSWORD_RESET_BY_ADMIN",
+    label: "Password reset by a super admin",
+    metadata: { changedById: session.user.id },
+  });
+  await sendEmailAfter(passwordChangedEmail({ to: target.email, name: target.name }));
+
+  revalidatePath(`/admin/users/${target.id}`);
 }
 
 /**
@@ -305,4 +356,110 @@ export async function deactivateUserAction(userId: string) {
   revalidatePath("/");
   revalidatePath("/community");
   updateTag("guides");
+}
+
+/** Admin action: reactivate an account without restoring its retired guide profile. */
+export async function restoreUserAction(userId: string) {
+  const session = await requirePermission(
+    "users.manage",
+    "/login?callbackUrl=/admin/users",
+  );
+
+  if (!userId) {
+    throw new Error("Missing user id.");
+  }
+
+  const restored = await prisma.user.updateMany({
+    where: { id: userId, deletedAt: { not: null } },
+    data: { deletedAt: null },
+  });
+  if (restored.count !== 1) {
+    throw new Error("Deactivated account not found.");
+  }
+
+  invalidateSessionVersion(userId);
+  await logActivity({
+    userId,
+    action: "USER_RESTORED",
+    label: "Account restored by an admin",
+    metadata: { restoredById: session.user.id },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
+}
+
+/**
+ * Super-admin action: permanently remove a deactivated account when no
+ * operational or audit records still rely on it.
+ */
+export async function hardDeleteUserAction(userId: string) {
+  await requirePermission(
+    "users.delete",
+    "/login?callbackUrl=/admin/users",
+  );
+
+  if (!userId) {
+    throw new Error("Missing user id.");
+  }
+
+  const mediaUrls = await prisma.$transaction(async (tx) => {
+    const target = await tx.user.findFirst({
+      where: { id: userId, deletedAt: { not: null } },
+      select: {
+        id: true,
+        image: true,
+        guideApplications: {
+          select: { photo: true, photos: true, videos: true },
+        },
+      },
+    });
+    if (!target) {
+      throw new Error("Only deactivated accounts can be permanently deleted.");
+    }
+
+    const [
+      bookings,
+      reviews,
+      guide,
+      supportChats,
+      supportMessages,
+      customTripMessages,
+      referrals,
+      reviewedApplications,
+      tripChanges,
+    ] = await Promise.all([
+      tx.booking.count({ where: { OR: [{ userId }, { cancelledById: userId }, { deletedById: userId }] } }),
+      tx.review.count({ where: { userId } }),
+      tx.guide.count({ where: { userId } }),
+      tx.supportChat.count({ where: { userId } }),
+      tx.supportMessage.count({ where: { senderId: userId } }),
+      tx.customTripMessage.count({ where: { senderId: userId } }),
+      tx.referral.count({ where: { referrerId: userId } }),
+      tx.guideApplication.count({ where: { reviewedById: userId } }),
+      tx.tripChangeRequest.count({ where: { OR: [{ submittedById: userId }, { reviewedById: userId }] } }),
+    ]);
+
+    if (bookings + reviews + guide + supportChats + supportMessages + customTripMessages + referrals + reviewedApplications + tripChanges > 0) {
+      throw new Error(
+        "This account has booking, guide, support, referral, or audit history and cannot be permanently deleted.",
+      );
+    }
+
+    await tx.user.delete({ where: { id: userId } });
+    return [
+      target.image,
+      ...target.guideApplications.flatMap((application) => [
+        application.photo,
+        ...application.photos,
+        ...application.videos,
+      ]),
+    ].filter((url): url is string => Boolean(url));
+  });
+
+  invalidateSessionVersion(userId);
+  await removeStoredMedia(mediaUrls);
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${userId}`);
 }
