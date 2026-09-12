@@ -11,6 +11,8 @@ import { sanitizeText } from "@/lib/sanitize";
 import { deactivateGuide } from "@/lib/guide-teardown";
 import { removeStoredMedia } from "@/lib/media";
 import { passwordChangedEmail, sendEmailAfter } from "@/lib/email";
+import { resolveGuideName } from "@/lib/guides";
+import { revalidateGuidePages } from "@/lib/guide-revalidation";
 import {
   adminChangeUserPasswordSchema,
   updateUserSchema,
@@ -99,7 +101,7 @@ export async function updateUserAction(formData: FormData) {
     where: { id: data.userId },
     include: {
       guide: {
-        select: { id: true, photos: true, videos: true, deletedAt: true },
+        select: { id: true, name: true, photos: true, videos: true, deletedAt: true },
       },
     },
   });
@@ -190,6 +192,15 @@ export async function updateUserAction(formData: FormData) {
         },
       });
 
+      // `User.name` is the single source of truth for a guide's display name,
+      // so mirror it onto the linked profile to keep Admin → Guides in sync.
+      if (activeGuide) {
+        await tx.guide.update({
+          where: { id: activeGuide.id },
+          data: { name: resolveGuideName(data) },
+        });
+      }
+
       // Demoting a guide tears down the guide linkage in the same transaction
       // so the role change can never leave an orphaned, unmanaged guide live.
       if (demotingGuide && activeGuide) {
@@ -264,23 +275,22 @@ export async function updateUserAction(formData: FormData) {
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${data.userId}`);
 
-  // For guide accounts the username is the public URL, so a rename must
-  // invalidate both the old and the new guide pages.
-  if (activeGuide && data.role === "GUIDE" && usernameChanged) {
-    if (previousUsername) revalidatePath(`/${previousUsername}`);
-    if (data.username) revalidatePath(`/${data.username}`);
-    revalidatePath("/");
-    revalidatePath("/community");
-    updateTag("guides");
+  // A username rename, a guide removal, or a display-name change all touch the
+  // same guide-facing surfaces, so refresh them through one shared helper.
+  const guideSurfacesDirty =
+    !!activeGuide &&
+    ((data.role === "GUIDE" && usernameChanged) ||
+      demotingGuide ||
+      activeGuide.name !== data.name);
+
+  if (guideSurfacesDirty) {
+    revalidateGuidePages(previousUsername, data.username);
   }
 
-  // Removing a guide invalidates every surface that renders them.
-  if (demotingGuide && previousUsername) {
-    revalidatePath("/admin/guides");
-    revalidatePath(`/${previousUsername}`);
-    revalidatePath("/");
-    revalidatePath("/community");
-    updateTag("guides");
+  // The header and profile shell read the account row directly, so a name or
+  // handle change must expire their cached profile lookup.
+  if (target.name !== data.name || previousUsername !== data.username) {
+    updateTag("profiles");
   }
 }
 

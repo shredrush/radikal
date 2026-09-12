@@ -48,7 +48,7 @@ type UserEntry = {
   username: string | null;
   role: string;
   createdAt: Date;
-  _count: { bookings: number; activityLogs: number };
+  _count: { bookings: number };
 };
 
 function UserListEntry({
@@ -96,7 +96,7 @@ function UserListEntry({
           {user.username ? `@${user.username} · ` : ""}{user.email}
         </p>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          Joined {formatLongDate(user.createdAt)} · {pluralize(user._count.bookings, "booking")} · {pluralize(user._count.activityLogs, "activity event")}
+          Joined {formatLongDate(user.createdAt)} · {user._count.bookings} {pluralize(user._count.bookings, "booking")}
         </p>
       </div>
 
@@ -179,7 +179,7 @@ export default async function AdminUsersPage({
             role: true,
             deletedAt: true,
             createdAt: true,
-            _count: { select: { bookings: true, activityLogs: true } },
+            _count: { select: { bookings: true } },
           },
         }),
     ),
@@ -196,7 +196,7 @@ export default async function AdminUsersPage({
             username: true,
             role: true,
             createdAt: true,
-            _count: { select: { bookings: true, activityLogs: true } },
+            _count: { select: { bookings: true } },
           },
         }),
     ),

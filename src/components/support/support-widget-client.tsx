@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Headset } from "lucide-react";
 
 import {
@@ -25,7 +24,6 @@ type WidgetState =
 export function SupportWidgetClient() {
   const [state, setState] = useState<WidgetState>({ kind: "checking" });
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
 
   const loadUnread = useCallback(async () => {
     try {
@@ -64,14 +62,13 @@ export function SupportWidgetClient() {
   }, []);
 
   useEffect(() => {
-    // The widget lives in the root layout and stays mounted across client-side
-    // navigations. Refetch on path changes so the bubble reflects the session
-    // immediately after logging in or out, instead of waiting for a reload.
+    // The widget remounts after auth-page transitions and polls active chats,
+    // so ordinary client-side navigation does not need another request.
     const timer = setTimeout(() => {
       void loadUnread();
     }, 0);
     return () => clearTimeout(timer);
-  }, [loadUnread, pathname]);
+  }, [loadUnread]);
 
   useEffect(() => {
     // Retry temporarily unavailable requests, but only poll healthy sessions

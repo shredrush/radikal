@@ -8,30 +8,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatShortDate } from "@/lib/format";
+import { activityBadgeClass, formatActivityAction } from "@/lib/activity-log-display";
 import { getGuideActivityLogAction, type GuideActivityEntry } from "@/lib/actions/trip-changes";
-
-function actionBadgeClass(action: string) {
-  if (action.startsWith("SLOT")) {
-    return "border-orange-500/40 bg-orange-500/10 text-orange-600";
-  }
-  if (action.startsWith("TRIP_CHANGE")) {
-    return "border-blue-500/40 bg-blue-500/10 text-blue-600";
-  }
-  if (action.startsWith("GUIDE_PROFILE")) {
-    return "border-violet-500/40 bg-violet-500/10 text-violet-600";
-  }
-  if (action === "TRIP_DELETED") {
-    return "border-destructive/40 bg-destructive/10 text-destructive";
-  }
-  if (action.startsWith("BOOKING")) {
-    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600";
-  }
-  return "border-border/70 bg-background/80 text-muted-foreground";
-}
-
-function formatAction(action: string) {
-  return action.toLowerCase().replace(/_/g, " ");
-}
 
 function formatEntryTime(value: string) {
   return new Date(value).toLocaleString("en-IN", {
@@ -135,10 +113,10 @@ export function GuideActivityLog() {
                       variant="outline"
                       className={cn(
                         "rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]",
-                        actionBadgeClass(entry.action),
+                        activityBadgeClass(entry.action),
                       )}
                     >
-                      {formatAction(entry.action)}
+                      {formatActivityAction(entry.action)}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatEntryTime(entry.createdAt)}

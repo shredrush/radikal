@@ -31,7 +31,8 @@ export async function GuidesManager({
   const items: GuideCardData[] = guides.map((guide) => ({
     id: guide.id,
     userId: guide.user?.id ?? null,
-    name: guide.name,
+    // `User.name` is the single source of truth for the guide's display name.
+    name: guide.user?.name ?? guide.name,
     username: guide.user?.username ?? null,
     bio: guide.bio,
     photo: guide.photo,

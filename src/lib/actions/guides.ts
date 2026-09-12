@@ -27,6 +27,8 @@ import {
 import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
 import { ACTIVITY_TYPE_OPTIONS } from "@/lib/trip-metadata";
+import { resolveGuideName } from "@/lib/guides";
+import { revalidateGuidePages } from "@/lib/guide-revalidation";
 
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
@@ -93,9 +95,6 @@ function readGuideFields(formData: FormData) {
   const photo = photos[0] ?? null;
 
   return {
-    name: sanitizeText(readBoundedText(formData, "name", 120), {
-      maxLength: 120,
-    }),
     bio: sanitizeText(readBoundedText(formData, "bio", 3000), {
       maxLength: 3000,
       allowNewlines: true,
@@ -137,8 +136,8 @@ async function assertValidGuideMedia(photos: string[], videos: string[]) {
 }
 
 function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
-  if (!fields.name || !fields.bio || !fields.location) {
-    throw new Error("Name, bio, and location are required.");
+  if (!fields.bio || !fields.location) {
+    throw new Error("Bio and location are required.");
   }
 
   if (fields.experienceYears < 0) {
@@ -167,19 +166,6 @@ function validateGuideFields(fields: ReturnType<typeof readGuideFields>) {
   }
 
   return fields;
-}
-
-function revalidateGuidePages(...usernames: string[]) {
-  revalidatePath("/admin/guides");
-  revalidatePath("/community");
-  revalidatePath("/");
-  updateTag("guides");
-
-  for (const username of usernames) {
-    if (username) {
-      revalidatePath(`/${username}`);
-    }
-  }
 }
 
 function isUniqueConstraint(error: unknown) {
@@ -271,6 +257,8 @@ export async function createGuideAction(formData: FormData) {
       await tx.guide.create({
         data: {
           ...guideData,
+          // The linked account is the single source of truth for the name.
+          name: resolveGuideName(linkedUser),
           userId: linkedUser.id,
           certifications: { create: certifications },
         },
@@ -340,7 +328,7 @@ export async function updateGuideAction(formData: FormData) {
           experienceYears: true,
           languages: true,
           sports: true,
-          user: { select: { username: true } },
+          user: { select: { username: true, name: true } },
           certifications: {
             select: { title: true },
             orderBy: { createdAt: "asc" },
@@ -353,6 +341,9 @@ export async function updateGuideAction(formData: FormData) {
       }
 
       username = currentGuide.user.username ?? "";
+      // The linked account owns the name, so always re-derive it here too. This
+      // also self-heals any row that predates the user.name source of truth.
+      const guideName = resolveGuideName(currentGuide.user);
 
       const changes = changedValues(
         {
@@ -372,6 +363,7 @@ export async function updateGuideAction(formData: FormData) {
         },
         {
           ...guideData,
+          name: guideName,
           certifications: certifications.map(
             (certification) => certification.title,
           ),
@@ -380,7 +372,7 @@ export async function updateGuideAction(formData: FormData) {
 
       await tx.guide.update({
         where: { id: guideId },
-        data: guideData,
+        data: { ...guideData, name: guideName },
       });
 
       // Replace the certification list wholesale so edits stay in sync.
@@ -456,7 +448,7 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
         experienceYears: true,
         languages: true,
         sports: true,
-        user: { select: { username: true } },
+        user: { select: { username: true, name: true } },
         certifications: {
           select: { title: true },
           orderBy: { createdAt: "asc" },
@@ -469,6 +461,8 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
     }
 
     username = currentGuide.user.username ?? "";
+    // The account name is the single source of truth for the profile name.
+    const guideName = resolveGuideName(currentGuide.user);
 
     const changes = changedValues(
       {
@@ -488,6 +482,7 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
       },
       {
         ...guideData,
+        name: guideName,
         certifications: certifications.map(
           (certification) => certification.title,
         ),
@@ -496,7 +491,7 @@ export async function updateOwnGuideProfileAction(formData: FormData) {
 
     await tx.guide.update({
       where: { id: guide.id },
-      data: guideData,
+      data: { ...guideData, name: guideName },
     });
 
     // Replace the certification list wholesale so removed credentials do not
@@ -649,7 +644,7 @@ export async function restoreGuideAction(guideId: string) {
       select: {
         id: true,
         userId: true,
-        user: { select: { deletedAt: true, username: true } },
+        user: { select: { deletedAt: true, username: true, name: true } },
       },
     });
     if (!guide) throw new Error("Guide not found.");
@@ -722,6 +717,8 @@ export async function restoreGuideAction(guideId: string) {
         data: {
           deletedAt: null,
           deletedByGuideRemoval: false,
+          // Re-derive the display name from the account that owns it.
+          name: resolveGuideName(guide.user),
           photo: null,
           photos: [],
           videos: [],

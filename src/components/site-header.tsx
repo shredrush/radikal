@@ -87,7 +87,7 @@ export function SiteHeader() {
                 >
                   Adventure Sports
                 </Button>
-                <div className="invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   <div className="grid gap-4">
                     {sportGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
@@ -115,7 +115,7 @@ export function SiteHeader() {
                 >
                   Retreats
                 </Button>
-                <div className="invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   <div className="grid grid-cols-2 gap-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
@@ -195,7 +195,7 @@ export function SiteHeader() {
               >
                 Adventure Sports
               </Button>
-              <div className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+              <div className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 <div className="grid gap-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -223,7 +223,7 @@ export function SiteHeader() {
               >
                 Retreats
               </Button>
-              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -297,7 +297,7 @@ export function SiteHeader() {
               >
                 Adventure Sports
               </Button>
-              <div className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+              <div className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 <div className="grid gap-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -325,7 +325,7 @@ export function SiteHeader() {
               >
                 Retreats
               </Button>
-              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
+              <div className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">

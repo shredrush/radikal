@@ -22,6 +22,7 @@ export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: nu
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [openApplicationId, setOpenApplicationId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const pendingApplications = applications.filter((application) => application.status === "PENDING");
   const historyApplications = applications.filter(
@@ -184,14 +185,30 @@ export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: nu
                   </section>
 
                   <section className="min-w-0">
-                    <div className="mb-4 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryOpen((current) => !current)}
+                      aria-expanded={historyOpen}
+                      aria-controls="guide-application-history"
+                      className="mb-4 flex w-full items-center gap-2 text-left"
+                    >
                       <History className="h-5 w-5 text-muted-foreground" />
                       <h2 className="font-heading text-xl font-semibold tracking-wide">History</h2>
                       <span className="ml-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                         {historyApplications.length} reviewed
                       </span>
-                    </div>
-                    <GuideApplicationHistory applications={historyApplications} />
+                      <ChevronDown
+                        className={cn(
+                          "ml-auto h-5 w-5 text-muted-foreground transition-transform duration-200",
+                          historyOpen && "rotate-180",
+                        )}
+                      />
+                    </button>
+                    {historyOpen ? (
+                      <div id="guide-application-history">
+                        <GuideApplicationHistory applications={historyApplications} />
+                      </div>
+                    ) : null}
                   </section>
                 </div>
               )}

@@ -21,10 +21,19 @@ const guideDetailInclude = {
     },
   },
   _count: { select: { trips: true } },
-  user: { select: { username: true, id: true } },
+  user: { select: { username: true, id: true, name: true } },
 } satisfies Prisma.GuideInclude;
 
 export type GuideWithDetails = Awaited<ReturnType<typeof fetchGuidesWithDetails>>[number];
+
+/**
+ * `User.name` is the single source of truth for a guide's display name. Every
+ * guide write path derives the name through this helper so normalization can
+ * change in one place and the two values can never drift.
+ */
+export function resolveGuideName(user: { name: string }): string {
+  return user.name;
+}
 
 /**
  * Shared data source for every guide-facing list. The admin "Manage guides"

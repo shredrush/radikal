@@ -368,7 +368,7 @@ export default async function ProfilePage({
               {adminBoardHref ? (
                 <Button
                   size="sm"
-                  className="w-full justify-start rounded-full sm:w-auto"
+                  className="w-full justify-center rounded-full sm:w-40"
                   nativeButton={false}
                   render={<Link href={adminBoardHref} />}
                 >
@@ -379,7 +379,7 @@ export default async function ProfilePage({
               {canAccessSupportDesk ? (
                 <Button
                   size="sm"
-                  className="w-full justify-start rounded-full sm:w-auto"
+                  className="w-full justify-center rounded-full sm:w-40"
                   nativeButton={false}
                   render={<Link href="/support" />}
                 >

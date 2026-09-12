@@ -29,6 +29,7 @@ import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
 import { generateAvailableUsername } from "@/lib/available-username";
 import { passwordSchema } from "@/lib/validations/auth";
+import { resolveGuideName } from "@/lib/guides";
 
 const MAX_GUIDE_LANGUAGES = 20;
 const MAX_GUIDE_CERTIFICATIONS = 25;
@@ -90,7 +91,7 @@ function readApplicationFields(formData: FormData) {
   const videos = parseGuideMediaUrls(formData, "videos");
 
   return {
-    name: sanitizeText(asString(formData.get("name")), { maxLength: 120 }),
+    name: sanitizeText(asString(formData.get("name")), { maxLength: 100 }),
     phone: sanitizeText(asString(formData.get("phone")), { maxLength: 40 }),
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
     bio: sanitizeText(asString(formData.get("bio")), { maxLength: 3000, allowNewlines: true }),
@@ -110,7 +111,7 @@ function readApplicationFields(formData: FormData) {
 
 function validateInputLengths(formData: FormData) {
   const limits = {
-    name: 120,
+    name: 100,
     phone: 40,
     location: 200,
     bio: 3000,
@@ -330,7 +331,9 @@ export async function submitGuideApplicationAction(
 
       await tx.user.update({
         where: { id: userId },
-        data: { username: resolvedUsername },
+        // The account name is the single source of truth for the guide's
+        // display name, so keep it aligned with the submitted application.
+        data: { username: resolvedUsername, name: fields.name },
       });
 
       await tx.guideApplication.create({
@@ -451,7 +454,9 @@ export async function approveGuideApplicationAction(applicationId: string) {
       await tx.guide.create({
         data: {
           userId: application.userId,
-          name: application.name,
+          // Always resolve from the linked account (the single source of truth)
+          // rather than the application snapshot, so the two can never drift.
+          name: resolveGuideName(application.user),
           bio: application.bio,
           photo: application.photo,
           photos: application.photos,

@@ -12,7 +12,7 @@ const VARIANTS = {
     idle: "border-border/70 text-muted-foreground hover:border-border hover:text-foreground",
   },
   menu: {
-    base: "rounded-lg px-3.5 py-2.5 text-base font-medium",
+    base: "rounded-xl px-3 py-2.5 text-sm font-medium",
     idle: "text-foreground hover:bg-primary/10 hover:text-primary",
   },
 } as const;

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Globe, MapPin, Monitor, UserX } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { loadDb, prisma, safeDb } from "@/lib/prisma";
 import { requirePermission } from "@/lib/authz";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminUserActivityLog } from "@/components/admin/admin-user-activity-log";
 import { AdminUserForm } from "@/components/admin/admin-user-form";
 import { formatLongDate, pluralize } from "@/lib/format";
 
@@ -36,73 +37,6 @@ function roleBadgeClass(role: string) {
   return ROLE_BADGE_CLASSES[role] ?? ROLE_BADGE_CLASSES.USER;
 }
 
-function actionBadgeClass(action: string) {
-  if (action.startsWith("LOGIN") || action === "ACCOUNT_CREATED" || action.startsWith("PASSWORD") || action === "USERNAME_CHANGED" || action === "EMAIL_CHANGED" || action === "PHONE_CHANGED") {
-    return "border-blue-500/40 bg-blue-500/10 text-blue-600";
-  }
-  if (action.startsWith("BOOKING") || action.startsWith("PAYMENT")) {
-    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-600";
-  }
-  if (action.startsWith("GUIDE")) {
-    return "border-violet-500/40 bg-violet-500/10 text-violet-600";
-  }
-  if (action.startsWith("SUPPORT")) {
-    return "border-amber-500/40 bg-amber-500/10 text-amber-600";
-  }
-  if (action.startsWith("USER_ROLE") || action.startsWith("USER_PROFILE")) {
-    return "border-destructive/40 bg-destructive/10 text-destructive";
-  }
-  return "border-border/70 bg-background/80 text-muted-foreground";
-}
-
-function formatAction(action: string) {
-  return action.toLowerCase().replace(/_/g, " ");
-}
-
-type GeoDisplay = {
-  country: string | null;
-  region: string | null;
-  city: string | null;
-};
-
-function extractGeo(metadata: unknown): GeoDisplay | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
-  const geo = (metadata as Record<string, unknown>).geo;
-  if (!geo || typeof geo !== "object" || Array.isArray(geo)) return null;
-  const record = geo as Record<string, unknown>;
-  const country = typeof record.country === "string" ? record.country : null;
-  const region = typeof record.region === "string" ? record.region : null;
-  const city = typeof record.city === "string" ? record.city : null;
-  if (!country && !region && !city) return null;
-  return { country, region, city };
-}
-
-/** Return metadata with the `geo` key removed, or null when nothing else remains. */
-function metadataWithoutGeo(metadata: unknown): unknown {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return metadata;
-  const rest = { ...(metadata as Record<string, unknown>) };
-  delete rest.geo;
-  return Object.keys(rest).length > 0 ? rest : null;
-}
-
-/** Slot capacity/booking stats for activity entries when present. */
-function activityStatPills(
-  metadata: unknown,
-): { booked: number | null; reserved: number | null; capacity: number | null } | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
-  const record = metadata as Record<string, unknown>;
-  const reserved = typeof record.reserved === "number" ? record.reserved : null;
-  const booked =
-    typeof record.booked === "number"
-      ? record.booked
-      : typeof record.bookingCount === "number"
-        ? record.bookingCount
-        : null;
-  const capacity = typeof record.capacity === "number" ? record.capacity : null;
-  if (reserved === null && booked === null && capacity === null) return null;
-  return { booked, reserved, capacity };
-}
-
 export default async function AdminUserDetailPage({
   params,
 }: {
@@ -129,7 +63,7 @@ export default async function AdminUserDetailPage({
         prisma.activityLog.findMany({
           where: { userId },
           orderBy: { createdAt: "desc" },
-          take: 200,
+          take: 10,
         }),
       [],
     ),
@@ -219,102 +153,12 @@ export default async function AdminUserDetailPage({
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-background/95 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.2)]">
-            <CardHeader className="border-b border-border/70 bg-muted/20">
-              <CardTitle>Activity Log</CardTitle>
-              <CardDescription>
-                {activityLogs.length === 200
-                  ? "Latest 200 events, newest first."
-                  : `${pluralize(activityLogs.length, "event")}, newest first.`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {activityLogs.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <UserX className="size-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
-                </div>
-              ) : (
-                <ol className="relative space-y-4 border-l border-border/70 pl-4">
-                  {activityLogs.map((log) => {
-                    const geo = extractGeo(log.metadata);
-                    const restMetadata = metadataWithoutGeo(log.metadata);
-                    return (
-                    <li key={log.id} className="relative">
-                      <span className="absolute -left-[1.31rem] top-1.5 size-2 rounded-full bg-primary" />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${actionBadgeClass(log.action)}`}>
-                          {formatAction(log.action)}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {log.createdAt.toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-foreground/90">{log.label}</p>
-                      {(() => {
-                        const stats = activityStatPills(log.metadata);
-                        if (!stats) return null;
-                        return (
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            {stats.booked !== null ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600"
-                              >
-                                {stats.booked} booked
-                              </Badge>
-                            ) : null}
-                            {stats.reserved !== null ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600"
-                              >
-                                {stats.reserved} reserved
-                              </Badge>
-                            ) : null}
-                            {stats.capacity !== null ? (
-                              <Badge
-                                variant="outline"
-                                className="rounded-full border-border/70 bg-background/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-                              >
-                                {stats.capacity} capacity
-                              </Badge>
-                            ) : null}
-                          </div>
-                        );
-                      })()}
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {geo ? (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {[geo.city, geo.region, geo.country].filter(Boolean).join(", ")}
-                          </span>
-                        ) : null}
-                        {log.ip ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Globe className="h-3 w-3" />
-                            {log.ip}
-                          </span>
-                        ) : null}
-                        {log.userAgent ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <Monitor className="h-3 w-3 shrink-0" />
-                            <span className="break-all">{log.userAgent}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                      {restMetadata ? (
-                        <pre className="mt-2 overflow-x-auto rounded-lg border border-border/60 bg-muted/30 p-2 text-[11px] leading-relaxed text-muted-foreground">
-                          {JSON.stringify(restMetadata, null, 2)}
-                        </pre>
-                      ) : null}
-                    </li>
-                    );
-                  })}
-                </ol>
-              )}
-            </CardContent>
-          </Card>
+          <AdminUserActivityLog
+            key={`${user._count.activityLogs}:${activityLogs[0]?.id ?? "none"}`}
+            userId={user.id}
+            initialActivityLogs={activityLogs.map((log) => ({ ...log, createdAt: log.createdAt.toISOString() }))}
+            initialTotal={user._count.activityLogs}
+          />
         </div>
       </div>
     </div>

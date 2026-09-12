@@ -61,8 +61,15 @@ export function GuideProfileEditor({ guide }: { guide: GuideProfileEditorData })
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-5">
         <div className="grid gap-2 md:grid-cols-[11rem_1fr] md:items-center">
-          <Label htmlFor="guide-profile-name">Full name</Label>
-          <input id="guide-profile-name" name="name" defaultValue={guide.name} required className={inputClassName} />
+          <Label>Full name</Label>
+          <div>
+            <p className="flex h-10 w-full items-center rounded-xl border border-border/70 bg-muted/30 px-3 text-sm text-muted-foreground">
+              {guide.name}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Your name comes from your account. Contact support to change it.
+            </p>
+          </div>
         </div>
         <div className="grid gap-2 md:grid-cols-[11rem_1fr] md:items-center">
           <Label htmlFor="guide-profile-location">Location</Label>

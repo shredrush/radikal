@@ -196,7 +196,7 @@ export function GuideApplicationForm({
             name="name"
             defaultValue={fullName ?? ""}
             required
-            maxLength={120}
+            maxLength={100}
             className={`${inputClassName} ${fieldErrors.name ? "border-destructive" : ""}`}
             aria-invalid={Boolean(fieldErrors.name)}
             aria-describedby={fieldErrors.name ? "application-name-error" : undefined}

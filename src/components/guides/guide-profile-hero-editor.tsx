@@ -112,7 +112,11 @@ export function GuideProfileHeroEditor({ guide, fallbackImage }: { guide: GuideH
             </>
           ) : (
             <form id={formId} onSubmit={saveProfile} className="space-y-4">
-              <div><input name="name" defaultValue={guide.name} aria-label="Guide name" required maxLength={120} className={`${inputClassName} font-heading text-3xl font-semibold tracking-tight sm:text-4xl`} /><input name="location" defaultValue={guide.location} aria-label="Location" required maxLength={200} className={`${inputClassName} mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground`} /></div>
+              <div>
+                <p className={`${inputClassName} font-heading text-3xl font-semibold tracking-tight sm:text-4xl`}>{guide.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Your name comes from your account and can&apos;t be edited here.</p>
+                <input name="location" defaultValue={guide.location} aria-label="Location" required maxLength={200} className={`${inputClassName} mt-2 text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground`} />
+              </div>
               <p className="flex items-center gap-2 text-base leading-7 text-muted-foreground"><input name="experienceYears" type="number" min="0" max="100" defaultValue={guide.experienceYears} aria-label="Years of experience" className="w-16 rounded-lg border border-border/80 bg-background px-2 py-1 font-heading text-lg font-semibold text-emerald-700 outline-none focus:ring-2 focus:ring-ring/20 dark:text-emerald-400" /> years experience</p>
               <textarea name="bio" defaultValue={guide.bio} aria-label="Bio" required rows={4} maxLength={3000} className={`${inputClassName} resize-none text-sm leading-6 text-muted-foreground`} />
               <div><p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Certifications</p><textarea name="certifications" defaultValue={guide.certifications.map((certification) => certification.title).join("\n")} rows={3} maxLength={5100} className={`${inputClassName} resize-none text-sm`} /></div>
