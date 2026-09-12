@@ -67,7 +67,7 @@ export async function createCustomTripRequestAction(
     });
     if (!account.success) return { success: false, error: account.error };
     userId = account.user.id;
-    sendEmailAfter(guestAccountCreatedEmail({
+    await sendEmailAfter(guestAccountCreatedEmail({
       to: account.user.email,
       name: account.user.name,
       password: account.password,

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   completePastBookings: vi.fn(),
   sweepOrphanMedia: vi.fn(),
+  processEmailOutbox: vi.fn(),
+  deliverEmail: vi.fn(),
 }));
 
 vi.mock("@/lib/booking-completion", () => ({
@@ -11,9 +13,16 @@ vi.mock("@/lib/booking-completion", () => ({
 vi.mock("@/lib/media-cleanup", () => ({
   sweepOrphanMedia: mocks.sweepOrphanMedia,
 }));
+vi.mock("@/lib/email-outbox", () => ({
+  processEmailOutbox: mocks.processEmailOutbox,
+}));
+vi.mock("@/lib/email", () => ({
+  deliverEmail: mocks.deliverEmail,
+}));
 
 import { GET as completeBookings } from "./complete-bookings/route";
 import { GET as cleanupMedia } from "./cleanup-media/route";
+import { GET as processEmails } from "./process-emails/route";
 
 const originalCronSecret = process.env.CRON_SECRET;
 
@@ -34,6 +43,11 @@ const routes: CronRoute[] = [
     worker: mocks.sweepOrphanMedia,
     expected: { scanned: 12, deleted: 3 },
   },
+  {
+    run: processEmails,
+    worker: mocks.processEmailOutbox,
+    expected: { selected: 2, sent: 2, failed: 0 },
+  },
 ];
 
 function request(authorization?: string) {
@@ -46,6 +60,7 @@ beforeEach(() => {
   process.env.CRON_SECRET = "test-cron-secret";
   mocks.completePastBookings.mockResolvedValue(3);
   mocks.sweepOrphanMedia.mockResolvedValue({ scanned: 12, deleted: 3 });
+  mocks.processEmailOutbox.mockResolvedValue({ selected: 2, sent: 2, failed: 0 });
 });
 
 afterEach(() => {

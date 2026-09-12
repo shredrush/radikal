@@ -266,7 +266,7 @@ export async function signupAction(
   });
 
   // Welcome the new account in the background — never block signup on email.
-  sendEmailAfter(welcomeEmail({ to: email, name }));
+  await sendEmailAfter(welcomeEmail({ to: email, name }));
 
   redirect("/login");
 }
@@ -384,7 +384,7 @@ export async function changePasswordAction(
   });
 
   // Security notification — let the account owner know the password changed.
-  sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
+  await sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
 
   return { success: true };
 }
@@ -575,9 +575,9 @@ export async function changeEmailAction(
   });
 
   // Notify both the old and the new address so the change is always visible.
-  sendEmailAfter(emailChangedEmail({ to: email, name: user.name, newEmail: email }));
+  await sendEmailAfter(emailChangedEmail({ to: email, name: user.name, newEmail: email }));
   if (user.email !== email) {
-    sendEmailAfter(emailChangedEmail({ to: user.email, name: user.name, newEmail: email }));
+    await sendEmailAfter(emailChangedEmail({ to: user.email, name: user.name, newEmail: email }));
   }
 
   return { success: true };
@@ -737,7 +737,7 @@ export async function requestPasswordResetAction(
   });
 
   // Deliver the code in the background so the action never blocks on email.
-  sendEmailAfter(passwordResetOtpEmail({ to: user.email, name: user.name, code }));
+  await sendEmailAfter(passwordResetOtpEmail({ to: user.email, name: user.name, code }));
 
   return { sent: true, identifier };
 }
@@ -881,7 +881,7 @@ export async function resetPasswordAction(
   });
 
   // Security notification — let the account owner know the password changed.
-  sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
+  await sendEmailAfter(passwordChangedEmail({ to: user.email, name: user.name }));
 
   return { success: true, identifier };
 }

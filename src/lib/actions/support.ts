@@ -118,7 +118,7 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
   invalidateProfileSummary(customer.userId);
 
   // Notify the customer that an agent replied, without blocking the reply.
-  sendEmailAfter(
+  await sendEmailAfter(
     supportReplyEmail({
       to: customer.email,
       name: customer.name,

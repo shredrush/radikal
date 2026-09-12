@@ -125,7 +125,7 @@ export async function submitTransactionId(
       metadata: { bookingId: booking.id, transactionId: cleanTransactionId },
     });
 
-    sendEmailAfter(
+    await sendEmailAfter(
       paymentReferenceReceivedEmail({
         to: booking.user.email,
         name: booking.user.name,
@@ -281,7 +281,7 @@ export async function confirmBookingPayment(
   });
 
   if (confirmationEmail) {
-    sendEmailAfter(bookingConfirmedEmail(confirmationEmail));
+    await sendEmailAfter(bookingConfirmedEmail(confirmationEmail));
   }
 
   revalidatePath("/admin/bookings");
@@ -379,7 +379,7 @@ export async function cancelBooking(
   });
 
   if (cancellationEmail) {
-    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
+    await sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/admin/bookings");
@@ -483,7 +483,7 @@ export async function cancelBookingAsGuide(
   });
 
   if (cancellationEmail) {
-    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
+    await sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/profile");
@@ -638,7 +638,7 @@ export async function cancelSlotBookingsAsGuide(
   }
 
   for (const email of emails) {
-    sendEmailAfter(bookingCancelledEmail(email));
+    await sendEmailAfter(bookingCancelledEmail(email));
   }
 
   // Notify staff (in-app + email) so the cancellation gets reviewed.
@@ -651,7 +651,7 @@ export async function cancelSlotBookingsAsGuide(
     });
 
     for (const user of staff) {
-      sendEmailAfter(
+      await sendEmailAfter(
         guideCancelledBookingAdminEmail({
           to: user.email,
           name: user.name ?? "",
@@ -767,7 +767,7 @@ export async function cancelBookingAsUser(
   });
 
   if (cancellationEmail) {
-    sendEmailAfter(bookingCancelledEmail(cancellationEmail));
+    await sendEmailAfter(bookingCancelledEmail(cancellationEmail));
   }
 
   revalidatePath("/profile");

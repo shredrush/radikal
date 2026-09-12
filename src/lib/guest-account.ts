@@ -22,13 +22,22 @@ const guestAccountSchema = z.object({
 
 export type GuestAccountResult =
   | { success: true; user: { id: string; name: string; email: string }; password: string }
-  | { success: false; error: string };
+  | { success: false; error: string; fieldErrors?: Record<string, string> };
 
 /** Creates a customer account for a public intake form without signing it in. */
 export async function createGuestAccount(input: unknown): Promise<GuestAccountResult> {
   const parsed = guestAccountSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid contact details." };
+    return {
+      success: false,
+      error: "Correct the contact details below.",
+      fieldErrors: Object.fromEntries(
+        parsed.error.issues.flatMap((issue) => {
+          const field = issue.path[0];
+          return typeof field === "string" ? [[field, issue.message]] : [];
+        }),
+      ),
+    };
   }
 
   const ip = await getClientIp();

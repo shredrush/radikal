@@ -115,6 +115,16 @@ enum ReferralStatus {
   QUALIFIED
 }
 
+// A durable transactional-mail outbox. Jobs are retained for delivery support
+// and retried by the protected email cron worker after transient failures.
+enum EmailDeliveryStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  SENT
+  FAILED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -174,6 +184,27 @@ model User {
   @@index([role])
   @@index([deletedAt])
   @@map("users")
+}
+
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  to                String
+  subject           String
+  html              String
+  text              String?
+  status            EmailDeliveryStatus @default(PENDING)
+  attempts          Int                 @default(0)
+  nextAttemptAt     DateTime            @default(now())
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  providerMessageId String?
+  lastError         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([createdAt(sort: Desc)])
+  @@map("email_deliveries")
 }
 
 // A retired username kept so the guide's previous public URL keeps resolving.

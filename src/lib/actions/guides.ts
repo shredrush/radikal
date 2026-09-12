@@ -300,7 +300,7 @@ export async function createGuideAction(formData: FormData) {
   invalidateSessionVersion(linkedUser.id);
 
   // Notify the newly added guide in the background — never block the action.
-  sendEmailAfter(
+  await sendEmailAfter(
     guideWelcomeEmail({ to: linkedUser.email, name: linkedUser.name }),
   );
 }

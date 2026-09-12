@@ -581,7 +581,7 @@ export async function cancelSlotAction(slotId: string, reason?: string) {
   });
 
   for (const email of emails) {
-    sendEmailAfter(bookingCancelledEmail(email));
+    await sendEmailAfter(bookingCancelledEmail(email));
   }
 
   if (emails.length > 0) {

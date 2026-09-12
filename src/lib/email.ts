@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { Resend } from "resend";
 import { normalizeEmailSender } from "@/lib/email-sender";
+import { dispatchQueuedEmail, queueEmail, type QueuedEmail } from "@/lib/email-outbox";
 
 const SITE_NAME = "Radikal";
 
@@ -134,50 +135,34 @@ function detailTable(rows: Array<[string, string]>): string {
     .join("")}</table>`;
 }
 
-export type EmailInput = {
-  to: string;
-  subject: string;
-  html: string;
-  text?: string;
-};
+export type EmailInput = QueuedEmail;
 
 /**
  * Sends a single transactional email. Never throws — email failures are logged
  * so a broken email provider can't take down a booking, signup, or payment.
  */
-export async function sendEmail(input: EmailInput): Promise<boolean> {
-  if (!input.to) return false;
-
+export async function deliverEmail(input: QueuedEmail): Promise<{ id: string }> {
   const client = getResend();
   if (!client) {
-    console.warn(`[email] RESEND_API_KEY not set — skipping "${input.subject}"`);
-    return false;
+    throw new Error("RESEND_API_KEY is not configured.");
   }
 
   const recipient = redirectTestEmail(input.to);
   if (recipient !== input.to) {
-    console.log(`[email] test redirect: "${input.to}" -> "${recipient}"`);
+    console.info("[email] test redirect", { to: input.to, redirectedTo: recipient, subject: input.subject });
   }
 
-  try {
-    const { data, error } = await client.emails.send({
-      from: FROM_EMAIL,
-      to: recipient,
-      subject: input.subject,
-      html: input.html,
-      ...(input.text ? { text: input.text } : {}),
-    });
+  const { data, error } = await client.emails.send({
+    from: FROM_EMAIL,
+    to: recipient,
+    subject: input.subject,
+    html: input.html,
+    ...(input.text ? { text: input.text } : {}),
+  });
 
-    if (error) {
-      console.error(`[email] failed to send "${input.subject}"`, error);
-      return false;
-    }
-
-    return Boolean(data?.id);
-  } catch (error) {
-    console.error(`[email] failed to send "${input.subject}"`, error);
-    return false;
-  }
+  if (error) throw error;
+  if (!data?.id) throw new Error("Resend returned no message ID.");
+  return { id: data.id };
 }
 
 /**
@@ -185,12 +170,16 @@ export async function sendEmail(input: EmailInput): Promise<boolean> {
  * user-facing action (signup, booking, payment, ...) is never blocked on email
  * delivery. Use this from Server Actions.
  */
-export function sendEmailAfter(input: EmailInput): void {
-  if (!input.to) return;
-
-  after(async () => {
-    await sendEmail(input);
-  });
+export async function sendEmailAfter(input: EmailInput): Promise<void> {
+  // Persist before dispatching. The cron worker will retry if the serverless
+  // callback is interrupted or the provider has a transient outage.
+  try {
+    const emailId = await queueEmail(input);
+    if (emailId) after(() => dispatchQueuedEmail(emailId, deliverEmail));
+  } catch (error) {
+    // The business action still succeeds; the failed enqueue is visible in logs.
+    console.error("[email] failed to queue", { subject: input.subject, error: error instanceof Error ? error.message : String(error) });
+  }
 }
 
 // ---------------------------------------------------------------------------

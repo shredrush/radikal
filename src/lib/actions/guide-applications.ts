@@ -26,6 +26,12 @@ import { normalizeMediaOrder } from "@/lib/media-order";
 import { parseMediaList } from "@/lib/trip-fields";
 import { generateAvailableUsername } from "@/lib/available-username";
 
+const MAX_GUIDE_LANGUAGES = 20;
+const MAX_GUIDE_CERTIFICATIONS = 25;
+const MAX_GUIDE_LANGUAGES_INPUT_CHARS = 1700;
+const MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS = 5100;
+const MAX_SOCIAL_URL_LENGTH = 2048;
+
 function asString(value: FormDataEntryValue | null) {
   return value?.toString().trim() ?? "";
 }
@@ -89,8 +95,32 @@ function readApplicationFields(formData: FormData) {
   };
 }
 
+function validateInputLengths(formData: FormData) {
+  const limits = {
+    name: 120,
+    phone: 40,
+    location: 200,
+    bio: 3000,
+    languages: MAX_GUIDE_LANGUAGES_INPUT_CHARS,
+    certifications: MAX_GUIDE_CERTIFICATIONS_INPUT_CHARS,
+    instagramUrl: MAX_SOCIAL_URL_LENGTH,
+    facebookUrl: MAX_SOCIAL_URL_LENGTH,
+    youtubeUrl: MAX_SOCIAL_URL_LENGTH,
+    websiteUrl: MAX_SOCIAL_URL_LENGTH,
+  };
+
+  return Object.fromEntries(
+    Object.entries(limits).flatMap(([name, maxLength]) =>
+      asString(formData.get(name)).length > maxLength
+        ? [[name, `Use ${maxLength.toLocaleString()} characters or fewer.`]]
+        : [],
+    ),
+  );
+}
+
 export type GuideApplicationState = {
   error?: string;
+  fieldErrors?: Record<string, string>;
   success?: boolean;
 };
 
@@ -104,13 +134,65 @@ export async function submitGuideApplicationAction(
   }
 
   const fields = readApplicationFields(formData);
+  const lengthErrors = validateInputLengths(formData);
+  if (Object.keys(lengthErrors).length > 0) {
+    return { error: "Correct the highlighted fields below.", fieldErrors: lengthErrors };
+  }
 
-  if (!fields.name || !fields.location || !fields.bio) {
-    return { error: "Name, location, and a short bio are required." };
+  const fieldErrors: Record<string, string> = {};
+  if (!fields.name) fieldErrors.name = "Full name is required.";
+  if (!fields.phone) fieldErrors.phone = "Phone is required.";
+  if (!fields.location) fieldErrors.location = "Location is required.";
+  if (!asString(formData.get("experienceYears"))) fieldErrors.experienceYears = "Experience is required.";
+  if (!fields.bio) fieldErrors.bio = "About you is required.";
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: "Complete the required fields below.", fieldErrors };
+  }
+
+  if (!/^\+\d{7,15}$/.test(fields.phone)) {
+    return {
+      error: "Correct the required fields below.",
+      fieldErrors: { phone: "Enter a valid phone number with country code." },
+    };
+  }
+
+  const experienceInput = asString(formData.get("experienceYears"));
+  if (!/^\d+$/.test(experienceInput) || Number(experienceInput) < 1 || Number(experienceInput) > 100) {
+    return {
+      error: "Correct the required fields below.",
+      fieldErrors: { experienceYears: "Enter experience as a whole number from 0 to 100." },
+    };
   }
 
   if (fields.languages.length === 0) {
-    return { error: "Add at least one language you speak." };
+    return {
+      error: "Complete the required fields below.",
+      fieldErrors: { languages: "Add at least one language you speak." },
+    };
+  }
+
+  if (fields.languages.length > MAX_GUIDE_LANGUAGES) {
+    return {
+      error: "Correct the highlighted fields below.",
+      fieldErrors: { languages: `List at most ${MAX_GUIDE_LANGUAGES} languages.` },
+    };
+  }
+
+  if (fields.certifications.length > MAX_GUIDE_CERTIFICATIONS) {
+    return {
+      error: "Correct the highlighted fields below.",
+      fieldErrors: { certifications: `List at most ${MAX_GUIDE_CERTIFICATIONS} certifications.` },
+    };
+  }
+
+  const invalidSocialLinks = Object.fromEntries(
+    ["instagramUrl", "facebookUrl", "youtubeUrl", "websiteUrl"].flatMap((name) => {
+      const value = asString(formData.get(name));
+      return value && !isSafeHttpUrl(value) ? [[name, "Enter a valid http(s) URL."]] : [];
+    }),
+  );
+  if (Object.keys(invalidSocialLinks).length > 0) {
+    return { error: "Correct the highlighted links below.", fieldErrors: invalidSocialLinks };
   }
 
   if (fields.experienceYears < 0) {
@@ -143,10 +225,10 @@ export async function submitGuideApplicationAction(
       email: asString(formData.get("email")),
       phone: fields.phone,
     });
-    if (!account.success) return { error: account.error };
+    if (!account.success) return { error: account.error, fieldErrors: account.fieldErrors };
     userId = account.user.id;
     accountEmail = account.user.email;
-    sendEmailAfter(guestAccountCreatedEmail({
+    await sendEmailAfter(guestAccountCreatedEmail({
       to: account.user.email,
       name: account.user.name,
       password: account.password,
@@ -176,6 +258,7 @@ export async function submitGuideApplicationAction(
   if (username && !isValidUsername(username)) {
     return {
       error: "Username must be 3–30 lowercase letters or numbers, with single -, _, or . separators.",
+      fieldErrors: { username: "Use 3–30 lowercase letters or numbers." },
     };
   }
 
@@ -187,7 +270,7 @@ export async function submitGuideApplicationAction(
       select: { id: true },
     });
     if (usernameTaken) {
-        return { error: "This username is already taken." };
+        return { error: "This username is already taken.", fieldErrors: { username: "This username is already taken." } };
     }
   }
 
@@ -225,7 +308,7 @@ export async function submitGuideApplicationAction(
   });
 
   // Acknowledge receipt in the background — never block submission on email.
-  sendEmailAfter(
+  await sendEmailAfter(
     guideApplicationReceivedEmail({
       to: accountEmail,
       name: session?.user?.name ?? fields.name,
@@ -256,7 +339,7 @@ export async function submitGuideApplicationAction(
     });
 
     for (const user of staff) {
-      sendEmailAfter(
+      await sendEmailAfter(
         guideApplicationAdminEmail({
           to: user.email,
           name: user.name ?? "",
@@ -383,7 +466,7 @@ export async function approveGuideApplicationAction(applicationId: string) {
     metadata: { role: "GUIDE" },
   });
 
-  sendEmailAfter(
+  await sendEmailAfter(
     guideApplicationDecisionEmail({
       to: application.user.email,
       name: application.user.name,
@@ -436,7 +519,7 @@ export async function rejectGuideApplicationAction(applicationId: string) {
   revalidatePath("/admin/guides");
   revalidatePath("/become-a-guide");
 
-  sendEmailAfter(
+  await sendEmailAfter(
     guideApplicationDecisionEmail({
       to: application.user.email,
       name: application.user.name,

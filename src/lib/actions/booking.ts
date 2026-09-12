@@ -194,7 +194,7 @@ export async function createBooking(
 
       await Promise.all(activityLogs);
 
-      sendEmailAfter(
+      await sendEmailAfter(
         paymentReferenceReceivedEmail({
           to: user.email,
           name: user.name,

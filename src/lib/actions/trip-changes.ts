@@ -614,7 +614,7 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
   });
 
   for (const email of emails) {
-    sendEmailAfter(bookingCancelledEmail(email));
+    await sendEmailAfter(bookingCancelledEmail(email));
   }
 
   if (emails.length > 0) {
@@ -626,7 +626,7 @@ export async function cancelGuideSlotAction(slotId: string, reason?: string): Pr
         href: "/admin/bookings",
       });
       for (const user of staff) {
-        sendEmailAfter(
+        await sendEmailAfter(
           guideCancelledBookingAdminEmail({
             to: user.email,
             name: user.name ?? "",
