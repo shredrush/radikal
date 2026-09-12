@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 export function ApproveGuideButton({
   applicationId,
   applicantName,
+  onReviewed,
 }: {
   applicationId: string;
   applicantName: string;
+  onReviewed: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -29,6 +31,7 @@ export function ApproveGuideButton({
       try {
         await approveGuideApplicationAction(applicationId);
         toast.success(`"${applicantName}" has been approved.`);
+        onReviewed();
         router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to approve application.";
@@ -54,9 +57,11 @@ export function ApproveGuideButton({
 export function RejectGuideButton({
   applicationId,
   applicantName,
+  onReviewed,
 }: {
   applicationId: string;
   applicantName: string;
+  onReviewed: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -72,6 +77,7 @@ export function RejectGuideButton({
       try {
         await rejectGuideApplicationAction(applicationId);
         toast.success(`"${applicantName}" has been rejected.`);
+        onReviewed();
         router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to reject application.";

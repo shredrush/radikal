@@ -149,8 +149,8 @@ export function GuideApplicationsPanel({ pendingCount = 0 }: { pendingCount?: nu
                                   </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                  <ApproveGuideButton applicationId={application.id} applicantName={application.name} />
-                                  <RejectGuideButton applicationId={application.id} applicantName={application.name} />
+                                  <ApproveGuideButton applicationId={application.id} applicantName={application.name} onReviewed={load} />
+                                  <RejectGuideButton applicationId={application.id} applicantName={application.name} onReviewed={load} />
                                 </div>
                               </div>
                             </CardHeader>

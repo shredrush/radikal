@@ -207,21 +207,25 @@ export function GuideApplicationForm({
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <p className="text-sm font-medium">Profile media (optional)</p>
-          <p className="text-xs text-muted-foreground">
-            Up to 10 photos and 5 videos. Reorder media here to set your public profile gallery layout.
-          </p>
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <MediaUploader
-            entity="guide"
-            folderKey={userId ?? "pending"}
-            imagesFieldName="photos"
-            videosFieldName="videos"
-            mediaOrderFieldName="mediaOrder"
-          />
-        </div>
+        {!isGuest ? (
+          <>
+            <div className="space-y-2 md:col-span-2">
+              <p className="text-sm font-medium">Profile media (optional)</p>
+              <p className="text-xs text-muted-foreground">
+                Up to 10 photos and 5 videos. Reorder media here to set your public profile gallery layout.
+              </p>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <MediaUploader
+                entity="guide"
+                folderKey={userId ?? "pending"}
+                imagesFieldName="photos"
+                videosFieldName="videos"
+                mediaOrderFieldName="mediaOrder"
+              />
+            </div>
+          </>
+        ) : null}
 
         <div className="space-y-2 md:col-span-2">
           <p className="text-sm font-medium">Social links (optional)</p>

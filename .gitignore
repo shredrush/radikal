@@ -48,3 +48,5 @@ copilot-instructions.md
 /prisma/seed-dummy-data.ts
 /prisma/seed-data.json
 /prisma/dump-data.ts
+
+.kilo/*
