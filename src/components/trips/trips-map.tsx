@@ -7,11 +7,12 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 import type { TripsExplorerMapTrip } from "@/components/trips/trips-explorer";
 import { getTripCardImage } from "@/lib/trip-card-image";
 
-type TripsMapProps = { hasTrips: boolean; search: string; styleUrl: string };
+type TripsMapProps = { search: string; styleUrl: string };
 
 const DEFAULT_CENTER: [number, number] = [77.22247, 32.23607];
-// The configured OpenFreeMap tiles stop rendering beyond zoom level 14.
-const MAX_MAP_ZOOM = 14;
+// Keeping the map below the provider's maximum leaves enough surrounding
+// geography visible when a single trip pin is fitted.
+const MAX_MAP_ZOOM = 12;
 
 function toFeatureCollection(trips: TripsExplorerMapTrip[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
@@ -88,7 +89,7 @@ function addTripMarkers(map: MapLibreMap, trips: TripsExplorerMapTrip[]) {
   });
 }
 
-export function TripsMap({ hasTrips, search, styleUrl }: TripsMapProps) {
+export function TripsMap({ search, styleUrl }: TripsMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRefs = useRef<maplibregl.Marker[]>([]);
@@ -99,7 +100,7 @@ export function TripsMap({ hasTrips, search, styleUrl }: TripsMapProps) {
   const [truncated, setTruncated] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || !hasTrips) return;
+    if (!containerRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -228,7 +229,7 @@ export function TripsMap({ hasTrips, search, styleUrl }: TripsMapProps) {
       map.remove();
       mapRef.current = null;
     };
-  }, [hasTrips, retryToken, search, styleUrl]);
+  }, [retryToken, search, styleUrl]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -245,22 +246,14 @@ export function TripsMap({ hasTrips, search, styleUrl }: TripsMapProps) {
     }
   }, [trips]);
 
-  if (!hasTrips) {
-    return <MapMessage message="No matching trips have approved public map coordinates yet." />;
-  }
-
   return (
     <section className="space-y-3" aria-label="Map of matching trips">
       <div className="relative overflow-hidden rounded-[1.5rem] border border-border/80 bg-muted/20">
-        <div ref={containerRef} className="relative h-[60svh] min-h-80 w-full overflow-hidden sm:h-[32rem]" />
-        <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-[10px] text-muted-foreground shadow-sm">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://openfreemap.org/">OpenFreeMap</a></div>
-        {truncated ? <div className="absolute inset-x-4 top-4 rounded-xl border border-border/70 bg-background/95 p-3 text-center text-xs text-muted-foreground shadow">Showing the newest 250 trips in this area. Zoom in for more detail.</div> : null}
+         <div ref={containerRef} className="relative h-[60svh] min-h-80 w-full overflow-hidden sm:h-[32rem]" />
+         <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-background/80 px-2 py-1 text-[10px] text-muted-foreground shadow-sm">Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://openfreemap.org/">OpenFreeMap</a></div>
+         {truncated ? <div className="absolute inset-x-4 top-4 rounded-xl border border-border/70 bg-background/95 p-3 text-center text-xs text-muted-foreground shadow">Showing the newest 250 trips in this area. Zoom in for more detail.</div> : null}
         {error ? <div role="alert" className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-background/95 p-3 text-sm text-destructive shadow"><span>{error}</span><button type="button" onClick={() => setRetryToken((value) => value + 1)} className="font-semibold underline underline-offset-4">Retry</button></div> : null}
       </div>
     </section>
   );
-}
-
-function MapMessage({ message }: { message: string }) {
-  return <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-muted/20 p-8 text-center text-sm text-muted-foreground">{message}</div>;
 }

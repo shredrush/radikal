@@ -68,7 +68,6 @@ async function CatalogContent({
 }) {
   const params = await searchParams;
   const filters = getPublicTripFilters(params);
-  const showMap = params.view === "map";
   const fallback = {
     trips: [],
     totalTrips: 0,
@@ -89,27 +88,11 @@ async function CatalogContent({
     page === catalogFilters.page
       ? initialCatalog
       : await safeDb("trips.catalog", () => getCatalogPage({ ...catalogFilters, page }), fallback);
-  const hasMapTrips = showMap
-    ? await safeDb(
-        "trips.map-count",
-        () => prisma.trip.count({
-          where: {
-            AND: [
-              getPublicTripWhere(catalogFilters),
-              { mapVisible: true, latitude: { not: null }, longitude: { not: null } },
-            ],
-          },
-        }).then((count) => count > 0),
-        false,
-      )
-    : false;
-
   return (
     <TripsExplorer
       trips={catalog.trips}
       otherTrips={catalog.otherTrips}
       mapStyleUrl={MAP_STYLE_URL}
-      hasMapTrips={hasMapTrips}
       travelStyles={travelStyles}
       page={page}
       totalPages={totalPages}

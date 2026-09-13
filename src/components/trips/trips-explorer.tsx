@@ -111,7 +111,6 @@ export function TripsExplorer({
   trips,
   otherTrips,
   mapStyleUrl,
-  hasMapTrips,
   travelStyles = [],
   page,
   totalPages,
@@ -119,7 +118,6 @@ export function TripsExplorer({
   trips: TripsExplorerTrip[];
   otherTrips: TripsExplorerTrip[];
   mapStyleUrl: string | null;
-  hasMapTrips: boolean;
   travelStyles?: TripsExplorerTravelStyle[];
   page: number;
   totalPages: number;
@@ -291,13 +289,13 @@ export function TripsExplorer({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-0">
-        <div className="mx-auto flex w-full max-w-[52rem] items-center gap-2 px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className="mx-auto flex w-full items-center gap-2 px-3 pt-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,44.88rem)_minmax(0,1fr)] sm:px-4 sm:pt-4">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               updateSearch();
             }}
-            className={`relative flex min-w-0 flex-1 items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:pl-4`}
+            className={`relative flex min-w-0 flex-1 items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:col-start-2 sm:w-full sm:pl-4`}
           >
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
@@ -327,7 +325,7 @@ export function TripsExplorer({
               <span className="hidden sm:inline">Search</span>
             </button>
           </form>
-          <div className="inline-flex shrink-0 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm">
+          <div className="inline-flex shrink-0 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm sm:col-start-3 sm:justify-self-end">
             <button
               type="button"
               aria-label="Show trip list"
@@ -426,7 +424,7 @@ export function TripsExplorer({
 
       </div>
 
-      {view === "map" && mapStyleUrl ? <TripsMap hasTrips={hasMapTrips} search={searchParams.toString()} styleUrl={mapStyleUrl} /> : null}
+      {view === "map" && mapStyleUrl ? <TripsMap search={searchParams.toString()} styleUrl={mapStyleUrl} /> : null}
 
       {trips.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
