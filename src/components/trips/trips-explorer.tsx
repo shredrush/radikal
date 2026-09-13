@@ -109,18 +109,16 @@ export function TripsExplorer({
   const [, startFilterTransition] = useTransition();
 
   const selectedSportFromUrl = normalizeSportFilter(searchParams.getAll("sport"));
-  const [selectedSport, setOptimisticSport] = useOptimistic(
-    selectedSportFromUrl,
-    (_current, nextSport: string[]) => nextSport,
-  );
   const activeTravelStyleSlugs = new Set(travelStyles.map((style) => style.slug));
   const selectedTravelStyleFromUrl = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"))
     .filter((slug) => activeTravelStyleSlugs.has(slug))
     .slice(0, MAX_TRAVEL_STYLE_FILTERS);
-  const [selectedTravelStyle, setOptimisticTravelStyle] = useOptimistic(
-    selectedTravelStyleFromUrl,
-    (_current, nextStyles: string[]) => nextStyles,
+  const [selectedFilters, setOptimisticFilters] = useOptimistic(
+    { sports: selectedSportFromUrl, travelStyles: selectedTravelStyleFromUrl },
+    (_current, nextFilters: { sports: string[]; travelStyles: string[] }) => nextFilters,
   );
+  const selectedSport = selectedFilters.sports;
+  const selectedTravelStyle = selectedFilters.travelStyles;
   const selectedLocation = normalizeLocationFilter(searchParams.getAll("location"));
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
@@ -142,10 +140,13 @@ export function TripsExplorer({
     }
 
     startFilterTransition(() => {
-      setOptimisticSport(nextSports);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("sport");
-      nextSports.forEach((selected) => params.append("sport", selected));
+      params.delete("travelStyle");
+      const nextFilters = { sports: nextSports, travelStyles: selectedTravelStyle };
+      setOptimisticFilters(nextFilters);
+      nextFilters.sports.forEach((selected) => params.append("sport", selected));
+      nextFilters.travelStyles.forEach((selected) => params.append("travelStyle", selected));
       params.delete("page");
       router.replace(`/trips?${params.toString()}`, { scroll: false });
     });
@@ -161,10 +162,13 @@ export function TripsExplorer({
       : [slug, ...selectedTravelStyle];
 
     startFilterTransition(() => {
-      setOptimisticTravelStyle(nextStyles);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("travelStyle");
-      nextStyles.forEach((selected) => params.append("travelStyle", selected));
+      params.delete("sport");
+      const nextFilters = { sports: selectedSport, travelStyles: nextStyles };
+      setOptimisticFilters(nextFilters);
+      nextFilters.sports.forEach((selected) => params.append("sport", selected));
+      nextFilters.travelStyles.forEach((selected) => params.append("travelStyle", selected));
       params.delete("page");
       router.replace(`/trips?${params.toString()}`, { scroll: false });
     });

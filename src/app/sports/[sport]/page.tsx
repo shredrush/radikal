@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
@@ -10,12 +10,12 @@ import { isSportGuideId, SPORT_GUIDES, type SportGuideId } from "@/lib/sport-gui
 
 const SPORT_GUIDE_TRIP_LIMIT = 4;
 
-const getSportTrips = cache(async (sport: SportGuideId) => prisma.trip.findMany({
+const getSportTrips = unstable_cache(async (sport: SportGuideId) => prisma.trip.findMany({
   where: { AND: [publicTripVisibilityWhere, { type: { in: SPORT_GUIDES[sport].tripTypes } }] },
   select: publicTripCardSelect,
   orderBy: { createdAt: "asc" },
   take: SPORT_GUIDE_TRIP_LIMIT,
-}));
+}), ["sport-guide-trips"], { tags: ["trips"] });
 
 function getGuideOr404(sport: string) {
   if (!isSportGuideId(sport)) notFound();
