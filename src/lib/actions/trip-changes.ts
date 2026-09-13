@@ -209,7 +209,8 @@ async function uniqueTripSlug(title: string): Promise<string> {
 
 export async function submitTripCreateChangeAction(formData: FormData): Promise<void> {
   const { guide, userId } = await requireGuide();
-  const fields = validateTripFields(readTripFields(formData));
+  // Coordinates are assigned by staff only; never trust guide-submitted FormData.
+  const fields = validateTripFields({ ...readTripFields(formData), latitude: null, longitude: null });
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields);
   await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);
@@ -313,7 +314,12 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     throw new Error("You can only edit your own trips.");
   }
 
-  const fields = validateTripFields(readTripFields(formData));
+  // Preserve staff-assigned coordinates while a guide updates the rest of a trip.
+  const fields = validateTripFields({
+    ...readTripFields(formData),
+    latitude: trip.latitude,
+    longitude: trip.longitude,
+  });
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields);
   await assertGuidePhotoBelongsToGuide(guide.id, fields.guidePhoto);

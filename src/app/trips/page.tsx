@@ -9,16 +9,16 @@ import {
   hasPublicTripFilters,
   PUBLIC_CATALOG_OTHER_TRIPS_LIMIT,
   PUBLIC_CATALOG_PAGE_SIZE,
-  PUBLIC_MAP_TRIP_LIMIT,
   publicTripVisibilityWhere,
   publicTripCardSelect,
-  publicTripMapSelect,
   type PublicTripFilters,
   type PublicTripSearchParams,
 } from "@/lib/public-trip-catalog";
 import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { TripsCatalogSkeleton, TripsPageTemplate } from "@/components/trips/trips-page-template";
+
+const PROTOMAPS_STYLE_URL = "https://api.protomaps.com/styles/v5/light/en.json";
 
 const getCatalogPage = unstable_cache(
   async (filters: PublicTripFilters) => {
@@ -50,23 +50,6 @@ const getCatalogPage = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-const getMapTrips = unstable_cache(
-  (filters: PublicTripFilters) =>
-    prisma.trip.findMany({
-      where: {
-        AND: [
-          getPublicTripWhere(filters),
-          { mapVisible: true, latitude: { not: null }, longitude: { not: null } },
-        ],
-      },
-      select: publicTripMapSelect,
-      orderBy: { createdAt: "asc" },
-      take: PUBLIC_MAP_TRIP_LIMIT,
-    }),
-  ["public-catalog-map-trips"],
-  { tags: ["trips"], revalidate: 300 },
-);
-
 const getTravelStyles = unstable_cache(
   () =>
     prisma.travelStyle.findMany({
@@ -78,21 +61,6 @@ const getTravelStyles = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-function toPublicMapTrips(trips: Awaited<ReturnType<typeof getMapTrips>>) {
-  return trips.flatMap((trip) => {
-    if (trip.latitude === null || trip.longitude === null || !Number.isFinite(trip.latitude) || !Number.isFinite(trip.longitude)) {
-      return [];
-    }
-
-    // Avoid exposing the precise staff-entered trailhead coordinate in the RSC payload.
-    return [{
-      ...trip,
-      latitude: Math.round(trip.latitude * 1_000) / 1_000,
-      longitude: Math.round(trip.longitude * 1_000) / 1_000,
-    }];
-  });
-}
-
 async function CatalogContent({
   searchParams,
 }: {
@@ -100,7 +68,11 @@ async function CatalogContent({
 }) {
   const params = await searchParams;
   const filters = getPublicTripFilters(params);
-  const showMap = params.view === "map";
+  const protomapsApiKey = process.env.PROTOMAPS_API_KEY;
+  const mapStyleUrl = protomapsApiKey
+    ? `${PROTOMAPS_STYLE_URL}?key=${encodeURIComponent(protomapsApiKey)}`
+    : null;
+  const showMap = params.view === "map" && Boolean(mapStyleUrl);
   const fallback = {
     trips: [],
     totalTrips: 0,
@@ -121,19 +93,27 @@ async function CatalogContent({
     page === catalogFilters.page
       ? initialCatalog
       : await safeDb("trips.catalog", () => getCatalogPage({ ...catalogFilters, page }), fallback);
-  const mapTrips = showMap
-    ? toPublicMapTrips(await safeDb(
-        "trips.map",
-        () => getMapTrips({ ...catalogFilters, page: 1 }),
-        [],
-      ))
-    : [];
+  const hasMapTrips = showMap
+    ? await safeDb(
+        "trips.map-count",
+        () => prisma.trip.count({
+          where: {
+            AND: [
+              getPublicTripWhere(catalogFilters),
+              { mapVisible: true, latitude: { not: null }, longitude: { not: null } },
+            ],
+          },
+        }).then((count) => count > 0),
+        false,
+      )
+    : false;
 
   return (
     <TripsExplorer
       trips={catalog.trips}
       otherTrips={catalog.otherTrips}
-      mapTrips={mapTrips}
+      mapStyleUrl={mapStyleUrl}
+      hasMapTrips={hasMapTrips}
       travelStyles={travelStyles}
       page={page}
       totalPages={totalPages}

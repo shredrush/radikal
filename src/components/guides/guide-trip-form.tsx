@@ -124,8 +124,6 @@ export function GuideTripForm({
   const title = fields?.title ?? "";
   const selectedSportIds = trip?.sportLinks?.map((link) => link.sport.id) ?? draft?.sportIds ?? [];
   const location = fields?.location ?? "";
-  const latitude = fields?.latitude ?? "";
-  const longitude = fields?.longitude ?? "";
   const description = fields?.description ?? "";
   const priceInRupees = fields?.priceInRupees ?? 0;
   const durationDays = fields?.durationDays ?? 1;
@@ -294,17 +292,6 @@ export function GuideTripForm({
           <div className="space-y-2">
             <Label htmlFor={`location-${key}`}>Location</Label>
             <input id={`location-${key}`} name="location" defaultValue={location} required className={inputClassName} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 md:col-span-2">
-            <div className="space-y-2">
-              <Label htmlFor={`latitude-${key}`}>Latitude</Label>
-              <input id={`latitude-${key}`} name="latitude" type="number" step="any" min="-90" max="90" defaultValue={latitude} className={inputClassName} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`longitude-${key}`}>Longitude</Label>
-              <input id={`longitude-${key}`} name="longitude" type="number" step="any" min="-180" max="180" defaultValue={longitude} className={inputClassName} />
-            </div>
-            <p className="col-span-2 text-xs text-muted-foreground">Optional, but required for this trip to appear on the public map. Use the destination or trailhead coordinates.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={`price-${key}`}>Price (₹)</Label>

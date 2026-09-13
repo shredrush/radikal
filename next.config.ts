@@ -11,11 +11,12 @@ const contentSecurityPolicy = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://ui-avatars.com https://*.supabase.co;
+  img-src 'self' data: blob: https://ui-avatars.com https://*.supabase.co https://api.protomaps.com https://protomaps.github.io;
   font-src 'self' data:;
-  connect-src 'self' https://*.supabase.co;
+  connect-src 'self' https://*.supabase.co https://api.protomaps.com https://protomaps.github.io;
   media-src 'self' blob: data: https://*.supabase.co;
   object-src 'none';
+  worker-src 'self' blob:;
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';

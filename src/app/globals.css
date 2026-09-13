@@ -204,6 +204,15 @@
   text-underline-offset: 3px;
 }
 
+/* Keep the WebGL canvas sized to its map panel even if third-party CSS is
+   delayed during a client-side transition. */
+.maplibregl-map,
+.maplibregl-canvas-container,
+.maplibregl-canvas {
+  width: 100%;
+  height: 100%;
+}
+
 @keyframes gallery-media-slide {
   from {
     transform: translate3d(var(--gallery-slide-x), var(--gallery-slide-y), 0);

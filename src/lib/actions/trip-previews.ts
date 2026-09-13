@@ -79,7 +79,7 @@ export async function createGuideTripPreviewAction(
   if (tripId) {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
-      select: { guideId: true, slug: true, deletedAt: true },
+      select: { guideId: true, slug: true, latitude: true, longitude: true, deletedAt: true },
     });
     if (!trip || trip.guideId !== guide.id) {
       throw new Error("You can only preview your own trips.");
@@ -88,8 +88,13 @@ export async function createGuideTripPreviewAction(
       throw new Error("Deleted trips cannot be previewed.");
     }
     fields.slug = trip.slug;
+    // Guides cannot preview untrusted coordinate changes; use the staff-assigned values.
+    fields.latitude = trip.latitude;
+    fields.longitude = trip.longitude;
   } else {
     fields.slug = slugify(asString(formData.get("title")), 60) || "trip-preview";
+    fields.latitude = null;
+    fields.longitude = null;
   }
 
   fields.guideId = guide.id;

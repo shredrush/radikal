@@ -109,14 +109,16 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
 export function TripsExplorer({
   trips,
   otherTrips,
-  mapTrips,
+  mapStyleUrl,
+  hasMapTrips,
   travelStyles = [],
   page,
   totalPages,
 }: {
   trips: TripsExplorerTrip[];
   otherTrips: TripsExplorerTrip[];
-  mapTrips: TripsExplorerMapTrip[];
+  mapStyleUrl: string | null;
+  hasMapTrips: boolean;
   travelStyles?: TripsExplorerTravelStyle[];
   page: number;
   totalPages: number;
@@ -126,7 +128,7 @@ export function TripsExplorer({
   const urlQuery = searchParams.get("q")?.trim().slice(0, 200) ?? "";
   const [query, setQuery] = useState(urlQuery);
   const [showAllTravelStyles, setShowAllTravelStyles] = useState(false);
-  const view = searchParams.get("view") === "map" ? "map" : "list";
+  const view = mapStyleUrl && searchParams.get("view") === "map" ? "map" : "list";
   const [, startFilterTransition] = useTransition();
 
   const selectedSportFromUrl = normalizeSportFilter(searchParams.getAll("sport"));
@@ -338,19 +340,21 @@ export function TripsExplorer({
               <List className="size-3.5" />
               <span className="mt-0.5">List</span>
             </button>
-            <button
-              type="button"
-              aria-label="Show trip map"
-              aria-pressed={view === "map"}
-              onClick={() => setView("map")}
-              className={cn(
-                "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                view === "map" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Map className="size-3.5" />
-              <span className="mt-0.5">Map</span>
-            </button>
+            {mapStyleUrl ? (
+              <button
+                type="button"
+                aria-label={view === "map" ? "Hide trip map" : "Show trip map"}
+                aria-pressed={view === "map"}
+                onClick={() => setView(view === "map" ? "list" : "map")}
+                className={cn(
+                  "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  view === "map" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Map className="size-3.5" />
+                <span className="mt-0.5">Map</span>
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -421,9 +425,9 @@ export function TripsExplorer({
 
       </div>
 
-      {view === "map" ? <TripsMap trips={mapTrips} /> : null}
+      {view === "map" && mapStyleUrl ? <TripsMap hasTrips={hasMapTrips} search={searchParams.toString()} styleUrl={mapStyleUrl} /> : null}
 
-      {view === "list" && trips.length === 0 ? (
+      {trips.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
           No trips match your search yet. Try another sport, destination, or keyword.
           {hasActiveFilters ? (
@@ -438,7 +442,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {view === "list" && trips.length > 0 ? (
+      {trips.length > 0 ? (
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedActivities.map((group) => {
@@ -469,7 +473,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {view === "list" && hasActiveFilters && otherTrips.length > 0 ? (
+      {hasActiveFilters && otherTrips.length > 0 ? (
         <div className="mt-4 flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedOtherActivities.map((group) => {
@@ -500,7 +504,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {view === "list" && totalPages > 1 ? (
+      {totalPages > 1 ? (
         <nav className="flex items-center justify-center gap-4" aria-label="Trip catalog pages">
           <button
             type="button"
