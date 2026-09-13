@@ -3,6 +3,7 @@ import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 
 export const PUBLIC_CATALOG_PAGE_SIZE = 24;
 export const PUBLIC_CATALOG_OTHER_TRIPS_LIMIT = 12;
+export const PUBLIC_MAP_TRIP_LIMIT = 250;
 export const HOME_TRIP_LIMIT = 5;
 export const HOME_SEARCH_LIMIT = 6;
 
@@ -28,6 +29,16 @@ export const publicTripCardSelect = {
   priceInRupees: true,
   durationDays: true,
   images: true,
+} satisfies Prisma.TripSelect;
+
+export const publicTripMapSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  location: true,
+  latitude: true,
+  longitude: true,
+  priceInRupees: true,
 } satisfies Prisma.TripSelect;
 
 export const publicTripVisibilityWhere = {

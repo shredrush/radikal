@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CircleHelp, Search, X } from "lucide-react";
+import { CircleHelp, List, Map, Search, X } from "lucide-react";
 import Link from "next/link";
 
 import { TripCard } from "@/components/trips/trip-card";
@@ -29,10 +30,27 @@ export type TripsExplorerTrip = {
   categories?: string[];
   travelStyleLinks?: Array<{ travelStyle: { name: string; slug: string } }>;
   location: string;
+  latitude?: number | null;
+  longitude?: number | null;
   priceInRupees: number;
   durationDays: number;
   images?: string[];
 };
+
+export type TripsExplorerMapTrip = {
+  id: string;
+  slug: string;
+  title: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  priceInRupees: number;
+};
+
+const TripsMap = dynamic(
+  () => import("@/components/trips/trips-map").then((module) => module.TripsMap),
+  { ssr: false, loading: () => <div className="h-[32rem] animate-pulse rounded-[1.5rem] border border-border/80 bg-muted/40" /> },
+);
 
 export type TripsExplorerTravelStyle = {
   id: string;
@@ -91,12 +109,14 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
 export function TripsExplorer({
   trips,
   otherTrips,
+  mapTrips,
   travelStyles = [],
   page,
   totalPages,
 }: {
   trips: TripsExplorerTrip[];
   otherTrips: TripsExplorerTrip[];
+  mapTrips: TripsExplorerMapTrip[];
   travelStyles?: TripsExplorerTravelStyle[];
   page: number;
   totalPages: number;
@@ -106,6 +126,7 @@ export function TripsExplorer({
   const urlQuery = searchParams.get("q")?.trim().slice(0, 200) ?? "";
   const [query, setQuery] = useState(urlQuery);
   const [showAllTravelStyles, setShowAllTravelStyles] = useState(false);
+  const view = searchParams.get("view") === "map" ? "map" : "list";
   const [, startFilterTransition] = useTransition();
 
   const selectedSportFromUrl = normalizeSportFilter(searchParams.getAll("sport"));
@@ -247,6 +268,17 @@ export function TripsExplorer({
     router.replace(`/trips?${params.toString()}`, { scroll: false });
   };
 
+  const setView = (nextView: "list" | "map") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextView === "map") {
+      params.set("view", "map");
+    } else {
+      params.delete("view");
+    }
+    params.delete("page");
+    router.replace(`/trips?${params.toString()}`, { scroll: false });
+  };
+
   const navigateToPage = (targetPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(targetPage));
@@ -256,13 +288,13 @@ export function TripsExplorer({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-0">
-        <div className="flex justify-center px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className="mx-auto flex w-full max-w-[52rem] items-center gap-2 px-3 pt-3 sm:px-4 sm:pt-4">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               updateSearch();
             }}
-            className={`relative flex w-full max-w-[44.88rem] items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:pl-4`}
+            className={`relative flex min-w-0 flex-1 items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:pl-4`}
           >
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
@@ -292,6 +324,34 @@ export function TripsExplorer({
               <span className="hidden sm:inline">Search</span>
             </button>
           </form>
+          <div className="inline-flex shrink-0 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm">
+            <button
+              type="button"
+              aria-label="Show trip list"
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
+              className={cn(
+                "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                view === "list" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <List className="size-3.5" />
+              <span className="mt-0.5">List</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Show trip map"
+              aria-pressed={view === "map"}
+              onClick={() => setView("map")}
+              className={cn(
+                "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                view === "map" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Map className="size-3.5" />
+              <span className="mt-0.5">Map</span>
+            </button>
+          </div>
         </div>
 
         <div className="mx-auto grid w-full max-w-[44.88rem] grid-cols-6 gap-1 px-3 pt-2 sm:gap-2 sm:px-4 sm:pt-3">
@@ -358,9 +418,12 @@ export function TripsExplorer({
             ) : null}
           </div>
         ) : null}
+
       </div>
 
-      {trips.length === 0 ? (
+      {view === "map" ? <TripsMap trips={mapTrips} /> : null}
+
+      {view === "list" && trips.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-border/80 bg-background/70 p-8 text-center text-sm text-muted-foreground">
           No trips match your search yet. Try another sport, destination, or keyword.
           {hasActiveFilters ? (
@@ -375,7 +438,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {trips.length > 0 ? (
+      {view === "list" && trips.length > 0 ? (
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedActivities.map((group) => {
@@ -406,7 +469,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {hasActiveFilters && otherTrips.length > 0 ? (
+      {view === "list" && hasActiveFilters && otherTrips.length > 0 ? (
         <div className="mt-4 flex flex-col gap-8">
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {groupedOtherActivities.map((group) => {
@@ -437,7 +500,7 @@ export function TripsExplorer({
         </div>
       ) : null}
 
-      {totalPages > 1 ? (
+      {view === "list" && totalPages > 1 ? (
         <nav className="flex items-center justify-center gap-4" aria-label="Trip catalog pages">
           <button
             type="button"

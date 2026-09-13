@@ -366,6 +366,9 @@ model Trip {
   type          TripType
   categories    TripCategory[]
   location      String
+  latitude      Float?
+  longitude     Float?
+  mapVisible    Boolean        @default(false)
   description   String
   priceInRupees Int
   durationDays  Int            @default(1)
@@ -798,6 +801,8 @@ model TripDraft {
   type          TripType       @default(TREK)
   sportIds      String[]       @default([])
   location      String?
+  latitude      Float?
+  longitude     Float?
   description   String?
   priceInRupees Int            @default(0)
   durationDays  Int            @default(1)

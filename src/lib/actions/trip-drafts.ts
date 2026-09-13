@@ -29,6 +29,8 @@ type DraftFields = {
   type: (typeof validTypes)[number];
   sportIds: string[];
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   description: string | null;
   priceInRupees: number;
   durationDays: number;
@@ -55,6 +57,8 @@ function readDraftFields(formData: FormData): DraftFields {
       : "TREK",
     sportIds: Array.from(new Set(formData.getAll("sportIds").map((value) => asString(value)).filter(Boolean))),
     location: optionalText(asString(formData.get("location")), 200),
+    latitude: parseCoordinate(asString(formData.get("latitude"))),
+    longitude: parseCoordinate(asString(formData.get("longitude"))),
     description: optionalText(asString(formData.get("description")), 5000, true),
     priceInRupees: parseIntValue(asString(formData.get("priceInRupees")), 0),
     durationDays: parseIntValue(asString(formData.get("durationDays")), 1),
@@ -69,6 +73,22 @@ function readDraftFields(formData: FormData): DraftFields {
     exclusions: parseList(asString(formData.get("exclusions"))),
     highlights: parseList(asString(formData.get("highlights"))),
   };
+}
+
+function parseCoordinate(value: string) {
+  if (!value) return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : Number.NaN;
+}
+
+function validateDraftCoordinates(fields: DraftFields) {
+  if (
+    (fields.latitude === null) !== (fields.longitude === null) ||
+    (fields.latitude !== null && (Number.isNaN(fields.latitude) || fields.latitude < -90 || fields.latitude > 90)) ||
+    (fields.longitude !== null && (Number.isNaN(fields.longitude) || fields.longitude < -180 || fields.longitude > 180))
+  ) {
+    throw new Error("Enter both valid latitude and longitude values, or leave both blank.");
+  }
 }
 
 function countDraftFilledFields(fields: DraftFields) {
@@ -97,6 +117,7 @@ export async function saveTripDraftAction(
 ): Promise<{ id: string }> {
   const guide = await requireGuide();
   const fields = readDraftFields(formData);
+  validateDraftCoordinates(fields);
 
   if (countDraftFilledFields(fields) < 3) {
     throw new Error("Fill at least 3 fields before saving a draft.");

@@ -16,6 +16,9 @@ type AdminTripCardProps = {
     slug: string;
     type: string;
     location: string;
+    latitude: number | null;
+    longitude: number | null;
+    mapVisible: boolean;
     description: string;
     priceInRupees: number;
     durationDays: number;

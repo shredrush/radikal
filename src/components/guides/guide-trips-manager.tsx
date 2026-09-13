@@ -17,6 +17,8 @@ function toGuideTripData(trip: {
   title: string;
   type: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   description: string;
   priceInRupees: number;
   durationDays: number;
@@ -36,6 +38,8 @@ function toGuideTripData(trip: {
     title: trip.title,
     type: trip.type,
     location: trip.location,
+    latitude: trip.latitude,
+    longitude: trip.longitude,
     description: trip.description,
     priceInRupees: trip.priceInRupees,
     durationDays: trip.durationDays,
@@ -81,6 +85,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     type: draft.type,
     sportIds: draft.sportIds,
     location: draft.location ?? "",
+    latitude: draft.latitude,
+    longitude: draft.longitude,
     description: draft.description ?? "",
     priceInRupees: draft.priceInRupees,
     durationDays: draft.durationDays,

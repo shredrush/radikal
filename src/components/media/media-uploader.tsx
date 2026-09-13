@@ -59,6 +59,7 @@ export function MediaUploader({
   onMediaChange?: (media: { images: string[]; videos: string[]; mediaOrder: string[] }) => void;
 }) {
   const limits = MEDIA_LIMITS[entity];
+  const isStyleImage = entity === "style";
   const [images, setImages] = useState<UploadedItem[]>(initialImages.map((url) => ({ url })));
   const [videos, setVideos] = useState<UploadedItem[]>(initialVideos.map((url) => ({ url })));
   const [orderedUrls, setOrderedUrls] = useState(() =>
@@ -270,12 +271,12 @@ export function MediaUploader({
   return (
     <div className="space-y-5">
       <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0">
             <Label>Gallery order</Label>
-            <p className="mt-1 text-xs text-muted-foreground">
+            {!isStyleImage ? <p className="mt-1 text-xs text-muted-foreground">
               Drag cards to rearrange them. The first four are shown as 1 large, 2 top, 3 bottom, and 4 tall right.
-            </p>
+            </p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <input

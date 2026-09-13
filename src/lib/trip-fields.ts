@@ -60,6 +60,8 @@ export type TripFields = {
   title: string;
   slug: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   description: string;
   type: string;
   sportIds: string[];
@@ -87,6 +89,8 @@ export function readTripFields(formData: FormData): TripFields {
     title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
     slug: sanitizeText(asString(formData.get("slug")), { maxLength: 120 }).toLowerCase(),
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
+    latitude: parseCoordinate(asString(formData.get("latitude"))),
+    longitude: parseCoordinate(asString(formData.get("longitude"))),
     description: sanitizeText(asString(formData.get("description")), {
       maxLength: 5000,
       allowNewlines: true,
@@ -111,6 +115,12 @@ export function readTripFields(formData: FormData): TripFields {
   };
 }
 
+function parseCoordinate(value: string) {
+  if (!value) return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : Number.NaN;
+}
+
 export function validateTripFields(fields: TripFields): TripFields {
   if (!fields.title || !fields.slug || !fields.location || !fields.description) {
     throw new Error("Title, slug, location, and description are required.");
@@ -118,6 +128,14 @@ export function validateTripFields(fields: TripFields): TripFields {
 
   if (!isValidSlug(fields.slug)) {
     throw new Error("Slug must be lowercase letters, numbers, and hyphens only.");
+  }
+
+  if (
+    (fields.latitude === null) !== (fields.longitude === null) ||
+    (fields.latitude !== null && (Number.isNaN(fields.latitude) || fields.latitude < -90 || fields.latitude > 90)) ||
+    (fields.longitude !== null && (Number.isNaN(fields.longitude) || fields.longitude < -180 || fields.longitude > 180))
+  ) {
+    throw new Error("Enter both valid latitude and longitude values, or leave both blank.");
   }
 
   if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {

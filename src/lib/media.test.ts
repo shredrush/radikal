@@ -51,6 +51,8 @@ describe("validateTripFields media caps", () => {
       title: "A trip",
       slug: "a-trip",
       location: "Himachal",
+      latitude: null,
+      longitude: null,
       description: "Description",
       type: "TREK",
       priceInRupees: 1000,

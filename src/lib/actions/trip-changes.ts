@@ -57,6 +57,8 @@ type TripFields = {
   title: string;
   type: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   description: string;
   priceInRupees: number;
   durationDays: number;
@@ -94,6 +96,8 @@ function readTripFields(formData: FormData): TripFields {
   return {
     title: sanitizeText(asString(formData.get("title")), { maxLength: 200 }),
     location: sanitizeText(asString(formData.get("location")), { maxLength: 200 }),
+    latitude: parseCoordinate(asString(formData.get("latitude"))),
+    longitude: parseCoordinate(asString(formData.get("longitude"))),
     description: sanitizeText(asString(formData.get("description")), {
       maxLength: 5000,
       allowNewlines: true,
@@ -115,6 +119,12 @@ function readTripFields(formData: FormData): TripFields {
   };
 }
 
+function parseCoordinate(value: string) {
+  if (!value) return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : Number.NaN;
+}
+
 function validateTripFields(fields: TripFields): TripFields {
   if (!fields.title || !fields.location || !fields.description) {
     throw new Error("Title, location, and description are required.");
@@ -122,6 +132,14 @@ function validateTripFields(fields: TripFields): TripFields {
 
   if (!validTypes.includes(fields.type as (typeof validTypes)[number])) {
     throw new Error("Invalid sport type.");
+  }
+
+  if (
+    (fields.latitude === null) !== (fields.longitude === null) ||
+    (fields.latitude !== null && (Number.isNaN(fields.latitude) || fields.latitude < -90 || fields.latitude > 90)) ||
+    (fields.longitude !== null && (Number.isNaN(fields.longitude) || fields.longitude < -180 || fields.longitude > 180))
+  ) {
+    throw new Error("Enter both valid latitude and longitude values, or leave both blank.");
   }
 
   if (
@@ -208,6 +226,8 @@ export async function submitTripCreateChangeAction(formData: FormData): Promise<
           title: proposal.title,
           type: legacyType,
           location: proposal.location,
+          latitude: proposal.latitude,
+          longitude: proposal.longitude,
           description: proposal.description,
           priceInRupees: proposal.priceInRupees,
           durationDays: proposal.durationDays,
@@ -303,6 +323,8 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
     title: trip.title,
     type: trip.type,
     location: trip.location,
+    latitude: trip.latitude,
+    longitude: trip.longitude,
     description: trip.description,
     priceInRupees: trip.priceInRupees,
     durationDays: trip.durationDays,
@@ -330,6 +352,13 @@ export async function submitTripUpdateChangeAction(formData: FormData): Promise<
         title: proposal.title,
         type: legacyType,
         location: proposal.location,
+        latitude: proposal.latitude,
+        longitude: proposal.longitude,
+        // A guide coordinate change must be reviewed and explicitly re-published by staff.
+        mapVisible:
+          trip.latitude === proposal.latitude && trip.longitude === proposal.longitude
+            ? undefined
+            : false,
         description: proposal.description,
         priceInRupees: proposal.priceInRupees,
         durationDays: proposal.durationDays,

@@ -13,6 +13,8 @@ export type AdminDraftData = {
   title: string | null;
   type: string;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   description: string | null;
   priceInRupees: number;
   durationDays: number;
@@ -45,6 +47,9 @@ function DraftReadOnly({ draft }: { draft: AdminDraftData }) {
   if (draft.title) rows.push({ label: "Title", value: draft.title });
   rows.push({ label: "Type", value: ACTIVITY_TYPE_LABELS[draft.type] ?? draft.type });
   if (draft.location) rows.push({ label: "Location", value: draft.location });
+  if (draft.latitude !== null && draft.longitude !== null) {
+    rows.push({ label: "Map coordinates", value: `${draft.latitude}, ${draft.longitude}` });
+  }
   if (draft.description) rows.push({ label: "Description", value: draft.description });
   rows.push({ label: "Price", value: `₹${draft.priceInRupees}` });
   rows.push({ label: "Duration", value: `${draft.durationDays} ${draft.durationDays === 1 ? "day" : "days"}` });

@@ -11,6 +11,8 @@ export type TripProposal = {
   title: string;
   type: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   description: string;
   priceInRupees: number;
   durationDays: number;
@@ -31,6 +33,8 @@ const FIELD_LABELS: Record<string, string> = {
   title: "Title",
   type: "Sport type",
   location: "Location",
+  latitude: "Latitude",
+  longitude: "Longitude",
   description: "Description",
   priceInRupees: "Price (₹)",
   durationDays: "Duration (days)",
@@ -51,6 +55,8 @@ const FIELD_ORDER = [
   "title",
   "type",
   "location",
+  "latitude",
+  "longitude",
   "description",
   "priceInRupees",
   "durationDays",
