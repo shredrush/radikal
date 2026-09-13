@@ -68,9 +68,6 @@ export function ReferralPanel({ code, signups, qualified, referrals }: ReferralP
             </Button>
           </div>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          New travellers who sign up through this link are attributed to you for 30 days.
-        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

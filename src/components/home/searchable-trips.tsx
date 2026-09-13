@@ -184,7 +184,7 @@ export function SearchableTrips({
           Learn. Explore. Belong.
         </h3>
         <p className="text-lg text-muted-foreground">
-          Small groups, led by certified experts
+          Small groups, led by expert guides
         </p>
         <div className="mt-1 mx-auto flex w-[90%] max-w-[53.7rem] flex-col gap-2 p-1 sm:mt-2 sm:p-2">
           <form

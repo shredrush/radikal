@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 
@@ -41,6 +41,11 @@ export type TripsExplorerTravelStyle = {
 
 function normalizeLocationFilter(value: string[]) {
   return value.filter(Boolean);
+}
+
+function getFilterOrder(selectedFilters: string[], filter: string) {
+  const index = selectedFilters.indexOf(filter);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
 const GROUP_SPAN_CLASSES: Record<number, string> = {
@@ -91,12 +96,21 @@ export function TripsExplorer({
   const urlQuery = searchParams.get("q")?.trim().slice(0, 200) ?? "";
   const [query, setQuery] = useState(urlQuery);
   const [showAllTravelStyles, setShowAllTravelStyles] = useState(false);
+  const [, startFilterTransition] = useTransition();
 
-  const selectedSport = normalizeSportFilter(searchParams.getAll("sport"));
+  const selectedSportFromUrl = normalizeSportFilter(searchParams.getAll("sport"));
+  const [selectedSport, setOptimisticSport] = useOptimistic(
+    selectedSportFromUrl,
+    (_current, nextSport: string[]) => nextSport,
+  );
   const activeTravelStyleSlugs = new Set(travelStyles.map((style) => style.slug));
-  const selectedTravelStyle = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"))
+  const selectedTravelStyleFromUrl = normalizeTravelStyleFilter(searchParams.getAll("travelStyle"))
     .filter((slug) => activeTravelStyleSlugs.has(slug))
     .slice(0, MAX_TRAVEL_STYLE_FILTERS);
+  const [selectedTravelStyle, setOptimisticTravelStyle] = useOptimistic(
+    selectedTravelStyleFromUrl,
+    (_current, nextStyles: string[]) => nextStyles,
+  );
   const selectedLocation = normalizeLocationFilter(searchParams.getAll("location"));
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
@@ -110,18 +124,21 @@ export function TripsExplorer({
     const nextSports = selectedSport.includes(sport)
       ? selectedSport.filter((selected) => selected !== sport)
       : selectedSport.length < 3
-        ? [...selectedSport, sport]
+        ? [sport, ...selectedSport]
         : selectedSport;
 
     if (nextSports === selectedSport) {
       return;
     }
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("sport");
-    nextSports.forEach((selected) => params.append("sport", selected));
-    params.delete("page");
-    router.replace(`/trips?${params.toString()}`, { scroll: false });
+    startFilterTransition(() => {
+      setOptimisticSport(nextSports);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("sport");
+      nextSports.forEach((selected) => params.append("sport", selected));
+      params.delete("page");
+      router.replace(`/trips?${params.toString()}`, { scroll: false });
+    });
   };
 
   const toggleTravelStyle = (slug: string) => {
@@ -131,13 +148,16 @@ export function TripsExplorer({
 
     const nextStyles = selectedTravelStyle.includes(slug)
       ? selectedTravelStyle.filter((selected) => selected !== slug)
-      : [...selectedTravelStyle, slug];
+      : [slug, ...selectedTravelStyle];
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("travelStyle");
-    nextStyles.forEach((selected) => params.append("travelStyle", selected));
-    params.delete("page");
-    router.replace(`/trips?${params.toString()}`, { scroll: false });
+    startFilterTransition(() => {
+      setOptimisticTravelStyle(nextStyles);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("travelStyle");
+      nextStyles.forEach((selected) => params.append("travelStyle", selected));
+      params.delete("page");
+      router.replace(`/trips?${params.toString()}`, { scroll: false });
+    });
   };
 
   const clearFilters = () => {
@@ -155,26 +175,51 @@ export function TripsExplorer({
     Boolean(startDate) ||
     Boolean(endDate);
 
-  const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
-    ...sport,
-    trips: trips.filter((trip) => {
-      const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
-      return matchesSportFilter(trip, [normalizedSportId]);
-    }),
-  }));
+  const getTripTravelStyleOrder = (trip: TripsExplorerTrip) =>
+    Math.min(
+      ...(trip.travelStyleLinks?.map((link) => getFilterOrder(selectedTravelStyle, link.travelStyle.slug)) ?? [
+        Number.MAX_SAFE_INTEGER,
+      ]),
+    );
 
-  const groupedOtherActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all").map((sport) => ({
-    ...sport,
-    trips: otherTrips.filter((trip) => {
-      const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
-      return matchesSportFilter(trip, [normalizedSportId]);
-    }),
-  }));
+  const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all")
+    .map((sport) => ({
+      ...sport,
+      trips: trips.filter((trip) => {
+        const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
+        return matchesSportFilter(trip, [normalizedSportId]);
+      }).sort((left, right) => getTripTravelStyleOrder(left) - getTripTravelStyleOrder(right)),
+    }))
+    .sort(
+      (left, right) =>
+        getFilterOrder(selectedSport, left.id) - getFilterOrder(selectedSport, right.id),
+    );
+
+  const groupedOtherActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all")
+    .map((sport) => ({
+      ...sport,
+      trips: otherTrips.filter((trip) => {
+        const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
+        return matchesSportFilter(trip, [normalizedSportId]);
+      }).sort((left, right) => getTripTravelStyleOrder(left) - getTripTravelStyleOrder(right)),
+    }))
+    .sort(
+      (left, right) =>
+        getFilterOrder(selectedSport, left.id) - getFilterOrder(selectedSport, right.id),
+    );
   const visibleTravelStyles = showAllTravelStyles
     ? travelStyles
     : travelStyles.filter(
         (style, index) => index < INITIAL_TRAVEL_STYLE_FILTERS || selectedTravelStyle.includes(style.slug),
       );
+  const sportFilters = [
+    { label: "Hiking and Trekking", filter: "trek", sport: "trek" },
+    { label: "Cycling", filter: "bike", sport: "bike" },
+    { label: "Rock Climbing", filter: "rockclimb", sport: "rockclimb" },
+    { label: "Summit Expedition", filter: "expedition", sport: "expedition" },
+    { label: "Skiing", filter: "winter", sport: "ski" },
+    { label: "Snowboarding", filter: "winter", sport: "snowboard" },
+  ];
 
   const updateSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -236,14 +281,7 @@ export function TripsExplorer({
         </div>
 
         <div className="mx-auto grid w-full max-w-[44.88rem] grid-cols-6 gap-1 px-3 pt-2 sm:gap-2 sm:px-4 sm:pt-3">
-          {[
-            { label: "Hiking and Trekking", filter: "trek", sport: "trek" },
-            { label: "Cycling", filter: "bike", sport: "bike" },
-            { label: "Rock Climbing", filter: "rockclimb", sport: "rockclimb" },
-            { label: "Summit Expedition", filter: "expedition", sport: "expedition" },
-            { label: "Skiing", filter: "winter", sport: "ski" },
-            { label: "Snowboarding", filter: "winter", sport: "snowboard" },
-          ].map((item) => {
+          {sportFilters.map((item) => {
             const isSelected = selectedSport.includes(item.filter);
 
             return (
