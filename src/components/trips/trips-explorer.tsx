@@ -2,7 +2,8 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { CircleHelp, Search, X } from "lucide-react";
+import Link from "next/link";
 
 import { TripCard } from "@/components/trips/trip-card";
 import { useEllipsisPlaceholder } from "@/hooks/use-ellipsis-placeholder";
@@ -74,6 +75,15 @@ function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
       )}
       {label}
       {sport === "winter" ? <SportIcon sport="ski" className="size-8" /> : null}
+      <Link
+        href={`/sports/${sport}`}
+        aria-label={`Learn about ${label}`}
+        title={`Learn about ${label}`}
+        className="ml-1 inline-flex flex-col items-center rounded-lg px-1 py-0.5 text-[0.5rem] font-medium leading-none text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <CircleHelp className="size-4" aria-hidden="true" />
+        <span className="mt-0.5">info</span>
+      </Link>
     </>
   );
 }

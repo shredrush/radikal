@@ -14,6 +14,22 @@ export default function ErrorPage({
 }) {
   useEffect(() => {
     console.error("Unhandled page error", error);
+
+    // Route client-render failures to the server log. Production error
+    // boundaries intentionally expose only a digest, so report both fields.
+    void fetch("/api/client-errors", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        digest: error.digest,
+        message: error.message,
+        pathname: window.location.pathname,
+        stack: error.stack?.slice(0, 8_000),
+      }),
+      keepalive: true,
+    }).catch(() => {
+      // Reporting must never interfere with the recovery UI.
+    });
   }, [error]);
 
   return (

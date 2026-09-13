@@ -363,13 +363,13 @@ export function SupportBoard({
               </h1>
               <p className="text-sm leading-7 text-muted-foreground">{meta.description}</p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap">
               {TABS.map((item) => (
                 <Button
                   key={item.key}
                   variant={tab === item.key ? "default" : "outline"}
                   size="sm"
-                  className="rounded-full"
+                  className="w-full justify-center rounded-full lg:w-40"
                   nativeButton={false}
                   render={<Link href={item.href} />}
                 >
@@ -387,7 +387,7 @@ export function SupportBoard({
         </header>
 
         {tab === "conversations" ? (
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-3 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Awaiting reply" value={awaitingReplyCount} />
             <StatCard label="Open chats" value={openChats.length} />
             <StatCard label="Closed" value={closedCount} />
@@ -396,7 +396,7 @@ export function SupportBoard({
         ) : tab === "bookings" ? (
           <BookingsStats items={initialBookings} />
         ) : (
-          <section className="grid gap-3 md:grid-cols-2">
+          <section className="grid grid-cols-3 gap-3 md:grid-cols-2">
             <StatCard label="Total requests" value={initialCustomRequests.length} />
             <StatCard label="New" value={customNewCount} />
           </section>

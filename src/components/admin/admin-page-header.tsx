@@ -47,13 +47,13 @@ export async function AdminPageHeader({
           <h1 className="font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">{title}</h1>
           <p className="text-sm leading-7 text-muted-foreground">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap">
           {visibleSections.map((section) => (
             <Button
               key={section.key}
               variant={section.key === active ? "default" : "outline"}
               size="sm"
-              className="rounded-full border-2 border-black dark:border-white"
+              className="w-full justify-center rounded-full border-2 border-black dark:border-white lg:w-40"
               nativeButton={false}
               render={<Link href={section.href} />}
             >

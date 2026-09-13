@@ -22,7 +22,7 @@ export function BookingsStats({ items }: { items: BookingBoardItem[] }) {
   );
 
   return (
-    <section className="grid gap-3 md:grid-cols-6">
+    <section className="grid grid-cols-3 gap-3 md:grid-cols-6">
       <StatCard label="Total bookings" value={activeItems.length} />
       <StatCard
         label="Pending payment"

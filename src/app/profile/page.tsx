@@ -44,7 +44,7 @@ import { LazyCustomTripsSection } from "@/components/profile/lazy-custom-trips-s
 import { WishlistCard } from "@/components/profile/wishlist-card";
 import { NotificationItem } from "@/components/profile/notification-item";
 import { SupportChatPanel } from "@/components/support/support-chat-panel";
-import { LazyProfilePhotoForm } from "@/components/profile/lazy-profile-photo-form";
+import { ProfilePhotoForm } from "@/components/profile/profile-photo-form";
 import { ChangeUsernameForm } from "@/components/profile/change-username-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { ChangeEmailForm } from "@/components/profile/change-email-form";
@@ -283,7 +283,7 @@ export default async function ProfilePage({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between">
             <div className="flex items-stretch gap-4 pb-5 sm:pb-0">
               <div className="-my-5 -ml-5 flex w-44 shrink-0 flex-col items-center gap-1.5 self-stretch sm:-my-6 sm:-ml-6 sm:w-56">
-                <LazyProfilePhotoForm
+                <ProfilePhotoForm
                   currentImage={currentUser?.image ?? null}
                   userId={user.id}
                   trigger={
@@ -357,7 +357,7 @@ export default async function ProfilePage({
               {isGuide ? (
                 <Button
                   size="sm"
-                  className="w-full justify-start rounded-full sm:w-auto"
+                  className="w-full justify-center whitespace-nowrap rounded-full sm:w-48"
                   nativeButton={false}
                   render={<Link href="/guide-board/trips" />}
                 >
@@ -366,26 +366,22 @@ export default async function ProfilePage({
                 </Button>
               ) : null}
               {adminBoardHref ? (
-                <Button
-                  size="sm"
-                  className="w-full justify-center rounded-full sm:w-40"
-                  nativeButton={false}
-                  render={<Link href={adminBoardHref} />}
+                <Link
+                  href={adminBoardHref}
+                  className="inline-flex h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-colors hover:bg-primary/80 sm:w-48"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   Admin board
-                </Button>
+                </Link>
               ) : null}
               {canAccessSupportDesk ? (
-                <Button
-                  size="sm"
-                  className="w-full justify-center rounded-full sm:w-40"
-                  nativeButton={false}
-                  render={<Link href="/support" />}
+                <Link
+                  href="/support"
+                  className="inline-flex h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-colors hover:bg-primary/80 sm:w-48"
                 >
                   <Headset className="h-3.5 w-3.5" />
                   Support board
-                </Button>
+                </Link>
               ) : null}
             </div>
           </div>

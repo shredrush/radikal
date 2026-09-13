@@ -60,7 +60,7 @@ export function GuideBoardHeader({
             </h1>
             <p className="text-sm leading-7 text-muted-foreground">{description}</p>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-4 lg:max-w-xl">
+            <div className="grid gap-x-3 gap-y-4 sm:grid-cols-2 lg:max-w-xl">
               {GUIDE_BOARD_SECTIONS.map((section) => (
                 <Fragment key={section.key}>
                   <div>

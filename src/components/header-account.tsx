@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { Bell, Heart, Headset, LayoutDashboard, Settings2, Ticket, UsersRound } from "lucide-react";
+import { ArrowUpRight, Bell, Heart, Headset, LayoutDashboard, Settings2, Ticket, UsersRound } from "lucide-react";
 
 import { getAdminBoardHref } from "@/lib/admin-sections";
 import { hasPermission, type Role } from "@/lib/access-control";
@@ -105,6 +105,12 @@ export function HeaderAccount() {
         aria-controls="account-navigation"
         aria-expanded={menuOpen}
         aria-haspopup="true"
+        onClick={(event) => {
+          if (window.matchMedia("(max-width: 767px)").matches) {
+            event.preventDefault();
+            setMenuOpen((open) => !open);
+          }
+        }}
         className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full border border-border/70 bg-background/60 pl-2.5 pr-0 text-xs font-semibold text-foreground/80 transition hover:border-primary/40 hover:text-foreground md:h-10 md:rounded-full md:p-0 md:ring-1 md:ring-border/70 md:hover:ring-primary"
       >
         <span className="md:hidden">Profile</span>
@@ -114,19 +120,27 @@ export function HeaderAccount() {
           </span>
         ) : <span className="mr-px flex h-[26px] w-[26px] items-center justify-center rounded-full bg-foreground font-heading text-[0.6rem] font-semibold text-background md:mr-0 md:h-10 md:w-10 md:text-sm">{getProfileInitials(displayName)}</span>}
       </Link>
-       {menuOpen ? <div className="absolute right-0 top-full z-10 hidden w-72 pt-2 md:block">
-        <nav id="account-navigation" aria-label="Account navigation" className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/95 shadow-[0_20px_45px_-24px_rgba(0,0,0,0.45)] backdrop-blur">
-         <div className="flex items-center gap-3 px-4 py-3.5">
-           {account.image && !imageFailed ? (
-             <span className="overflow-hidden rounded-full ring-1 ring-border/70">
-               <Image src={account.image} alt="Profile" width={40} height={40} onError={() => setFailedImage(account.image)} className="block size-10 object-cover" />
+       {menuOpen ? <div className="absolute right-0 top-full z-10 w-[min(calc(100vw-2rem),18rem)] pt-2 md:w-72">
+        <nav id="account-navigation" aria-label="Account navigation" onClick={() => setMenuOpen(false)} className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/95 shadow-[0_20px_45px_-24px_rgba(0,0,0,0.45)] backdrop-blur">
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            title="Open profile"
+            className="group flex items-center gap-3 px-4 py-3.5 transition hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-none"
+          >
+            {account.image && !imageFailed ? (
+              <span className="overflow-hidden rounded-full ring-1 ring-border/70">
+                <Image src={account.image} alt="Profile" width={40} height={40} onError={() => setFailedImage(account.image)} className="block size-10 object-cover" />
              </span>
            ) : <span className="flex size-10 items-center justify-center rounded-full bg-foreground font-heading text-sm font-semibold text-background">{getProfileInitials(displayName)}</span>}
-           <div className="min-w-0">
-             <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-             {account.username ? <p className="truncate text-xs text-muted-foreground">@{account.username}</p> : null}
-           </div>
-         </div>
+            <div className="min-w-0 flex-1">
+               <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+               {account.username ? <p className="truncate text-xs text-muted-foreground">@{account.username}</p> : null}
+             </div>
+             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/70 text-muted-foreground transition group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary">
+               <ArrowUpRight className="size-5" />
+             </span>
+          </Link>
          <div className="border-t border-border/70 p-2">
            {adminBoardHref ? <Link href={adminBoardHref} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><LayoutDashboard className="size-4" />Admin Board</Link> : null}
            {account && hasPermission(account.role, "support.manage") ? <Link href="/support" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Headset className="size-4" />Support Board</Link> : null}

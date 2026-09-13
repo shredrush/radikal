@@ -114,7 +114,7 @@ export default async function AdminTripsPage({
         />
 
         <section className="min-w-0">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-3">
             <div className="rounded-[1.2rem] border border-border/70 bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">Trips live</p>
               <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{totalTrips}</p>
