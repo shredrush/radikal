@@ -3,6 +3,9 @@ import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import {
   ArrowRight,
+  Calendar,
+  Camera,
+  Check,
   Compass,
   Footprints,
   GraduationCap,
@@ -11,8 +14,13 @@ import {
   Home,
   Leaf,
   Lightbulb,
+  MapPin,
+  Navigation,
+  Package,
+  ShieldAlert,
   Sparkles,
   Sprout,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -289,6 +297,33 @@ export default async function CommunityPage() {
             </Link>
           </div>
         </div>
+
+        <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-emerald-50/70 via-background to-orange-50/60 p-6 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.3)] dark:from-emerald-500/10 dark:via-card dark:to-orange-500/10 sm:p-8 lg:p-10">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">The Radikal app</p>
+              <h2 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Your adventure, in your pocket</h2>
+              <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">One shared space for every part of the journey, built to keep travellers prepared and guides focused on the people in front of them.</p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-orange-200 bg-orange-100 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-200"><span className="size-1.5 rounded-full bg-orange-500" />Coming soon</span>
+          </div>
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <article className="relative overflow-hidden rounded-[1.75rem] border border-emerald-200/70 bg-background/80 p-5 shadow-[0_16px_32px_-24px_rgba(6,78,59,0.55)] dark:border-emerald-500/20 dark:bg-card/80 sm:p-6">
+              <div className="absolute inset-x-0 top-0 h-1 bg-emerald-500" />
+              <div className="flex items-start gap-4 sm:min-h-[7.5rem]"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><Compass className="size-5" /></span><div><p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">For travellers</p><h3 className="mt-1 font-heading text-2xl font-semibold text-foreground">Move with confidence</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">From the first saved idea to the stories you bring home, your trip stays close at hand.</p></div></div>
+              <ul className="mt-6 grid gap-3 border-t border-emerald-100 pt-5 dark:border-emerald-500/15 sm:grid-cols-2">
+                <li className="flex gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Live location</strong><br />Geo tracking when it matters</span></li><li className="flex gap-3"><Calendar className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Pre-trip ready</strong><br />Plans, packing and trip details</span></li><li className="flex gap-3"><Navigation className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">On the trail</strong><br />Updates and key route information</span></li><li className="flex gap-3"><Camera className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">After the adventure</strong><br />Memories, reviews and your profile</span></li>
+              </ul>
+            </article>
+            <article className="relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-background/80 p-5 shadow-[0_16px_32px_-24px_rgba(154,52,18,0.5)] dark:border-orange-500/20 dark:bg-card/80 sm:p-6">
+              <div className="absolute inset-x-0 top-0 h-1 bg-orange-500" />
+              <div className="flex items-start gap-4 sm:min-h-[7.5rem]"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"><Users className="size-5" /></span><div><p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300">For guides</p><h3 className="mt-1 font-heading text-2xl font-semibold text-foreground">Run the day, not the admin</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A dependable field companion for the planning, logistics and safety behind every exceptional trip.</p></div></div>
+              <ul className="mt-6 grid gap-3 border-t border-orange-100 pt-5 dark:border-orange-500/15 sm:grid-cols-2">
+                <li className="flex gap-3"><Calendar className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Bookings & calendars</strong><br />Keep every departure organised</span></li><li className="flex gap-3"><Package className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Equipment sourcing</strong><br />Coordinate what the group needs</span></li><li className="flex gap-3"><ShieldAlert className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">SOS support</strong><br />Emergency services at the ready</span></li><li className="flex gap-3"><UserRound className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Guide profile</strong><br />Build trust beyond the trail</span></li>
+              </ul>
+            </article>
+          </div>
+        </section>
       </div>
     </div>
   );
