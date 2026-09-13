@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { SportIcon } from "@/components/trips/sport-icon";
@@ -15,10 +16,16 @@ type RetreatItem = {
 };
 
 export function SiteHeader() {
+  const [dropdownSuppressed, setDropdownSuppressed] = useState(false);
+
   const closeDropdown = () => {
+    setDropdownSuppressed(true);
     const activeElement = document.activeElement;
     if (activeElement instanceof HTMLElement) activeElement.blur();
   };
+
+  const dropdownClassName = (className: string) =>
+    `${className} ${dropdownSuppressed ? "invisible opacity-0" : "group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"}`;
 
   const sportGroups = [
     {
@@ -58,7 +65,7 @@ export function SiteHeader() {
 
   return (
     <HeaderAccountProvider>
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
+    <header onMouseLeave={() => setDropdownSuppressed(false)} className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 shadow-[0_8px_25px_-20px_rgba(0,0,0,0.35)]">
       <div className="w-full px-4 sm:px-6 md:px-6 lg:px-10">
         <div className="relative mx-auto w-full max-w-8xl py-2 sm:py-2.5 md:py-4">
           <div className="absolute right-0 top-2 z-20 sm:top-2.5 md:top-1/2 md:-translate-y-1/2">
@@ -89,11 +96,11 @@ export function SiteHeader() {
                   size="xs"
                   className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                   nativeButton={false}
-                  render={<Link href="/trips" />}
+                  render={<Link href="/trips" onClick={closeDropdown} />}
                 >
                   Adventure Sports
                 </Button>
-                <div onClick={closeDropdown} className="invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                   <div className="grid gap-4">
                     {sportGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
@@ -117,11 +124,11 @@ export function SiteHeader() {
                   size="xs"
                   className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
                   nativeButton={false}
-                  render={<Link href="/trips" />}
+                  render={<Link href="/trips" onClick={closeDropdown} />}
                 >
                   Retreats
                 </Button>
-                <div onClick={closeDropdown} className="invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div onClick={closeDropdown} className={dropdownClassName("invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                   <div className="grid grid-cols-2 gap-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
@@ -197,11 +204,11 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips" />}
+                render={<Link href="/trips" onClick={closeDropdown} />}
               >
                 Adventure Sports
               </Button>
-              <div onClick={closeDropdown} className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                 <div className="grid gap-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -225,11 +232,11 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips" />}
+                render={<Link href="/trips" onClick={closeDropdown} />}
               >
                 Retreats
               </Button>
-              <div onClick={closeDropdown} className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                 <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -299,11 +306,11 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips" />}
+                render={<Link href="/trips" onClick={closeDropdown} />}
               >
                 Adventure Sports
               </Button>
-              <div onClick={closeDropdown} className="invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                 <div className="grid gap-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
@@ -327,11 +334,11 @@ export function SiteHeader() {
                 size="sm"
                 className="rounded-full text-foreground/80 hover:bg-primary/10 hover:text-primary"
                 nativeButton={false}
-                render={<Link href="/trips" />}
+                render={<Link href="/trips" onClick={closeDropdown} />}
               >
                 Retreats
               </Button>
-              <div onClick={closeDropdown} className="invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
                 <div className="grid grid-cols-2 gap-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">

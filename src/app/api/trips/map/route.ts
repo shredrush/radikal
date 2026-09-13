@@ -11,8 +11,19 @@ import {
 const VIEWPORT_LIMIT = 250;
 
 function parseCoordinate(value: string | null, min: number, max: number) {
+  if (value === null) return null;
   const coordinate = Number(value);
   return Number.isFinite(coordinate) && coordinate >= min && coordinate <= max ? coordinate : null;
+}
+
+function parseLongitude(value: string | null) {
+  if (value === null) return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+}
+
+function normalizeLongitude(longitude: number) {
+  return ((longitude + 180) % 360 + 360) % 360 - 180;
 }
 
 function readFilters(searchParams: URLSearchParams): PublicTripSearchParams {
@@ -32,6 +43,7 @@ type MapTripRow = {
   latitude: number | null;
   longitude: number | null;
   priceInRupees: number;
+  images: string[];
 };
 
 function toPublicTrip(trip: MapTripRow) {
@@ -45,8 +57,9 @@ function toPublicTrip(trip: MapTripRow) {
 
 export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
-  const west = parseCoordinate(searchParams.get("west"), -180, 180);
-  const east = parseCoordinate(searchParams.get("east"), -180, 180);
+  const includeAll = searchParams.get("initial") === "1";
+  const west = parseLongitude(searchParams.get("west"));
+  const east = parseLongitude(searchParams.get("east"));
   const south = parseCoordinate(searchParams.get("south"), -90, 90);
   const north = parseCoordinate(searchParams.get("north"), -90, 90);
 
@@ -55,16 +68,23 @@ export async function GET(request: Request) {
   }
 
   const filters = getPublicTripFilters(readFilters(searchParams));
-  const longitudeWhere = west <= east
-    ? { longitude: { gte: west, lte: east } }
-    : { OR: [{ longitude: { gte: west } }, { longitude: { lte: east } }] };
+  const normalizedWest = normalizeLongitude(west);
+  const normalizedEast = normalizeLongitude(east);
+  const longitudeWhere = Math.abs(east - west) >= 360
+    ? {}
+    : normalizedWest <= normalizedEast
+      ? { longitude: { gte: normalizedWest, lte: normalizedEast } }
+      : { OR: [{ longitude: { gte: normalizedWest } }, { longitude: { lte: normalizedEast } }] };
+  const viewportWhere = includeAll
+    ? { mapVisible: true, latitude: { not: null }, longitude: { not: null } }
+    : { mapVisible: true, latitude: { gte: south, lte: north }, ...longitudeWhere };
   const rows = await safeDb(
     "trips.map-viewport",
     () => prisma.trip.findMany({
       where: {
         AND: [
           getPublicTripWhere(filters),
-          { mapVisible: true, latitude: { gte: south, lte: north }, ...longitudeWhere },
+          viewportWhere,
         ],
       },
       select: publicTripMapSelect,

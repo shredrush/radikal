@@ -55,10 +55,7 @@ export async function createTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
   const fields = validateTripFields(readTripFields(formData));
-  const mapVisible = asString(formData.get("mapVisible")) === "on";
-  if (mapVisible && (fields.latitude === null || fields.longitude === null)) {
-    throw new Error("Add valid coordinates before publishing a trip on the map.");
-  }
+  const mapVisible = fields.latitude !== null && fields.longitude !== null;
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
   await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);
@@ -147,10 +144,7 @@ export async function updateTripAction(formData: FormData) {
 
   const tripId = asString(formData.get("tripId"));
   const fields = validateTripFields(readTripFields(formData));
-  const mapVisible = asString(formData.get("mapVisible")) === "on";
-  if (mapVisible && (fields.latitude === null || fields.longitude === null)) {
-    throw new Error("Add valid coordinates before publishing a trip on the map.");
-  }
+  const mapVisible = fields.latitude !== null && fields.longitude !== null;
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
   await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);

@@ -45,6 +45,7 @@ export type TripsExplorerMapTrip = {
   latitude: number | null;
   longitude: number | null;
   priceInRupees: number;
+  images: string[];
 };
 
 const TripsMap = dynamic(

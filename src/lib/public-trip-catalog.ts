@@ -39,6 +39,7 @@ export const publicTripMapSelect = {
   latitude: true,
   longitude: true,
   priceInRupees: true,
+  images: true,
 } satisfies Prisma.TripSelect;
 
 export const publicTripVisibilityWhere = {

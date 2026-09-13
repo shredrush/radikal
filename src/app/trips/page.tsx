@@ -18,7 +18,7 @@ import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { TripsCatalogSkeleton, TripsPageTemplate } from "@/components/trips/trips-page-template";
 
-const PROTOMAPS_STYLE_URL = "https://api.protomaps.com/styles/v5/light/en.json";
+const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
 const getCatalogPage = unstable_cache(
   async (filters: PublicTripFilters) => {
@@ -68,11 +68,7 @@ async function CatalogContent({
 }) {
   const params = await searchParams;
   const filters = getPublicTripFilters(params);
-  const protomapsApiKey = process.env.PROTOMAPS_API_KEY;
-  const mapStyleUrl = protomapsApiKey
-    ? `${PROTOMAPS_STYLE_URL}?key=${encodeURIComponent(protomapsApiKey)}`
-    : null;
-  const showMap = params.view === "map" && Boolean(mapStyleUrl);
+  const showMap = params.view === "map";
   const fallback = {
     trips: [],
     totalTrips: 0,
@@ -112,7 +108,7 @@ async function CatalogContent({
     <TripsExplorer
       trips={catalog.trips}
       otherTrips={catalog.otherTrips}
-      mapStyleUrl={mapStyleUrl}
+      mapStyleUrl={MAP_STYLE_URL}
       hasMapTrips={hasMapTrips}
       travelStyles={travelStyles}
       page={page}

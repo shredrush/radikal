@@ -35,7 +35,6 @@ export function AdminTripForm({
     location: string;
     latitude: number | null;
     longitude: number | null;
-    mapVisible: boolean;
     description: string;
     priceInRupees: number;
     durationDays: number;
@@ -75,7 +74,6 @@ export function AdminTripForm({
   const location = trip?.location ?? "";
   const latitude = trip?.latitude ?? "";
   const longitude = trip?.longitude ?? "";
-  const mapVisible = trip?.mapVisible ?? false;
   const description = trip?.description ?? "";
   const priceInRupees = trip?.priceInRupees ?? 0;
   const durationDays = trip?.durationDays ?? 1;
@@ -166,12 +164,8 @@ export function AdminTripForm({
                 <Label htmlFor={`longitude-${key}`}>Longitude</Label>
                 <input id={`longitude-${key}`} name="longitude" type="number" step="any" min="-180" max="180" defaultValue={longitude} className={inputClassName} />
               </div>
-              <p className="col-span-2 text-xs text-muted-foreground">Optional, but required for this trip to appear on the public map. Use the destination or trailhead coordinates.</p>
+              <p className="col-span-2 text-xs text-muted-foreground">Optional. Trips with both coordinates appear on the public map. Use the destination or trailhead coordinates.</p>
             </div>
-            <label className="flex items-start gap-2 rounded-xl border border-border/70 bg-background/60 p-3 text-sm md:col-span-2">
-              <input name="mapVisible" type="checkbox" defaultChecked={mapVisible} className="mt-0.5 size-4 accent-black" />
-              <span><span className="font-medium text-foreground">Publish on the map</span><span className="mt-0.5 block text-xs text-muted-foreground">Only enable this after confirming the coordinate is safe to display publicly.</span></span>
-            </label>
             <div className="space-y-2">
               <Label htmlFor={`price-${key}`}>Price (₹)</Label>
               <input id={`price-${key}`} name="priceInRupees" type="number" min="0" defaultValue={priceInRupees} required className={inputClassName} />
