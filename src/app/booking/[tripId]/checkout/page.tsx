@@ -13,7 +13,8 @@ import { formatTripDateRange } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 
 export const metadata: Metadata = {
-  title: "Checkout — Radikal",
+  title: "Checkout",
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";

@@ -20,7 +20,8 @@ import {
 } from "@/lib/custom-trips";
 
 export const metadata: Metadata = {
-  title: "Custom Trip — Radikal",
+  title: "Custom Trip",
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";

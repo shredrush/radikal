@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
+import type { Metadata } from "next";
 
 import { prisma, safeDb } from "@/lib/prisma";
 import {
@@ -17,6 +18,20 @@ import {
 import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 import { TripsExplorer } from "@/components/trips/trips-explorer";
 import { TripsCatalogSkeleton, TripsPageTemplate } from "@/components/trips/trips-page-template";
+
+export const metadata: Metadata = {
+  title: "Outdoor Trips and Courses",
+  description:
+    "Explore small-group trekking, cycling, skiing, climbing, yoga, and expedition trips led by expert outdoor guides.",
+  alternates: { canonical: "/trips" },
+  openGraph: {
+    type: "website",
+    url: "/trips",
+    title: "Outdoor Trips and Courses",
+    description:
+      "Explore small-group trekking, cycling, skiing, climbing, yoga, and expedition trips led by expert outdoor guides.",
+  },
+};
 
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 

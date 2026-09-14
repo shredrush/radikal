@@ -11,7 +11,7 @@ import { formatLongDate } from "@/lib/format";
 import { ACCENT_PILL, ACCENT_PILL_EMERALD } from "@/lib/card-styles";
 
 export const metadata: Metadata = {
-  title: "Become a Guide — Radikal",
+  title: "Become a Guide",
 };
 
 export const dynamic = "force-dynamic";

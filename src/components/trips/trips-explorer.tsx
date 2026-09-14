@@ -1,10 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useOptimistic, useState, useTransition } from "react";
+import { type ElementType, useOptimistic, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CircleHelp, List, Map, Search, X } from "lucide-react";
-import Link from "next/link";
+import { List, Map, Search, X } from "lucide-react";
 
 import { TripCard } from "@/components/trips/trip-card";
 import { useEllipsisPlaceholder } from "@/hooks/use-ellipsis-placeholder";
@@ -68,42 +67,46 @@ function getFilterOrder(selectedFilters: string[], filter: string) {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-const GROUP_SPAN_CLASSES: Record<number, string> = {
-  1: "md:col-span-1",
-  2: "md:col-span-2",
-  3: "md:col-span-3",
-  4: "md:col-span-4",
-};
-
-const GROUP_GRID_CLASSES: Record<number, string> = {
-  1: "md:grid-cols-1",
-  2: "md:grid-cols-2",
-  3: "md:grid-cols-3",
-  4: "md:grid-cols-4",
-};
-
 // The combined "Winter" group gets both sport icons flanking the heading:
 // snowboard on the left, ski on the right.
 function SportGroupHeading({ sport, label }: { sport: string; label: string }) {
   return (
     <>
       {sport === "winter" ? (
-        <SportIcon sport="snowboard" className="size-8" />
+        <SportIcon sport="snowboard" className="size-5 shrink-0 sm:size-6" />
       ) : (
-        <SportIcon sport={sport} className="size-8" />
+        <SportIcon sport={sport} className="size-5 shrink-0 sm:size-6" />
       )}
-      {label}
-      {sport === "winter" ? <SportIcon sport="ski" className="size-8" /> : null}
-      <Link
-        href={`/sports/${sport}`}
-        aria-label={`Learn about ${label}`}
-        title={`Learn about ${label}`}
-        className="ml-1 inline-flex flex-col items-center rounded-lg px-1 py-0.5 text-[0.5rem] font-medium leading-none text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        <CircleHelp className="size-4" aria-hidden="true" />
-        <span className="mt-0.5">info</span>
-      </Link>
+      <span className="min-w-0 text-wrap">{label}</span>
+      {sport === "winter" ? <SportIcon sport="ski" className="size-5 shrink-0 sm:size-6" /> : null}
     </>
+  );
+}
+
+function SportTripGrid({
+  groups,
+  headingLevel,
+}: {
+  groups: Array<{ id: string; label: string; trips: TripsExplorerTrip[] }>;
+  headingLevel: "h2" | "h3";
+}) {
+  const Heading = headingLevel as ElementType;
+
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-10 pt-8 sm:gap-x-5 sm:gap-y-11 md:grid-cols-4">
+      {groups.flatMap((group) =>
+        group.trips.map((trip, index) => (
+          <div key={trip.id} className="relative min-w-0">
+            {index === 0 ? (
+              <Heading className="absolute inset-x-0 -top-8 flex min-w-0 items-center gap-1.5 font-heading text-xs font-semibold uppercase leading-4 tracking-[0.06em] text-foreground sm:text-sm sm:leading-5">
+                <SportGroupHeading sport={group.id} label={group.label} />
+              </Heading>
+            ) : null}
+            <TripCard imageOnly showImageSummary showTravelStyles trip={trip} />
+          </div>
+        )),
+      )}
+    </div>
   );
 }
 
@@ -230,7 +233,6 @@ export function TripsExplorer({
       (left, right) =>
         getFilterOrder(selectedSport, left.id) - getFilterOrder(selectedSport, right.id),
     );
-
   const groupedOtherActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all")
     .map((sport) => ({
       ...sport,
@@ -243,6 +245,7 @@ export function TripsExplorer({
       (left, right) =>
         getFilterOrder(selectedSport, left.id) - getFilterOrder(selectedSport, right.id),
     );
+
   const visibleTravelStyles = showAllTravelStyles
     ? travelStyles
     : travelStyles.filter(
@@ -289,13 +292,13 @@ export function TripsExplorer({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-0">
-        <div className="mx-auto flex w-full items-center gap-2 px-3 pt-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,44.88rem)_minmax(0,1fr)] sm:px-4 sm:pt-4">
+        <div className="mx-auto flex w-full max-w-[44.88rem] items-center px-3 pt-3 sm:px-4 sm:pt-4">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               updateSearch();
             }}
-            className={`relative flex min-w-0 flex-1 items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:col-start-2 sm:w-full sm:pl-4`}
+            className={`relative flex min-w-0 flex-1 items-center gap-2 rounded-full border ${FORM_FIELD_BORDER} bg-background/95 p-1 pl-3.5 shadow-[0_12px_35px_-30px_rgba(0,0,0,0.25)] transition focus-within:border-ring focus-within:shadow-[0_18px_40px_-25px_rgba(0,0,0,0.3)] sm:pl-4`}
           >
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
@@ -325,36 +328,6 @@ export function TripsExplorer({
               <span className="hidden sm:inline">Search</span>
             </button>
           </form>
-          <div className="inline-flex shrink-0 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm sm:col-start-3 sm:justify-self-end">
-            <button
-              type="button"
-              aria-label="Show trip list"
-              aria-pressed={view === "list"}
-              onClick={() => setView("list")}
-              className={cn(
-                "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                view === "list" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <List className="size-3.5" />
-              <span className="mt-0.5">List</span>
-            </button>
-            {mapStyleUrl ? (
-              <button
-                type="button"
-                aria-label={view === "map" ? "Hide trip map" : "Show trip map"}
-                aria-pressed={view === "map"}
-                onClick={() => setView(view === "map" ? "list" : "map")}
-                className={cn(
-                  "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  view === "map" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Map className="size-3.5" />
-                <span className="mt-0.5">Map</span>
-              </button>
-            ) : null}
-          </div>
         </div>
 
         <div className="mx-auto grid w-full max-w-[44.88rem] grid-cols-6 gap-1 px-3 pt-2 sm:gap-2 sm:px-4 sm:pt-3">
@@ -421,6 +394,38 @@ export function TripsExplorer({
             ) : null}
           </div>
         ) : null}
+        <div className="hidden w-full justify-end px-3 pt-2 sm:flex sm:px-4 sm:pt-3">
+          <div className="inline-flex shrink-0 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm">
+              <button
+                type="button"
+                aria-label="Show trip list"
+                aria-pressed={view === "list"}
+                onClick={() => setView("list")}
+                className={cn(
+                  "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  view === "list" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="size-3.5" />
+                <span className="mt-0.5">List</span>
+              </button>
+              {mapStyleUrl ? (
+                <button
+                  type="button"
+                  aria-label={view === "map" ? "Hide trip map" : "Show trip map"}
+                  aria-pressed={view === "map"}
+                  onClick={() => setView(view === "map" ? "list" : "map")}
+                  className={cn(
+                    "inline-flex min-w-9 flex-col items-center justify-center rounded-full px-2 py-1 text-[0.55rem] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    view === "map" ? "bg-black text-white dark:bg-white dark:text-black" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Map className="size-3.5" />
+                  <span className="mt-0.5">Map</span>
+                </button>
+              ) : null}
+          </div>
+        </div>
 
       </div>
 
@@ -442,64 +447,19 @@ export function TripsExplorer({
       ) : null}
 
       {trips.length > 0 ? (
-        <div className="flex flex-col gap-8">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-            {groupedActivities.map((group) => {
-              if (group.trips.length === 0) {
-                return null;
-              }
-
-              const columnCount = Math.min(group.trips.length, 4);
-
-              return (
-                <section key={group.id} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h2 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
-                        <SportGroupHeading sport={group.id} label={group.label} />
-                      </h2>
-                    </div>
-                  </div>
-                  <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                    {group.trips.map((trip) => (
-                      <TripCard imageOnly showImageSummary showTravelStyles key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        </div>
+        <SportTripGrid groups={groupedActivities} headingLevel="h2" />
       ) : null}
 
       {hasActiveFilters && otherTrips.length > 0 ? (
-        <div className="mt-4 flex flex-col gap-8">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
-            {groupedOtherActivities.map((group) => {
-              if (group.trips.length === 0) {
-                return null;
-              }
-
-              const columnCount = Math.min(group.trips.length, 4);
-
-              return (
-                <section key={`${group.id}-other`} className={`col-span-2 ${GROUP_SPAN_CLASSES[columnCount]} space-y-4`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="flex items-center gap-2 font-heading text-xl font-semibold uppercase tracking-[0.1em] text-foreground">
-                        <SportGroupHeading sport={group.id} label={group.label} />
-                      </h3>
-                    </div>
-                  </div>
-                  <div className={`grid grid-cols-2 gap-4 ${GROUP_GRID_CLASSES[columnCount]}`}>
-                    {group.trips.map((trip) => (
-                      <TripCard imageOnly showImageSummary showTravelStyles key={trip.id} trip={trip} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+        <div className="mt-4">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border/70" />
+            <p className="font-heading text-sm font-semibold tracking-[0.06em] text-muted-foreground">
+            other adventures
+            </p>
+            <div className="h-px flex-1 bg-border/70" />
           </div>
+          <SportTripGrid groups={groupedOtherActivities} headingLevel="h3" />
         </div>
       ) : null}
 

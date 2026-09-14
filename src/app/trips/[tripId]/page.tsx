@@ -4,6 +4,7 @@ import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
+import type { Metadata } from "next";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import {
@@ -32,6 +33,9 @@ import { GuideProfileSummary } from "@/components/guides/guide-profile-summary";
 import { formatMonthYear } from "@/lib/format";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { isSlotCompleted } from "@/lib/trip-dates";
+import { ACTIVITY_TYPE_LABELS } from "@/lib/trip-metadata";
+import { JsonLd } from "@/components/seo/json-ld";
+import { absoluteUrl, plainText, publicImageUrl } from "@/lib/seo";
 
 // Cap the reviews column in the guide section so every trip page
 // renders a consistent section height regardless of how many reviews exist.
@@ -130,6 +134,51 @@ const EMPTY_TRIP_MEDIA = {
   guidePhoto: null,
   guide: null,
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tripId: string }>;
+}): Promise<Metadata> {
+  const { tripId } = await params;
+  const trip = await safeDb("trip.metadata", () => getTripDetail(tripId), null);
+
+  if (!trip) {
+    return {
+      title: "Trip not found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const media = await safeDb("trip.metadata-media", () => getTripMedia(trip.slug), EMPTY_TRIP_MEDIA);
+  const image = publicImageUrl(
+    media?.images
+      .map((value) => normalizeTripImagePath(value, trip.slug))
+      .find(Boolean),
+  );
+  const title = `${trip.title} in ${trip.location}`;
+  const description = plainText(trip.description);
+  const canonical = `/trips/${trip.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      title,
+      description,
+      ...(image ? { images: [{ url: image, alt: trip.title }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
+}
 
 async function getTripSlots(tripId: string) {
   const now = new Date();
@@ -369,6 +418,41 @@ export default async function TripDetailPage({
   };
 
   const guide = trip.guide;
+  const tripUrl = absoluteUrl(`/trips/${trip.slug}`);
+  const tripDescription = plainText(trip.description, 500);
+  const tripStructuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+        { "@type": "ListItem", position: 2, name: "Trips", item: absoluteUrl("/trips") },
+        { "@type": "ListItem", position: 3, name: trip.title, item: tripUrl },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "TouristTrip",
+      "@id": `${tripUrl}#trip`,
+      name: trip.title,
+      description: tripDescription,
+      url: tripUrl,
+      touristType: ACTIVITY_TYPE_LABELS[trip.type] ?? trip.type,
+      provider: guide
+        ? {
+            "@type": "Person",
+            name: guide.name,
+            url: guide.user?.username ? absoluteUrl(`/${guide.user.username}`) : undefined,
+          }
+        : { "@id": `${absoluteUrl("/")}#organization` },
+      offers: {
+        "@type": "Offer",
+        price: trip.priceInRupees,
+        priceCurrency: "INR",
+        url: tripUrl,
+      },
+    },
+  ];
 
   // Always render four review rows so the guide section keeps a consistent
   // height across trips, padding any missing reviews with placeholders.
@@ -376,6 +460,7 @@ export default async function TripDetailPage({
 
   return (
     <div className="flex flex-1 flex-col">
+      <JsonLd data={tripStructuredData} />
       <section className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10">
         <Link
           href="/trips"

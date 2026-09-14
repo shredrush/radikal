@@ -14,6 +14,8 @@ import { getGuideImage } from "@/lib/guide-images";
 import { resolveGuideAlias } from "@/lib/guide-alias";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatShortDate } from "@/lib/format";
+import { JsonLd } from "@/components/seo/json-ld";
+import { absoluteUrl, plainText, publicImageUrl } from "@/lib/seo";
 
 const GUIDE_TRIPS_PAGE_SIZE = 6;
 const GUIDE_REVIEWS_PAGE_SIZE = 6;
@@ -108,8 +110,31 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
   }
 
   return {
-    title: `${guide.name} | Radikal Guide`,
-    description: `${guide.name} is a vetted guide based in ${guide.location}.`,
+    title: `${guide.name}, Outdoor Guide`,
+    description: plainText(guide.bio) || `${guide.name} is a vetted guide based in ${guide.location}.`,
+    alternates: { canonical: `/${guide.user.username}` },
+    openGraph: {
+      type: "profile",
+      url: `/${guide.user.username}`,
+      title: `${guide.name}, Outdoor Guide`,
+      description: plainText(guide.bio) || `${guide.name} is a vetted guide based in ${guide.location}.`,
+      ...(publicImageUrl(getGuideImage({
+        username: guide.user.username,
+        photo: guide.photo,
+        photos: guide.photos,
+      }))
+        ? {
+            images: [{
+              url: publicImageUrl(getGuideImage({
+                username: guide.user.username,
+                photo: guide.photo,
+                photos: guide.photos,
+              }))!,
+              alt: guide.name,
+            }],
+          }
+        : {}),
+    },
   };
 }
 
@@ -167,6 +192,30 @@ export default async function GuideDetailPage({
     quote: review.comment,
     date: formatShortDate(review.tripDate ?? review.createdAt),
   }));
+  const guideUrl = absoluteUrl(`/${guide.user.username}`);
+  const guideStructuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+        { "@type": "ListItem", position: 2, name: guide.name, item: guideUrl },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "@id": `${guideUrl}#guide`,
+      name: guide.name,
+      description: plainText(guide.bio, 500),
+      url: guideUrl,
+      jobTitle: "Outdoor Guide",
+      homeLocation: { "@type": "Place", name: guide.location },
+      ...(publicImageUrl(fallbackImage) ? { image: publicImageUrl(fallbackImage) } : {}),
+      ...(guide.languages.length > 0 ? { knowsLanguage: guide.languages } : {}),
+      ...(guide.sports.length > 0 ? { knowsAbout: guide.sports } : {}),
+    },
+  ];
   const makePageHref = (nextTripsPage: number, nextReviewsPage: number) => {
     const query = new URLSearchParams();
     if (nextTripsPage > 1) query.set("tripsPage", String(nextTripsPage));
@@ -177,6 +226,7 @@ export default async function GuideDetailPage({
 
   return (
     <div className="flex-1">
+      {!isOwnGuide ? <JsonLd data={guideStructuredData} /> : null}
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         {isOwnGuide ? (
           <GuideProfileHeroEditor guide={guide} fallbackImage={fallbackImage} />

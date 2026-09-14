@@ -11,7 +11,7 @@ import { CustomTripForm } from "@/components/custom-trips/custom-trip-form";
 import { OpenCustomTripRequests } from "@/components/custom-trips/open-custom-trip-requests";
 
 export const metadata: Metadata = {
-  title: "Custom Trip — Radikal",
+  title: "Custom Trips",
   description:
     "Design a private group or corporate adventure across the Himalayas. Pick your sports, dates and group size, and our team will build the trip for you.",
 };

@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Calendar,
   Camera,
-  Check,
   Compass,
   Footprints,
   GraduationCap,
@@ -30,7 +29,7 @@ import { ACCENT_PILL } from "@/lib/card-styles";
 import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
 
 export const metadata: Metadata = {
-  title: "Community | Radikal",
+  title: "Outdoor Community and Safety Standards",
   description:
     "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
 };

@@ -39,8 +39,8 @@ export function SiteHeader() {
     {
       heading: "Cycling",
       items: [
-        { label: "Cross Country Cycling", href: "/trips?sport=bike", sport: "bike" },
-        { label: "Downhill MTB", href: "/trips?sport=bike", sport: "bike" },
+        { label: "Mountain Biking", href: "/trips?sport=bike", sport: "bike" },
+        { label: "Bike Touring", href: "/trips?sport=bike", sport: "bike" },
       ],
     },
     {

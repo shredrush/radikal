@@ -62,7 +62,8 @@ import {
 import { cn } from "@/lib/utils";
 import { ensureUserReferralCode } from "@/lib/referrals";
 export const metadata: Metadata = {
-  title: "Profile — Radikal",
+  title: "Profile",
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";

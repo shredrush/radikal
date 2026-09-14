@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
-  title: "Log in — Radikal",
+  title: "Log in",
+  robots: { index: false, follow: false },
 };
 
 export default async function LoginPage({
