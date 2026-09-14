@@ -9,7 +9,7 @@ export function TripsPageTemplate({ children }: { children: React.ReactNode }) {
             Learn the skills. Live the adventure
           </h1>
           <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-            We curate small group trips and education courses for adventure enthusiasts, led by expert guides
+            Discover small-group trips and courses created by experienced outdoor professionals
           </p>
         </div>
 

@@ -17,7 +17,6 @@ import {
   Navigation,
   Package,
   ShieldAlert,
-  Sparkles,
   Sprout,
   UserRound,
   Users,
@@ -25,7 +24,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { prisma, safeDb } from "@/lib/prisma";
-import { ACCENT_PILL } from "@/lib/card-styles";
 import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
 import { publicTripVisibilityWhere } from "@/lib/public-trip-catalog";
 
@@ -146,14 +144,9 @@ export default async function CommunityPage() {
     <div className="flex-1">
       <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-orange-50/70 via-background to-emerald-50/70 shadow-[0_30px_60px_-30px_rgba(15,23,42,0.35)] dark:from-orange-500/10 dark:via-card dark:to-emerald-500/10">
-          <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] md:items-start md:gap-12 md:p-10">
-            <div className="flex max-w-3xl flex-col items-start text-left">
-              <div className={`inline-flex items-center gap-2 rounded-full border ${ACCENT_PILL} px-3 py-1.5 text-sm font-medium`}>
-                <Sparkles className="h-3.5 w-3.5" />
-                More than a trip. A community
-              </div>
-
-              <h1 className="mt-5 max-w-3xl font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_minmax(19rem,1fr)] md:items-stretch md:gap-12 md:p-10">
+            <div className="flex max-w-3xl flex-col items-start text-left md:self-start">
+              <h1 className="max-w-3xl font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
                 Learn the skills
                 <br />
                 Live the adventure
@@ -169,28 +162,28 @@ export default async function CommunityPage() {
               </div>
             </div>
 
-            <aside className="rounded-[1.5rem] border border-border/70 bg-background/75 p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur-sm dark:bg-card/70 sm:p-6">
+            <aside className="rounded-[1.5rem] border border-border/70 bg-background/75 py-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur-sm dark:bg-card/70 sm:py-6 md:-my-10 md:-mr-10 md:rounded-none">
               <div className="flex items-start justify-between gap-4">
-                <p className="pt-2 text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-orange-700 dark:text-orange-300">
+                <p className="pl-5 pt-2 text-xs font-semibold uppercase tracking-[0.24em] text-orange-700 dark:text-orange-300 sm:pl-6 sm:text-sm">
                   Built by guides, for guides
                 </p>
                 <Link
                   href="/become-a-guide"
-                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-orange-700 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-800"
+                  className="mr-5 inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-orange-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-800 sm:mr-6"
                 >
                   Become a Guide
-                  <ArrowRight size={14} />
+                  <ArrowRight size={16} />
                 </Link>
               </div>
-              <h2 className="mt-3 font-heading text-2xl font-semibold tracking-tight text-foreground">
+              <h2 className="mt-1.5 px-5 font-heading text-3xl font-semibold tracking-tight text-foreground sm:px-6">
                 The operating system for guides
               </h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                A guide based platform that gives outdoor experts the tools, audience and support to build meaningful work outside
+              <p className="mt-3 px-5 text-base leading-7 text-muted-foreground sm:px-6">
+                Build your outdoor business with Radikal. Turn your skills and local knowledge into bookable experiences. Radikal helps with discovery, bookings, payments and the infrastructure behind every experience.
               </p>
-              <div className="mt-6 space-y-3">
-                <div className="flex gap-3 rounded-2xl bg-orange-50/80 p-3 dark:bg-orange-500/10">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+              <div className="mt-6 grid grid-cols-2 gap-3 px-5 sm:px-6">
+                <div className="flex gap-3 rounded-2xl bg-blue-50/80 p-3 dark:bg-blue-500/10">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
                     <Compass className="size-4" />
                   </span>
                   <div>
@@ -198,22 +191,13 @@ export default async function CommunityPage() {
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">You bring the expertise. We help people discover it</p>
                   </div>
                 </div>
-                <div className="flex gap-3 rounded-2xl bg-blue-50/80 p-3 dark:bg-blue-500/10">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                <div className="flex gap-3 rounded-2xl bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                     <Lightbulb className="size-4" />
                   </span>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Infrastructure for guides</h3>
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Bookings, payments and scheduling handled, so you focus on trail</p>
-                  </div>
-                </div>
-                <div className="flex gap-3 rounded-2xl bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <Users className="size-4" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">Earn what you&apos;re worth</h3>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Pricing set by you and transparent payouts, no race-to-the-bottom bidding</p>
                   </div>
                 </div>
               </div>
@@ -303,7 +287,7 @@ export default async function CommunityPage() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">The Radikal app</p>
-              <h2 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Your adventure, in your pocket</h2>
+              <h2 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">One platform, from booking to backcountry</h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">One shared space for every part of the journey, built to keep travellers prepared and guides focused on the people in front of them.</p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-orange-200 bg-orange-100 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-200"><span className="size-1.5 rounded-full bg-orange-500" />Coming soon</span>
@@ -318,7 +302,7 @@ export default async function CommunityPage() {
             </article>
             <article className="relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-background/80 p-5 shadow-[0_16px_32px_-24px_rgba(154,52,18,0.5)] dark:border-orange-500/20 dark:bg-card/80 sm:p-6">
               <div className="absolute inset-x-0 top-0 h-1 bg-orange-500" />
-              <div className="flex items-start gap-4 sm:min-h-[7.5rem]"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"><Users className="size-5" /></span><div><p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300">For guides</p><h3 className="mt-1 font-heading text-2xl font-semibold text-foreground">Run the day, not the admin</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A dependable field companion for the planning, logistics and safety behind every exceptional trip.</p></div></div>
+              <div className="flex items-start gap-4 sm:min-h-[7.5rem]"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"><Users className="size-5" /></span><div><p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300">For guides</p><h3 className="mt-1 font-heading text-2xl font-semibold text-foreground">Run the adventure, not the admin</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A dependable field companion for the planning, logistics and safety behind every exceptional trip.</p></div></div>
               <ul className="mt-6 grid gap-3 border-t border-orange-100 pt-5 dark:border-orange-500/15 sm:grid-cols-2">
                 <li className="flex gap-3"><Calendar className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Bookings & calendars</strong><br />Keep every departure organised</span></li><li className="flex gap-3"><Package className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Equipment sourcing</strong><br />Coordinate what the group needs</span></li><li className="flex gap-3"><ShieldAlert className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">SOS support</strong><br />Emergency services at the ready</span></li><li className="flex gap-3"><UserRound className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-300" /><span className="text-sm leading-5 text-foreground/80"><strong className="font-semibold text-foreground">Guide profile</strong><br />Build trust beyond the trail</span></li>
               </ul>

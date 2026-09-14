@@ -497,7 +497,7 @@ export default async function TripDetailPage({
 
         <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
           <CardHeader>
-            <CardTitle className="text-xl">Your guide</CardTitle>
+            <CardTitle className="text-xl">Created & led by</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5 text-sm leading-6 text-muted-foreground">
             {guide ? (

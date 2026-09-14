@@ -340,7 +340,7 @@ export function SearchableTrips({
           <div className="mb-6 flex items-end justify-between gap-4 sm:mb-7">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-                Travel styles
+                Find your way outside
               </p>
             </div>
             <Link
@@ -382,11 +382,14 @@ export function SearchableTrips({
       </div>
 
       <div className="border-b border-border/60 px-3 pt-4 pb-4 sm:px-6 sm:pt-5 sm:pb-6 lg:px-8">
-         <div className="mx-auto max-w-8xl">
-           <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
-             <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-              Curated trips crafted by expert guides. Book your next adventure with confidence.
-             </h4>
+           <div className="mx-auto max-w-8xl">
+             <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
+               <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                Experiences created by outdoor experts. Book your next adventure with confidence
+               </p>
+               <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
+                Small-group trips, courses and expeditions designed and led by people who know their craft
+               </h4>
            </div>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-5">
              {visibleTrips.length === 0 ? (
@@ -422,7 +425,7 @@ export function SearchableTrips({
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                The places and people behind the plans
+                Meet the people behind the adventure
               </p>
               <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
                 More than a booking platform — a home for guides

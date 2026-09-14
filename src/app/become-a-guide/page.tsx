@@ -66,12 +66,13 @@ export default async function BecomeAGuidePage() {
             Guide programme
           </div>
           <h1 className="mt-3 font-heading text-3xl font-semibold tracking-wide text-foreground sm:text-4xl">
-            Become a Radikal guide
+            Build your outdoor business with Radikal
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Lead small-group Himalayan adventures and share your local knowledge. Tell us about
-            yourself, your experience, and how travellers can reach you — our team reviews every
-            application before you go live.
+            Turn your skills and local knowledge into bookable experiences. Radikal helps with discovery, bookings, payments and the infrastructure behind every experience.
+          </p>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+            Already guiding? Bring your experiences to Radikal.
           </p>
         </header>
 

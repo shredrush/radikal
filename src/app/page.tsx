@@ -12,8 +12,8 @@ import {
 
 const FEATURED_TRIP_SLUGS = [
   "sethan-snowboarding-course",
-  "lahaul-spiti-cycle",
-  "lahaul-multi-day-hike",
+  "zanskar-cycle-expedition",
+  "mountain-bike-beginner-course",
   "backcountry-snowboarding-expedition",
   "deo-tibba",
 ] as const;
