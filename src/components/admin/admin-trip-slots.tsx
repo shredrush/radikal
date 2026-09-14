@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, CalendarDays, Pencil, Plus, X } from "lucide-react";
+import { Ban, CalendarDays, ChevronDown, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   createSlotAction,
   cancelSlotAction,
+  deleteCompletedSlotAction,
   updateSlotAction,
 } from "@/lib/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { parseSlotInteger } from "@/lib/validations/slots";
 import type { SlotItem } from "@/lib/slot-item";
-import { pluralize, formatShortDate } from "@/lib/format";
+import { formatShortDate, pluralize } from "@/lib/format";
 
 export type { SlotItem };
 
@@ -30,6 +31,7 @@ type SlotActions = {
   create: (formData: FormData) => Promise<void>;
   update: (formData: FormData) => Promise<void>;
   remove: (slotId: string, reason?: string) => Promise<void>;
+  deleteCompleted?: (slotId: string) => Promise<void>;
 };
 
 function readSlotNumber(formData: FormData, field: string) {
@@ -43,6 +45,7 @@ export function SlotsManager({
     create: createSlotAction,
     update: updateSlotAction,
     remove: cancelSlotAction,
+    deleteCompleted: deleteCompletedSlotAction,
   },
 }: {
   tripId: string;
@@ -52,25 +55,44 @@ export function SlotsManager({
   const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(new Set());
   const router = useRouter();
   const visibleSlots = slots.filter((slot) => !removedIds.has(slot.id));
+  const completedSlots = visibleSlots.filter((slot) => slot.completed);
+  const upcomingSlots = visibleSlots.filter((slot) => !slot.completed);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h3 className="text-sm font-semibold text-foreground">Dates &amp; availability</h3>
-        <span className="text-xs text-muted-foreground">
-          {pluralize(visibleSlots.length, "date")}
-        </span>
       </div>
+
+      {completedSlots.length > 0 ? (
+        <details className="rounded-xl border border-border/70 bg-muted/20">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
+            <span>Completed dates ({completedSlots.length})</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </summary>
+          <ul className="flex flex-col gap-2 border-t border-border/70 p-3">
+            {completedSlots.map((slot) => (
+              <CompletedSlotRow
+                key={slot.id}
+                slot={slot}
+                deleteAction={actions.deleteCompleted}
+                onDeleted={(slotId) => setRemovedIds((prev) => new Set(prev).add(slotId))}
+                onSaved={router.refresh}
+              />
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       <AddSlotForm tripId={tripId} createAction={actions.create} onSaved={router.refresh} />
 
-      {visibleSlots.length === 0 ? (
+      {upcomingSlots.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
           No dates yet. Add a date above so travellers can book this trip.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {visibleSlots.map((slot) => (
+          {upcomingSlots.map((slot) => (
             <SlotRow
               key={slot.id}
               slot={slot}
@@ -85,6 +107,63 @@ export function SlotsManager({
         </ul>
       )}
     </div>
+  );
+}
+
+function CompletedSlotRow({
+  slot,
+  deleteAction,
+  onDeleted,
+  onSaved,
+}: {
+  slot: SlotItem;
+  deleteAction?: SlotActions["deleteCompleted"];
+  onDeleted: (slotId: string) => void;
+  onSaved: () => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  function handleDelete() {
+    if (!deleteAction) return;
+
+    startTransition(async () => {
+      try {
+        await deleteAction(slot.id);
+        onDeleted(slot.id);
+        toast.success(`Completed date ${slot.dateLabel} deleted.`);
+        onSaved();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not delete completed date.");
+      }
+    });
+  }
+
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/90 px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2.5">
+          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{slot.dateLabel}</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {slot.booked} booked{slot.reserved > 0 ? ` · ${slot.reserved} reserved` : ""} / {slot.capacity}
+        </p>
+      </div>
+      {deleteAction ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 rounded-full text-destructive hover:bg-destructive/10"
+          disabled={isPending}
+          onClick={handleDelete}
+          aria-label={`Delete completed date ${slot.dateLabel}`}
+          title="Delete completed date"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      ) : null}
+    </li>
   );
 }
 

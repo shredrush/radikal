@@ -24,7 +24,6 @@ type GalleryRotation = {
   hiddenMediaIndices: number[];
   flippedSlots: number[];
   cycle: number;
-  waitingForVideoSlot: number | null;
   slideDirection: "left" | "top" | "right" | "bottom";
 };
 
@@ -64,7 +63,6 @@ function advanceGalleryRotation(current: GalleryRotation, requestedSlot: number,
     hiddenMediaIndices: [...remainingHiddenMediaIndices, outgoingMediaIndex],
     flippedSlots: [slot],
     cycle: current.cycle + 1,
-    waitingForVideoSlot: null,
     slideDirection: slideDirectionFromSequence(requestedSlot),
   };
 }
@@ -98,15 +96,11 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     hiddenMediaIndices: Array.from({ length: Math.max(galleryItems.length - 4, 0) }, (_, index) => index + 4),
     flippedSlots: [],
     cycle: 0,
-    waitingForVideoSlot: null,
     slideDirection: "left",
   }));
   const shouldRotateMedia = galleryItems.length > 4;
   // Keep the grid stable while cycling hidden media into random tile positions.
   const slots = rotation.visibleMediaIndices.map((index) => galleryItems[index % galleryItems.length]);
-  const visibleMediaTypeSignature = slots.map((item) => item.type).join("|");
-  const incomingSlot = rotation.flippedSlots[0];
-  const incomingMediaType = incomingSlot === undefined ? null : visibleMediaTypeSignature.split("|")[incomingSlot];
 
   const close = () => setSelectedIndex(null);
   const openGrid = () => setIsGridOpen(true);
@@ -152,7 +146,6 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     if (
       !animationActive ||
       !shouldRotateMedia ||
-      rotation.waitingForVideoSlot !== null ||
       rotation.cycle > completedTransitionCycle
     ) {
       return;
@@ -160,23 +153,11 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
 
     const timer = window.setTimeout(() => {
       const requestedSlot = Math.floor(Math.random() * 4);
-      const slot = resolveSlot(rotation, requestedSlot);
-
-      if (visibleMediaTypeSignature.split("|")[slot] === "video") {
-        setRotation((current) => ({
-          ...current,
-          activeSlot: slot,
-          waitingForVideoSlot: slot,
-          slideDirection: slideDirectionFromSequence(requestedSlot),
-        }));
-        return;
-      }
-
       setRotation((current) => advanceGalleryRotation(current, requestedSlot));
     }, 3_000);
 
     return () => window.clearTimeout(timer);
-  }, [animationActive, completedTransitionCycle, rotation, shouldRotateMedia, visibleMediaTypeSignature]);
+  }, [animationActive, completedTransitionCycle, rotation, shouldRotateMedia]);
 
   useEffect(() => {
     if (!animationActive || rotation.cycle <= completedTransitionCycle) return;
@@ -184,25 +165,9 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     // This fallback also completes the transition when reduced motion disables CSS animations.
     const timer = window.setTimeout(() => {
       setCompletedTransitionCycle(rotation.cycle);
-      if (incomingMediaType === "video" && incomingSlot !== undefined) {
-        setRotation((current) =>
-          current.cycle === rotation.cycle
-            ? { ...current, activeSlot: incomingSlot, waitingForVideoSlot: incomingSlot }
-            : current,
-        );
-      }
     }, 2_400);
     return () => window.clearTimeout(timer);
-  }, [animationActive, completedTransitionCycle, incomingMediaType, incomingSlot, rotation.cycle]);
-
-  useEffect(() => {
-    const slot = rotation.waitingForVideoSlot;
-    if (!animationActive || slot === null) return;
-
-    // Some browsers do not resume an existing muted video when autoPlay changes.
-    // Explicitly playing it ensures the ended event controls the next rotation.
-    void videoRefs.current[slot]?.play().catch(() => undefined);
-  }, [animationActive, rotation.waitingForVideoSlot]);
+  }, [animationActive, completedTransitionCycle, rotation.cycle]);
 
   useEffect(() => {
     if (!animationActive) {
@@ -211,10 +176,10 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     }
 
     const activeItem = slots[rotation.activeSlot];
-    if (activeItem?.type === "video" && rotation.waitingForVideoSlot === null) {
+    if (activeItem?.type === "video") {
       void videoRefs.current[rotation.activeSlot]?.play().catch(() => undefined);
     }
-  }, [animationActive, rotation.activeSlot, rotation.waitingForVideoSlot, slots]);
+  }, [animationActive, rotation.activeSlot, slots]);
 
   return (
     <>
@@ -237,7 +202,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
 
           return (
             <button
-              key={`${slot}-${isSliding ? rotation.cycle : 0}`}
+              key={slot}
               type="button"
               onClick={() => onMediaClick ? onMediaClick() : setSelectedIndex(imageIndex)}
               aria-label={`View ${item.type === "video" ? "video" : "photo"} ${slot + 1}`}
@@ -270,38 +235,21 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                 onAnimationEnd={(event) => {
                   if (event.target === event.currentTarget && isSliding) {
                     setCompletedTransitionCycle(rotation.cycle);
-                    if (item.type === "video") {
-                      setRotation((current) =>
-                        current.cycle === rotation.cycle
-                          ? { ...current, activeSlot: slot, waitingForVideoSlot: slot }
-                          : current,
-                      );
-                    }
                   }
                 }}
               >
                 {item.type === "video" ? (
                   <video
-                    key={`${item.src}-${isActiveTile ? "active" : "inactive"}`}
+                    key={item.src}
                     ref={(element) => {
                       videoRefs.current[slot] = element;
                     }}
                     src={item.src}
                     autoPlay={animationActive && isActiveTile && !isSliding}
                     muted
-                    loop={rotation.waitingForVideoSlot !== slot}
+                    loop
                     playsInline
                     preload={animationActive && (isActiveTile || isSliding) ? "auto" : "none"}
-                    onEnded={
-                      rotation.waitingForVideoSlot === slot
-                        ? () => setRotation((current) => advanceGalleryRotation(current, slot, true))
-                        : undefined
-                    }
-                    onCanPlay={(event) => {
-                      if (animationActive && rotation.waitingForVideoSlot === slot) {
-                        void event.currentTarget.play().catch(() => undefined);
-                      }
-                    }}
                     aria-label={`${alt} video ${slot + 1}`}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
@@ -370,6 +318,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                   {item.type === "video" ? (
                     <video
                       src={item.src}
+                      autoPlay
                       muted
                       loop
                       playsInline

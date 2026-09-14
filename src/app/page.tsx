@@ -51,22 +51,21 @@ const getHomeTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-// The home gallery uses the same guide media as the community page. Keep its
-// payload narrow because the gallery only needs photos and guide names.
-const getHomeGuides = unstable_cache(
+// Keep the gallery payload narrow: it only needs images and trip titles.
+const getHomeTripMedia = unstable_cache(
   async () => {
-    return prisma.guide.findMany({
-      where: { deletedAt: null, user: { deletedAt: null } },
-      orderBy: { name: "asc" },
+    return prisma.trip.findMany({
+      where: publicTripVisibilityWhere,
+      orderBy: { createdAt: "desc" },
       select: {
-        name: true,
-        photos: true,
+        title: true,
+        images: true,
       },
-      take: 6,
+      take: 12,
     });
   },
-  ["home-guides"],
-  { tags: ["guides"], revalidate: 3600 },
+  ["home-trip-media"],
+  { tags: ["trips"], revalidate: 300 },
 );
 
 // Style tiles are database-managed so the home page never needs remote image
@@ -123,9 +122,9 @@ export default async function Home() {
   // If the database is unreachable, serve the page with empty sections instead
   // of crashing. Failures are logged (with connection diagnostics) and never
   // cached, so the next request recovers automatically.
-  const [trips, guides, reviews, travelStyles] = await Promise.all([
+  const [trips, tripMedia, reviews, travelStyles] = await Promise.all([
     safeDb("home.trips", () => getHomeTrips(), []),
-    safeDb("home.guides", () => getHomeGuides(), []),
+    safeDb("home.trip-media", () => getHomeTripMedia(), []),
     safeDb("home.reviews", () => getHomeReviews(), []),
     safeDb("home.travel-styles", () => getHomeTravelStyles(), []),
   ]);
@@ -145,12 +144,12 @@ export default async function Home() {
           type: trip.type,
           images: trip.images,
         }))}
-        guideMedia={guides.flatMap((guide) =>
-          (guide.photos ?? [])
+        guideMedia={tripMedia.flatMap((trip) =>
+          trip.images
             .filter(Boolean)
             .map((src, index) => ({
               src,
-              alt: `${guide.name} photo ${index + 1}`,
+              alt: `${trip.title} photo ${index + 1}`,
             })),
         ).slice(0, 12)}
         travelStyles={travelStyles.map((style) => ({

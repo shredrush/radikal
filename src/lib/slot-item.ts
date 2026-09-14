@@ -1,4 +1,5 @@
 import { formatShortDate, toDateInput } from "@/lib/format";
+import { startOfTodayIST } from "@/lib/dates";
 
 export type SlotItem = {
   id: string;
@@ -9,6 +10,7 @@ export type SlotItem = {
   reserved: number;
   spotsLeft: number;
   bookingCount: number;
+  completed: boolean;
 };
 
 export function toSlotItem(slot: {
@@ -28,5 +30,6 @@ export function toSlotItem(slot: {
     reserved: slot.reserved,
     spotsLeft: Math.max(0, slot.capacity - slot.booked - slot.reserved),
     bookingCount: slot._count?.bookings ?? 0,
+    completed: new Date(slot.date) < startOfTodayIST(),
   };
 }

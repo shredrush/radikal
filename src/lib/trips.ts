@@ -1,7 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { startOfTodayIST } from "@/lib/dates";
 
 const tripDetailInclude = {
   sportLinks: { include: { sport: true }, orderBy: { sport: { sortOrder: "asc" } } },
@@ -25,10 +24,6 @@ export function fetchTripsWithDetails(
   where: Prisma.TripWhereInput = {},
   options: { skip?: number; take?: number } = {},
 ) {
-  // Only today/future dates are actionable in the slots manager; past
-  // (completed) dates stay hidden.
-  const startOfToday = startOfTodayIST();
-
   return prisma.trip.findMany({
     where: {
       deletedAt: null,
@@ -42,7 +37,6 @@ export function fetchTripsWithDetails(
       ...tripDetailInclude,
       slots: {
         ...tripDetailInclude.slots,
-        where: { deletedAt: null, date: { gte: startOfToday } },
       },
       guide: { select: { id: true, name: true } },
     },

@@ -631,3 +631,42 @@ export async function cancelSlotAction(slotId: string, reason?: string) {
   revalidatePath("/support");
   revalidatePath("/profile");
 }
+
+/** Soft-delete a completed date so historical records remain auditable. */
+export async function deleteCompletedSlotAction(slotId: string) {
+  await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
+
+  if (!slotId) {
+    throw new Error("Missing slot id.");
+  }
+
+  let slug = "";
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM slots WHERE id = ${slotId} FOR UPDATE`;
+    const slot = await tx.slot.findUnique({
+      where: { id: slotId },
+      include: { trip: { select: { slug: true, deletedAt: true } } },
+    });
+
+    if (!slot) {
+      throw new Error("Slot not found.");
+    }
+    if (slot.trip.deletedAt) {
+      throw new Error("Deleted trips cannot be changed.");
+    }
+    if (slot.deletedAt) {
+      throw new Error("This date is already deleted.");
+    }
+    if (slot.date >= startOfTodayIST()) {
+      throw new Error("Only completed dates can be deleted here.");
+    }
+
+    slug = slot.trip.slug;
+    await tx.slot.update({
+      where: { id: slotId },
+      data: { deletedAt: new Date(), deletedWithTrip: false },
+    });
+  });
+
+  revalidateSlotPages(slug);
+}
