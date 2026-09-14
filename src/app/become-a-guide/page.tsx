@@ -89,7 +89,7 @@ export default async function BecomeAGuidePage() {
                   and bookings.
                 </p>
               </div>
-              <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
+              <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" prefetch={false} />}>
                 Go to profile
               </Button>
             </CardContent>

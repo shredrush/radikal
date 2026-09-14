@@ -79,7 +79,6 @@ export function TripDetailsCard({
         </CardHeader>
       )}
       <CardContent className="flex flex-1 flex-col space-y-4 text-sm leading-7 text-muted-foreground">
-        <p className="text-foreground">{trip.description}</p>
         <div className="grid gap-3 grid-cols-2">
           <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pickup</p>
@@ -100,6 +99,7 @@ export function TripDetailsCard({
             <p className="mt-1 text-sm font-medium text-foreground">Up to {trip.maxGroupSize} travellers</p>
           </div>
         </div>
+        <p className="whitespace-pre-wrap text-foreground">{trip.description}</p>
         <div>
           <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>
           {trip.highlights.length > 0 ? (
@@ -112,7 +112,7 @@ export function TripDetailsCard({
               ))}
             </ul>
           ) : (
-            <p className="mt-2">{trip.description}</p>
+            <p className="mt-2 whitespace-pre-wrap">{trip.description}</p>
           )}
         </div>
       </CardContent>
@@ -138,6 +138,7 @@ export function AvailableDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
                 <li key={slot.id}>
                   <Link
                     href={`/booking/${trip.id}/checkout?slot=${slot.id}`}
+                    prefetch={false}
                     className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
                   >
                     <span
@@ -285,7 +286,7 @@ export function TripDetailFeature({
                 </h1>
                 {action}
               </div>
-              <p className="line-clamp-6 text-base leading-8 text-muted-foreground">
+              <p className="line-clamp-6 whitespace-pre-wrap text-base leading-8 text-muted-foreground">
                 {trip.description}
               </p>
             </div>

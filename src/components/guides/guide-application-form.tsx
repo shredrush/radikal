@@ -161,7 +161,7 @@ export function GuideApplicationForm({
         </div>
 
         {!isGuest ? (
-          <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" />}>
+          <Button className="rounded-full" nativeButton={false} render={<Link href="/profile" prefetch={false} />}>
             Go to profile
           </Button>
         ) : null}

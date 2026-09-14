@@ -102,6 +102,7 @@ export function HeaderAccount() {
       <Link
         ref={menuTriggerRef}
         href="/profile"
+        prefetch={false}
         aria-controls="account-navigation"
         aria-expanded={menuOpen}
         aria-haspopup="true"
@@ -124,6 +125,7 @@ export function HeaderAccount() {
         <nav id="account-navigation" aria-label="Account navigation" onClick={() => setMenuOpen(false)} className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/95 shadow-[0_20px_45px_-24px_rgba(0,0,0,0.45)] backdrop-blur">
           <Link
             href="/profile"
+            prefetch={false}
             aria-label="Open profile"
             title="Open profile"
             className="group flex items-center gap-3 px-4 py-3.5 transition hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-none"
@@ -142,15 +144,15 @@ export function HeaderAccount() {
              </span>
           </Link>
          <div className="border-t border-border/70 p-2">
-           {adminBoardHref ? <Link href={adminBoardHref} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><LayoutDashboard className="size-4" />Admin Board</Link> : null}
-           {account && hasPermission(account.role, "support.manage") ? <Link href="/support" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Headset className="size-4" />Support Board</Link> : null}
-           {account.role === "GUIDE" ? <Link href="/guide-board/trips" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><LayoutDashboard className="size-4" />Guide Board</Link> : null}
-           <Link href="/profile?tab=bookings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Ticket className="size-4" />Bookings</Link>
-           <Link href="/profile?tab=wishlist" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Heart className="size-4" />Wishlist</Link>
-           <Link href="/profile?tab=notifications" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Bell className="size-4" />Notifications{account.unreadNotifications > 0 ? <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">{account.unreadNotifications > 9 ? "9+" : account.unreadNotifications}</span> : null}</Link>
-           <Link href="/profile?tab=settings" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Settings2 className="size-4" />Settings</Link>
-           <Link href="/profile?tab=support" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Headset className="size-4" />Support</Link>
-           <Link href="/profile?tab=referrals" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><UsersRound className="size-4" />Referral</Link>
+            {adminBoardHref ? <Link href={adminBoardHref} prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><LayoutDashboard className="size-4" />Admin Board</Link> : null}
+            {account && hasPermission(account.role, "support.manage") ? <Link href="/support" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Headset className="size-4" />Support Board</Link> : null}
+            {account.role === "GUIDE" ? <Link href="/guide-board/trips" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><LayoutDashboard className="size-4" />Guide Board</Link> : null}
+            <Link href="/profile?tab=bookings" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Ticket className="size-4" />Bookings</Link>
+            <Link href="/profile?tab=wishlist" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Heart className="size-4" />Wishlist</Link>
+            <Link href="/profile?tab=notifications" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Bell className="size-4" />Notifications{account.unreadNotifications > 0 ? <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[0.65rem] font-bold leading-none text-white">{account.unreadNotifications > 9 ? "9+" : account.unreadNotifications}</span> : null}</Link>
+            <Link href="/profile?tab=settings" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Settings2 className="size-4" />Settings</Link>
+            <Link href="/profile?tab=support" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><Headset className="size-4" />Support</Link>
+            <Link href="/profile?tab=referrals" prefetch={false} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/10 hover:text-primary"><UsersRound className="size-4" />Referral</Link>
            <LazyLogoutButton variant="menu" />
          </div>
         </nav>

@@ -132,7 +132,7 @@ export function SupportWidgetClient() {
               size="sm"
               className="rounded-full"
               nativeButton={false}
-              render={<Link href="/support" onClick={() => setOpen(false)} />}
+              render={<Link href="/support" prefetch={false} onClick={() => setOpen(false)} />}
             >
               <Headset className="size-4" />
               Open support board
@@ -147,7 +147,7 @@ export function SupportWidgetClient() {
               size="sm"
               className="rounded-full"
               nativeButton={false}
-              render={<Link href="/profile?tab=support" onClick={() => setOpen(false)} />}
+              render={<Link href="/profile?tab=support" prefetch={false} onClick={() => setOpen(false)} />}
             >
               <Headset className="size-4" />
               Open chat

@@ -23,6 +23,7 @@ export async function AdminPageHeader({
       <div className="mb-6 flex items-center justify-between gap-3">
         <Link
           href="/profile"
+          prefetch={false}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -34,7 +35,7 @@ export async function AdminPageHeader({
             size="sm"
             className="rounded-full border-2 border-black dark:border-white"
             nativeButton={false}
-            render={<Link href="/support" />}
+            render={<Link href="/support" prefetch={false} />}
           >
             <Headset className="h-3.5 w-3.5" />
             Support board
@@ -55,7 +56,7 @@ export async function AdminPageHeader({
               size="sm"
               className="w-full justify-center rounded-full border-2 border-black dark:border-white lg:w-40"
               nativeButton={false}
-              render={<Link href={section.href} />}
+              render={<Link href={section.href} prefetch={false} />}
             >
               {section.label}
             </Button>

@@ -1,4 +1,5 @@
-import { Compass } from "lucide-react";
+import { Compass, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 import { loadDb, prisma } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
@@ -135,9 +136,21 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               const data = toGuideTripData(trip);
               return (
                 <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
-                  <div className="min-w-0">
-                    <p className="break-words font-semibold text-foreground">{trip.title}</p>
-                    <p className="break-words text-sm text-muted-foreground">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="break-words font-semibold text-foreground">{trip.title}</p>
+                        <Link
+                          href={`/trips/${trip.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Open ${trip.title}`}
+                          title="Open trip"
+                          className="inline-flex text-primary transition hover:text-primary/75"
+                        >
+                          <ExternalLink className="size-3" aria-hidden="true" />
+                        </Link>
+                      </div>
+                      <p className="break-words text-sm text-muted-foreground">
                       {trip.location} · {formatDurationDays(trip.durationDays)}
                     </p>
                   </div>

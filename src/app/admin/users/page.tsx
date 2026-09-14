@@ -111,6 +111,7 @@ function UserListEntry({
             {canDeactivate ? <AdminDeactivateUserButton userId={user.id} userName={user.name} /> : null}
             <Link
               href={`/admin/users/${user.id}`}
+              prefetch={false}
               className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/80 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground transition hover:bg-muted"
             >
               <ShieldCheck className="h-3 w-3" />
@@ -247,6 +248,7 @@ export default async function AdminUsersPage({
           <div className="flex flex-nowrap gap-1.5 overflow-x-auto">
             <Link
               href="/admin/users"
+              prefetch={false}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-widest transition ${
                 roleFilter === ""
                   ? "border-black bg-black text-white"
@@ -259,6 +261,7 @@ export default async function AdminUsersPage({
               <Link
                 key={value}
                 href={`/admin/users?role=${value}`}
+                prefetch={false}
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-widest transition ${
                   roleFilter === value
                     ? "border-black bg-black text-white"
@@ -323,6 +326,7 @@ export default async function AdminUsersPage({
             {page > 1 ? (
               <Link
                 href={paginationHref(page - 1)}
+                prefetch={false}
                 className="rounded-full border border-border/70 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-foreground transition hover:bg-muted"
               >
                 Previous
@@ -336,6 +340,7 @@ export default async function AdminUsersPage({
             {page < totalPages ? (
               <Link
                 href={paginationHref(page + 1)}
+                prefetch={false}
                 className="rounded-full border border-border/70 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-foreground transition hover:bg-muted"
               >
                 Next

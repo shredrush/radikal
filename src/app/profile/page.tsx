@@ -360,7 +360,7 @@ export default async function ProfilePage({
                   size="sm"
                   className="w-full justify-center whitespace-nowrap rounded-full sm:w-48"
                   nativeButton={false}
-                  render={<Link href="/guide-board/trips" />}
+                  render={<Link href="/guide-board/trips" prefetch={false} />}
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   <span className="text-sm font-bold tracking-wide">Guide board</span>
@@ -369,6 +369,7 @@ export default async function ProfilePage({
               {adminBoardHref ? (
                 <Link
                   href={adminBoardHref}
+                  prefetch={false}
                   className="inline-flex h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-colors hover:bg-primary/80 sm:w-48"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
@@ -378,6 +379,7 @@ export default async function ProfilePage({
               {canAccessSupportDesk ? (
                 <Link
                   href="/support"
+                  prefetch={false}
                   className="inline-flex h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-colors hover:bg-primary/80 sm:w-48"
                 >
                   <Headset className="h-3.5 w-3.5" />
@@ -744,7 +746,7 @@ export default async function ProfilePage({
                         size="sm"
                         className="rounded-full"
                         nativeButton={false}
-                        render={<Link href="/support" />}
+                        render={<Link href="/support" prefetch={false} />}
                       >
                         <Headset className="h-3.5 w-3.5" />
                         Open support board

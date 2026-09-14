@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AdminTripForm } from "@/components/admin/admin-trip-form";
@@ -54,7 +55,19 @@ export function AdminTripCard({ trip, guides, sports }: AdminTripCardProps) {
     <li className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-foreground">{trip.title}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="truncate font-semibold text-foreground">{trip.title}</p>
+            <Link
+              href={`/trips/${trip.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${trip.title}`}
+              title="Open trip"
+              className="inline-flex text-primary transition hover:text-primary/75"
+            >
+              <ExternalLink className="size-3" aria-hidden="true" />
+            </Link>
+          </div>
           <p className="truncate text-sm text-muted-foreground">
             {trip.location} · {formatDurationDays(trip.durationDays)}
             {trip.guide ? ` · ${trip.guide.name}` : " · No guide linked"}

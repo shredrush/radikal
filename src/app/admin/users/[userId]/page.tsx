@@ -87,6 +87,7 @@ export default async function AdminUserDetailPage({
 
         <Link
           href="/admin/users"
+          prefetch={false}
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -130,7 +131,7 @@ export default async function AdminUserDetailPage({
                 {user.guide && !user.guide.deletedAt ? (
                   <span className="block">
                     Linked guide:{" "}
-                    <Link href={`/admin/guides`} className="text-primary underline underline-offset-4">
+                    <Link href={`/admin/guides`} prefetch={false} className="text-primary underline underline-offset-4">
                       {user.guide.name}
                     </Link>
                   </span>

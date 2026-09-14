@@ -66,6 +66,7 @@ export function BookingBar({
               render={
                 <Link
                   href={hasUpcomingSlots ? `/booking/${tripId}/checkout?participants=${people}` : "#custom-date-enquiry"}
+                  prefetch={false}
                   onClick={hasUpcomingSlots ? undefined : () => window.dispatchEvent(new Event("open-custom-date-enquiry"))}
                 />
               }

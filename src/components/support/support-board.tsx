@@ -295,6 +295,7 @@ export function SupportBoard({
       <Link
         key={chat.id}
         href={`/support?chat=${chat.id}`}
+        prefetch={false}
         className={`flex flex-col gap-1.5 rounded-xl border p-3 transition-colors ${
           isActive
             ? "border-primary/30 bg-primary/5"
@@ -347,6 +348,7 @@ export function SupportBoard({
           <div className="mb-6 flex items-center justify-between gap-3">
             <Link
               href="/profile"
+              prefetch={false}
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -371,7 +373,7 @@ export function SupportBoard({
                   size="sm"
                   className="w-full justify-center rounded-full lg:w-40"
                   nativeButton={false}
-                  render={<Link href={item.href} />}
+                  render={<Link href={item.href} prefetch={false} />}
                 >
                   <item.icon className="h-3.5 w-3.5" />
                   {item.label}
@@ -419,7 +421,7 @@ export function SupportBoard({
                   size="xs"
                   className="rounded-full border-2 border-black dark:border-white"
                   nativeButton={false}
-                  render={<Link href={selectedBookingGuideId ? `/support?tab=bookings&guide=${selectedBookingGuideId}` : "/support?tab=bookings"} />}
+                  render={<Link href={selectedBookingGuideId ? `/support?tab=bookings&guide=${selectedBookingGuideId}` : "/support?tab=bookings"} prefetch={false} />}
                 >
                   All
                 </Button>
@@ -437,6 +439,7 @@ export function SupportBoard({
                           ...(selectedBookingGuideId ? { guide: selectedBookingGuideId } : {}),
                           type: option.value,
                         }).toString()}`}
+                        prefetch={false}
                       />
                     }
                   >

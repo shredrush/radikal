@@ -86,7 +86,7 @@ export default async function AdminBookingsPage({
               size="xs"
               className="rounded-full border-2 border-black dark:border-white"
               nativeButton={false}
-              render={<Link href={activeGuideId ? `/admin/bookings?guide=${activeGuideId}` : "/admin/bookings"} />}
+              render={<Link href={activeGuideId ? `/admin/bookings?guide=${activeGuideId}` : "/admin/bookings"} prefetch={false} />}
             >
               All
             </Button>
@@ -103,6 +103,7 @@ export default async function AdminBookingsPage({
                       ...(activeGuideId ? { guide: activeGuideId } : {}),
                       type: option.value,
                     }).toString()}`}
+                    prefetch={false}
                   />
                 }
               >

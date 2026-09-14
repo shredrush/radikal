@@ -43,6 +43,7 @@ export function GuideBoardHeader({
     <div className="flex flex-col gap-4">
       <Link
         href="/profile"
+        prefetch={false}
         className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -79,7 +80,7 @@ export function GuideBoardHeader({
                     size="sm"
                     className="w-full max-w-full gap-1 rounded-full border-2 border-black px-2 text-[0.625rem] sm:gap-2 sm:px-3 sm:text-sm dark:border-white"
                     nativeButton={false}
-                    render={<Link href={section.href} />}
+                    render={<Link href={section.href} prefetch={false} />}
                   >
                     {section.key === "profile" ? (
                       <UserRoundPen className="h-3.5 w-3.5" />

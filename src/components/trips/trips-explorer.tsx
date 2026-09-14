@@ -34,6 +34,7 @@ export type TripsExplorerTrip = {
   priceInRupees: number;
   durationDays: number;
   images?: string[];
+  slots?: Array<{ date: Date | string }>;
 };
 
 export type TripsExplorerMapTrip = {
@@ -220,6 +221,13 @@ export function TripsExplorer({
         Number.MAX_SAFE_INTEGER,
       ]),
     );
+  const getUpcomingSlotTime = (trip: TripsExplorerTrip) =>
+    trip.slots
+      ?.map((slot) => new Date(slot.date).getTime())
+      .find((date) => date >= Date.now()) ?? Number.POSITIVE_INFINITY;
+  const sortTripsByUpcomingSlot = (left: TripsExplorerTrip, right: TripsExplorerTrip) =>
+    getUpcomingSlotTime(left) - getUpcomingSlotTime(right) ||
+    getTripTravelStyleOrder(left) - getTripTravelStyleOrder(right);
 
   const groupedActivities = SPORT_FILTERS.filter((sport) => sport.id !== "all")
     .map((sport) => ({
@@ -227,7 +235,7 @@ export function TripsExplorer({
       trips: trips.filter((trip) => {
         const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
         return matchesSportFilter(trip, [normalizedSportId]);
-      }).sort((left, right) => getTripTravelStyleOrder(left) - getTripTravelStyleOrder(right)),
+      }).sort(sortTripsByUpcomingSlot),
     }))
     .sort(
       (left, right) =>
@@ -239,7 +247,7 @@ export function TripsExplorer({
       trips: otherTrips.filter((trip) => {
         const normalizedSportId = sport.id === "rockclimb" ? "rockclimb" : sport.id;
         return matchesSportFilter(trip, [normalizedSportId]);
-      }).sort((left, right) => getTripTravelStyleOrder(left) - getTripTravelStyleOrder(right)),
+      }).sort(sortTripsByUpcomingSlot),
     }))
     .sort(
       (left, right) =>

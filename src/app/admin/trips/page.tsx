@@ -150,7 +150,7 @@ export default async function AdminTripsPage({
                 size="xs"
                 className="rounded-full border-2 border-black dark:border-white"
                 nativeButton={false}
-                render={<Link href={activeGuideId ? `/admin/trips?guide=${activeGuideId}` : "/admin/trips"} />}
+                render={<Link href={activeGuideId ? `/admin/trips?guide=${activeGuideId}` : "/admin/trips"} prefetch={false} />}
               >
                 All
               </Button>
@@ -167,6 +167,7 @@ export default async function AdminTripsPage({
                         ...(activeGuideId ? { guide: activeGuideId } : {}),
                         type: option.value,
                       }).toString()}`}
+                      prefetch={false}
                     />
                   }
                 >

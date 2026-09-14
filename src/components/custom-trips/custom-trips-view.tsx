@@ -257,6 +257,7 @@ export function CustomTripsView({
                   <Link
                     key={request.id}
                     href={`/support?tab=custom&request=${request.id}`}
+                    prefetch={false}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 transition-colors",
                       isActive
@@ -342,6 +343,7 @@ export function CustomTripsView({
                   <Link
                     key={request.id}
                     href={`/support?tab=custom&request=${request.id}`}
+                    prefetch={false}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 transition-colors",
                       isActive
@@ -428,6 +430,7 @@ export function CustomTripsView({
                   <Link
                     key={request.id}
                     href={`/support?tab=custom&request=${request.id}`}
+                    prefetch={false}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 transition-colors",
                       isActive
@@ -511,6 +514,7 @@ export function CustomTripsView({
                     <Link
                     key={request.id}
                     href={`/support?tab=custom&request=${request.id}`}
+                    prefetch={false}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border border-dashed p-3 transition-colors",
                       isActive

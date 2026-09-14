@@ -29,6 +29,11 @@ export const publicTripCardSelect = {
   priceInRupees: true,
   durationDays: true,
   images: true,
+  slots: {
+    where: { deletedAt: null },
+    orderBy: { date: "asc" },
+    select: { date: true },
+  },
 } satisfies Prisma.TripSelect;
 
 export const publicTripMapSelect = {
