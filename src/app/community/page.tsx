@@ -182,20 +182,20 @@ export default async function CommunityPage() {
                 Build your outdoor business with Radikal. Turn your skills and local knowledge into bookable experiences. Radikal helps with discovery, bookings, payments and the infrastructure behind every experience.
               </p>
               <div className="mt-6 grid grid-cols-2 gap-3 px-5 sm:px-6">
-                <div className="flex gap-3 rounded-2xl bg-blue-50/80 p-3 dark:bg-blue-500/10">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-                    <Compass className="size-4" />
+                <div className="flex min-w-0 flex-col gap-2 rounded-2xl bg-blue-50/80 p-3 dark:bg-blue-500/10">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                    <Compass className="size-3.5" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">Get discovered</h3>
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">You bring the expertise. We help people discover it</p>
                   </div>
                 </div>
-                <div className="flex gap-3 rounded-2xl bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <Lightbulb className="size-4" />
+                <div className="flex min-w-0 flex-col gap-2 rounded-2xl bg-emerald-50/80 p-3 dark:bg-emerald-500/10">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <Lightbulb className="size-3.5" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">Infrastructure for guides</h3>
                     <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Bookings, payments and scheduling handled, so you focus on trail</p>
                   </div>

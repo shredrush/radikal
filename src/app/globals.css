@@ -259,7 +259,11 @@
 }
 
 .animate-gallery-media-slide {
-  animation: gallery-media-slide 2.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(var(--gallery-slide-x), var(--gallery-slide-y), 0);
+  animation: gallery-media-slide 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
 }
 
 @keyframes gallery-media-slide-out {
@@ -273,6 +277,9 @@
 
 .animate-gallery-media-slide-out {
   animation: gallery-media-slide-out 2.4s cubic-bezier(0.22, 1, 0.36, 1);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
 }
 
 .gallery-media-slide-from-left {
