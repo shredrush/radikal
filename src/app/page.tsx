@@ -4,6 +4,7 @@ import { prisma, safeDb } from "@/lib/prisma";
 import { SearchableTrips } from "@/components/home/searchable-trips";
 import { getDisplayName } from "@/lib/profile-initials";
 import { formatShortDate } from "@/lib/format";
+import { shuffle } from "@/lib/utils";
 import {
   HOME_TRIP_LIMIT,
   publicTripCardSelect,
@@ -51,17 +52,15 @@ const getHomeTrips = unstable_cache(
   { tags: ["trips"], revalidate: 300 },
 );
 
-// Keep the gallery payload narrow: it only needs images and trip titles.
+// The gallery uses every public trip image, while only selecting the fields it needs.
 const getHomeTripMedia = unstable_cache(
   async () => {
     return prisma.trip.findMany({
       where: publicTripVisibilityWhere,
-      orderBy: { createdAt: "desc" },
       select: {
         title: true,
         images: true,
       },
-      take: 12,
     });
   },
   ["home-trip-media"],
@@ -144,14 +143,16 @@ export default async function Home() {
           type: trip.type,
           images: trip.images,
         }))}
-        guideMedia={tripMedia.flatMap((trip) =>
-          trip.images
-            .filter(Boolean)
-            .map((src, index) => ({
-              src,
-              alt: `${trip.title} photo ${index + 1}`,
-            })),
-        ).slice(0, 12)}
+        guideMedia={shuffle(
+          tripMedia.flatMap((trip) =>
+            trip.images
+              .filter(Boolean)
+              .map((src, index) => ({
+                src,
+                alt: `${trip.title} photo ${index + 1}`,
+              })),
+          ),
+        )}
         travelStyles={travelStyles.map((style) => ({
           id: style.id,
           name: style.name,

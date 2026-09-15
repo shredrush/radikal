@@ -26,6 +26,7 @@ import type { LucideIcon } from "lucide-react";
 import { prisma, safeDb } from "@/lib/prisma";
 import { CommunityGuideMedia } from "@/components/guides/community-guide-media";
 import { publicTripVisibilityWhere } from "@/lib/public-trip-catalog";
+import { shuffle } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Outdoor Community and Safety Standards",
@@ -33,14 +34,12 @@ export const metadata: Metadata = {
     "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
 };
 
-// Keep the gallery payload narrow: it only needs images and trip titles.
+// The gallery uses every public trip image, while only selecting the fields it needs.
 const getCommunityTripMedia = unstable_cache(
   async () =>
     prisma.trip.findMany({
       where: publicTripVisibilityWhere,
-      orderBy: { createdAt: "desc" },
       select: { title: true, images: true },
-      take: 12,
     }),
   ["community-trip-media"],
   { tags: ["trips"], revalidate: 300 },
@@ -132,13 +131,15 @@ const pillarToneStyles: Record<
 
 export default async function CommunityPage() {
   const mediaTrips = await safeDb("community.trip-media", () => getCommunityTripMedia(), []);
-  const guideMedia = mediaTrips.flatMap((trip) =>
-    trip.images
-      .filter(Boolean)
-      .map((src, index) => ({
-        src,
-        alt: `${trip.title} photo ${index + 1}`,
-      })),
+  const guideMedia = shuffle(
+    mediaTrips.flatMap((trip) =>
+      trip.images
+        .filter(Boolean)
+        .map((src, index) => ({
+          src,
+          alt: `${trip.title} photo ${index + 1}`,
+        })),
+    ),
   );
   return (
     <div className="flex-1">

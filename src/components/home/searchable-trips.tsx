@@ -385,7 +385,7 @@ export function SearchableTrips({
            <div className="mx-auto max-w-8xl">
              <div className="mb-3 flex flex-col gap-1 px-1 sm:mb-4 sm:px-2">
                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-                Experiences created by outdoor experts. Book your next adventure with confidence
+                Experiences created by outdoor experts
                </p>
                <h4 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
                 Small-group trips, courses and expeditions designed and led by people who know their craft

@@ -10,13 +10,12 @@ export type CommunityGuideMediaItem = {
 };
 
 const slotLayouts = [
-  "col-start-1 row-start-1 row-span-3 lg:col-span-2 lg:row-span-2",
-  "col-start-1 row-start-4 row-span-2 lg:col-start-3 lg:row-start-1 lg:row-span-1",
-  "col-start-2 row-start-1 row-span-2 lg:col-start-3 lg:row-start-2 lg:row-span-1",
-  "col-start-2 row-start-3 row-span-3 lg:col-start-4 lg:row-start-1 lg:row-span-2",
-  "col-start-5 row-start-1",
-  "col-start-5 row-start-2",
-  "col-start-6 col-span-2 row-span-2",
+  "col-start-1 row-start-1 row-span-3 lg:col-span-2 lg:row-span-5",
+  "col-start-1 row-start-4 row-span-2 lg:col-start-3 lg:row-start-1 lg:row-span-3",
+  "col-start-2 row-start-1 row-span-2 lg:col-start-3 lg:row-start-4 lg:row-span-2",
+  "col-start-2 row-start-3 row-span-3 lg:col-start-4 lg:row-start-1 lg:row-span-5",
+  "col-start-5 row-start-1 lg:row-span-2",
+  "col-start-5 row-start-2 lg:row-start-3 lg:row-span-3",
 ];
 
 const slideDirections = [
@@ -25,6 +24,12 @@ const slideDirections = [
   "gallery-media-slide-from-right",
   "gallery-media-slide-from-bottom",
 ] as const;
+
+function getImageSizes(slot: number) {
+  if (slot === 0) return "(max-width: 1024px) 50vw, 30vw";
+  if (slot === 3) return "(max-width: 1024px) 50vw, 24vw";
+  return "(max-width: 1024px) 50vw, 18vw";
+}
 
 export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[] }) {
   const visibleCount = Math.min(items.length, slotLayouts.length);
@@ -72,12 +77,13 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
 
   return (
     <section ref={sectionRef} aria-label="Guide moments">
-      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 lg:h-[36rem] lg:grid-cols-[1fr_1fr_1fr_1.5fr_1fr_0.65fr_0.65fr] lg:grid-rows-2 xl:h-[40rem]">
+      <div className="grid h-[28rem] grid-cols-2 grid-rows-5 gap-3 lg:h-[36rem] lg:grid-cols-[1fr_1fr_1fr_1.5fr_1fr] lg:grid-rows-5 xl:h-[40rem]">
         {visibleIndices.map((itemIndex, slot) => {
           const item = items[itemIndex];
           const isSliding = activeSlot === slot;
           const previousItem = isSliding && previousIndices ? items[previousIndices[slot]] : null;
           const slideClass = slideDirections[slot % slideDirections.length];
+          const imageSizes = getImageSizes(slot);
 
           return (
             <div
@@ -86,7 +92,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass} motion-reduce:animate-none`}>
-                  <Image src={previousItem.src} alt="" fill className="object-cover" sizes="(max-width: 1024px) 45vw, 18vw" />
+                  <Image src={previousItem.src} alt="" fill className="object-cover" sizes={imageSizes} />
                 </div>
               )}
               <div
@@ -103,7 +109,7 @@ export function CommunityGuideMedia({ items }: { items: CommunityGuideMediaItem[
                   alt={item.alt}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 1024px) 45vw, 18vw"
+                  sizes={imageSizes}
                 />
               </div>
             </div>

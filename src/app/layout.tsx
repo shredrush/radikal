@@ -21,11 +21,11 @@ const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" 
 export const metadata: Metadata = {
   metadataBase: new URL("https://radikal.in"),
   title: {
-    default: "Radikal | Outdoor Adventures and Expert Guides",
+    default: "Radikal | Explore, Learn & Belong Outdoors",
     template: "%s | Radikal",
   },
   description:
-    "Radikal is a travel platform that connects outdoor enthusiasts with certified expert guides for small-group, sustainable adventures. Discover unique experiences, learn the skills, share your stories, and explore the world responsibly.",
+    "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   alternates: {
     canonical: "/",
   },
@@ -34,15 +34,15 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "/",
     siteName: "Radikal",
-    title: "Radikal | Outdoor Adventures and Expert Guides",
+    title: "Radikal | Explore, Learn & Belong Outdoors",
     description:
-      "Small-group outdoor adventures and skills courses led by expert guides across the Himalayas.",
+      "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Radikal | Outdoor Adventures and Expert Guides",
+    title: "Radikal | Explore, Learn & Belong Outdoors",
     description:
-      "Small-group outdoor adventures and skills courses led by expert guides across the Himalayas.",
+      "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },
   icons: {
     icon: "/logo.svg",
