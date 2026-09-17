@@ -157,9 +157,9 @@ export default async function CommunityPage() {
               </p>
 
               <div className="mt-7 flex w-full flex-nowrap items-center justify-between gap-x-1.5 whitespace-nowrap text-[10px] text-muted-foreground sm:w-auto sm:flex-wrap sm:justify-start sm:gap-x-6 sm:gap-y-2 sm:text-sm">
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" />Verified experts</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" />Safety first</span>
                 <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" />Small groups</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />Learn by doing</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />Verified experts</span>
               </div>
             </div>
 

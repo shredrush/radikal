@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | Radikal",
   },
   description:
-    "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
+    "Radikal connects travellers with verified experts for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   alternates: {
     canonical: "/",
   },
@@ -36,13 +36,13 @@ export const metadata: Metadata = {
     siteName: "Radikal",
     title: "Radikal | Explore, Learn & Belong Outdoors",
     description:
-      "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
+      "Radikal connects travellers with verified experts for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },
   twitter: {
     card: "summary_large_image",
     title: "Radikal | Explore, Learn & Belong Outdoors",
     description:
-      "Radikal connects travellers with expert guides for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
+      "Radikal connects travellers with verified experts for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },
   icons: {
     icon: "/logo.svg",

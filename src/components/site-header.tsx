@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
 import { SportIcon } from "@/components/trips/sport-icon";
@@ -17,15 +18,20 @@ type RetreatItem = {
 
 export function SiteHeader() {
   const [dropdownSuppressed, setDropdownSuppressed] = useState(false);
+  const [mobileDropdown, setMobileDropdown] = useState<"sports" | "retreats" | null>(null);
 
   const closeDropdown = () => {
     setDropdownSuppressed(true);
+    setMobileDropdown(null);
     const activeElement = document.activeElement;
     if (activeElement instanceof HTMLElement) activeElement.blur();
   };
 
   const dropdownClassName = (className: string) =>
     `${className} ${dropdownSuppressed ? "invisible opacity-0" : "group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"}`;
+
+  const mobileDropdownClassName = (className: string, dropdown: "sports" | "retreats") =>
+    `${className} ${mobileDropdown === dropdown ? "visible opacity-100" : "invisible opacity-0"}`;
 
   const sportGroups = [
     {
@@ -95,13 +101,18 @@ export function SiteHeader() {
                   variant="ghost"
                   size="xs"
                   className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
-                  nativeButton={false}
-                  render={<Link href="/trips" onClick={closeDropdown} />}
+                  aria-controls="mobile-sports-menu"
+                  aria-expanded={mobileDropdown === "sports"}
+                  onClick={() => setMobileDropdown((current) => (current === "sports" ? null : "sports"))}
                 >
                   Adventure Sports
                 </Button>
-                <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
-                  <div className="grid gap-4">
+                <div id="mobile-sports-menu" onClick={closeDropdown} className={mobileDropdownClassName("invisible absolute left-0 top-full z-50 mt-2 w-[min(92vw,640px)] overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200", "sports")}>
+                  <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                    View all trips
+                    <ArrowRight className="size-4" />
+                  </Link>
+                  <div className="grid gap-4 p-4">
                     {sportGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
@@ -123,12 +134,13 @@ export function SiteHeader() {
                   variant="ghost"
                   size="xs"
                   className="h-8 w-full rounded-full px-2 text-[10px] text-foreground/80 hover:bg-primary/10 hover:text-primary"
-                  nativeButton={false}
-                  render={<Link href="/trips" onClick={closeDropdown} />}
+                  aria-controls="mobile-retreats-menu"
+                  aria-expanded={mobileDropdown === "retreats"}
+                  onClick={() => setMobileDropdown((current) => (current === "retreats" ? null : "retreats"))}
                 >
                   Retreats
                 </Button>
-                <div onClick={closeDropdown} className={dropdownClassName("invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
+                <div id="mobile-retreats-menu" onClick={closeDropdown} className={mobileDropdownClassName("invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200", "retreats")}>
                   <div className="grid grid-cols-2 gap-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
@@ -208,8 +220,12 @@ export function SiteHeader() {
               >
                 Adventure Sports
               </Button>
-              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
-                <div className="grid gap-4 md:grid-cols-3">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
+                <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                  View all trips
+                  <ArrowRight className="size-4" />
+                </Link>
+                <div className="grid gap-4 p-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
@@ -310,8 +326,12 @@ export function SiteHeader() {
               >
                 Adventure Sports
               </Button>
-              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
-                <div className="grid gap-4 md:grid-cols-3">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-0 top-full z-50 mt-3 w-[min(92vw,640px)] overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
+                <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                  View all trips
+                  <ArrowRight className="size-4" />
+                </Link>
+                <div className="grid gap-4 p-4 md:grid-cols-3">
                   {sportGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
