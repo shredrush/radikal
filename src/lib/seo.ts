@@ -1,4 +1,6 @@
-export const SITE_URL = new URL("https://radikal.in");
+// Vercel redirects the apex domain to this production host. All generated SEO
+// URLs must use the destination directly rather than a redirecting URL.
+export const SITE_URL = new URL("https://www.radikal.in");
 
 const SITE_HOST = SITE_URL.hostname;
 

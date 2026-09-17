@@ -19,7 +19,7 @@ const interSans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://radikal.in"),
+  metadataBase: new URL("https://www.radikal.in"),
   title: {
     default: "Radikal | Explore, Learn & Belong Outdoors",
     template: "%s | Radikal",
