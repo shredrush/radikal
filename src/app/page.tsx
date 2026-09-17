@@ -12,9 +12,9 @@ import {
 } from "@/lib/public-trip-catalog";
 
 const FEATURED_TRIP_SLUGS = [
+  "mountain-bike-introduction",
   "sethan-snowboarding-course",
   "zanskar-cycle-expedition",
-  "mountain-bike-beginner-course",
   "backcountry-snowboarding-expedition",
   "deo-tibba",
 ] as const;

@@ -37,7 +37,7 @@ export async function toggleWishlist(
   }
 
   const trip = await prisma.trip.findFirst({
-    where: { id: tripId, deletedAt: null },
+    where: { id: tripId, active: true, deletedAt: null },
     select: { id: true },
   });
   if (!trip) {

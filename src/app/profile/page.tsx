@@ -173,7 +173,7 @@ export default async function ProfilePage({
           "profile.wishlist",
           () =>
             prisma.wishlistItem.findMany({
-              where: { userId: user.id, deletedAt: null, trip: { deletedAt: null } },
+              where: { userId: user.id, deletedAt: null, trip: { active: true, deletedAt: null } },
               orderBy: { createdAt: "desc" },
               take: 20,
               // Only the columns the wishlist card renders instead of the whole

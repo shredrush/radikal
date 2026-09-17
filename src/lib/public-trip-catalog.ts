@@ -48,6 +48,7 @@ export const publicTripMapSelect = {
 } satisfies Prisma.TripSelect;
 
 export const publicTripVisibilityWhere = {
+  active: true,
   deletedAt: null,
   OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
 } satisfies Prisma.TripWhereInput;

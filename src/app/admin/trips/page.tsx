@@ -19,20 +19,28 @@ export default async function AdminTripsPage({
   searchParams: Promise<{
     type?: string | string[] | undefined;
     guide?: string | string[] | undefined;
-    page?: string | string[] | undefined;
+    activePage?: string | string[] | undefined;
+    inactivePage?: string | string[] | undefined;
   }>;
 }) {
   const session = await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
-  const { type, guide, page: pageParam } = await searchParams;
+  const {
+    type,
+    guide,
+    activePage: activePageParam,
+    inactivePage: inactivePageParam,
+  } = await searchParams;
   const selectedType =
     ACTIVITY_TYPE_OPTIONS.find(
       (option) => typeof type === "string" && option.value === type,
     )?.value ?? "";
   const selectedGuideId = typeof guide === "string" ? guide : "";
-  const page = Math.max(
+  const parsePage = (value: string | string[] | undefined) => Math.max(
     1,
-    Number.parseInt(typeof pageParam === "string" ? pageParam : "1", 10) || 1,
+    Number.parseInt(typeof value === "string" ? value : "1", 10) || 1,
   );
+  const activePage = parsePage(activePageParam);
+  const inactivePage = parsePage(inactivePageParam);
 
   const [guides, totalTrips, totalSlots, draftRows, sports] = await Promise.all([
     loadDb(
@@ -44,7 +52,7 @@ export default async function AdminTripsPage({
           select: { id: true, name: true, photo: true, photos: true, videos: true },
         }),
     ),
-    loadDb("admin.trips.trips-count", () => prisma.trip.count({ where: { deletedAt: null } })),
+    loadDb("admin.trips.trips-count", () => prisma.trip.count({ where: { active: true, deletedAt: null } })),
     loadDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } })),
     loadDb(
       "admin.trips.drafts",
@@ -184,7 +192,8 @@ export default async function AdminTripsPage({
             drafts={drafts}
             selectedGuideId={activeGuideId || null}
             type={selectedType || undefined}
-            page={page}
+            activePage={activePage}
+            inactivePage={inactivePage}
             sports={sports}
           />
         </section>

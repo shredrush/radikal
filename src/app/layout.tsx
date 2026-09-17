@@ -21,7 +21,7 @@ const serifBody = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.radikal.in"),
   title: {
-    default: "Radikal | Explore, Learn & Belong Outdoors",
+    default: "Radikal | Learn. Explore. Belong.",
     template: "%s | Radikal",
   },
   description:
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "/",
     siteName: "Radikal",
-    title: "Radikal | Explore, Learn & Belong Outdoors",
+    title: "Radikal | Learn. Explore. Belong.",
     description:
       "Radikal connects travellers with verified experts for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Radikal | Explore, Learn & Belong Outdoors",
+    title: "Radikal | Learn. Explore. Belong.",
     description:
       "Radikal connects travellers with verified experts for small-group treks, climbs, cycling, snowboarding, ski experiences — each one crafted and led by the guide themself",
   },

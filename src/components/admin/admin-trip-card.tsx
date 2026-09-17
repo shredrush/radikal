@@ -9,10 +9,12 @@ import { AdminTripForm } from "@/components/admin/admin-trip-form";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
 import type { TripSportOption } from "@/components/trips/trip-sport-selector";
+import { TripActiveToggle } from "@/components/trips/trip-active-toggle";
 
 type AdminTripCardProps = {
   trip: {
     id: string;
+    active: boolean;
     title: string;
     slug: string;
     type: string;
@@ -57,43 +59,48 @@ export function AdminTripCard({ trip, guides, sports }: AdminTripCardProps) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <p className="truncate font-semibold text-foreground">{trip.title}</p>
-            <Link
-              href={`/trips/${trip.slug}`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Open ${trip.title}`}
-              title="Open trip"
-              className="inline-flex text-primary transition hover:text-primary/75"
-            >
-              <ExternalLink className="size-3" aria-hidden="true" />
-            </Link>
+            {trip.active ? (
+              <Link
+                href={`/trips/${trip.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open ${trip.title}`}
+                title="Open trip"
+                className="inline-flex text-primary transition hover:text-primary/75"
+              >
+                <ExternalLink className="size-3" aria-hidden="true" />
+              </Link>
+            ) : null}
           </div>
           <p className="truncate text-sm text-muted-foreground">
             {trip.location} · {formatDurationDays(trip.durationDays)}
             {trip.guide ? ` · ${trip.guide.name}` : " · No guide linked"}
           </p>
         </div>
-        <Button
-          type="button"
-          variant={editing ? "default" : "outline"}
-          size="sm"
-          className={editing
-            ? "shrink-0 rounded-full border-2 border-black bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
-            : "shrink-0 rounded-full"}
-          onClick={() => setEditing((value) => !value)}
-        >
-          {editing ? (
-            <>
-              <X className="h-3.5 w-3.5" />
-              Close
-            </>
-          ) : (
-            <>
-              <Plus className="h-3.5 w-3.5" />
-              Edit trip
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <TripActiveToggle tripId={trip.id} active={trip.active} />
+          <Button
+            type="button"
+            variant={editing ? "default" : "outline"}
+            size="sm"
+            className={editing
+              ? "shrink-0 rounded-full border-2 border-black bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
+              : "shrink-0 rounded-full"}
+            onClick={() => setEditing((value) => !value)}
+          >
+            {editing ? (
+              <>
+                <X className="h-3.5 w-3.5" />
+                Close
+              </>
+            ) : (
+              <>
+                <Plus className="h-3.5 w-3.5" />
+                Edit trip
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {editing ? (

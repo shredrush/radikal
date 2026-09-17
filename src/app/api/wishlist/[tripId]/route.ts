@@ -10,7 +10,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tri
   const { tripId } = await params;
   const userId = session?.user?.id;
   const wishlisted = userId
-    ? Boolean(await prisma.wishlistItem.findFirst({ where: { userId, tripId, deletedAt: null }, select: { id: true } }))
+    ? Boolean(await prisma.wishlistItem.findFirst({
+      where: { userId, tripId, deletedAt: null, trip: { active: true, deletedAt: null } },
+      select: { id: true },
+    }))
     : false;
 
   return NextResponse.json({ wishlisted }, { headers: { "Cache-Control": "private, no-store" } });

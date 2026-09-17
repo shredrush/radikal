@@ -378,6 +378,9 @@ model Trip {
   guidePhoto    String?
   maxGroupSize  Int            @default(8)
   guideId       String?
+  // Inactive trips remain available to their guide and staff, but never appear
+  // in traveller-facing discovery, detail, or booking flows.
+  active        Boolean        @default(true)
   deletedAt     DateTime?
   // Lets guide restoration revive only trips retired with that guide, never
   // independently deleted trips linked to the same profile.
@@ -400,6 +403,7 @@ model Trip {
 
   @@index([type])
   @@index([guideId])
+  @@index([active, deletedAt, createdAt])
   @@index([deletedAt, createdAt])
   @@index([guideId, deletedAt, createdAt(sort: Desc)])
   @@map("trips")

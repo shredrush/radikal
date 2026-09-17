@@ -97,6 +97,7 @@ export async function createBooking(
         slotDate: Date;
         slotDeletedAt: Date | null;
         tripDeletedAt: Date | null;
+        tripActive: boolean;
       }>>`
         SELECT
           slots.booked,
@@ -107,14 +108,15 @@ export async function createBooking(
           trips.location AS "tripLocation",
           slots.date AS "slotDate",
           slots."deletedAt" AS "slotDeletedAt",
-          trips."deletedAt" AS "tripDeletedAt"
+          trips."deletedAt" AS "tripDeletedAt",
+          trips.active AS "tripActive"
         FROM slots
         INNER JOIN trips ON trips.id = slots."tripId"
         WHERE slots.id = ${slotId} AND slots."tripId" = ${tripId}
         FOR UPDATE OF slots, trips
       `;
 
-      if (!lockedSlot || lockedSlot.slotDeletedAt || lockedSlot.tripDeletedAt) {
+      if (!lockedSlot || lockedSlot.slotDeletedAt || lockedSlot.tripDeletedAt || !lockedSlot.tripActive) {
         return { status: "unavailable" as const };
       }
 

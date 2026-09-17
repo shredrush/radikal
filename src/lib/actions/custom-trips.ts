@@ -207,6 +207,7 @@ export async function createCustomDateEnquiryAction(
   const trip = await prisma.trip.findFirst({
     where: {
       id: tripId,
+      active: true,
       deletedAt: null,
       OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
     },

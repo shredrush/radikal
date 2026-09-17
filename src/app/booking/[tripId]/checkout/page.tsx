@@ -99,7 +99,7 @@ export default async function CheckoutPage({
     "checkout.trip",
     () =>
       prisma.trip.findFirst({
-        where: { id: tripId, deletedAt: null },
+        where: { id: tripId, active: true, deletedAt: null },
         select: {
           id: true,
           slug: true,

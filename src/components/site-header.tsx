@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteLogoLink } from "@/components/site-logo-link";
@@ -19,6 +19,20 @@ type RetreatItem = {
 export function SiteHeader() {
   const [dropdownSuppressed, setDropdownSuppressed] = useState(false);
   const [mobileDropdown, setMobileDropdown] = useState<"sports" | "retreats" | null>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mobileDropdown) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!mobileDropdownRef.current?.contains(event.target as Node)) {
+        setMobileDropdown(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [mobileDropdown]);
 
   const closeDropdown = () => {
     setDropdownSuppressed(true);
@@ -95,7 +109,7 @@ export function SiteHeader() {
 
         <div className="mt-1.5 md:hidden">
           <nav className="flex flex-col gap-1.5 sm:gap-2">
-            <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
+            <div ref={mobileDropdownRef} className="grid grid-cols-2 gap-1 sm:gap-1.5">
               <div className="group relative">
                 <Button
                   variant="ghost"

@@ -45,7 +45,7 @@ const getGuideDetail = unstable_cache(
           select: { id: true, title: true },
         },
         trips: {
-          where: { deletedAt: null },
+          where: { active: true, deletedAt: null },
           orderBy: { createdAt: "asc" },
           skip: (tripsPage - 1) * GUIDE_TRIPS_PAGE_SIZE,
           take: GUIDE_TRIPS_PAGE_SIZE,
@@ -79,7 +79,7 @@ const getGuideDetail = unstable_cache(
         },
         _count: {
           select: {
-            trips: { where: { deletedAt: null } },
+            trips: { where: { active: true, deletedAt: null } },
             reviews: { where: { deletedAt: null } },
           },
         },

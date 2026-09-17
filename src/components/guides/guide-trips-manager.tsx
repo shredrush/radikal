@@ -12,9 +12,11 @@ import { GuideActivityLog } from "@/components/guides/guide-activity-log";
 import { toSlotItem } from "@/lib/slot-item";
 import { formatDurationDays } from "@/lib/trip-dates";
 import type { TripSportOption } from "@/components/trips/trip-sport-selector";
+import { TripActiveToggle } from "@/components/trips/trip-active-toggle";
 
 function toGuideTripData(trip: {
   id: string;
+  active: boolean;
   title: string;
   type: string;
   location: string;
@@ -103,6 +105,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     exclusions: draft.exclusions,
     highlights: draft.highlights,
   }));
+  const activeTrips = trips.filter((trip) => trip.active);
+  const inactiveTrips = trips.filter((trip) => !trip.active);
 
   return (
     <div className="space-y-8">
@@ -130,45 +134,95 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               </p>
             </div>
           </div>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {trips.map((trip) => {
-              const data = toGuideTripData(trip);
-              return (
-                <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <p className="break-words font-semibold text-foreground">{trip.title}</p>
-                        <Link
-                          href={`/trips/${trip.slug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Open ${trip.title}`}
-                          title="Open trip"
-                          className="inline-flex text-primary transition hover:text-primary/75"
-                        >
-                          <ExternalLink className="size-3" aria-hidden="true" />
-                        </Link>
-                      </div>
-                      <p className="break-words text-sm text-muted-foreground">
-                      {trip.location} · {formatDurationDays(trip.durationDays)}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex flex-col items-end gap-3">
-                    <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} trip={data} />
-                    <GuideTripSlotsToggle
-                      tripId={trip.id}
-                      slots={trip.slots.map(toSlotItem)}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        ) : null}
+        {trips.length > 0 ? (
+          <>
+            <TripSection
+              title="Active trips"
+              description="Live for travellers"
+              trips={activeTrips}
+              guideId={guideId}
+              guideMedia={guideMedia}
+              sports={sports}
+            />
+            <TripSection
+              title="Inactive trips"
+              description="Hidden from travellers. You can still edit trips and manage their dates."
+              trips={inactiveTrips}
+              guideId={guideId}
+              guideMedia={guideMedia}
+              sports={sports}
+            />
+          </>
+        ) : null}
       </section>
 
       <GuideActivityLog />
     </div>
+  );
+}
+
+function TripSection({
+  title,
+  description,
+  trips,
+  guideId,
+  guideMedia,
+  sports,
+}: {
+  title: string;
+  description: string;
+  trips: Awaited<ReturnType<typeof fetchTripsWithDetails>>;
+  guideId: string;
+  guideMedia: GuideMediaItem[];
+  sports: TripSportOption[];
+}) {
+  return (
+    <section className="space-y-3 border-t border-border/70 pt-5">
+      <div>
+        <h4 className="font-heading text-base font-semibold text-foreground">{title}</h4>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {trips.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+          No {title.toLowerCase()}.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {trips.map((trip) => {
+          const data = toGuideTripData(trip);
+          return (
+            <li key={trip.id} className="rounded-[1.25rem] border border-border/70 bg-background/95 p-4 shadow-sm">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="break-words font-semibold text-foreground">{trip.title}</p>
+                  {trip.active ? (
+                    <Link
+                      href={`/trips/${trip.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Open ${trip.title}`}
+                      title="Open trip"
+                      className="inline-flex text-primary transition hover:text-primary/75"
+                    >
+                      <ExternalLink className="size-3" aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </div>
+                <p className="break-words text-sm text-muted-foreground">{trip.location} · {formatDurationDays(trip.durationDays)}</p>
+              </div>
+              <div className="mt-3 flex flex-col items-end gap-3">
+                <div className="flex flex-wrap justify-end gap-2">
+                  <TripActiveToggle tripId={trip.id} active={trip.active} />
+                  <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} trip={data} />
+                </div>
+                <GuideTripSlotsToggle tripId={trip.id} slots={trip.slots.map(toSlotItem)} />
+              </div>
+            </li>
+          );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

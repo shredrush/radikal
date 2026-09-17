@@ -49,6 +49,7 @@ const getTripDetail = unstable_cache(
     return prisma.trip.findFirst({
       where: {
         slug,
+        active: true,
         deletedAt: null,
         OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
       },
@@ -114,6 +115,7 @@ const getTripMedia = cache(async (slug: string) => {
   return prisma.trip.findFirst({
     where: {
       slug,
+      active: true,
       deletedAt: null,
       OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
     },
@@ -222,6 +224,7 @@ const getSimilarTrips = unstable_cache(
     const similar = await prisma.trip.findMany({
       where: {
         id: { not: excludeId },
+        active: true,
         deletedAt: null,
         OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
         categories: { hasSome: categories },
@@ -239,6 +242,7 @@ const getSimilarTrips = unstable_cache(
     const filler = await prisma.trip.findMany({
       where: {
         id: { notIn: [excludeId, ...existingIds] },
+        active: true,
         deletedAt: null,
         OR: [{ guideId: null }, { guide: { deletedAt: null, user: { deletedAt: null } } }],
       },
