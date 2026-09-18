@@ -14,6 +14,7 @@ interface TripGalleryProps {
   fallbackImage: string;
   alt: string;
   compact?: boolean;
+  layout?: "trip" | "guide";
   onMediaClick?: () => void;
 }
 
@@ -79,10 +80,14 @@ function mediaCountLabel(items: OrderedMediaItem[]) {
   return `${photos} ${pluralize(photos, "photo")}`;
 }
 
-export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImage, alt, compact = false, onMediaClick }: TripGalleryProps) {
+export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImage, alt, compact = false, layout = "trip", onMediaClick }: TripGalleryProps) {
   const media = getOrderedMediaItems(images.filter(Boolean), videos.filter(Boolean), mediaOrder);
 
   const galleryItems = media.length > 0 ? media : [{ src: fallbackImage, type: "image" as const }];
+  const tileLayouts = layout === "guide"
+    ? ["row-span-2", "", ""]
+    : ["col-span-2 row-span-2", "col-span-1 row-span-1", "col-span-1 row-span-2", "col-span-1 row-span-1"];
+  const visibleSlotCount = tileLayouts.length;
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isGridOpen, setIsGridOpen] = useState(false);
@@ -91,14 +96,14 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
   const [galleryRef, animationActive] = useAnimationActivity<HTMLDivElement>();
   const [rotation, setRotation] = useState<GalleryRotation>(() => ({
     activeSlot: 0,
-    visibleMediaIndices: [0, 1, 2, 3],
+    visibleMediaIndices: Array.from({ length: visibleSlotCount }, (_, index) => index),
     previousMediaIndices: null,
-    hiddenMediaIndices: Array.from({ length: Math.max(galleryItems.length - 4, 0) }, (_, index) => index + 4),
+    hiddenMediaIndices: Array.from({ length: Math.max(galleryItems.length - visibleSlotCount, 0) }, (_, index) => index + visibleSlotCount),
     flippedSlots: [],
     cycle: 0,
     slideDirection: "left",
   }));
-  const shouldRotateMedia = galleryItems.length > 4;
+  const shouldRotateMedia = galleryItems.length > visibleSlotCount;
   // Keep the grid stable while cycling hidden media into random tile positions.
   const slots = rotation.visibleMediaIndices.map((index) => galleryItems[index % galleryItems.length]);
 
@@ -152,12 +157,12 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
     }
 
     const timer = window.setTimeout(() => {
-      const requestedSlot = Math.floor(Math.random() * 4);
+      const requestedSlot = Math.floor(Math.random() * visibleSlotCount);
       setRotation((current) => advanceGalleryRotation(current, requestedSlot));
     }, 3_000);
 
     return () => window.clearTimeout(timer);
-  }, [animationActive, completedTransitionCycle, rotation, shouldRotateMedia]);
+  }, [animationActive, completedTransitionCycle, rotation, shouldRotateMedia, visibleSlotCount]);
 
   useEffect(() => {
     if (!animationActive || rotation.cycle <= completedTransitionCycle) return;
@@ -184,13 +189,8 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
   return (
     <>
       <div className={`relative ${compact ? "h-full" : ""}`}>
-        <div ref={galleryRef} className={`grid grid-cols-4 grid-rows-2 gap-0.5 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`}>
-        {[
-          { slot: 0, layout: "col-span-2 row-span-2" },
-          { slot: 1, layout: "col-span-1 row-span-1" },
-          { slot: 3, layout: "col-span-1 row-span-2" },
-          { slot: 2, layout: "col-span-1 row-span-1" },
-        ].map(({ slot, layout }) => {
+        <div ref={galleryRef} className={`grid gap-0.5 ${layout === "guide" ? "h-72 grid-cols-2 grid-rows-2" : `grid-cols-4 grid-rows-2 ${compact ? "h-full min-h-[320px] sm:min-h-[400px] lg:min-h-[480px]" : "h-[340px] sm:h-[420px]"}`} `}>
+        {tileLayouts.map((tileLayout, slot) => {
           const item = slots[slot];
           const imageIndex = rotation.visibleMediaIndices[slot] % galleryItems.length;
           const isActiveTile = slot === rotation.activeSlot;
@@ -206,7 +206,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
               type="button"
               onClick={() => onMediaClick ? onMediaClick() : setSelectedIndex(imageIndex)}
               aria-label={`View ${item.type === "video" ? "video" : "photo"} ${slot + 1}`}
-              className={`${layout} group relative overflow-hidden bg-muted/60`}
+              className={`${tileLayout} group relative overflow-hidden bg-muted/60`}
             >
               {previousItem && (
                 <div className={`absolute inset-0 animate-gallery-media-slide-out ${slideClass}`}>
@@ -225,7 +225,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                       alt={`${alt} previous photo ${slot + 1}`}
                       fill
                       className="object-cover"
-                      sizes={slot === 0 ? "50vw" : "25vw"}
+                      sizes={layout === "guide" ? "(max-width: 640px) 50vw, 20vw" : slot === 0 ? "50vw" : "25vw"}
                     />
                   )}
                 </div>
@@ -259,7 +259,7 @@ export function TripGallery({ images, videos = [], mediaOrder = [], fallbackImag
                     alt={`${alt} photo ${slot + 1}`}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes={slot === 0 ? "50vw" : "25vw"}
+                    sizes={layout === "guide" ? "(max-width: 640px) 50vw, 20vw" : slot === 0 ? "50vw" : "25vw"}
                   />
                 )}
               </div>

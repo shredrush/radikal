@@ -16,6 +16,7 @@ export type AdminDraftData = {
   latitude: number | null;
   longitude: number | null;
   description: string | null;
+  itinerary: string | null;
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -51,6 +52,7 @@ function DraftReadOnly({ draft }: { draft: AdminDraftData }) {
     rows.push({ label: "Map coordinates", value: `${draft.latitude}, ${draft.longitude}` });
   }
   if (draft.description) rows.push({ label: "Description", value: draft.description });
+  if (draft.itinerary) rows.push({ label: "Itinerary", value: draft.itinerary });
   rows.push({ label: "Price", value: `₹${draft.priceInRupees}` });
   rows.push({ label: "Duration", value: `${draft.durationDays} ${draft.durationDays === 1 ? "day" : "days"}` });
   rows.push({ label: "Max group size", value: String(draft.maxGroupSize) });

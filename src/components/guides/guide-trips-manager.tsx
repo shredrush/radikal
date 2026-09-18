@@ -5,7 +5,6 @@ import { loadDb, prisma } from "@/lib/prisma";
 import { fetchTripsWithDetails } from "@/lib/trips";
 import { GuideTripFormTrigger } from "@/components/guides/guide-trip-form-trigger";
 import type { GuideTripData, GuideDraftData } from "@/components/guides/guide-trip-form";
-import type { GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { GuideDraftsManager } from "@/components/guides/guide-drafts-manager";
 import { GuideTripSlotsToggle } from "@/components/guides/guide-trip-slots-toggle";
 import { GuideActivityLog } from "@/components/guides/guide-activity-log";
@@ -23,6 +22,7 @@ function toGuideTripData(trip: {
   latitude: number | null;
   longitude: number | null;
   description: string;
+  itinerary: string;
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -30,7 +30,6 @@ function toGuideTripData(trip: {
   images: string[];
   videos: string[];
   mediaOrder: string[];
-  guidePhoto: string | null;
   sportLinks: Array<{ sport: TripSportOption }>;
   tripLocation: { pickup: string; drop: string } | null;
   inclusions: Array<{ included: boolean; item: string }>;
@@ -44,6 +43,7 @@ function toGuideTripData(trip: {
     latitude: trip.latitude,
     longitude: trip.longitude,
     description: trip.description,
+    itinerary: trip.itinerary,
     priceInRupees: trip.priceInRupees,
     durationDays: trip.durationDays,
     maxGroupSize: trip.maxGroupSize,
@@ -51,7 +51,6 @@ function toGuideTripData(trip: {
     images: trip.images,
     videos: trip.videos,
     mediaOrder: trip.mediaOrder,
-    guidePhoto: trip.guidePhoto,
     sportLinks: trip.sportLinks,
     pickup: trip.tripLocation?.pickup ?? "",
     drop: trip.tripLocation?.drop ?? "",
@@ -62,12 +61,8 @@ function toGuideTripData(trip: {
 }
 
 export async function GuideTripsManager({ guideId }: { guideId: string }) {
-  const [trips, guideProfile, draftRows, sports] = await Promise.all([
+  const [trips, draftRows, sports] = await Promise.all([
     loadDb("guide.trips-manager.trips", () => fetchTripsWithDetails({ guideId })),
-    loadDb(
-      "guide.trips-manager.guide-profile",
-      () => prisma.guide.findUnique({ where: { id: guideId }, select: { photo: true, photos: true, videos: true } }),
-    ),
     loadDb(
       "guide.trips-manager.drafts",
       () =>
@@ -78,10 +73,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     ),
     loadDb("guide.trips-manager.sports", () => prisma.sport.findMany({ where: { active: true, deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, icon: true } })),
   ]);
-  const guideMedia: GuideMediaItem[] = [
-    ...Array.from(new Set([...(guideProfile?.photos ?? []), guideProfile?.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
-    ...guideProfile?.videos.map((url) => ({ url, type: "video" as const })) ?? [],
-  ];
   const drafts: GuideDraftData[] = draftRows.map((draft) => ({
     draftId: draft.id,
     title: draft.title ?? "",
@@ -91,6 +82,7 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     latitude: draft.latitude,
     longitude: draft.longitude,
     description: draft.description ?? "",
+    itinerary: draft.itinerary ?? "",
     priceInRupees: draft.priceInRupees,
     durationDays: draft.durationDays,
     maxGroupSize: draft.maxGroupSize,
@@ -98,7 +90,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
     images: draft.images,
     videos: draft.videos,
     mediaOrder: draft.mediaOrder,
-    guidePhoto: "",
     pickup: draft.pickup ?? "",
     drop: draft.drop ?? "",
     inclusions: draft.inclusions,
@@ -120,8 +111,8 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               Add a new trip or edit an existing one
             </p>
           </div>
-          <GuideDraftsManager guideId={guideId} guideMedia={guideMedia} sports={sports} drafts={drafts} />
-          <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} />
+          <GuideDraftsManager guideId={guideId} sports={sports} drafts={drafts} />
+          <GuideTripFormTrigger guideId={guideId} sports={sports} />
         </div>
 
         {trips.length === 0 ? (
@@ -142,7 +133,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               description="Live for travellers"
               trips={activeTrips}
               guideId={guideId}
-              guideMedia={guideMedia}
               sports={sports}
             />
             <TripSection
@@ -150,7 +140,6 @@ export async function GuideTripsManager({ guideId }: { guideId: string }) {
               description="Hidden from travellers. You can still edit trips and manage their dates."
               trips={inactiveTrips}
               guideId={guideId}
-              guideMedia={guideMedia}
               sports={sports}
             />
           </>
@@ -167,14 +156,12 @@ function TripSection({
   description,
   trips,
   guideId,
-  guideMedia,
   sports,
 }: {
   title: string;
   description: string;
   trips: Awaited<ReturnType<typeof fetchTripsWithDetails>>;
   guideId: string;
-  guideMedia: GuideMediaItem[];
   sports: TripSportOption[];
 }) {
   return (
@@ -214,7 +201,7 @@ function TripSection({
               <div className="mt-3 flex flex-col items-end gap-3">
                 <div className="flex flex-wrap justify-end gap-2">
                   <TripActiveToggle tripId={trip.id} active={trip.active} />
-                  <GuideTripFormTrigger guideId={guideId} guideMedia={guideMedia} sports={sports} trip={data} />
+                  <GuideTripFormTrigger guideId={guideId} sports={sports} trip={data} />
                 </div>
                 <GuideTripSlotsToggle tripId={trip.id} slots={trip.slots.map(toSlotItem)} />
               </div>

@@ -38,19 +38,6 @@ async function assertValidTripMedia(images: string[], videos: string[]) {
   ]);
 }
 
-async function assertGuidePhotoBelongsToGuide(guideId: string, guidePhoto: string) {
-  if (!guidePhoto) return;
-  if (!guideId) throw new Error("Choose a guide before selecting a guide photo.");
-
-  const guide = await prisma.guide.findFirst({
-    where: { id: guideId, deletedAt: null },
-    select: { photo: true, photos: true, videos: true },
-  });
-  if (!guide || ![guide.photo, ...guide.photos, ...guide.videos].includes(guidePhoto)) {
-    throw new Error("Choose a photo from the selected guide's profile.");
-  }
-}
-
 export async function createTripAction(formData: FormData) {
   await requirePermission("trips.manage", "/login?callbackUrl=/admin/trips");
 
@@ -58,7 +45,6 @@ export async function createTripAction(formData: FormData) {
   const mapVisible = fields.latitude !== null && fields.longitude !== null;
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
-  await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);
   const {
     title,
     slug,
@@ -66,6 +52,7 @@ export async function createTripAction(formData: FormData) {
     latitude,
     longitude,
     description,
+    itinerary,
     priceInRupees,
     durationDays,
     maxGroupSize,
@@ -73,7 +60,6 @@ export async function createTripAction(formData: FormData) {
     images,
     videos,
     mediaOrder,
-    guidePhoto,
            categories: [],
     pickup,
     drop,
@@ -93,6 +79,7 @@ export async function createTripAction(formData: FormData) {
           longitude,
           mapVisible,
           description,
+          itinerary,
           type: legacyType,
           priceInRupees,
           durationDays,
@@ -101,7 +88,6 @@ export async function createTripAction(formData: FormData) {
           images,
           videos,
           mediaOrder,
-          guidePhoto: guidePhoto || null,
           guideId: guideId || null,
         },
       });
@@ -147,7 +133,6 @@ export async function updateTripAction(formData: FormData) {
   const mapVisible = fields.latitude !== null && fields.longitude !== null;
   const { sportIds, legacyType } = await resolveActiveSports(formData);
   await assertValidTripMedia(fields.images, fields.videos);
-  await assertGuidePhotoBelongsToGuide(fields.guideId, fields.guidePhoto);
   const {
     title,
     slug,
@@ -155,6 +140,7 @@ export async function updateTripAction(formData: FormData) {
     latitude,
     longitude,
     description,
+    itinerary,
     priceInRupees,
     durationDays,
     maxGroupSize,
@@ -162,7 +148,6 @@ export async function updateTripAction(formData: FormData) {
     images,
     videos,
     mediaOrder,
-    guidePhoto,
     pickup,
     drop,
     inclusions,
@@ -199,6 +184,7 @@ export async function updateTripAction(formData: FormData) {
           longitude,
           mapVisible,
           description,
+          itinerary,
           type: legacyType,
           priceInRupees,
           durationDays,
@@ -206,7 +192,6 @@ export async function updateTripAction(formData: FormData) {
           images,
           videos,
           mediaOrder,
-          guidePhoto: guidePhoto || null,
           guideId: guideId || null,
         },
       });

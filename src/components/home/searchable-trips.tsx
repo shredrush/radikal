@@ -3,7 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Search, X } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Compass,
+  Footprints,
+  GraduationCap,
+  HeartHandshake,
+  Package,
+  Search,
+  ShieldAlert,
+  UserRound,
+  X,
+} from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -180,10 +192,10 @@ export function SearchableTrips({
       className="mx-auto flex w-full max-w-none flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:px-10"
     >
       <div className="-mt-3 mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-1 sm:-mt-4">
-        <h3 className="font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
+        <h3 className="text-center font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
           Learn. Explore. Belong.
         </h3>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-center text-lg text-muted-foreground">
           Discover outdoor experts and book adventures designed and led by them
         </p>
         <div className="mt-1 mx-auto flex w-[90%] max-w-[53.7rem] flex-col gap-2 p-1 sm:mt-2 sm:p-2">
@@ -405,7 +417,7 @@ export function SearchableTrips({
             </div>
           </div>
          
-         <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex justify-center">
             <Button
               size="sm"
               className={`${CTA_PILL} px-4`}
@@ -419,7 +431,131 @@ export function SearchableTrips({
             </Button>
           </div>
         </div>
- 
+
+        <section
+          aria-labelledby="why-choose-radikal"
+          className="border-b border-border/60 bg-background px-3 py-7 sm:px-6 sm:py-10 lg:px-8"
+        >
+          <div className="mx-auto w-full max-w-8xl">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground">
+                The Radikal difference
+              </p>
+              <h4
+                id="why-choose-radikal"
+                className="mt-2 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl"
+              >
+                Why choose Radikal?
+              </h4>
+              <p className="mt-3 text-base leading-7 text-muted-foreground">
+                More support around every adventure, whether you are building confidence outside or building a life as a guide.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background p-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:p-6">
+                <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
+                <div className="flex items-start gap-4">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
+                    <Footprints className="size-5" />
+                  </span>
+                  <div>
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      For travellers
+                    </p>
+                    <h5 className="mt-1 font-heading text-2xl font-semibold text-foreground">
+                      Go further, with confidence
+                    </h5>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Learn alongside trusted experts and keep the support you need close at hand.
+                    </p>
+                  </div>
+                </div>
+                <ul className="mt-6 grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
+                  <li className="flex gap-3">
+                    <GraduationCap className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Personal coaching</strong>
+                      <br />Learn hands-on at your own pace
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <HeartHandshake className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Insurance coverage</strong>
+                      <br />More peace of mind for every trip
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Emergency SOS services</strong>
+                      <br />Support when the unexpected happens
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <Footprints className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Progression record</strong>
+                      <br />Track the skills and days you have earned
+                    </span>
+                  </li>
+                </ul>
+              </article>
+
+              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background p-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:p-6">
+                <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
+                <div className="flex items-start gap-4">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
+                    <Compass className="size-5" />
+                  </span>
+                  <div>
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      For guides
+                    </p>
+                    <h5 className="mt-1 font-heading text-2xl font-semibold text-foreground">
+                      Spend more time in the field
+                    </h5>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Bring your expertise and local knowledge. Radikal supports the work around every great trip.
+                    </p>
+                  </div>
+                </div>
+                <ul className="mt-6 grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
+                  <li className="flex gap-3">
+                    <Compass className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Get discovered</strong>
+                      <br />Help the right travellers find your work
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <Calendar className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Bookings and payments</strong>
+                      <br />Keep departures and admin organised
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <Package className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">Equipment sourcing</strong>
+                      <br />Coordinate what every group needs
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <UserRound className="mt-0.5 size-4 shrink-0 text-foreground" />
+                    <span className="text-sm leading-5 text-foreground/80">
+                      <strong className="font-semibold text-foreground">A profile that builds trust</strong>
+                      <br />Show your skills beyond the trail
+                    </span>
+                  </li>
+                </ul>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">

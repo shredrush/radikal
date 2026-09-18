@@ -14,6 +14,7 @@ export type TripProposal = {
   latitude: number | null;
   longitude: number | null;
   description: string;
+  itinerary: string;
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -21,7 +22,6 @@ export type TripProposal = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
-  guidePhoto: string;
   pickup: string;
   drop: string;
   inclusions: string[];
@@ -36,6 +36,7 @@ const FIELD_LABELS: Record<string, string> = {
   latitude: "Latitude",
   longitude: "Longitude",
   description: "Description",
+  itinerary: "Itinerary",
   priceInRupees: "Price (₹)",
   durationDays: "Duration (days)",
   maxGroupSize: "Max group size",
@@ -43,7 +44,6 @@ const FIELD_LABELS: Record<string, string> = {
   images: "Images",
   videos: "Videos",
   mediaOrder: "Media order",
-  guidePhoto: "Guide photo",
   pickup: "Pickup point",
   drop: "Drop point",
   inclusions: "Included",
@@ -58,6 +58,7 @@ const FIELD_ORDER = [
   "latitude",
   "longitude",
   "description",
+  "itinerary",
   "priceInRupees",
   "durationDays",
   "maxGroupSize",
@@ -65,7 +66,6 @@ const FIELD_ORDER = [
   "images",
   "videos",
   "mediaOrder",
-  "guidePhoto",
   "pickup",
   "drop",
   "inclusions",

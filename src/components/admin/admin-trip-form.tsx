@@ -13,7 +13,6 @@ import { Eye } from "lucide-react";
 import { DeleteTripButton } from "@/components/admin/delete-trip-button";
 import { SlotsManager, type SlotItem } from "@/components/admin/admin-trip-slots";
 import { MediaUploader } from "@/components/media/media-uploader";
-import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { TripSportSelector, type TripSportOption } from "@/components/trips/trip-sport-selector";
 
 const inputClassName =
@@ -36,6 +35,7 @@ export function AdminTripForm({
     latitude: number | null;
     longitude: number | null;
     description: string;
+    itinerary: string;
     priceInRupees: number;
     durationDays: number;
     maxGroupSize: number;
@@ -43,11 +43,10 @@ export function AdminTripForm({
     images: string[];
     videos: string[];
     mediaOrder: string[];
-    guidePhoto: string | null;
     guideId: string | null;
     sportLinks?: Array<{ sport: TripSportOption }>;
   };
-  guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
+  guides: Array<{ id: string; name: string }>;
   sports: TripSportOption[];
   supplemental?: {
     pickup: string;
@@ -75,6 +74,7 @@ export function AdminTripForm({
   const latitude = trip?.latitude ?? "";
   const longitude = trip?.longitude ?? "";
   const description = trip?.description ?? "";
+  const itinerary = trip?.itinerary ?? "";
   const priceInRupees = trip?.priceInRupees ?? 0;
   const durationDays = trip?.durationDays ?? 1;
   const maxGroupSize = trip?.maxGroupSize ?? 8;
@@ -82,14 +82,6 @@ export function AdminTripForm({
   const videos = trip?.videos ?? [];
   const mediaOrder = trip?.mediaOrder ?? [];
   const [selectedGuideId, setSelectedGuideId] = useState(trip?.guideId ?? "");
-  const [guidePhoto, setGuidePhoto] = useState(trip?.guidePhoto ?? "");
-  const selectedGuide = guides.find((guide) => guide.id === selectedGuideId);
-  const guideMedia: GuideMediaItem[] = selectedGuide
-    ? [
-        ...Array.from(new Set([...selectedGuide.photos, selectedGuide.photo].filter((url): url is string => Boolean(url)))).map((url) => ({ url, type: "photo" as const })),
-        ...selectedGuide.videos.map((url) => ({ url, type: "video" as const })),
-      ]
-    : [];
 
   const pickup = supplemental?.pickup ?? "";
   const drop = supplemental?.drop ?? "";
@@ -180,7 +172,7 @@ export function AdminTripForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`guide-${key}`}>Guide</Label>
-              <select id={`guide-${key}`} name="guideId" value={selectedGuideId} onChange={(event) => { setSelectedGuideId(event.target.value); setGuidePhoto(""); }} className={inputClassName}>
+              <select id={`guide-${key}`} name="guideId" value={selectedGuideId} onChange={(event) => setSelectedGuideId(event.target.value)} className={inputClassName}>
                 <option value="">No guide</option>
                 {guides.map((guide) => (
                   <option key={guide.id} value={guide.id}>
@@ -196,6 +188,11 @@ export function AdminTripForm({
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`description-${key}`}>Description</Label>
               <textarea id={`description-${key}`} name="description" defaultValue={description} rows={5} required className={`min-h-32 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor={`itinerary-${key}`}>Itinerary (Markdown)</Label>
+              <textarea id={`itinerary-${key}`} name="itinerary" defaultValue={itinerary} rows={8} maxLength={12000} className={`min-h-40 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 font-mono text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
+              <p className="text-xs text-muted-foreground">Supports headings, lists, emphasis, code, and secure http(s) links. HTML is shown as text.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor={`pickup-${key}`}>Pickup point</Label>
@@ -230,12 +227,6 @@ export function AdminTripForm({
               initialMediaOrder={mediaOrder}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
-            <input type="hidden" name="guidePhoto" value={guidePhoto} />
-            <GuideMediaPicker media={guideMedia} value={guidePhoto} onChange={setGuidePhoto} />
-            <p className="text-xs text-muted-foreground">Choose media from the selected guide&apos;s public profile.</p>
-          </div>
-
         </div>
       </div>
 

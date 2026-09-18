@@ -19,7 +19,6 @@ import { FORM_FIELD_BORDER } from "@/lib/boundary-styles";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { MediaUploader } from "@/components/media/media-uploader";
-import { GuideMediaPicker, type GuideMediaItem } from "@/components/guides/guide-media-picker";
 import { TripSportSelector, type TripSportOption } from "@/components/trips/trip-sport-selector";
 
 const inputClassName =
@@ -33,6 +32,7 @@ export type GuideTripData = {
   latitude: number | null;
   longitude: number | null;
   description: string;
+  itinerary: string;
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -40,7 +40,6 @@ export type GuideTripData = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
-  guidePhoto: string | null;
   sportLinks?: Array<{ sport: TripSportOption }>;
   sportIds?: string[];
   pickup: string;
@@ -59,6 +58,7 @@ function countFilledFromValues(values: GuideTripFields | null | undefined) {
   if (values?.title?.trim()) count += 1;
   if (values?.location?.trim()) count += 1;
   if (values?.description?.trim()) count += 1;
+  if (values?.itinerary?.trim()) count += 1;
   if (values?.pickup?.trim()) count += 1;
   if (values?.drop?.trim()) count += 1;
   if (values?.images?.length) count += 1;
@@ -78,6 +78,7 @@ function countFilledFromForm(form: HTMLFormElement) {
   if (has("title")) count += 1;
   if (has("location")) count += 1;
   if (has("description")) count += 1;
+  if (has("itinerary")) count += 1;
   if (has("pickup")) count += 1;
   if (has("drop")) count += 1;
   if (has("images")) count += 1;
@@ -90,7 +91,6 @@ function countFilledFromForm(form: HTMLFormElement) {
 
 export function GuideTripForm({
   guideId,
-  guideMedia,
   sports,
   trip,
   draft,
@@ -98,7 +98,6 @@ export function GuideTripForm({
   onClose,
 }: {
   guideId: string;
-  guideMedia: GuideMediaItem[];
   sports: TripSportOption[];
   trip?: GuideTripData | null;
   draft?: GuideDraftData | null;
@@ -125,13 +124,13 @@ export function GuideTripForm({
   const selectedSportIds = trip?.sportLinks?.map((link) => link.sport.id) ?? draft?.sportIds ?? [];
   const location = fields?.location ?? "";
   const description = fields?.description ?? "";
+  const itinerary = fields?.itinerary ?? "";
   const priceInRupees = fields?.priceInRupees ?? 0;
   const durationDays = fields?.durationDays ?? 1;
   const maxGroupSize = fields?.maxGroupSize ?? 8;
   const images = fields?.images ?? [];
   const videos = fields?.videos ?? [];
   const mediaOrder = fields?.mediaOrder ?? [];
-  const [guidePhoto, setGuidePhoto] = useState(fields?.guidePhoto ?? "");
   const pickup = fields?.pickup ?? "";
   const drop = fields?.drop ?? "";
   const inclusions = fields?.inclusions ?? [];
@@ -309,6 +308,11 @@ export function GuideTripForm({
             <Label htmlFor={`description-${key}`}>Description</Label>
             <textarea id={`description-${key}`} name="description" defaultValue={description} rows={5} required className={`min-h-32 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor={`itinerary-${key}`}>Itinerary (Markdown)</Label>
+            <textarea id={`itinerary-${key}`} name="itinerary" defaultValue={itinerary} rows={8} maxLength={12000} className={`min-h-40 w-full rounded-xl border ${FORM_FIELD_BORDER} bg-background/80 px-3 py-2 font-mono text-sm shadow-sm outline-none transition focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30`} />
+            <p className="text-xs text-muted-foreground">Supports headings, lists, emphasis, code, and secure http(s) links. HTML is shown as text.</p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor={`pickup-${key}`}>Pickup point</Label>
             <input id={`pickup-${key}`} name="pickup" defaultValue={pickup} className={inputClassName} />
@@ -340,12 +344,6 @@ export function GuideTripForm({
             initialMediaOrder={mediaOrder}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
-          <input type="hidden" name="guidePhoto" value={guidePhoto} />
-          <GuideMediaPicker media={guideMedia} value={guidePhoto} onChange={setGuidePhoto} />
-          <p className="text-xs text-muted-foreground">Choose the photo or video shown in this trip&apos;s public guide section.</p>
-        </div>
-
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/70 pt-4">
           <p className="w-full text-xs text-muted-foreground sm:mr-auto sm:w-auto">
             Changes publish immediately

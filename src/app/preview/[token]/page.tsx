@@ -7,6 +7,7 @@ import { ACTIVITY_TYPE_LABELS } from "@/lib/trip-metadata";
 import { formatDurationDays } from "@/lib/trip-dates";
 import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { type TripProposal } from "@/lib/trip-changes";
+import { SafeMarkdown } from "@/components/trips/safe-markdown";
 
 // Never cache this page: caching and expiry are mutually exclusive.
 export const dynamic = "force-dynamic";
@@ -137,6 +138,15 @@ export default async function TripPreviewPage({
           <p className="mt-1 text-sm font-medium text-foreground">{p.drop || p.location}</p>
         </div>
       </div>
+
+      {p.itinerary ? (
+        <div className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+          <h2 className="text-lg font-semibold text-foreground">Itinerary</h2>
+          <div className="mt-3">
+            <SafeMarkdown>{p.itinerary}</SafeMarkdown>
+          </div>
+        </div>
+      ) : null}
 
       {Array.isArray(p.highlights) && p.highlights.length > 0 ? (
         <div className="rounded-[1.5rem] border border-border/80 bg-background/95 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">

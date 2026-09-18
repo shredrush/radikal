@@ -370,12 +370,12 @@ model Trip {
   longitude     Float?
   mapVisible    Boolean        @default(false)
   description   String
+  itinerary     String         @default("")
   priceInRupees Int
   durationDays  Int            @default(1)
   images        String[]
   videos        String[]       @default([])
   mediaOrder    String[]       @default([])
-  guidePhoto    String?
   maxGroupSize  Int            @default(8)
   guideId       String?
   // Inactive trips remain available to their guide and staff, but never appear
@@ -808,6 +808,7 @@ model TripDraft {
   latitude      Float?
   longitude     Float?
   description   String?
+  itinerary     String?
   priceInRupees Int            @default(0)
   durationDays  Int            @default(1)
   maxGroupSize  Int            @default(8)

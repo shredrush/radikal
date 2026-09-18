@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MEDIA_LIMITS } from "@/lib/media-constants";
-import { parseMediaList, validateTripFields } from "@/lib/trip-fields";
+import { parseMediaList, readTripFields, validateTripFields } from "@/lib/trip-fields";
 import {
   buildMediaPath,
   extFromContentType,
@@ -54,6 +54,7 @@ describe("validateTripFields media caps", () => {
       latitude: null,
       longitude: null,
       description: "Description",
+      itinerary: "",
       type: "TREK",
       priceInRupees: 1000,
       durationDays: 3,
@@ -64,7 +65,6 @@ describe("validateTripFields media caps", () => {
       images: overrides.images ?? [],
       videos: overrides.videos ?? [],
       mediaOrder: [],
-      guidePhoto: "",
       pickup: "",
       drop: "",
       inclusions: [],
@@ -93,6 +93,19 @@ describe("validateTripFields media caps", () => {
       videos: Array.from({ length: MEDIA_LIMITS.trip.videos }, (_, i) => `https://a.example/${i}.mp4`),
     });
     expect(() => validateTripFields(fields)).not.toThrow();
+  });
+});
+
+describe("readTripFields itinerary", () => {
+  it("preserves Markdown text, strips controls, and caps its stored size", () => {
+    const formData = new FormData();
+    formData.set("itinerary", "# Day one\n\n<script>alert(1)</script>\u0000\n" + "a".repeat(12_100));
+
+    const fields = readTripFields(formData);
+
+    expect(fields.itinerary).toContain("# Day one\n\n<script>alert(1)</script>");
+    expect(fields.itinerary).not.toContain("\u0000");
+    expect(fields.itinerary).toHaveLength(12_000);
   });
 });
 

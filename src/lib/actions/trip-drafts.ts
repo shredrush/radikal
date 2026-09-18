@@ -32,6 +32,7 @@ type DraftFields = {
   latitude: number | null;
   longitude: number | null;
   description: string | null;
+  itinerary: string | null;
   priceInRupees: number;
   durationDays: number;
   maxGroupSize: number;
@@ -61,6 +62,7 @@ function readDraftFields(formData: FormData): DraftFields {
     latitude: null,
     longitude: null,
     description: optionalText(asString(formData.get("description")), 5000, true),
+    itinerary: optionalText(asString(formData.get("itinerary")), 12000, true),
     priceInRupees: parseIntValue(asString(formData.get("priceInRupees")), 0),
     durationDays: parseIntValue(asString(formData.get("durationDays")), 1),
     maxGroupSize: parseIntValue(asString(formData.get("maxGroupSize")), 8),
@@ -81,6 +83,7 @@ function countDraftFilledFields(fields: DraftFields) {
   if (fields.title) count += 1;
   if (fields.location) count += 1;
   if (fields.description) count += 1;
+  if (fields.itinerary) count += 1;
   if (fields.pickup) count += 1;
   if (fields.drop) count += 1;
   if (fields.categories.length > 0) count += 1;

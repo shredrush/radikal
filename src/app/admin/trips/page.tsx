@@ -53,7 +53,7 @@ export default async function AdminTripsPage({
         }),
     ),
     loadDb("admin.trips.trips-count", () => prisma.trip.count({ where: { active: true, deletedAt: null } })),
-    loadDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { deletedAt: null } } })),
+    loadDb("admin.trips.slots-count", () => prisma.slot.count({ where: { date: { gte: new Date() }, deletedAt: null, trip: { active: true, deletedAt: null } } })),
     loadDb(
       "admin.trips.drafts",
       () =>
@@ -69,6 +69,7 @@ export default async function AdminTripsPage({
             latitude: true,
             longitude: true,
             description: true,
+            itinerary: true,
             priceInRupees: true,
             durationDays: true,
             maxGroupSize: true,
@@ -101,6 +102,7 @@ export default async function AdminTripsPage({
     latitude: draft.latitude,
     longitude: draft.longitude,
     description: draft.description,
+    itinerary: draft.itinerary,
     priceInRupees: draft.priceInRupees,
     durationDays: draft.durationDays,
     maxGroupSize: draft.maxGroupSize,

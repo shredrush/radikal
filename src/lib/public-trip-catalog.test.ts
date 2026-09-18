@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import { getPublicTripFilters, getPublicTripFilterWhere } from "@/lib/public-trip-catalog";
+import {
+  getPublicTripFilters,
+  getPublicTripFilterWhere,
+  getPublicTripWhere,
+  publicTripVisibilityWhere,
+} from "@/lib/public-trip-catalog";
 import { MAX_TRAVEL_STYLE_FILTERS } from "@/lib/trip-filter-constants";
 
 describe("public trip catalog filters", () => {
+  it("always requires an active, non-deleted trip with a live guide", () => {
+    const where = getPublicTripWhere(getPublicTripFilters({ q: "trek" }));
+
+    expect(publicTripVisibilityWhere).toMatchObject({ active: true, deletedAt: null });
+    expect(where).toMatchObject({ AND: expect.arrayContaining([publicTripVisibilityWhere]) });
+  });
+
   it("normalizes public URL filters and bounds the requested page", () => {
     const filters = getPublicTripFilters({
       page: "3",

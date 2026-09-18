@@ -17,7 +17,7 @@ import { formatShortDate } from "@/lib/format";
 import { JsonLd } from "@/components/seo/json-ld";
 import { absoluteUrl, plainText, publicImageUrl } from "@/lib/seo";
 
-const GUIDE_TRIPS_PAGE_SIZE = 6;
+const GUIDE_TRIPS_PAGE_SIZE = 12;
 const GUIDE_REVIEWS_PAGE_SIZE = 6;
 
 // Guide profile + their trips rarely change; skip the DB round-trip on
@@ -110,13 +110,13 @@ export async function generateMetadata({ params }: { params: Promise<{ guideId: 
   }
 
   return {
-    title: `${guide.name}, Outdoor Guide`,
+    title: `${guide.name} `,
     description: plainText(guide.bio) || `${guide.name} is a vetted guide based in ${guide.location}.`,
     alternates: { canonical: `/${guide.user.username}` },
     openGraph: {
       type: "profile",
       url: `/${guide.user.username}`,
-      title: `${guide.name}, Outdoor Guide`,
+      title: `${guide.name}`,
       description: plainText(guide.bio) || `${guide.name} is a vetted guide based in ${guide.location}.`,
       ...(publicImageUrl(getGuideImage({
         username: guide.user.username,
@@ -178,7 +178,7 @@ export default async function GuideDetailPage({
     photos: guide.photos,
     tripImage: guide.trips[0]?.images[0],
   });
-  const guidePhotoSources =
+  const guideMediaSources =
     (guide.photos ?? []).length > 0
       ? guide.photos
       : guide.photo
@@ -239,7 +239,7 @@ export default async function GuideDetailPage({
           <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="relative h-[320px] self-stretch sm:h-[400px] lg:h-auto lg:min-h-[420px]">
               <TripGallery
-                images={guidePhotoSources}
+                images={guideMediaSources}
                 videos={guide.videos}
                 mediaOrder={guide.mediaOrder}
                 fallbackImage={fallbackImage}
@@ -268,7 +268,7 @@ export default async function GuideDetailPage({
               No trips have been organised by {guide.name} yet.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {guide.trips.map((trip) => (
                 <TripCard key={trip.id} trip={trip} />
               ))}

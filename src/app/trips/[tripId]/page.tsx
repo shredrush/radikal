@@ -1,23 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
 import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
 import type { Metadata } from "next";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldCheck } from "lucide-react";
 
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   AvailableDatesCard,
-  CompletedDatesCard,
   TripDetailsCard,
-  WhatsIncludedCard,
   type TripDetailFeatureTrip,
 } from "@/components/trips/trip-detail-feature";
 import { BookingBar } from "@/components/trips/booking-bar";
@@ -27,7 +22,6 @@ import type { TripCategory } from "@/generated/prisma/client";
 import { FaqSection } from "@/components/trips/faq-section";
 import { WishlistButton } from "@/components/trips/wishlist-button";
 import { getGuideImage } from "@/lib/guide-images";
-import { getDisplayName } from "@/lib/profile-initials";
 import { TripCard } from "@/components/trips/trip-card";
 import { GuideProfileSummary } from "@/components/guides/guide-profile-summary";
 import { formatMonthYear } from "@/lib/format";
@@ -36,11 +30,10 @@ import { isSlotCompleted } from "@/lib/trip-dates";
 import { ACTIVITY_TYPE_LABELS } from "@/lib/trip-metadata";
 import { JsonLd } from "@/components/seo/json-ld";
 import { absoluteUrl, plainText, publicImageUrl } from "@/lib/seo";
+import { TripReviewsCarousel } from "@/components/reviews/trip-reviews-carousel";
 
-// Cap the reviews column in the guide section so every trip page
-// renders a consistent section height regardless of how many reviews exist.
-const MAX_REVIEWS = 4;
 const MAX_COMPLETED_SLOTS = 12;
+const MAX_TRIP_REVIEWS = 24;
 
 // Cache compact render metadata only. Media may contain large data URLs, which
 // exceed Next's 2 MB Data Cache entry limit and cause cache writes to be rejected.
@@ -61,6 +54,7 @@ const getTripDetail = unstable_cache(
         categories: true,
         travelStyleLinks: { where: { travelStyle: { active: true } }, select: { travelStyle: { select: { name: true } } } },
         description: true,
+        itinerary: true,
         location: true,
         priceInRupees: true,
         durationDays: true,
@@ -91,7 +85,7 @@ const getTripDetail = unstable_cache(
             user: { select: { name: true } },
           },
           orderBy: { createdAt: "desc" },
-          take: MAX_REVIEWS,
+          take: MAX_TRIP_REVIEWS,
         },
         tripLocation: { select: { pickup: true, drop: true } },
         inclusions: {
@@ -123,7 +117,6 @@ const getTripMedia = cache(async (slug: string) => {
       images: true,
       videos: true,
       mediaOrder: true,
-      guidePhoto: true,
       guide: { select: { photo: true, photos: true, videos: true } },
     },
   });
@@ -133,7 +126,6 @@ const EMPTY_TRIP_MEDIA = {
   images: [] as string[],
   videos: [] as string[],
   mediaOrder: [] as string[],
-  guidePhoto: null,
   guide: null,
 };
 
@@ -351,8 +343,6 @@ async function TripAvailability({ trip }: { trip: TripDetailFeatureTrip }) {
         hasUpcomingSlots={hasUpcomingSlots}
       />
       <AvailableDatesCard trip={tripWithSlots} />
-      <CompletedDatesCard trip={tripWithSlots} />
-      <WhatsIncludedCard trip={tripWithSlots} />
     </>
   );
 }
@@ -366,34 +356,68 @@ async function GuideProfileMedia({
 }) {
   const media = await safeDb("trip.media", () => getTripMedia(slug), EMPTY_TRIP_MEDIA);
   const resolvedMedia = media ?? EMPTY_TRIP_MEDIA;
-  const guideProfileImage = resolvedMedia.guidePhoto ?? getGuideImage({
+  const guideProfileImage = getGuideImage({
     username: guide.user?.username ?? "",
     photo: resolvedMedia.guide?.photo ?? null,
     photos: resolvedMedia.guide?.photos ?? [],
     tripImage: resolvedMedia.images[0],
   });
-  const guideMediaIsVideo = Boolean(
-    resolvedMedia.guidePhoto && resolvedMedia.guide?.videos.includes(resolvedMedia.guidePhoto),
-  );
+  const guideMedia = [resolvedMedia.guide?.photo, ...(resolvedMedia.guide?.photos ?? []), ...(resolvedMedia.guide?.videos ?? [])]
+    .filter((item): item is string => Boolean(item))
+    .filter((item, index, all) => all.indexOf(item) === index)
+  const guideVideos = (resolvedMedia.guide?.videos ?? []).filter((item) => guideMedia.includes(item));
+  const guideImages = guideMedia.filter((item) => !guideVideos.includes(item));
 
-  return guideMediaIsVideo ? (
-    <video
-      src={resolvedMedia.guidePhoto ?? undefined}
-      muted
-      autoPlay
-      loop
-      playsInline
-      preload="metadata"
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    <Image
-      src={guideProfileImage}
-      alt={guide.name}
-      fill
-      className="object-cover"
-      sizes="(max-width: 1024px) 100vw, 24vw"
-    />
+  return <TripGallery images={guideImages} videos={guideVideos} mediaOrder={guideMedia} fallbackImage={guideProfileImage} alt={guide.name} layout="guide" />;
+}
+
+function GuideCard({
+  guide,
+  slug,
+}: {
+  guide: NonNullable<NonNullable<Awaited<ReturnType<typeof getTripDetail>>>["guide"]>;
+  slug: string;
+}) {
+  return (
+    <Card className="h-full w-full overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+      <CardContent className="space-y-5 p-5">
+        <div className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/60">
+          <Suspense fallback={<div className="h-full animate-pulse bg-muted/60" aria-label="Loading guide photo" role="status" />}>
+            <GuideProfileMedia slug={slug} guide={guide} />
+          </Suspense>
+        </div>
+        <GuideProfileSummary
+          guide={guide}
+          showBio={false}
+          showVetted={false}
+          locationClassName="text-xs"
+          heading={
+            <div className="flex w-full flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Your guide</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">{guide.name}</h2>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-foreground">
+                    <ShieldCheck className="size-3" />
+                    Vetted
+                  </span>
+                </div>
+              </div>
+              <Link
+                href={`/${guide.user?.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${guide.name}'s public profile`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900"
+              >
+                Profile
+                <ExternalLink className="size-3.5" />
+              </Link>
+            </div>
+          }
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -458,10 +482,6 @@ export default async function TripDetailPage({
     },
   ];
 
-  // Always render four review rows so the guide section keeps a consistent
-  // height across trips, padding any missing reviews with placeholders.
-  const reviewSlots = Array.from({ length: MAX_REVIEWS }, (_, index) => trip.reviews[index] ?? null);
-
   return (
     <div className="flex flex-1 flex-col">
       <JsonLd data={tripStructuredData} />
@@ -491,81 +511,29 @@ export default async function TripDetailPage({
 
         {/* Trip details + booking */}
         <div className="grid items-stretch gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <TripDetailsCard trip={trip} travelStyleTags={trip.travelStyleLinks.map((link) => link.travelStyle.name)} />
-          <div className="flex flex-col gap-6">
+          <div className="order-2 flex lg:order-1">
+            <TripDetailsCard trip={trip} travelStyleTags={trip.travelStyleLinks.map((link) => link.travelStyle.name)} />
+          </div>
+          <div className="contents order-1 lg:order-2 lg:flex lg:h-full lg:flex-col lg:gap-6">
             <Suspense fallback={<TripAvailabilityFallback />}>
               <TripAvailability trip={trip} />
             </Suspense>
+            {guide ? (
+              <div className="order-3 flex flex-1 lg:order-none">
+                <GuideCard guide={guide} slug={trip.slug} />
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-          <CardHeader>
-            <CardTitle className="text-xl">Created & led by</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5 text-sm leading-6 text-muted-foreground">
-            {guide ? (
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
-                  <div className="relative min-h-[288px] overflow-hidden rounded-[1.5rem] border border-border/70 bg-muted/60 lg:min-h-0">
-                    <Suspense fallback={<div className="h-full animate-pulse bg-muted/60" aria-label="Loading guide photo" role="status" />}>
-                      <GuideProfileMedia slug={trip.slug} guide={guide} />
-                    </Suspense>
-                  </div>
-
-                <GuideProfileSummary
-                  guide={guide}
-                  heading={
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                        {guide.name}
-                      </h3>
-                      <Link
-                        href={`/${guide.user?.username}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900"
-                      >
-                        View public profile
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                    </div>
-                  }
-                />
-
-                <div className="lg:border-l lg:border-border/60 lg:pl-6">
-                  <p className="text-sm font-semibold text-foreground">
-                    words from community
-                    {trip.reviews.length > 0 && (
-                      <span className="ml-2 font-normal text-muted-foreground">({trip.reviews.length})</span>
-                    )}
-                  </p>
-                  <ul className="mt-3 space-y-3">
-                    {reviewSlots.map((review, index) =>
-                      review ? (
-                        <li key={review.id} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
-                          <p className="font-medium text-foreground">{getDisplayName(review.user.name)}</p>
-                          <p className="mt-2 text-muted-foreground">{review.comment}</p>
-                          <p className="mt-2 text-xs text-muted-foreground/80">
-                            {formatMonthYear(review.createdAt)}
-                          </p>
-                        </li>
-                      ) : (
-                        <li
-                          key={`review-placeholder-${index}`}
-                          className="flex min-h-[76px] items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/20 p-3 text-center text-sm text-muted-foreground"
-                        >
-                          {index === 0 ? "No reviews yet — be the first to share your experience." : ""}
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <p>No guide details are available for this trip yet.</p>
-            )}
-          </CardContent>
-        </Card>
+        <TripReviewsCarousel
+          reviews={trip.reviews.map((review) => ({
+            name: review.user.name ?? "Radikal traveller",
+            trip: trip.title,
+            quote: review.comment,
+            date: formatMonthYear(review.createdAt),
+          }))}
+        />
 
         <FaqSection />
 

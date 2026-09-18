@@ -17,6 +17,9 @@ import { normalizeTripImagePath } from "@/lib/trip-card-image";
 import { cn } from "@/lib/utils";
 import type { TripCategory, TripType } from "@/generated/prisma/client";
 import { CustomDateEnquiry } from "@/components/trips/custom-date-enquiry";
+import { SafeMarkdown } from "@/components/trips/safe-markdown";
+
+const sectionLabelClassName = "text-xs font-semibold uppercase tracking-[0.25em]";
 
 export type TripDetailFeatureTrip = {
   id: string;
@@ -24,6 +27,7 @@ export type TripDetailFeatureTrip = {
   title: string;
   type: TripType;
   description: string;
+  itinerary: string;
   location: string;
   categories: TripCategory[];
   durationDays: number;
@@ -79,27 +83,32 @@ export function TripDetailsCard({
         </CardHeader>
       )}
       <CardContent className="flex flex-1 flex-col space-y-4 text-sm leading-7 text-muted-foreground">
-        <div className="grid gap-3 grid-cols-2">
-          <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pickup</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{trip.tripLocation?.pickup ?? trip.location}</p>
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          <div className="min-w-0 rounded-xl border border-border/70 bg-muted/50 p-2 sm:p-3">
+            <p className="whitespace-nowrap text-[0.5rem] font-semibold uppercase leading-tight tracking-[0.05em] text-muted-foreground sm:text-[0.65rem] sm:tracking-[0.2em]">Pickup</p>
+            <p className="mt-1 truncate text-xs font-medium text-foreground sm:text-sm">{trip.tripLocation?.pickup ?? trip.location}</p>
           </div>
-          <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Drop</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{trip.tripLocation?.drop ?? trip.location}</p>
+          <div className="min-w-0 rounded-xl border border-border/70 bg-muted/50 p-2 sm:p-3">
+            <p className="whitespace-nowrap text-[0.5rem] font-semibold uppercase leading-tight tracking-[0.05em] text-muted-foreground sm:text-[0.65rem] sm:tracking-[0.2em]">Drop</p>
+            <p className="mt-1 truncate text-xs font-medium text-foreground sm:text-sm">{trip.tripLocation?.drop ?? trip.location}</p>
           </div>
-        </div>
-        <div className="grid gap-3 grid-cols-2">
-          <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Duration</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{formatDurationDays(trip.durationDays)}</p>
+          <div className="min-w-0 rounded-xl border border-border/70 bg-muted/50 p-2 sm:p-3">
+            <p className="whitespace-nowrap text-[0.5rem] font-semibold uppercase leading-tight tracking-[0.05em] text-muted-foreground sm:text-[0.65rem] sm:tracking-[0.2em]">Duration</p>
+            <p className="mt-1 truncate text-xs font-medium text-foreground sm:text-sm">{formatDurationDays(trip.durationDays)}</p>
           </div>
-          <div className="rounded-xl border border-border/70 bg-muted/50 p-3">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Group size</p>
-            <p className="mt-1 text-sm font-medium text-foreground">Up to {trip.maxGroupSize} travellers</p>
+          <div className="min-w-0 rounded-xl border border-border/70 bg-muted/50 p-2 sm:p-3">
+            <p className="whitespace-nowrap text-[0.5rem] font-semibold uppercase leading-tight tracking-[0.05em] text-muted-foreground sm:text-[0.65rem] sm:tracking-[0.2em]">Group size</p>
+            <p className="mt-1 truncate text-xs font-medium text-foreground sm:text-sm">{trip.maxGroupSize}</p>
           </div>
         </div>
         <p className="whitespace-pre-wrap text-foreground">{trip.description}</p>
+        {trip.itinerary ? (
+          <>
+            <ItineraryDisclosure itinerary={trip.itinerary} className="lg:hidden" />
+            <ItineraryDisclosure itinerary={trip.itinerary} open className="hidden lg:block" />
+          </>
+        ) : null}
+        <WhatsIncludedSection trip={trip} />
         <div>
           <h2 className="text-lg font-semibold text-foreground">Why travellers love this trip</h2>
           {trip.highlights.length > 0 ? (
@@ -120,104 +129,125 @@ export function TripDetailsCard({
   );
 }
 
+function ItineraryDisclosure({
+  itinerary,
+  open = false,
+  className,
+}: {
+  itinerary: string;
+  open?: boolean;
+  className?: string;
+}) {
+  return (
+    <details open={open} className={cn("group", className)}>
+      <summary className="flex w-full cursor-pointer list-none items-center justify-start gap-2 border-y border-border/50 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 [&::-webkit-details-marker]:hidden">
+        <span className={cn(sectionLabelClassName, "text-black dark:text-white")}>Itinerary</span>
+        <span
+          aria-hidden="true"
+          className="h-2.5 w-2.5 shrink-0 -translate-y-0.5 rotate-45 border-b-2 border-r-2 border-current text-black transition-transform duration-200 group-open:translate-y-0.5 group-open:rotate-[225deg] dark:text-white"
+        />
+      </summary>
+      <div className="pt-3">
+        <SafeMarkdown className="text-foreground">{itinerary}</SafeMarkdown>
+      </div>
+    </details>
+  );
+}
+
 export function AvailableDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
   const now = new Date();
   const upcomingSlots = trip.slots.filter((slot) => !isSlotCompleted(slot.date, now));
+  const completedSlots = trip.slots.filter((slot) => isSlotCompleted(slot.date, now));
 
   return (
-    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
+    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 pb-0 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
       <CardHeader>
         <CardTitle className="text-xl">Available dates</CardTitle>
       </CardHeader>
-      <CardContent>
-        {upcomingSlots.length > 0 ? (
-          <ul className="max-h-[11.5rem] space-y-2 overflow-y-auto pr-1">
-            {upcomingSlots.map((slot) => {
-              const occupancy = getSlotOccupancyPercent(slot);
-              return (
-                <li key={slot.id}>
-                  <Link
-                    href={`/booking/${trip.id}/checkout?slot=${slot.id}`}
-                    prefetch={false}
-                    className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
-                  >
-                    <span
-                      className="absolute inset-y-0 left-0 bg-emerald-100/90 dark:bg-emerald-900/90 transition-[width] duration-300"
-                      style={{ width: `${occupancy}%` }}
-                      aria-hidden="true"
-                    />
-                    <span className="relative z-10 font-medium transition-colors">
-                      {formatTripDateRange(slot.date, trip.durationDays)}
-                    </span>
-                    <span className="relative z-10 opacity-90 transition-colors">
-                      {occupancy >= 100 ? "Sold out" : `${Math.max(slot.capacity - slot.booked - slot.reserved, 0)} spots left`}
-                    </span>
-                    {occupancy >= 100 ? (
-                      <span className="absolute inset-x-0 top-1/2 z-20 h-px bg-emerald-800/70" aria-hidden="true" />
-                    ) : null}
-                  </Link>
+      <CardContent className="px-0">
+        <div className="px-(--card-spacing)">
+          {upcomingSlots.length > 0 ? (
+            <ul className="max-h-[11.5rem] space-y-2 overflow-y-auto pr-1">
+              {upcomingSlots.map((slot) => {
+                const occupancy = getSlotOccupancyPercent(slot);
+                return (
+                  <li key={slot.id}>
+                    <Link
+                      href={`/booking/${trip.id}/checkout?slot=${slot.id}`}
+                      prefetch={false}
+                      className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-emerald-600/40 bg-background/70 px-3 py-2 text-sm transition-colors hover:border-emerald-600 hover:bg-emerald-600/10 focus-visible:border-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 active:border-emerald-700 active:bg-emerald-600/20"
+                    >
+                      <span
+                        className="absolute inset-y-0 left-0 bg-emerald-100/90 dark:bg-emerald-900/90 transition-[width] duration-300"
+                        style={{ width: `${occupancy}%` }}
+                        aria-hidden="true"
+                      />
+                      <span className="relative z-10 font-medium transition-colors">
+                        {formatTripDateRange(slot.date, trip.durationDays)}
+                      </span>
+                      <span className="relative z-10 opacity-90 transition-colors">
+                        {occupancy >= 100 ? "Sold out" : `${Math.max(slot.capacity - slot.booked - slot.reserved, 0)} spots left`}
+                      </span>
+                      {occupancy >= 100 ? (
+                        <span className="absolute inset-x-0 top-1/2 z-20 h-px bg-emerald-800/70" aria-hidden="true" />
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No upcoming dates are available yet.</p>
+          )}
+          <CustomDateEnquiry tripId={trip.id} />
+        </div>
+        {completedSlots.length > 0 ? (
+          <details className="group border-t border-border/60">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 bg-muted/30 px-(--card-spacing) py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/20 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-1.5">
+                Competed ({completedSlots.length})
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+              </span>
+              <span
+                aria-hidden="true"
+                className="h-2 w-2 shrink-0 -translate-y-0.5 rotate-45 border-b-2 border-r-2 border-current transition-transform duration-200 group-open:translate-y-0.5 group-open:rotate-[225deg]"
+              />
+            </summary>
+            <ul className="space-y-2 border-t border-border/60 px-(--card-spacing) py-2.5">
+              {completedSlots.map((slot) => (
+                <li
+                  key={slot.id}
+                  className="flex items-center rounded-xl border border-emerald-700 bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm dark:border-emerald-700 dark:bg-emerald-900"
+                >
+                  <span className="flex items-center gap-1.5">
+                    {formatTripDateRange(slot.date, trip.durationDays)}
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-100" aria-label="Completed" />
+                  </span>
                 </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">No upcoming dates are available yet.</p>
-        )}
-        <CustomDateEnquiry tripId={trip.id} />
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
 
-export function CompletedDatesCard({ trip }: { trip: TripDetailFeatureTrip }) {
-  const now = new Date();
-  const completedSlots = trip.slots.filter((slot) => isSlotCompleted(slot.date, now));
+export function WhatsIncludedSection({ trip }: { trip: TripDetailFeatureTrip }) {
+  const includedItems = trip.inclusions.filter((item) => item.included);
+  const excludedItems = trip.inclusions.filter((item) => !item.included);
 
-  if (completedSlots.length === 0) {
+  if (includedItems.length === 0 && excludedItems.length === 0) {
     return null;
   }
 
   return (
-    <Card className="overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-      <CardHeader>
-        <CardTitle className="text-xl">Completed dates</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="max-h-[11.5rem] space-y-2 overflow-y-auto pr-1">
-          {completedSlots.map((slot) => (
-            <li
-              key={slot.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-sm"
-            >
-              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="font-medium text-muted-foreground line-through decoration-muted-foreground/40 decoration-2">
-                  {formatTripDateRange(slot.date, trip.durationDays)}
-                </span>
-              </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Completed
-              </span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-export function WhatsIncludedCard({ trip }: { trip: TripDetailFeatureTrip }) {
-  return (
-    <Card className="h-full flex-1 overflow-hidden rounded-[1.5rem] border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)]">
-      <CardHeader>
-        <CardTitle className="text-xl">What&apos;s included</CardTitle>
-        <CardDescription>Covered in the price, and what to arrange yourself.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+    <section className="space-y-4" aria-labelledby="whats-included-heading">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {includedItems.length > 0 ? (
           <div className="space-y-2.5">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400">Included</p>
-            {trip.inclusions.filter((item) => item.included).map((item) => (
+            <p className={cn(sectionLabelClassName, "text-emerald-600 dark:text-emerald-400")}>Included</p>
+            {includedItems.map((item) => (
               <div key={item.id} className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
@@ -228,9 +258,11 @@ export function WhatsIncludedCard({ trip }: { trip: TripDetailFeatureTrip }) {
               </div>
             ))}
           </div>
-          <div className="border-t border-border/60 pt-4 space-y-2.5">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-rose-500 dark:text-rose-400">Not included</p>
-            {trip.inclusions.filter((item) => !item.included).map((item) => (
+        ) : null}
+        {excludedItems.length > 0 ? (
+          <div className="space-y-2.5">
+            <p className={cn(sectionLabelClassName, "text-rose-500 dark:text-rose-400")}>Not included</p>
+            {excludedItems.map((item) => (
               <div key={item.id} className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-500 dark:bg-rose-950/50 dark:text-rose-400">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
@@ -241,12 +273,9 @@ export function WhatsIncludedCard({ trip }: { trip: TripDetailFeatureTrip }) {
               </div>
             ))}
           </div>
-          <p className="border-t border-border/60 pt-4 text-sm leading-6 text-muted-foreground">
-            Travel Insurance available as an add on at checkout
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -302,12 +331,10 @@ export function TripDetailFeature({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <TripDetailsCard trip={trip} />
-        <div className="flex flex-col gap-6">
-          <AvailableDatesCard trip={trip} />
-          <CompletedDatesCard trip={trip} />
-          <WhatsIncludedCard trip={trip} />
-        </div>
+          <TripDetailsCard trip={trip} />
+          <div className="flex flex-col gap-6">
+            <AvailableDatesCard trip={trip} />
+          </div>
       </div>
     </div>
   );

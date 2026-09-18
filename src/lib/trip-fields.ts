@@ -63,6 +63,7 @@ export type TripFields = {
   latitude: number | null;
   longitude: number | null;
   description: string;
+  itinerary: string;
   type: string;
   sportIds: string[];
   priceInRupees: number;
@@ -72,7 +73,6 @@ export type TripFields = {
   images: string[];
   videos: string[];
   mediaOrder: string[];
-  guidePhoto: string;
   categories: string[];
   pickup: string;
   drop: string;
@@ -95,6 +95,12 @@ export function readTripFields(formData: FormData): TripFields {
       maxLength: 5000,
       allowNewlines: true,
     }),
+    // Raw HTML remains text at render time; this bound prevents oversized
+    // Markdown documents from affecting response or render performance.
+    itinerary: sanitizeText(asString(formData.get("itinerary")), {
+      maxLength: 12000,
+      allowNewlines: true,
+    }),
     // Retained for historical enum-backed rows. New sport links are canonical.
     type: asString(formData.get("type")) || "TREK",
     sportIds: Array.from(new Set(formData.getAll("sportIds").map((value) => asString(value)).filter(Boolean))),
@@ -105,7 +111,6 @@ export function readTripFields(formData: FormData): TripFields {
     images,
     videos,
     mediaOrder: normalizeMediaOrder(images, videos, parseMediaList(formData.getAll("mediaOrder"))),
-    guidePhoto: parseMediaList(formData.getAll("guidePhoto"))[0] ?? "",
     categories: parseCategories(formData.getAll("categories")),
     pickup: sanitizeText(asString(formData.get("pickup")), { maxLength: 200 }),
     drop: sanitizeText(asString(formData.get("drop")), { maxLength: 200 }),

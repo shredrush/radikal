@@ -23,6 +23,7 @@ type AdminTripCardProps = {
     longitude: number | null;
     mapVisible: boolean;
     description: string;
+    itinerary: string;
     priceInRupees: number;
     durationDays: number;
     maxGroupSize: number;
@@ -30,7 +31,6 @@ type AdminTripCardProps = {
     images: string[];
     videos: string[];
     mediaOrder: string[];
-    guidePhoto: string | null;
     guideId: string | null;
     sportLinks: Array<{ sport: TripSportOption }>;
     guide: { id: string; name: string } | null;
@@ -46,7 +46,7 @@ type AdminTripCardProps = {
       _count: { bookings: number };
     }>;
   };
-  guides: Array<{ id: string; name: string; photo: string | null; photos: string[]; videos: string[] }>;
+  guides: Array<{ id: string; name: string }>;
   sports: TripSportOption[];
 };
 

@@ -19,9 +19,15 @@ type GuideProfileSummaryData = {
 export function GuideProfileSummary({
   guide,
   heading,
+  showBio = true,
+  showVetted = true,
+  locationClassName = "text-sm",
 }: {
   guide: GuideProfileSummaryData;
   heading?: ReactNode;
+  showBio?: boolean;
+  showVetted?: boolean;
+  locationClassName?: string;
 }) {
   return (
     <div className="flex min-w-0 flex-col justify-start">
@@ -32,13 +38,15 @@ export function GuideProfileSummary({
               {guide.name}
             </h1>
           )}
-          <p className="mt-2 break-words text-sm font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+          <p className={`mt-2 break-words ${locationClassName} font-semibold uppercase tracking-[0.25em] text-muted-foreground`}>
             {guide.location}
           </p>
-          <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Vetted guide
-          </div>
+          {showVetted ? (
+            <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Vetted guide
+            </div>
+          ) : null}
         </div>
 
         <p className="break-words text-base leading-7 text-muted-foreground">
@@ -47,7 +55,7 @@ export function GuideProfileSummary({
           </span>{" "}
           years experience
         </p>
-        <p className="break-words text-sm leading-6 text-muted-foreground">{guide.bio}</p>
+        {showBio ? <p className="break-words text-sm leading-6 text-muted-foreground">{guide.bio}</p> : null}
       </div>
 
       <div className="mt-6 space-y-5">
