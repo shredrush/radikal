@@ -50,3 +50,6 @@ copilot-instructions.md
 /prisma/dump-data.ts
 
 .kilo/*
+
+# Sentry Config File
+.env.sentry-build-plugin
