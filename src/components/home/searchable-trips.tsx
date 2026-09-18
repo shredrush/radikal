@@ -432,7 +432,7 @@ export function SearchableTrips({
           </div>
         </div>
 
-        <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-4 sm:px-6 sm:pt-8 sm:pb-5 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -476,7 +476,7 @@ export function SearchableTrips({
 
         <section
           aria-labelledby="why-choose-radikal"
-          className="border-b border-border/60 bg-background px-3 py-7 sm:px-6 sm:py-10 lg:px-8"
+          className="border-b border-border/60 bg-background px-3 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-5 lg:px-8"
         >
           <div className="mx-auto w-full max-w-8xl">
             <div className="max-w-2xl">
@@ -594,7 +594,7 @@ export function SearchableTrips({
           </div>
         </section>
 
-        <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="-mt-8 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:pt-6 sm:pb-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
             <div className="max-w-4xl">
               <h4 className="mt-2 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">

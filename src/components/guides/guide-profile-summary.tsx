@@ -22,12 +22,14 @@ export function GuideProfileSummary({
   showBio = true,
   showVetted = true,
   locationClassName = "text-sm",
+  locationAccessory,
 }: {
   guide: GuideProfileSummaryData;
   heading?: ReactNode;
   showBio?: boolean;
   showVetted?: boolean;
   locationClassName?: string;
+  locationAccessory?: ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col justify-start">
@@ -38,9 +40,12 @@ export function GuideProfileSummary({
               {guide.name}
             </h1>
           )}
-          <p className={`mt-2 break-words ${locationClassName} font-semibold uppercase tracking-[0.25em] text-muted-foreground`}>
-            {guide.location}
-          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className={`min-w-0 break-words ${locationClassName} font-semibold uppercase tracking-[0.25em] text-muted-foreground`}>
+              {guide.location}
+            </p>
+            {locationAccessory}
+          </div>
           {showVetted ? (
             <div className="mt-3 inline-flex w-fit items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />

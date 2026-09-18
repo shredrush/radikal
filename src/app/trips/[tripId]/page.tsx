@@ -391,6 +391,18 @@ function GuideCard({
           showBio={false}
           showVetted={false}
           locationClassName="text-xs"
+          locationAccessory={
+            <Link
+              href={`/${guide.user?.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`View ${guide.name}'s public profile`}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900 sm:hidden"
+            >
+              Profile
+              <ExternalLink className="size-3.5" />
+            </Link>
+          }
           heading={
             <div className="flex w-full flex-wrap items-center justify-between gap-3">
               <div>
@@ -408,7 +420,7 @@ function GuideCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`View ${guide.name}'s public profile`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900"
+                className="hidden shrink-0 items-center gap-1.5 rounded-full bg-orange-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-900 sm:inline-flex"
               >
                 Profile
                 <ExternalLink className="size-3.5" />
@@ -503,7 +515,7 @@ export default async function TripDetailPage({
         </div>
 
         {/* Trip photos */}
-        <div className="relative h-[320px] overflow-hidden rounded-[2rem] border border-border/80 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] bg-muted/60 sm:h-[400px] lg:h-[480px]">
+        <div className="relative h-[320px] overflow-hidden rounded-[2rem] border border-border/80 bg-muted/60 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.25)] dark:border-white/35 dark:bg-muted sm:h-[400px] lg:h-[480px]">
           <Suspense fallback={<TripGalleryFallback />}>
             <TripMediaGallery slug={trip.slug} title={trip.title} />
           </Suspense>
