@@ -432,6 +432,48 @@ export function SearchableTrips({
           </div>
         </div>
 
+        <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:py-8 lg:px-8">
+          <div className="mx-auto w-full max-w-8xl">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  Meet the people behind the adventure
+                </p>
+                <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
+                  More than a booking platform — a home for guides
+                </h4>
+              </div>
+            </div>
+
+            <CommunityGuideMedia items={guideMedia} />
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button
+                size="sm"
+                className={`${CTA_PILL} px-5`}
+                nativeButton={false}
+                render={<Link href="/become-a-guide" />}
+              >
+                <span className="flex items-center gap-2">
+                  <span>Become a Guide</span>
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-full border border-black bg-white px-5 text-black hover:bg-neutral-100 dark:border-white dark:bg-black dark:text-white dark:hover:bg-neutral-900"
+                nativeButton={false}
+                render={<Link href="/community" />}
+              >
+                <span className="flex items-center gap-2">
+                  <span>Check Out Our Community</span>
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <section
           aria-labelledby="why-choose-radikal"
           className="border-b border-border/60 bg-background px-3 py-7 sm:px-6 sm:py-10 lg:px-8"
@@ -453,25 +495,23 @@ export function SearchableTrips({
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background p-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:p-6">
+              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background px-5 pt-4 pb-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:px-6 sm:pt-5 sm:pb-6">
                 <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
                     <Footprints className="size-5" />
                   </span>
-                  <div>
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      For travellers
-                    </p>
-                    <h5 className="mt-1 font-heading text-2xl font-semibold text-foreground">
-                      Go further, with confidence
-                    </h5>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Learn alongside trusted experts and keep the support you need close at hand.
-                    </p>
-                  </div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    For travellers
+                  </p>
                 </div>
-                <ul className="mt-6 grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
+                <h5 className="mt-0 font-heading text-2xl font-semibold text-foreground">
+                  Go further, with confidence
+                </h5>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Learn alongside trusted experts and keep the support you need close at hand.
+                </p>
+                <ul className="mt-4 grid gap-3 pt-2 sm:grid-cols-2">
                   <li className="flex gap-3">
                     <GraduationCap className="mt-0.5 size-4 shrink-0 text-foreground" />
                     <span className="text-sm leading-5 text-foreground/80">
@@ -503,25 +543,23 @@ export function SearchableTrips({
                 </ul>
               </article>
 
-              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background p-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:p-6">
+              <article className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-background px-5 pt-4 pb-5 shadow-[0_16px_32px_-24px_rgba(0,0,0,0.55)] dark:bg-card sm:px-6 sm:pt-5 sm:pb-6">
                 <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
                     <Compass className="size-5" />
                   </span>
-                  <div>
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      For guides
-                    </p>
-                    <h5 className="mt-1 font-heading text-2xl font-semibold text-foreground">
-                      Spend more time in the field
-                    </h5>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Bring your expertise and local knowledge. Radikal supports the work around every great trip.
-                    </p>
-                  </div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    For guides
+                  </p>
                 </div>
-                <ul className="mt-6 grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
+                <h5 className="mt-0 font-heading text-2xl font-semibold text-foreground">
+                  Spend more time in the field
+                </h5>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Bring your expertise and local knowledge. Radikal supports the work around every great trip.
+                </p>
+                <ul className="mt-4 grid gap-3 pt-2 sm:grid-cols-2">
                   <li className="flex gap-3">
                     <Compass className="mt-0.5 size-4 shrink-0 text-foreground" />
                     <span className="text-sm leading-5 text-foreground/80">
@@ -555,48 +593,6 @@ export function SearchableTrips({
             </div>
           </div>
         </section>
-
-        <div className="border-b border-border/60 bg-background/95 px-3 pt-4 pb-6 sm:px-6 sm:py-8 lg:px-8">
-          <div className="mx-auto w-full max-w-8xl">
-            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Meet the people behind the adventure
-              </p>
-              <h4 className="mt-1 font-heading text-2xl font-semibold tracking-wide text-foreground sm:text-3xl">
-                More than a booking platform — a home for guides
-              </h4>
-              </div>
-            </div>
-
-            <CommunityGuideMedia items={guideMedia} />
-
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button
-                size="sm"
-                className={`${CTA_PILL} px-5`}
-                nativeButton={false}
-                render={<Link href="/become-a-guide" />}
-              >
-                <span className="flex items-center gap-2">
-                  <span>Become a Guide</span>
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </Button>
-              <Button
-                size="sm"
-                className="rounded-full border border-black bg-white px-5 text-black hover:bg-neutral-100 dark:border-white dark:bg-black dark:text-white dark:hover:bg-neutral-900"
-                nativeButton={false}
-                render={<Link href="/community" />}
-              >
-                <span className="flex items-center gap-2">
-                  <span>Check Out Our Community</span>
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </Button>
-            </div>
-          </div>
-        </div>
 
         <div className="border-b border-border/60 bg-background/95 px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-8xl">
