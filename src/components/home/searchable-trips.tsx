@@ -16,6 +16,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { PersonSimpleIcon, ToolboxIcon } from "@phosphor-icons/react/ssr";
 import {
   useEffect,
   useMemo,
@@ -499,9 +500,9 @@ export function SearchableTrips({
                 <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
                 <div className="flex items-center gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
-                    <Footprints className="size-5" />
+                    <PersonSimpleIcon className="size-5" />
                   </span>
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     For travellers
                   </p>
                 </div>
@@ -547,9 +548,9 @@ export function SearchableTrips({
                 <div className="absolute inset-x-0 top-0 h-1 bg-foreground" />
                 <div className="flex items-center gap-3">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-muted text-foreground">
-                    <Compass className="size-5" />
+                    <ToolboxIcon className="size-5" />
                   </span>
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     For guides
                   </p>
                 </div>
@@ -571,7 +572,7 @@ export function SearchableTrips({
                     <Calendar className="mt-0.5 size-4 shrink-0 text-foreground" />
                     <span className="text-sm leading-5 text-foreground/80">
                       <strong className="font-semibold text-foreground">Bookings and payments</strong>
-                      <br />Keep departures and admin organised
+                      <br />Keep your calendar, bookings, and payments oraganised
                     </span>
                   </li>
                   <li className="flex gap-3">

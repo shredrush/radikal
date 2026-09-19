@@ -154,8 +154,12 @@ export function SiteHeader() {
                 >
                   Retreats
                 </Button>
-                <div id="mobile-retreats-menu" onClick={closeDropdown} className={mobileDropdownClassName("invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200", "retreats")}>
-                  <div className="grid grid-cols-2 gap-4">
+                <div id="mobile-retreats-menu" onClick={closeDropdown} className={mobileDropdownClassName("invisible absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),440px)] overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200", "retreats")}>
+                  <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                    View all trips
+                    <ArrowRight className="size-4" />
+                  </Link>
+                  <div className="grid grid-cols-2 gap-4 p-4">
                     {wellnessGroups.map((group) => (
                       <div key={group.heading} className="space-y-2">
                         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
@@ -266,8 +270,12 @@ export function SiteHeader() {
               >
                 Retreats
               </Button>
-              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
-                <div className="grid grid-cols-2 gap-4">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
+                <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                  View all trips
+                  <ArrowRight className="size-4" />
+                </Link>
+                <div className="grid grid-cols-2 gap-4 p-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>
@@ -372,8 +380,12 @@ export function SiteHeader() {
               >
                 Retreats
               </Button>
-              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 rounded-[1.25rem] border border-border/70 bg-background/95 p-4 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
-                <div className="grid grid-cols-2 gap-4">
+              <div onClick={closeDropdown} className={dropdownClassName("invisible absolute left-1/2 top-full z-50 mt-3 w-[min(92vw,440px)] -translate-x-1/2 overflow-hidden rounded-[1.25rem] border border-border/70 bg-background/95 opacity-0 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.35)] transition-all duration-200")}>
+                <Link href="/trips" className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-foreground transition hover:text-primary">
+                  View all trips
+                  <ArrowRight className="size-4" />
+                </Link>
+                <div className="grid grid-cols-2 gap-4 p-4">
                   {wellnessGroups.map((group) => (
                     <div key={group.heading} className="space-y-2">
                       <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{group.heading}</p>

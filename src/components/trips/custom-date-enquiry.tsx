@@ -63,7 +63,7 @@ export function CustomDateEnquiry({ tripId }: { tripId: string }) {
   }
 
   return (
-    <div id="custom-date-enquiry" className="border-t border-border/60 pt-4">
+    <div id="custom-date-enquiry" className="py-4">
       <button
         type="button"
         aria-expanded={isExpanded}
