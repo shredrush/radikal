@@ -81,7 +81,7 @@ export async function createCustomTripRequestAction(
 
   const guestActivityContext = !userId ? await getActivityLogContext() : null;
 
-  const requestLimit = rateLimit(
+  const requestLimit = await rateLimit(
     userId ? `custom-trip-create:user:${userId}` : `custom-trip-create:guest:${guestAccountData!.email}`,
     5,
     60 * 60_000,
@@ -222,7 +222,7 @@ export async function createCustomDateEnquiryAction(
   end.setUTCDate(end.getUTCDate() + Math.max(trip.durationDays - 1, 0));
   const endDate = end.toISOString().slice(0, 10);
   const userId = session.user.id;
-  const requestLimit = rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
+  const requestLimit = await rateLimit(`custom-trip-create:user:${userId}`, 5, 60 * 60_000);
   if (!requestLimit.success) return { success: false, error: rateLimitError(requestLimit) };
 
   let request;
@@ -296,7 +296,7 @@ export async function sendCustomTripMessageAction(requestId: string, formData: F
   }
 
   const userId = session.user.id;
-  const msgLimit = rateLimit(`custom-trip-send:user:${userId}`, 20, 60_000);
+  const msgLimit = await rateLimit(`custom-trip-send:user:${userId}`, 20, 60_000);
   if (!msgLimit.success) {
     throw new Error(rateLimitError(msgLimit));
   }
@@ -350,7 +350,7 @@ export async function replyCustomTripMessageAction(requestId: string, formData: 
     throw new Error("Missing request.");
   }
 
-  const replyLimit = rateLimit(`custom-trip-reply:user:${session.user.id}`, 60, 60_000);
+  const replyLimit = await rateLimit(`custom-trip-reply:user:${session.user.id}`, 60, 60_000);
   if (!replyLimit.success) {
     throw new Error(rateLimitError(replyLimit));
   }

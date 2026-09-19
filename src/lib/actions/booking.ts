@@ -57,7 +57,7 @@ export async function createBooking(
     };
   }
 
-  const bookingLimit = rateLimit(`booking-create:user:${userId}`, 10, 15 * 60_000);
+  const bookingLimit = await rateLimit(`booking-create:user:${userId}`, 10, 15 * 60_000);
   if (!bookingLimit.success) {
     return { success: false, error: rateLimitError(bookingLimit) };
   }

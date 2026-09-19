@@ -31,7 +31,7 @@ export async function sendSupportMessageAction(formData: FormData) {
   const { body } = parsed.data;
 
   // Cap message volume per customer to discourage spam flooding.
-  const msgLimit = rateLimit(`support-send:user:${userId}`, 20, 60_000);
+  const msgLimit = await rateLimit(`support-send:user:${userId}`, 20, 60_000);
   if (!msgLimit.success) {
     throw new Error(rateLimitError(msgLimit));
   }
@@ -76,7 +76,7 @@ export async function replySupportMessageAction(chatId: string, formData: FormDa
 
   const { body } = parsed.data;
 
-  const replyLimit = rateLimit(`support-reply:user:${session.user.id}`, 60, 60_000);
+  const replyLimit = await rateLimit(`support-reply:user:${session.user.id}`, 60, 60_000);
   if (!replyLimit.success) {
     throw new Error(rateLimitError(replyLimit));
   }

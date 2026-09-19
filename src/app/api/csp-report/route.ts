@@ -9,7 +9,7 @@ const MAX_REPORT_BYTES = 16_384;
 // backend when you are ready to analyze violations before enforcing the CSP.
 export async function POST(request: Request) {
   const ip = await getClientIp();
-  const reportLimit = rateLimit(`csp-report:ip:${ip}`, 60, 60_000);
+  const reportLimit = await rateLimit(`csp-report:ip:${ip}`, 60, 60_000);
   if (!reportLimit.success) {
     return new NextResponse(null, { status: 429 });
   }

@@ -105,7 +105,7 @@ export async function createMediaUploadAction(input: CreateMediaUploadInput): Pr
   await authorizeFolder(input.entity, input.folderKey);
 
   const ip = await getClientIp();
-  const limited = rateLimit(`media-upload:${ip}`, 100, 60 * 60_000);
+  const limited = await rateLimit(`media-upload:${ip}`, 100, 60 * 60_000, { failureMode: "deny" });
   if (!limited.success) {
     throw new Error(rateLimitError(limited));
   }

@@ -39,11 +39,14 @@ export function validateProductionEnvironment() {
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
     "CRON_SECRET",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
   ] as const) {
     if (!process.env[name]?.trim()) missing.push(name);
   }
 
   if (!isUrl(process.env.SUPABASE_URL)) invalid.push("SUPABASE_URL");
+  if (!isUrl(process.env.UPSTASH_REDIS_REST_URL)) invalid.push("UPSTASH_REDIS_REST_URL");
   if (!isUrl(process.env.NEXTAUTH_URL)) invalid.push("NEXTAUTH_URL");
   if (
     process.env.RESEND_FROM_EMAIL?.trim() &&

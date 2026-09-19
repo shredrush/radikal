@@ -50,7 +50,7 @@ async function validateReviewSubmission(
     return { ok: false, state: { error: "You must be logged in to leave a review." } };
   }
 
-  const reviewLimit = rateLimit(`review:user:${userId}`, 10, 60 * 60_000);
+  const reviewLimit = await rateLimit(`review:user:${userId}`, 10, 60 * 60_000);
   if (!reviewLimit.success) {
     return { ok: false, state: { error: rateLimitError(reviewLimit) } };
   }

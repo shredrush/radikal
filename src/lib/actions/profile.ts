@@ -22,7 +22,7 @@ export async function updateProfilePhotoAction(
   const userId = session?.user?.id;
   if (!userId) return { error: "You must be logged in to update your profile photo." };
 
-  const photoLimit = rateLimit(`profile-photo:user:${userId}`, 10, 60 * 60_000);
+  const photoLimit = await rateLimit(`profile-photo:user:${userId}`, 10, 60 * 60_000);
   if (!photoLimit.success) return { error: rateLimitError(photoLimit) };
 
   const avatarKey = formData.get("avatarKey")?.toString() ?? "";

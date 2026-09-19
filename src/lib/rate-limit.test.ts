@@ -1,60 +1,156 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/headers", () => ({
-  headers: () => Promise.resolve(new Headers()),
+const { headerListMock, limitMock, limiterConfigMock, slidingWindowMock } = vi.hoisted(() => ({
+  headerListMock: vi.fn(() => new Headers()),
+  limitMock: vi.fn(),
+  limiterConfigMock: vi.fn(),
+  slidingWindowMock: vi.fn(() => ({})),
 }));
 
-import { rateLimit, rateLimitError } from "./rate-limit";
+vi.mock("next/headers", () => ({
+  headers: () => Promise.resolve(headerListMock()),
+}));
+
+vi.mock("server-only", () => ({}));
+
+vi.mock("@upstash/redis", () => ({
+  Redis: class {},
+}));
+
+vi.mock("@upstash/ratelimit", () => ({
+  Ratelimit: class {
+    static slidingWindow = slidingWindowMock;
+    constructor(config: unknown) {
+      limiterConfigMock(config);
+    }
+    limit = limitMock;
+  },
+}));
+
+import { getClientIp, rateLimit, rateLimitError } from "./rate-limit";
+
+beforeEach(() => {
+  process.env.UPSTASH_REDIS_REST_URL = "https://example.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  process.env.AUTH_SECRET = "test-auth-secret";
+  delete process.env.TRUSTED_PROXY_IP_HEADER;
+  headerListMock.mockReturnValue(new Headers());
+  limitMock.mockReset();
+  limiterConfigMock.mockClear();
+  limitMock.mockResolvedValue({
+    success: true,
+    limit: 2,
+    remaining: 1,
+    reset: Date.now() + 60_000,
+  });
+});
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
 describe("rateLimit", () => {
-  it("allows requests up to the limit in a fixed window", () => {
-    const key = `rl:window:${Math.random()}`;
-    const first = rateLimit(key, 2, 60_000);
-    expect(first.success).toBe(true);
-    expect(first.remaining).toBe(1);
+  it("maps an allowed Upstash response", async () => {
+    const result = await rateLimit("rl:allowed", 2, 60_000);
 
-    const second = rateLimit(key, 2, 60_000);
-    expect(second.success).toBe(true);
-    expect(second.remaining).toBe(0);
+    expect(result).toMatchObject({
+      success: true,
+      limit: 2,
+      remaining: 1,
+      retryAfterSeconds: 0,
+    });
+    expect(limitMock).toHaveBeenCalledWith(expect.stringMatching(/^v1:[A-Za-z0-9_-]{43}$/));
+    expect(limitMock).not.toHaveBeenCalledWith("rl:allowed");
   });
 
-  it("blocks requests past the limit with a retry delay", () => {
-    const key = `rl:block:${Math.random()}`;
-    rateLimit(key, 2, 60_000);
-    rateLimit(key, 2, 60_000);
+  it("maps a blocked Upstash response with a retry delay", async () => {
+    limitMock.mockResolvedValueOnce({
+      success: false,
+      limit: 2,
+      remaining: 0,
+      reset: Date.now() + 5_000,
+    });
 
-    const third = rateLimit(key, 2, 60_000);
-    expect(third.success).toBe(false);
-    expect(third.remaining).toBe(0);
-    expect(third.retryAfterSeconds).toBeGreaterThanOrEqual(1);
+    const result = await rateLimit("rl:blocked", 2, 60_000);
+
+    expect(result.success).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.retryAfterSeconds).toBeGreaterThanOrEqual(1);
   });
 
-  it("resets the counter once the window elapses", () => {
-    vi.useFakeTimers();
-    const key = `rl:reset:${Math.random()}`;
+  it("allows non-sensitive requests when Upstash times out", async () => {
+    limitMock.mockResolvedValueOnce({
+      success: true,
+      limit: 2,
+      remaining: 1,
+      reset: Date.now() + 60_000,
+      reason: "timeout",
+    });
 
-    const first = rateLimit(key, 1, 1_000);
-    expect(first.success).toBe(true);
-    expect(first.remaining).toBe(0);
+    const result = await rateLimit("rl:timeout", 2, 60_000);
 
-    vi.advanceTimersByTime(1_001);
-
-    const next = rateLimit(key, 1, 1_000);
-    expect(next.success).toBe(true);
-    expect(next.remaining).toBe(0);
+    expect(result).toMatchObject({ success: true, remaining: 2, retryAfterSeconds: 0 });
   });
 
-  it("keeps buckets isolated per key", () => {
-    const a = `rl:a:${Math.random()}`;
-    const b = `rl:b:${Math.random()}`;
+  it("denies sensitive requests briefly when the Upstash client throws", async () => {
+    limitMock.mockRejectedValueOnce(new Error("network unavailable"));
 
-    rateLimit(a, 1, 60_000);
-    const onB = rateLimit(b, 1, 60_000);
-    expect(onB.success).toBe(true);
+    const result = await rateLimit("rl:error", 2, 60_000, { failureMode: "deny" });
+
+    expect(result.success).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.retryAfterSeconds).toBe(5);
+  });
+
+  it("keeps rate-limit keys isolated", async () => {
+    await rateLimit("rl:a", 1, 60_000);
+    await rateLimit("rl:b", 1, 60_000);
+
+    const [firstKey] = limitMock.mock.calls[0] ?? [];
+    const [secondKey] = limitMock.mock.calls[1] ?? [];
+    expect(firstKey).not.toBe(secondKey);
+  });
+
+  it("configures a sliding window for stronger boundary protection", async () => {
+    await rateLimit("rl:sliding-window", 7, 15_000);
+
+    expect(slidingWindowMock).toHaveBeenCalledWith(7, "15000 ms");
+    expect(limiterConfigMock).toHaveBeenCalledWith(
+      expect.objectContaining({ ephemeralCache: false }),
+    );
+  });
+});
+
+describe("getClientIp", () => {
+  it("uses only the explicitly configured trusted proxy header", async () => {
+    process.env.TRUSTED_PROXY_IP_HEADER = "x-vercel-forwarded-for";
+    headerListMock.mockReturnValue(
+      new Headers({
+        "x-forwarded-for": "198.51.100.1",
+        "x-vercel-forwarded-for": "203.0.113.10",
+      }),
+    );
+
+    await expect(getClientIp()).resolves.toBe("203.0.113.10");
+  });
+
+  it("uses a shared bucket when no trusted proxy header is configured", async () => {
+    headerListMock.mockReturnValue(new Headers({ "x-forwarded-for": "198.51.100.1" }));
+
+    await expect(getClientIp()).resolves.toBe("unknown");
+  });
+
+  it("rejects multi-hop and non-IP identifiers", async () => {
+    process.env.TRUSTED_PROXY_IP_HEADER = "x-vercel-forwarded-for";
+    headerListMock.mockReturnValue(
+      new Headers({ "x-vercel-forwarded-for": "203.0.113.10, 198.51.100.1" }),
+    );
+
+    await expect(getClientIp()).resolves.toBe("unknown");
+
+    headerListMock.mockReturnValue(new Headers({ "x-vercel-forwarded-for": "attacker-controlled" }));
+
+    await expect(getClientIp()).resolves.toBe("unknown");
   });
 });
 

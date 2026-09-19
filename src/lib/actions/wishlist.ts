@@ -31,7 +31,7 @@ export async function toggleWishlist(
     };
   }
 
-  const wishlistLimit = rateLimit(`wishlist:user:${userId}`, 60, 60_000);
+  const wishlistLimit = await rateLimit(`wishlist:user:${userId}`, 60, 60_000);
   if (!wishlistLimit.success) {
     return { success: false, error: rateLimitError(wishlistLimit) };
   }

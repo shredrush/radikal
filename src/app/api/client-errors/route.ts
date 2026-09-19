@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const ip = await getClientIp();
-  if (!rateLimit(`client-errors:ip:${ip}`, 20, 60_000).success) {
+  if (!(await rateLimit(`client-errors:ip:${ip}`, 20, 60_000)).success) {
     return new NextResponse(null, { status: 429 });
   }
 

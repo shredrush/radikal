@@ -26,14 +26,14 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const ip = await getClientIp();
-  if (!rateLimit(`referral:visit:${ip}`, 120, 60_000).success) {
+  if (!(await rateLimit(`referral:visit:${ip}`, 120, 60_000)).success) {
     return signupRedirect(request);
   }
 
   const { code: rawCode } = await params;
   const code = normalizeReferralCode(rawCode);
   if (!code) {
-    rateLimit(`referral:invalid:${ip}`, 20, 60_000);
+    await rateLimit(`referral:invalid:${ip}`, 20, 60_000);
     return signupRedirect(request);
   }
 
@@ -54,7 +54,7 @@ export async function GET(
       }),
   );
   if (!referrer) {
-    rateLimit(`referral:invalid:${ip}`, 20, 60_000);
+    await rateLimit(`referral:invalid:${ip}`, 20, 60_000);
     return signupRedirect(request);
   }
 

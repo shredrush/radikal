@@ -47,7 +47,7 @@ import {
 // A new code can't be requested until this cooldown elapses.
 const OTP_TTL_MS = 5 * 60_000;
 const OTP_RESEND_COOLDOWN_MS = 60_000;
-// Burn a code after this many wrong guesses, on top of the in-memory rate
+// Burn a code after this many wrong guesses, on top of the shared rate
 // limiter. Persisted per code so it survives restarts and works across
 // serverless instances.
 const OTP_MAX_ATTEMPTS = 5;
@@ -84,14 +84,15 @@ export async function loginAction(
   // Throttle brute-force attempts both across many accounts (per client IP)
   // and against a single account (per identifier).
   const ip = await getClientIp();
-  const ipLimit = rateLimit(`login:ip:${ip}`, 20, 15 * 60_000);
+  const ipLimit = await rateLimit(`login:ip:${ip}`, 20, 15 * 60_000, { failureMode: "deny" });
   if (!ipLimit.success) {
     return { error: rateLimitError(ipLimit), identifier };
   }
-  const idLimit = rateLimit(
+  const idLimit = await rateLimit(
     `login:id:${identifier.trim().toLowerCase()}`,
     10,
     15 * 60_000,
+    { failureMode: "deny" },
   );
   if (!idLimit.success) {
     return { error: rateLimitError(idLimit), identifier };
@@ -178,7 +179,7 @@ export async function signupAction(
 
   // Limit account creation per client IP to curb scripted signups.
   const ip = await getClientIp();
-  const ipLimit = rateLimit(`signup:ip:${ip}`, 5, 60 * 60_000);
+  const ipLimit = await rateLimit(`signup:ip:${ip}`, 5, 60 * 60_000, { failureMode: "deny" });
   if (!ipLimit.success) {
     return { error: rateLimitError(ipLimit), values };
   }
@@ -287,7 +288,7 @@ export async function checkUsernameAvailability(
   // Throttle the live availability check to prevent username enumeration and
   // abuse of the endpoint.
   const ip = await getClientIp();
-  const ipLimit = rateLimit(`username-check:ip:${ip}`, 30, 60_000);
+  const ipLimit = await rateLimit(`username-check:ip:${ip}`, 30, 60_000, { failureMode: "deny" });
   if (!ipLimit.success) {
     return { status: "invalid", message: rateLimitError(ipLimit) };
   }
@@ -336,7 +337,7 @@ export async function changePasswordAction(
 
   // Limit password-change attempts per user to slow brute-forcing of the
   // current-password field.
-  const pwLimit = rateLimit(`change-password:user:${userId}`, 5, 15 * 60_000);
+  const pwLimit = await rateLimit(`change-password:user:${userId}`, 5, 15 * 60_000, { failureMode: "deny" });
   if (!pwLimit.success) {
     return { error: rateLimitError(pwLimit) };
   }
@@ -409,7 +410,7 @@ export async function changeUsernameAction(
   }
 
   // Throttle requests per user to curb rapid rename attempts and enumeration.
-  const usernameLimit = rateLimit(`change-username:user:${userId}`, 10, 15 * 60_000);
+  const usernameLimit = await rateLimit(`change-username:user:${userId}`, 10, 15 * 60_000, { failureMode: "deny" });
   if (!usernameLimit.success) {
     return { error: rateLimitError(usernameLimit) };
   }
@@ -525,7 +526,7 @@ export async function changeEmailAction(
   }
 
   // Throttle email changes per user to curb account-takeover probes.
-  const emailLimit = rateLimit(`change-email:user:${userId}`, 5, 15 * 60_000);
+  const emailLimit = await rateLimit(`change-email:user:${userId}`, 5, 15 * 60_000, { failureMode: "deny" });
   if (!emailLimit.success) {
     return { error: rateLimitError(emailLimit) };
   }
@@ -599,7 +600,7 @@ export async function changePhoneAction(
     return { error: "You must be logged in to change your phone number." };
   }
 
-  const phoneLimit = rateLimit(`change-phone:user:${userId}`, 5, 15 * 60_000);
+  const phoneLimit = await rateLimit(`change-phone:user:${userId}`, 5, 15 * 60_000, { failureMode: "deny" });
   if (!phoneLimit.success) {
     return { error: rateLimitError(phoneLimit) };
   }
@@ -663,14 +664,15 @@ export async function requestPasswordResetAction(
   // prevent OTP spam and enumeration sweeps. These apply uniformly whether or
   // not the account exists, so they don't reveal account existence.
   const ip = await getClientIp();
-  const ipLimit = rateLimit(`password-reset:ip:${ip}`, 5, 15 * 60_000);
+  const ipLimit = await rateLimit(`password-reset:ip:${ip}`, 5, 15 * 60_000, { failureMode: "deny" });
   if (!ipLimit.success) {
     return { error: rateLimitError(ipLimit), identifier };
   }
-  const idLimit = rateLimit(
+  const idLimit = await rateLimit(
     `password-reset:id:${identifier.trim().toLowerCase()}`,
     5,
     15 * 60_000,
+    { failureMode: "deny" },
   );
   if (!idLimit.success) {
     return { error: rateLimitError(idLimit), identifier };
@@ -785,14 +787,15 @@ export async function resetPasswordAction(
   // Throttle verification attempts both per client IP and per identifier to
   // slow brute-forcing of the 6-digit code.
   const ip = await getClientIp();
-  const ipLimit = rateLimit(`password-reset-verify:ip:${ip}`, 20, 15 * 60_000);
+  const ipLimit = await rateLimit(`password-reset-verify:ip:${ip}`, 20, 15 * 60_000, { failureMode: "deny" });
   if (!ipLimit.success) {
     return { error: rateLimitError(ipLimit), identifier };
   }
-  const idLimit = rateLimit(
+  const idLimit = await rateLimit(
     `password-reset-verify:id:${identifier.trim().toLowerCase()}`,
     10,
     15 * 60_000,
+    { failureMode: "deny" },
   );
   if (!idLimit.success) {
     return { error: rateLimitError(idLimit), identifier };
@@ -817,8 +820,8 @@ export async function resetPasswordAction(
   }
 
   // Persistent lockout: burn a code after too many wrong guesses. This is
-  // stored on the record itself, so — unlike the in-memory rate limiter — it
-  // survives restarts and is shared across serverless instances.
+  // stored on the record itself, so it also survives restarts and is shared
+  // across serverless instances.
   if (record.attempts >= OTP_MAX_ATTEMPTS) {
     await prisma.passwordResetOtp.update({
       where: { id: record.id },

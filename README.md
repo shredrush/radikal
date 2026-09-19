@@ -24,7 +24,18 @@ Create a local environment file named `.env` in the project root if it does not 
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/radikal"
 NEXTAUTH_SECRET="replace-with-a-long-random-string"
 NEXTAUTH_URL="http://localhost:3000"
+UPSTASH_REDIS_REST_URL="https://YOUR_DATABASE.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="replace-with-upstash-rest-token"
+# Optional; NEXTAUTH_SECRET is used when this is omitted.
+RATE_LIMIT_SECRET="replace-with-a-long-random-string"
 ```
+
+Set `TRUSTED_PROXY_IP_HEADER` only in deployments whose proxy strips that
+header from inbound requests and sets it itself. Without it, IP-based limits
+intentionally use a shared bucket rather than trusting client-supplied headers.
+
+Production Sentry source-map uploads require `SENTRY_AUTH_TOKEN` in the build
+environment. CI production builds fail when that token is absent.
 
 ## Local development
 

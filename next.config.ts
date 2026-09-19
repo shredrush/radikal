@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 const isCI = Boolean(process.env.CI);
+const shouldUploadSourcemaps =
+  process.env.NODE_ENV === "production" && Boolean(process.env.SENTRY_AUTH_TOKEN);
+
+if (isCI && process.env.NODE_ENV === "production" && !process.env.SENTRY_AUTH_TOKEN) {
+  throw new Error("SENTRY_AUTH_TOKEN is required for production CI builds to upload source maps.");
+}
 
 // Content Security Policy template.
 // Delivered via the `Content-Security-Policy-Report-Only` header, so it is
@@ -154,14 +160,13 @@ export default withSentryConfig(nextConfig, {
 
   project: "javascript-nextjs",
 
-  // Source maps are only useful once a deploy is built. Skipping their local
-  // processing keeps production monitoring intact while speeding up builds.
+  // Upload source maps for any authenticated production build, including
+  // deployments that do not set the generic CI environment variable.
   sourcemaps: {
-    disable: !isCI,
+    disable: !shouldUploadSourcemaps,
   },
 
-  // Only print logs for source-map uploads in CI.
-  silent: !isCI,
+  silent: !shouldUploadSourcemaps,
 
   // For all available options, see:
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/

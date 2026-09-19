@@ -423,7 +423,7 @@ export async function updateGuideAction(formData: FormData) {
  */
 export async function updateOwnGuideProfileAction(formData: FormData) {
   const { guide, userId } = await requireGuideAction();
-  const updateLimit = rateLimit(
+  const updateLimit = await rateLimit(
     `guide-profile-update:user:${userId}`,
     20,
     60 * 60_000,

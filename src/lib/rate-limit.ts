@@ -1,26 +1,16 @@
+import "server-only";
+
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
+import crypto from "node:crypto";
+import { isIP } from "node:net";
 
 /**
- * Lightweight in-memory rate limiter using fixed-window counters.
- *
- * IMPORTANT LIMITATIONS (intentional — this is not a production-grade gateway):
- * - State lives in the Node process, so it resets on restart and is NOT shared
- *   across multiple server instances (serverless/multi-replica deployments need
- *   a shared store such as Redis or a DB-backed counter).
- * - Counters are keyed by a caller-supplied key (e.g. client IP + action, or a
- *   per-user id). IP detection depends on the `x-forwarded-for` header, which
- *   must be trusted (i.e. only trust it when the app is behind a proxy you
- *   control).
- *
- * This is a fine first line of defense against scripted brute force and abuse
- * for a single-instance deployment, but should be replaced with a shared
- * implementation before scaling out.
+ * Shared Upstash Redis rate limiter. Keys are namespaced by the SDK prefix and
+ * callers supply a scoped identifier (for example, action plus client IP).
+ * IP detection uses only an explicitly configured, trusted proxy header.
  */
-
-type Bucket = {
-  count: number;
-  resetAt: number;
-};
 
 export type RateLimitResult = {
   success: boolean;
@@ -34,19 +24,67 @@ export type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
-const buckets = new Map<string, Bucket>();
+const RATE_LIMIT_PREFIX = "radikal:rate-limit";
+const RATE_LIMIT_TIMEOUT_MS = 1_000;
+const RATE_LIMIT_FAILURE_RETRY_SECONDS = 5;
+const limiters = new Map<string, Ratelimit>();
+let lastFailureLogAt = 0;
 
-// Bounded size + periodic sweep so a flood of unique keys cannot grow the map
-// without limit (which would otherwise leak memory).
-const MAX_BUCKETS = 50_000;
-let lastCleanupAt = 0;
-const CLEANUP_INTERVAL_MS = 60_000;
+export type RateLimitOptions = {
+  /** Deny sensitive operations if the shared limiter is unavailable. */
+  failureMode?: "allow" | "deny";
+};
 
-function sweepExpired(now: number) {
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) {
-      buckets.delete(key);
-    }
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!url || !token) {
+    throw new Error("Upstash Redis is not configured.");
+  }
+  return new Redis({ url, token });
+}
+
+function getLimiter(limit: number, windowMs: number) {
+  const configKey = `${limit}:${windowMs}`;
+  let limiter = limiters.get(configKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: getRedis(),
+      // Sliding windows prevent a client from doubling its effective quota at
+      // a fixed-window boundary while retaining low Redis overhead.
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      prefix: RATE_LIMIT_PREFIX,
+      timeout: RATE_LIMIT_TIMEOUT_MS,
+      analytics: false,
+      // Redis is authoritative. Do not retain attacker-controlled blocked keys
+      // in long-lived server processes.
+      ephemeralCache: false,
+    });
+    limiters.set(configKey, limiter);
+  }
+  return limiter;
+}
+
+function getRateLimitSecret() {
+  const secret =
+    process.env.RATE_LIMIT_SECRET?.trim() ||
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim();
+  if (!secret) {
+    throw new Error("Rate limiting requires RATE_LIMIT_SECRET, AUTH_SECRET, or NEXTAUTH_SECRET.");
+  }
+  return secret;
+}
+
+function opaqueKey(key: string) {
+  return `v1:${crypto.createHmac("sha256", getRateLimitSecret()).update(key).digest("base64url")}`;
+}
+
+function reportLimiterFailure() {
+  const now = Date.now();
+  if (now - lastFailureLogAt >= 60_000) {
+    lastFailureLogAt = now;
+    console.error("[rate-limit] Upstash Redis is unavailable");
   }
 }
 
@@ -56,79 +94,68 @@ function sweepExpired(now: number) {
  * @param key      Unique bucket key (e.g. `login:192.0.2.1` or `signup:userId`).
  * @param limit    Maximum requests allowed per window.
  * @param windowMs Window length in milliseconds.
+ * @param options  Outage policy; sensitive operations should fail closed.
  */
-export function rateLimit(
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-): RateLimitResult {
+  { failureMode = "allow" }: RateLimitOptions = {},
+): Promise<RateLimitResult> {
   const now = Date.now();
-
-  if (now - lastCleanupAt > CLEANUP_INTERVAL_MS) {
-    sweepExpired(now);
-    lastCleanupAt = now;
+  try {
+    const result = await getLimiter(limit, windowMs).limit(opaqueKey(key));
+    // The SDK's timeout response is allowed by default. Deny it explicitly so
+    // an unavailable Redis service cannot disable abuse protection.
+    if (result.reason !== "timeout") {
+      return {
+        success: result.success,
+        limit: result.limit,
+        remaining: result.remaining,
+        resetAt: result.reset,
+        retryAfterSeconds: result.success
+          ? 0
+          : Math.max(1, Math.ceil((result.reset - now) / 1000)),
+      };
+    }
+  } catch {
+    // Do not log caller keys because they may include user identifiers.
   }
 
-  const existing = buckets.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    const resetAt = now + windowMs;
-    // Bound the map: evict the oldest entry when at capacity so a flood of
-    // unique keys cannot grow memory without limit.
-    if (!buckets.has(key) && buckets.size >= MAX_BUCKETS) {
-      const oldest = buckets.keys().next().value;
-      if (oldest !== undefined) {
-        buckets.delete(oldest);
-      }
-    }
-    buckets.set(key, { count: 1, resetAt });
+  reportLimiterFailure();
+  if (failureMode === "allow") {
     return {
       success: true,
       limit,
-      remaining: Math.max(0, limit - 1),
-      resetAt,
+      remaining: limit,
+      resetAt: now + RATE_LIMIT_FAILURE_RETRY_SECONDS * 1000,
       retryAfterSeconds: 0,
     };
   }
 
-  existing.count += 1;
-  const remaining = Math.max(0, limit - existing.count);
-
-  if (existing.count > limit) {
-    return {
-      success: false,
-      limit,
-      remaining: 0,
-      resetAt: existing.resetAt,
-      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
-    };
-  }
-
+  const resetAt = now + RATE_LIMIT_FAILURE_RETRY_SECONDS * 1000;
   return {
-    success: true,
+    success: false,
     limit,
-    remaining,
-    resetAt: existing.resetAt,
-    retryAfterSeconds: 0,
+    remaining: 0,
+    resetAt,
+    retryAfterSeconds: RATE_LIMIT_FAILURE_RETRY_SECONDS,
   };
 }
 
 /**
- * Best-effort client IP for a server action/route. Trusts `x-forwarded-for`
- * only from the nearest proxy hop. Falls back to a shared bucket so the limit
- * still applies when the header is absent (e.g. local dev).
+ * Client IP for a server action/route from a configured proxy-owned header.
+ * Falls back to a shared bucket when the header is absent or invalid.
  */
 export async function getClientIp(): Promise<string> {
   try {
     const headerList = await headers();
-    const forwarded = headerList.get("x-forwarded-for");
-    if (forwarded) {
-      const first = forwarded.split(",")[0]?.trim();
-      if (first) return first;
-    }
-    const realIp = headerList.get("x-real-ip");
-    if (realIp) return realIp.trim();
-    return headerList.get("x-forwarded-host")?.trim() || "unknown";
+    const trustedHeader = process.env.TRUSTED_PROXY_IP_HEADER?.trim().toLowerCase();
+    if (!trustedHeader) return "unknown";
+
+    const value = headerList.get(trustedHeader)?.trim();
+    if (!value || value.length > 45 || value.includes(",") || !isIP(value)) return "unknown";
+    return value;
   } catch {
     return "unknown";
   }

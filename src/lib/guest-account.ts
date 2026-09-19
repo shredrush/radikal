@@ -60,7 +60,7 @@ export async function createGuestAccount(
   }
 
   const ip = await getClientIp();
-  const limit = rateLimit(`guest-account:ip:${ip}`, 5, 60 * 60_000);
+  const limit = await rateLimit(`guest-account:ip:${ip}`, 5, 60 * 60_000, { failureMode: "deny" });
   if (!limit.success) return { success: false, error: rateLimitError(limit) };
 
   const { name, email, phone, password } = parsed.data;
